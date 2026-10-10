@@ -38,6 +38,33 @@ function palette(k: number, out: RGB) {
   out[2] = a[2]! + (b[2]! - a[2]!) * f;
 }
 type RGB = [number, number, number];
+
+// The ghost: a little pixel spirit drawn in half-block cells of the same terminal. It follows
+// the pointer with a springy lag and, when the pointer rests, wanders and settles beside the
+// wordmark. 'o' marks the eyes; the last two rows are the wavy tail (two frames).
+const GHOST = [
+  '.....######.....',
+  '...##########...',
+  '..############..',
+  '.##############.',
+  '.###oo####oo###.',
+  '####oo####oo####',
+  '####oo####oo####',
+  '################',
+  '################',
+  '################',
+  '################',
+  '################',
+  '################',
+  '################',
+];
+const TAIL = [
+  ['##.###.###.###.#', '#...#...#...#...'],
+  ['#.###.###.###.##', '..#...#...#...#.'],
+];
+const GHOST_W = 16,
+  GHOST_H = GHOST.length + 2,
+  GHOST_SCALE = 1.25;
 const rain = [...'01λψΩΣπ∂∆≈≠{}<>/=+*#$%&░▒▓│┼╳◇'];
 
 class Scene {
@@ -46,6 +73,12 @@ class Scene {
   mask = new Float32Array(0);
   glow = new Float32Array(0);
   mouse = { x: -1e4, y: -1e4 };
+  /** Wall-clock time of the last pointer move; the ghost wanders off after a pause. */
+  moved = -1e9;
+  ghost = { x: -40, y: 0, vx: 0, vy: 0, homeX: 0, homeY: 0, tail: 0, lookX: 0, lookY: 0 };
+  trail: { x: number; y: number }[] = [];
+  aspect = 1.2;
+  lastT = 0;
   bytes = 0;
   resize(cols: number, rows: number, cellWidth: number, cellHeight: number) {
     this.cols = cols;
@@ -59,6 +92,7 @@ class Scene {
     // Each half-block pixel is cellWidth wide and cellHeight/2 tall; pre-squash the
     // wordmark so it keeps its proportions on that grid.
     const aspect = cellWidth / (cellHeight / 2);
+    this.aspect = aspect;
     const narrow = innerWidth < 1000;
     const centerX = w * (narrow ? 0.5 : 0.6),
       centerY = h * (narrow ? 0.2 : 0.19);
@@ -74,7 +108,34 @@ class Scene {
     ctx.fillText('WRAITH', 0, 0);
     const alpha = ctx.getImageData(0, 0, w, h).data;
     this.mask = new Float32Array(w * h);
-    for (let i = 0; i < w * h; i++) this.mask[i] = alpha[i * 4 + 3]! / 255;
+    let minX = w,
+      maxX = 0,
+      minY = h,
+      maxY = 0;
+    for (let i = 0; i < w * h; i++) {
+      this.mask[i] = alpha[i * 4 + 3]! / 255;
+      if (this.mask[i]! > 0.5) {
+        const x = i % w,
+          y = (i / w) | 0;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    // The ghost's resting place: just right of the wordmark, or under it when there is no room.
+    const reach = (GHOST_W * GHOST_SCALE) / aspect / 2 + 4;
+    if (maxX + reach * 2 < w - 2) {
+      this.ghost.homeX = maxX + reach + 2;
+      this.ghost.homeY = (minY + maxY) / 2;
+    } else {
+      this.ghost.homeX = (minX + maxX) / 2;
+      this.ghost.homeY = maxY + (GHOST_H * GHOST_SCALE) / 2 + 6;
+    }
+    if (this.ghost.x < -30) {
+      this.ghost.x = -30;
+      this.ghost.y = h * 0.75;
+    }
     // Separable box blur for the halo.
     const radius = 4,
       tmp = new Float32Array(w * h);
@@ -96,8 +157,9 @@ class Scene {
   }
   shade(px: number, py: number, t: number, out: RGB) {
     const w = this.cols;
-    const dx = px - this.mouse.x,
-      dy = (py - this.mouse.y) * 1.2;
+    const ghost = this.ghost;
+    const dx = (px - ghost.x) * this.aspect,
+      dy = py - ghost.y;
     const d = Math.sqrt(dx * dx + dy * dy);
     const ripple = (Math.sin(d * 0.16 - t * 3.2) * 1.6) / (1 + d * 0.035);
     const v =
@@ -124,8 +186,78 @@ class Scene {
       out[1] += (238 - out[1]!) * k;
       out[2] += (218 - out[2]!) * k;
     }
+    // Wisps left behind as the ghost flies.
+    for (let i = 0; i < this.trail.length; i++) {
+      const p = this.trail[i]!;
+      const tx = (px - p.x) * this.aspect,
+        ty = py - p.y;
+      const r2 = tx * tx + ty * ty;
+      if (r2 < 9) {
+        const k = (1 - r2 / 9) * 0.35 * (1 - i / this.trail.length);
+        out[0] += (255 - out[0]!) * k;
+        out[1] += (214 - out[1]!) * k;
+        out[2] += (190 - out[2]!) * k;
+      }
+    }
+    // A warm glow around the ghost.
+    const glow = 0.4 / (1 + d * d * 0.004);
+    out[0] += (255 - out[0]!) * glow * 0.5;
+    out[1] += (176 - out[1]!) * glow * 0.5;
+    out[2] += (110 - out[2]!) * glow * 0.5;
+    // The ghost itself, sampled from its sprite in square pixels.
+    const gcol = Math.floor(dx / GHOST_SCALE + GHOST_W / 2),
+      grow = Math.floor(dy / GHOST_SCALE + GHOST_H / 2);
+    if (gcol < 0 || grow < 0 || gcol >= GHOST_W || grow >= GHOST_H) return;
+    const row = grow < GHOST.length ? GHOST[grow]! : TAIL[ghost.tail]![grow - GHOST.length]!;
+    let c = row[gcol];
+    if (c === 'o') c = '#';
+    if (c !== '#') return;
+    // Eyes look where the ghost is heading.
+    const ex = gcol - ghost.lookX,
+      ey = grow - ghost.lookY;
+    const eye = ey >= 4 && ey <= 6 && ((ex >= 4 && ex <= 5) || (ex >= 10 && ex <= 11));
+    if (eye) {
+      out[0] = 28;
+      out[1] = 14;
+      out[2] = 14;
+      return;
+    }
+    const shine = grow < 3 ? 1 : 0.94 - 0.04 * Math.sin(t * 3 + grow * 0.5);
+    out[0] += (255 * shine - out[0]!) * 0.9;
+    out[1] += (246 * shine - out[1]!) * 0.9;
+    out[2] += (236 * shine - out[2]!) * 0.9;
+  }
+  /** Spring the ghost toward the pointer, or wander and settle at home when it rests. */
+  move(t: number) {
+    const dt = Math.min(0.05, Math.max(0, t - this.lastT));
+    this.lastT = t;
+    const g = this.ghost;
+    const idle = (performance.now() - this.moved) / 1000;
+    let tx: number, ty: number;
+    if (idle < 2 && this.mouse.x > -1e3) {
+      // Hover just up and to the left of the pointer, never under it.
+      tx = this.mouse.x - 14 / this.aspect;
+      ty = this.mouse.y - 10;
+    } else {
+      const roam = Math.max(0, 1 - Math.max(0, idle - 2) / 4);
+      tx = g.homeX + Math.sin(t * 0.9) * 26 * roam;
+      ty = g.homeY + Math.sin(t * 1.4) * 12 * roam + Math.sin(t * 2.2) * 1.5;
+    }
+    const k = 22,
+      damping = 6.5;
+    g.vx += ((tx - g.x) * k - g.vx * damping) * dt;
+    g.vy += ((ty - g.y) * k - g.vy * damping) * dt;
+    g.x += g.vx * dt;
+    g.y += g.vy * dt;
+    g.tail = Math.floor(t * 6) % 2;
+    g.lookX = Math.max(-1, Math.min(1, Math.round(g.vx / 25)));
+    g.lookY = Math.max(-1, Math.min(1, Math.round(g.vy / 25)));
+    if (Math.hypot(g.vx, g.vy) > 6) this.trail.unshift({ x: g.x, y: g.y + 6 });
+    if (this.trail.length > 10 || (this.trail.length && Math.hypot(g.vx, g.vy) <= 6))
+      this.trail.pop();
   }
   frame(t: number) {
+    this.move(t);
     const { cols, rows } = this;
     const top: RGB = [0, 0, 0],
       bottom: RGB = [0, 0, 0];
@@ -221,6 +353,7 @@ async function hero() {
     const box = host.getBoundingClientRect();
     scene.mouse.x = ((event.clientX - box.left) / box.width) * scene.cols;
     scene.mouse.y = ((event.clientY - box.top) / box.height) * scene.rows * 2;
+    scene.moved = performance.now();
   });
   hero.addEventListener('pointerleave', () => {
     scene.mouse.x = scene.mouse.y = -1e4;
