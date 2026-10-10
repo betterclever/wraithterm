@@ -35,6 +35,13 @@ const grid = await page.evaluate(async () => {
   // Let the terminal fit the window before reading its grid.
   await new Promise((r) => setTimeout(r, 600));
   const { cols, rows } = term;
+  // The letterforms come from Outfit ExtraBold (OFL).
+  const outfit = new FontFace(
+    'Outfit',
+    'url(https://cdn.jsdelivr.net/fontsource/fonts/outfit@latest/latin-800-normal.ttf)',
+    { weight: '800' },
+  );
+  document.fonts.add(await outfit.load());
   // Letter mask: "HOW FAST?" rasterized to the cell grid, cells are about 1:2.
   const c = document.createElement('canvas');
   c.width = cols;
@@ -46,9 +53,9 @@ const grid = await page.evaluate(async () => {
   // Cells are about twice as tall as wide; 0.8 keeps the letters tall and bold.
   g.setTransform(1, 0, 0, 0.8, cols / 2, rows / 2);
   let size = 60;
-  g.font = `900 ${size}px Helvetica, Arial, sans-serif`;
+  g.font = `800 ${size}px Outfit`;
   size = (size * cols * 0.9) / g.measureText('HOW FAST?').width;
-  g.font = `900 ${size}px Helvetica, Arial, sans-serif`;
+  g.font = `800 ${size}px Outfit`;
   g.fillText('HOW FAST?', 0, 0);
   const alpha = g.getImageData(0, 0, cols, rows).data;
   const inside = (x, y) => alpha[(y * cols + x) * 4 + 3] > 110;

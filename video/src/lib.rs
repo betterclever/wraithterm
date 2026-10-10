@@ -60,12 +60,15 @@ const CUES: [f32; 10] = [
 // ---------------------------------------------------------------------------------------------
 // Look: the warm ember palette of wraithterm.com.
 
-/// Hits, numbers and big words.
-const DISPLAY: &str = "Unbounded";
-/// Headlines and labels: condensed, with character.
-const HEAD: &str = "Bricolage Grotesque 96pt ExtraBold";
+/// Hits, numbers and big words: Manrope ExtraBold (this static build keeps the variable
+/// font's family name; the weight selects the face).
+const DISPLAY: &str = "Manrope ExtraLight";
+/// Headlines and labels: the same Manrope ExtraBold.
+const HEAD: &str = "Manrope ExtraLight";
 /// Everything terminal: typing, captions, code.
 const MONO: &str = "JetBrains Mono";
+/// The opening ms counters: Space Grotesk Bold (static build, family name as above).
+const COUNTER: &str = "Space Grotesk Light";
 /// Advance of JetBrains Mono, in ems.
 const MONO_ADV: f32 = 0.6;
 const BG: &str = "#0c0806";
@@ -361,7 +364,7 @@ impl Scene for Shot {
             Kind::Break => break_(&frame, ctx, t),
             Kind::Race => race(t),
             Kind::TwoWays => two_ways(t),
-            Kind::Finale => finale(t, g),
+            Kind::Finale => finale(&mut frame.clone(), ctx, t, g),
         }
     }
 }
@@ -407,7 +410,7 @@ fn cold_open<'a>(frame: &Frame, ctx: &FFramesContext<'a, '_>, t: f32) -> Svgr<'a
                 <text x={x + 46.0} y={y + 60.0} font-family={MONO} font-size="30" fill={color}>{label}</text>
                 <g transform={format!("translate({} {})", x + w - 40.0, y + h - 60.0)}>
                     <rect x="-470" y="-150" width="490" height="190" rx="18" fill="#0c0806" opacity="0.9" stroke={color} stroke-opacity="0.6" />
-                    <text x="0" y="-26" font-family={DISPLAY} font-weight="900" font-size="104" fill={color} text-anchor="end" letter-spacing="-3">{format!("{ms:.1} ms")}</text>
+                    <text x="0" y="-26" font-family={COUNTER} font-weight="700" font-size="108" fill={color} text-anchor="end" letter-spacing="-3">{format!("{ms:.1} ms")}</text>
                     <text x="0" y="20" font-family={MONO} font-size="28" fill={DIM} text-anchor="end">"CPU per update"</text>
                 </g>
             </g>
@@ -481,7 +484,7 @@ fn arrival<'a>(t: f32, g: f32) -> Svgr<'a> {
         <g>
             <circle cx={W / 2.0} cy={H / 2.0 - 70.0} r={40.0 + 1300.0 * expo(ring)} fill="none" stroke={AMBER} stroke-width={14.0 * (1.0 - ring) + 0.5} opacity={1.0 - ring} />
             {mark}
-            <text x={W / 2.0} y={H / 2.0 + 250.0 + 40.0 * (1.0 - expo(tag))} font-family={DISPLAY} font-weight="900" font-size="104" text-anchor="middle" fill="url(#spectral)" opacity={clamp01(tag * 3.0)} letter-spacing="-3">"has arrived."</text>
+            <text x={W / 2.0} y={H / 2.0 + 250.0 + 40.0 * (1.0 - expo(tag))} font-family={DISPLAY} font-weight="800" font-size="104" text-anchor="middle" fill="url(#spectral)" opacity={clamp01(tag * 3.0)} letter-spacing="-3">"has arrived."</text>
             <text x={W / 2.0} y={H / 2.0 + 330.0} font-family={MONO} font-size="30" text-anchor="middle" fill={DIM} opacity={kicker} letter-spacing="6">"OPEN SOURCE  ·  MIT  ·  WRAITHTERM.COM"</text>
         </g>
     )
@@ -506,7 +509,7 @@ fn stack<'a>(t: f32) -> Svgr<'a> {
         let x = W * 0.1;
         out.push(svgr!(
             <g opacity={clamp01(k * 4.0)} transform={format!("translate({x} {y}) scale({s})")}>
-                <text x="0" y="0" font-family={DISPLAY} font-weight="900" font-size="104" fill={INK} letter-spacing="-3">{word}</text>
+                <text x="0" y="0" font-family={DISPLAY} font-weight="800" font-size="104" fill={INK} letter-spacing="-3">{word}</text>
                 <text x="8" y="56" font-family={MONO} font-size="32" fill={color}>{note}</text>
             </g>
         ));
@@ -616,7 +619,7 @@ fn race<'a>(t: f32) -> Svgr<'a> {
                 <text x={W * 0.1 + 2.0} y={y + 92.0} font-family={MONO} font-size="28" fill={FAINT}>{what}</text>
                 <rect x="620" y={y} width="1110" height="84" rx="12" fill="#140d0a" />
                 <rect x="620" y={y} width={w} height="84" rx="12" fill={fill} />
-                <text x={644.0 + w} y={y + 60.0} font-family={DISPLAY} font-weight="900" font-size="44" fill={color}>{format!("{:.1} ms", ms * k)}</text>
+                <text x={644.0 + w} y={y + 60.0} font-family={DISPLAY} font-weight="800" font-size="44" fill={color}>{format!("{:.1} ms", ms * k)}</text>
             </g>
         ));
     }
@@ -631,7 +634,7 @@ fn race<'a>(t: f32) -> Svgr<'a> {
         let fill = if k == 0 { "url(#spectral)" } else { INK };
         out.push(svgr!(
             <g opacity={clamp01(v * 3.0)} transform={format!("translate({cx} 600) scale({})", 0.7 + 0.3 * big)}>
-                <text x="0" y="0" font-family={DISPLAY} font-weight="900" font-size="230" text-anchor="middle" fill={fill} letter-spacing="-8">{value}</text>
+                <text x="0" y="0" font-family={DISPLAY} font-weight="800" font-size="230" text-anchor="middle" fill={fill} letter-spacing="-8">{value}</text>
                 <text x="0" y="96" font-family={HEAD} font-weight="800" font-size="48" text-anchor="middle" fill={INK}>{versus}</text>
             </g>
         ));
@@ -706,7 +709,7 @@ fn two_ways<'a>(t: f32) -> Svgr<'a> {
     let b = code_card(t - BEAT * 4.0, 990.0, 330.0, "Or go full Ghostty.", "native", &right, LILAC);
     svgr!(
         <g>
-            <text x={W / 2.0} y="200" font-family={DISPLAY} font-weight="900" font-size="88" text-anchor="middle" fill={INK} opacity={head} letter-spacing="-3">"Two ways in."</text>
+            <text x={W / 2.0} y="200" font-family={DISPLAY} font-weight="800" font-size="88" text-anchor="middle" fill={INK} opacity={head} letter-spacing="-3">"Two ways in."</text>
             {a}
             {b}
             <text x={W / 2.0} y="900" font-family={MONO} font-size="34" text-anchor="middle" fill={DIM} opacity={span(t, BEAT * 10.0, 0.5)}>"npm i wraithterm"</text>
@@ -714,16 +717,32 @@ fn two_ways<'a>(t: f32) -> Svgr<'a> {
     )
 }
 
-fn finale<'a>(t: f32, g: f32) -> Svgr<'a> {
+/// Measured advance of the finale URL's prefixes, memoized: the URL is centred and the cursor
+/// follows the typed text.
+static URL_WIDTHS: OnceLock<Vec<f32>> = OnceLock::new();
+
+fn finale<'a>(frame: &mut Frame, ctx: &FFramesContext<'a, '_>, t: f32, g: f32) -> Svgr<'a> {
     let url = "wraithterm.com";
     let shown = typed(url, t - 0.3, 14.0);
-    let size = 124.0;
-    let width = url.chars().count() as f32 * size * MONO_ADV;
-    let x = W / 2.0 - width / 2.0;
+    let size = 136.0;
+    let font = FontQuery { family: DISPLAY, size: 136, weight: 800, ..Default::default() };
+    let widths = match URL_WIDTHS.get() {
+        Some(w) => w.clone(),
+        None => {
+            let measured: Option<Vec<f32>> = (0..=url.len())
+                .map(|n| if n == 0 { Some(0.0) } else { frame.text_width(ctx, font, &url[..n]).map(|w| w as f32) })
+                .collect();
+            match measured {
+                Some(m) => URL_WIDTHS.get_or_init(|| m).clone(),
+                None => (0..=url.len()).map(|n| n as f32 * size * 0.62).collect(),
+            }
+        }
+    };
+    let x = W / 2.0 - widths[url.len()] / 2.0;
     let rise = expo(span(t, 1.6, 0.8));
     let y = H / 2.0 + 40.0 + 120.0 * rise;
     let done = shown.chars().count() == url.chars().count();
-    let cursor_x = x + shown.chars().count() as f32 * size * MONO_ADV + 10.0;
+    let cursor_x = x + widths[shown.len()] + 10.0;
     let blink = if !done || ((t / BEAT) as u32) % 2 == 0 { 1.0 } else { 0.0 };
     let mark = if t > 1.6 { wordmark(g, t - 1.6, W / 2.0, 330.0, 12.0, 0.8 + 0.2 * (g * 3.0).sin(), 0.0) } else { Svgr::empty() };
     let rest = span(t, 2.8, 0.5);
@@ -731,7 +750,7 @@ fn finale<'a>(t: f32, g: f32) -> Svgr<'a> {
     svgr!(
         <g>
             {mark}
-            <text x={x} y={y} font-family={MONO} font-size={size} fill="url(#spectral)">{shown}</text>
+            <text x={x} y={y} font-family={DISPLAY} font-weight="800" font-size={size} fill="url(#spectral)">{shown}</text>
             <rect x={cursor_x} y={y - size * 0.72} width={size * 0.08} height={size * 0.8} fill={AMBER} opacity={blink * (1.0 - rise)} />
             <g opacity={rest} transform={format!("translate(0 {})", 24.0 * (1.0 - expo(rest)))}>
                 <rect x={W / 2.0 - 230.0} y={y + 70.0} width="460" height="76" rx="38" fill="#150f0b" stroke="#3d2e25" />
