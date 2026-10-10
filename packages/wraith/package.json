@@ -42,7 +42,9 @@
     "docs/benchmarks/comparison/*.json",
     "docs/benchmarks/optimization/*.md",
     "docs/benchmarks/optimization/*.json",
-    "docs/benchmarks/optimization/usage-after/*.json"
+    "docs/benchmarks/optimization/usage-after/*.json",
+    "docs/benchmarks/packing/**/*.md",
+    "docs/benchmarks/packing/**/*.json"
   ],
   "dependencies": {
     "@wraith-terminal/xterm-base": "npm:@xterm/xterm@6.0.0"

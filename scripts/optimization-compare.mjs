@@ -17,10 +17,12 @@ for (const v of versions) {
   v.rendererSha256 = hash(await readFile(join(v.root, 'packages/wraith/src/xterm-renderer.ts')));
 }
 const repetitions = Number(process.env.WRAITH_REPETITIONS ?? 3);
+const frames = Number(process.env.WRAITH_FRAMES ?? 128);
 const types = (process.env.WRAITH_TYPES ?? 'wraith,ghostty').split(',');
 const dprs = (process.env.WRAITH_DPRS ?? '1,2').split(',').map(Number);
 const workloads = (process.env.WRAITH_WORKLOADS ?? 'complex,churn,scroll').split(',');
 assert(Number.isInteger(repetitions) && repetitions > 0);
+assert(Number.isInteger(frames) && frames >= 32 && frames <= 4096);
 assert(types.length && types.every((type) => ['wraith', 'ghostty'].includes(type)));
 assert(dprs.length && dprs.every((dpr) => [1, 2].includes(dpr)));
 assert(
@@ -34,6 +36,7 @@ const metadata = {
   headless: true,
   versions,
   repetitions,
+  frames,
   types,
   dprs,
   workloads,
@@ -80,7 +83,7 @@ try {
                 workload,
                 cols: 240,
                 rows: 80,
-                frames: 128,
+                frames,
               });
               assert.deepEqual(pageErrors, []);
               results.push({

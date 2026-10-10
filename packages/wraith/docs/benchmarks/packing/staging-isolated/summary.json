@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-10T12:54:08.155Z",
+  "repetitions": 3,
+  "versions": [
+    {
+      "name": "before",
+      "root": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/row-packing-baseline",
+      "url": "http://127.0.0.1:5191",
+      "wasmSha256": "c9991d95b022a8ab9643a9e2f4e84e1af4ba80fd363135f79804e40dc3a2c986",
+      "rendererSha256": "96564f482405e9d8891f42d694e85d9972e165651eaa2845fc5ea0d1960faba8"
+    },
+    {
+      "name": "after",
+      "root": "/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith",
+      "url": "http://127.0.0.1:5173",
+      "wasmSha256": "c0fbfda9394b415511d5fa4882512b39d0b55136e87ba99356ec203fdfc45795",
+      "rendererSha256": "5d91f6f228765f70b6b8e002f43186669ef292409b050e9ce4d64a8dc8159d89"
+    }
+  ],
+  "groups": [
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 466.6423623566795,
+        "redrawP50Ms": 1,
+        "pipelineP95Ms": 2.5,
+        "range": [
+          296.43353403535485,
+          469.72477064220186
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 455.51601423487546,
+        "redrawP50Ms": 1,
+        "pipelineP95Ms": 2.400000035762787,
+        "range": [
+          298.9257356042646,
+          484.114977241629
+        ]
+      },
+      "speedRatio": 0.9761565836723165
+    }
+  ]
+}

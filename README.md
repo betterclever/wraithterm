@@ -222,3 +222,7 @@ The [optimization report](docs/benchmarks/optimization/REPORT.md) records
 alternating before/after runs for the newer allocation and glyph-cache changes.
 The [engineering plan](docs/TOP_TIER.md) prioritizes GPU feature coverage, scrolling,
 latency, recovery, memory, compatibility and integration for a stable release.
+
+The [bulk packing and Wasm staging pass](docs/benchmarks/packing/REPORT.md) records
+the next implementation and its independent comparisons, including memory-growth
+checks and the limits of attributing extra throughput to staging alone.

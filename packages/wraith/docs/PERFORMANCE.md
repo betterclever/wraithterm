@@ -32,6 +32,12 @@ pre-change build with the final optimized build in alternating order. Its source
 and binary hashes, submitted-frame checks and differential results are recorded
 separately. Earlier speed and usage figures below remain historical measurements.
 
+The subsequent [bulk packing and persistent staging pass](benchmarks/packing/REPORT.md)
+records 48 alternating runs and independent staging experiments. The compatible
+pipeline improves by about 7–11% across the tested conditions; staging's separate
+throughput effect remains noisy. It also verifies actual submitted cells after
+forced Wasm memory growth. All new records carry their source/binary identities.
+
 ## Recorded results
 
 | Grid   | Workload          | Frames | GPU-fenced frames/s | CPU p50 ms | CPU p95 ms | CPU p99 ms |
@@ -47,7 +53,7 @@ separately. Earlier speed and usage figures below remain historical measurements
 The sustained dense run completed **8,192 frames in 3.59 seconds**, averaging
 **2,280 GPU-completed frames/s**. Its CPU p95 was **0.50 ms**.
 
-[Raw optimized results](benchmarks/chrome.json) include the exact Wasm SHA-256,
+[Latest native browser verification](benchmarks/chrome.json) includes the exact Wasm SHA-256,
 Ghostty revision, user agent, all timings, and the pixel assertion summary.
 [An earlier unoptimized run](benchmarks/baseline-chrome.json) is retained for
 context. Runs are observations on this machine, not a controlled A/B comparison.
