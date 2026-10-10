@@ -1,0 +1,3524 @@
+{
+  "date": "2026-10-10T05:38:27.648Z",
+  "logicalCpus": 18,
+  "headless": true,
+  "grid": {
+    "cols": 240,
+    "rows": 80,
+    "cells": 19200
+  },
+  "dpr": 1,
+  "workload": "complex",
+  "durationMs": 8000,
+  "idleMs": 3000,
+  "repetitions": 2,
+  "rates": [
+    30,
+    120
+  ],
+  "cpuDefinition": "Sum of cumulative user+kernel CPU-time deltas for all processes in this isolated Chrome instance divided by wall time; 100% = one occupied logical core. Machine-capacity percentage divides by logical core count.",
+  "gpuDefinition": "Device-wide Apple GPU driver PerformanceStatistics via IORegistry, sampled approximately once per second. Includes all applications; idle deltas are contextual observations, not per-process attribution. Driver counter averaging window is undocumented.",
+  "measurement": "Raw parser + full redraw with scheduler disabled, warmed 32 frames. Fixed-rate modes yield every update; unlimited mode yields every 8 and GPU-fences every 32. These are logical updates, not display FPS. Ghostty uses the main-thread core without SDK worker/IPC.",
+  "wasmSha256": "c9991d95b022a8ab9643a9e2f4e84e1af4ba80fd363135f79804e40dc3a2c986",
+  "results": [
+    {
+      "type": "wraith",
+      "repeat": 0,
+      "rate": 30,
+      "scene": {
+        "textSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "bytesPerFrame": 214581,
+        "sgrChangesPerFrame": 4800,
+        "canvas": {
+          "width": 2160,
+          "height": 1600
+        }
+      },
+      "idleBefore": {
+        "cpu": {
+          "wallSeconds": 3.0025556040000008,
+          "totalPercent": 4.713751172882528,
+          "machineCapacityPercent": 0.2618750651601405,
+          "byTypePercent": {
+            "browser": 3.0752469621874843,
+            "renderer": 0.11536838802869509,
+            "GPU": 0.7399363385777944,
+            "network.mojom.NetworkService": 0.7810013566030197,
+            "storage.mojom.StorageService": 0.0021981274855352698
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 56,
+          "deviceMinPercent": 55,
+          "deviceMaxPercent": 57,
+          "rendererMeanPercent": 51,
+          "tilerMeanPercent": 10
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 2970.594479,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.663094
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042104
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.350585
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.182553
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.301856
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.09532
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.036964
+                }
+              ]
+            },
+            {
+              "atMs": 3973.9712915,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.741331
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042326
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.35072
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.183816
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.308132
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.105828
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.03703
+                }
+              ]
+            },
+            {
+              "atMs": 5043.145624999999,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.742182
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042326
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.350928
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.184764
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.321843
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.105828
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.03703
+                }
+              ]
+            },
+            {
+              "atMs": 5973.150083,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.75543
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042326
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.350928
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.185452
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.324073
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.11877
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.03703
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 4006.536208,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 51,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 5078.111208,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 55,
+              "rendererPercent": 51,
+              "tilerPercent": 10
+            }
+          ]
+        }
+      },
+      "loaded": {
+        "result": {
+          "type": "wraith",
+          "durationMs": 8000,
+          "elapsedMs": 8001.5,
+          "frames": 240,
+          "submittedFrames": 240,
+          "targetUpdatesPerSecond": 30,
+          "updatesPerSecond": 29.994376054489784,
+          "droppedDeadlines": 0,
+          "intervalMs": {
+            "p50": 33.30000001192093,
+            "p95": 34.59999996423721,
+            "p99": 35.200000047683716,
+            "mean": 33.340167364066616
+          },
+          "cache": {
+            "glyphVariants": 279
+          },
+          "gpuFenced": true
+        },
+        "cpu": {
+          "wallSeconds": 8.004847521000002,
+          "totalPercent": 23.069034046626147,
+          "machineCapacityPercent": 1.2816130025903414,
+          "byTypePercent": {
+            "browser": 0.17744248048119682,
+            "renderer": 17.034278247309533,
+            "GPU": 5.839873886087478,
+            "network.mojom.NetworkService": 0.016052772980733387,
+            "storage.mojom.StorageService": 0.0013866597672073254
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 57.857142857142854,
+          "deviceMinPercent": 57,
+          "deviceMaxPercent": 61,
+          "rendererMeanPercent": 51.857142857142854,
+          "tilerMeanPercent": 9.285714285714286
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 5973.963541499999,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.755601
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042326
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.350928
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.185452
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.324073
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.11877
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.03703
+                }
+              ]
+            },
+            {
+              "atMs": 6977.140792,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.758734
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042447
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.555066
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.185686
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.39368
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.119038
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037088
+                }
+              ]
+            },
+            {
+              "atMs": 8051.1343959999995,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.759533
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042447
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.723333
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.18573
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.453874
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.119038
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037088
+                }
+              ]
+            },
+            {
+              "atMs": 9118.76575,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.76123
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042447
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 0.915041
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186053
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.519388
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.119038
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037088
+                }
+              ]
+            },
+            {
+              "atMs": 10186.9408955,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.761909
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042447
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.095364
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.18614
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.581179
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.119038
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037088
+                }
+              ]
+            },
+            {
+              "atMs": 11257.270375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.76629
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.268342
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186863
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.640271
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120026
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 12321.626021,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.767736
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.438159
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186863
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.698533
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120026
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 13391.0746875,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.768934
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.623556
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186961
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.760843
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 13978.8110625,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.769805
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.712425
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186961
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.791546
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 7012.337395500001,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 51,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 8083.036854,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 48,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 9151.0376045,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 52,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 10220.562396000001,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 51,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 11287.9782915,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 61,
+              "rendererPercent": 54,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 12354.593604000002,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 55,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 13423.463146,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 52,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      },
+      "idleAfter": {
+        "cpu": {
+          "wallSeconds": 3.0016270000000005,
+          "totalPercent": 0.11873560572315947,
+          "machineCapacityPercent": 0.006596422540175526,
+          "byTypePercent": {
+            "browser": 0.0954149199750661,
+            "renderer": 0.01079414597483268,
+            "GPU": 0.012526539773260697,
+            "network.mojom.NetworkService": 0,
+            "storage.mojom.StorageService": 0
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 57.5,
+          "deviceMinPercent": 57,
+          "deviceMaxPercent": 58,
+          "rendererMeanPercent": 52.5,
+          "tilerMeanPercent": 12
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 14980.7837085,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.770314
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.712425
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.186961
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.791753
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 15984.451312500001,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.77207
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.71257
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.187019
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.792093
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 17057.766729,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.772652
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.71257
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.187019
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.792129
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            },
+            {
+              "atMs": 17982.4107085,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.773178
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.042888
+                },
+                {
+                  "type": "renderer",
+                  "id": 69680,
+                  "cpuTime": 1.712633
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.187077
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.792129
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.120055
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037141
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 16018.932208,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 52,
+              "tilerPercent": 15
+            },
+            {
+              "atMs": 17091.1355835,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 53,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "wraith",
+      "repeat": 1,
+      "rate": 30,
+      "scene": {
+        "textSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "bytesPerFrame": 214581,
+        "sgrChangesPerFrame": 4800,
+        "canvas": {
+          "width": 2160,
+          "height": 1600
+        }
+      },
+      "idleBefore": {
+        "cpu": {
+          "wallSeconds": 3.0021053125,
+          "totalPercent": 1.140766110282817,
+          "machineCapacityPercent": 0.06337589501571206,
+          "byTypePercent": {
+            "browser": 0.14809607049719584,
+            "renderer": 0.11871668809086619,
+            "GPU": 0.8665918511144849,
+            "network.mojom.NetworkService": 0.003930574970461067,
+            "storage.mojom.StorageService": 0.003430925609808997
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 56.5,
+          "deviceMinPercent": 55,
+          "deviceMaxPercent": 58,
+          "rendererMeanPercent": 52.5,
+          "tilerMeanPercent": 10.5
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 19804.437375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.915485
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.310244
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044607
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.284194
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.92201
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135005
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.037955
+                }
+              ]
+            },
+            {
+              "atMs": 20807.884271000003,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.91792
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.310435
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044835
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.286123
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.940024
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135123
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038042
+                }
+              ]
+            },
+            {
+              "atMs": 21878.8256045,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.918997
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.310625
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044835
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.28686
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.944943
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135123
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 22806.5426875,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.919931
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.310625
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044835
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287149
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.948026
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135123
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 20841.088146000002,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 55,
+              "rendererPercent": 51,
+              "tilerPercent": 11
+            },
+            {
+              "atMs": 21913.1430835,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 54,
+              "tilerPercent": 10
+            }
+          ]
+        }
+      },
+      "loaded": {
+        "result": {
+          "type": "wraith",
+          "durationMs": 8000,
+          "elapsedMs": 8002.699999988079,
+          "frames": 240,
+          "submittedFrames": 240,
+          "targetUpdatesPerSecond": 30,
+          "updatesPerSecond": 29.98987841607926,
+          "droppedDeadlines": 0,
+          "intervalMs": {
+            "p50": 33.30000001192093,
+            "p95": 34.5,
+            "p99": 34.80000001192093,
+            "mean": 33.33723849357421
+          },
+          "cache": {
+            "glyphVariants": 279
+          },
+          "gpuFenced": true
+        },
+        "cpu": {
+          "wallSeconds": 8.004965937500002,
+          "totalPercent": 22.648653525266795,
+          "machineCapacityPercent": 1.2582585291814885,
+          "byTypePercent": {
+            "browser": 0.17715253394855557,
+            "renderer": 16.886930070088134,
+            "GPU": 5.548630730822519,
+            "network.mojom.NetworkService": 0.035940190407587454,
+            "storage.mojom.StorageService": 0
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 57.285714285714285,
+          "deviceMinPercent": 56,
+          "deviceMaxPercent": 59,
+          "rendererMeanPercent": 51.142857142857146,
+          "tilerMeanPercent": 9.285714285714286
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 22807.1161665,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.920084
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.310625
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044835
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287149
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 0.948026
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135123
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 23809.7733335,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.921871
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.482446
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.044956
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287287
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.007141
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135123
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 24887.260708499998,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.923194
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.667364
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045017
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287287
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.069457
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135617
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 25959.187375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.92405
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 0.853027
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045017
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287446
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.132516
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135617
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 27028.0160415,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.924749
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.04755
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045017
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.287489
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.192043
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.135617
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 28099.5002085,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.927883
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.205695
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.04506
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.288466
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.245594
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.137962
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 29167.2235,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.928915
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.397004
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045548
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.288542
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.304915
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.137985
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 30236.7764165,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.929577
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.576284
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045548
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.28859
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.363793
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.137985
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            },
+            {
+              "atMs": 30812.082104,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.934265
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.660264
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045548
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.28859
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.392192
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.138
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038058
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 23846.4797295,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 51,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 24921.448937499998,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 50,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 25991.604958,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 53,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 27061.81375,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 52,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 28131.7164795,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 59,
+              "rendererPercent": 49,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 29200.842624999997,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 53,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 30270.3000415,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 50,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      },
+      "idleAfter": {
+        "cpu": {
+          "wallSeconds": 3.002125709,
+          "totalPercent": 1.9976511916277016,
+          "machineCapacityPercent": 0.11098062175709453,
+          "byTypePercent": {
+            "browser": 0.44378554702287365,
+            "renderer": 0.9836363584467104,
+            "GPU": 0.2526210004219392,
+            "network.mojom.NetworkService": 0.26494560091720626,
+            "storage.mojom.StorageService": 0.05266268481897225
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 56,
+          "deviceMinPercent": 55,
+          "deviceMaxPercent": 57,
+          "rendererMeanPercent": 53,
+          "tilerMeanPercent": 9.5
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 31814.009707999998,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.958441
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.660393
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.045548
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.318887
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.3925
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.138079
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.038081
+                }
+              ]
+            },
+            {
+              "atMs": 32816.681625,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.970152
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.662531
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.047246
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.344512
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.400072
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.144681
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.039662
+                }
+              ]
+            },
+            {
+              "atMs": 33890.7495835,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.970823
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.662531
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.047246
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.344512
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.400084
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.144797
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.039662
+                }
+              ]
+            },
+            {
+              "atMs": 34816.135417,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 0.971764
+                },
+                {
+                  "type": "renderer",
+                  "id": 69679,
+                  "cpuTime": 1.6626
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.047246
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.344512
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.400084
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.146033
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.039662
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 32852.482728999996,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 55,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 33923.715875,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 55,
+              "rendererPercent": 51,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "wraith",
+      "repeat": 0,
+      "rate": 120,
+      "scene": {
+        "textSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "bytesPerFrame": 214581,
+        "sgrChangesPerFrame": 4800,
+        "canvas": {
+          "width": 2160,
+          "height": 1600
+        }
+      },
+      "idleBefore": {
+        "cpu": {
+          "wallSeconds": 3.002079146000004,
+          "totalPercent": 1.3180531916595843,
+          "machineCapacityPercent": 0.07322517731442135,
+          "byTypePercent": {
+            "browser": 0.13024306854832843,
+            "renderer": 0.16245407808445428,
+            "GPU": 1.017561447062528,
+            "network.mojom.NetworkService": 0.0037307477435840008,
+            "storage.mojom.StorageService": 0.004063850220689584
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 55,
+          "deviceMinPercent": 54,
+          "deviceMaxPercent": 56,
+          "rendererMeanPercent": 52,
+          "tilerMeanPercent": 9.5
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 36649.72410399999,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.111466
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.043547
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.314272
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.434167
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.531161
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155293
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040313
+                }
+              ]
+            },
+            {
+              "atMs": 37652.942624999996,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.113469
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.043964
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.314486
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.436977
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.55258
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155405
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040435
+                }
+              ]
+            },
+            {
+              "atMs": 38722.2076455,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.11416
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.043964
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.31473
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.437708
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.557728
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155405
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040435
+                }
+              ]
+            },
+            {
+              "atMs": 39651.80325,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.115376
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.043964
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.31473
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438169
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.561709
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155405
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040435
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 37685.491083,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 54,
+              "rendererPercent": 51,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 38755.4955835,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 53,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      },
+      "loaded": {
+        "result": {
+          "type": "wraith",
+          "durationMs": 8000,
+          "elapsedMs": 8000.899999976158,
+          "frames": 960,
+          "submittedFrames": 960,
+          "targetUpdatesPerSecond": 120,
+          "updatesPerSecond": 119.9865015189367,
+          "droppedDeadlines": 0,
+          "intervalMs": {
+            "p50": 8.300000011920929,
+            "p95": 9.899999976158142,
+            "p99": 10.100000023841858,
+            "mean": 8.332950990565502
+          },
+          "cache": {
+            "glyphVariants": 279
+          },
+          "gpuFenced": true
+        },
+        "cpu": {
+          "wallSeconds": 8.003125979500007,
+          "totalPercent": 50.192724821394854,
+          "machineCapacityPercent": 2.7884847122997143,
+          "byTypePercent": {
+            "browser": 0.1074455159399758,
+            "renderer": 38.32476219737854,
+            "GPU": 11.752007933014685,
+            "network.mojom.NetworkService": 0.00832174829817696,
+            "storage.mojom.StorageService": 0.00018742676347246808
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 60.857142857142854,
+          "deviceMinPercent": 60,
+          "deviceMaxPercent": 62,
+          "rendererMeanPercent": 56.142857142857146,
+          "tilerMeanPercent": 10.571428571428571
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 39652.665375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.115679
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.043964
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.31473
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438169
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.561709
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155405
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040435
+                }
+              ]
+            },
+            {
+              "atMs": 40655.627125,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.1173
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044058
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 0.70622
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438253
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.684844
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155557
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040435
+                }
+              ]
+            },
+            {
+              "atMs": 41717.2232295,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.118903
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044058
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 1.102785
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438275
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.798771
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155577
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 42776.46187499999,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.11971
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044058
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 1.524963
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438323
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 1.92797
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155577
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 43835.5599375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.120462
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044058
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 1.919005
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438356
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.055489
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155577
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 44900.905125000005,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.121684
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044058
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 2.301371
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.438469
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.177493
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155577
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 45959.398520999996,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.123206
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 2.697157
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.300741
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155678
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 47019.387812500005,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.123768
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.127975
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.425914
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.155678
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 47655.791354500005,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.124278
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.380178
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.502237
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.156071
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 40684.907875,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 60,
+              "rendererPercent": 55,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 41745.3324165,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 61,
+              "rendererPercent": 56,
+              "tilerPercent": 11
+            },
+            {
+              "atMs": 42804.406187500004,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 62,
+              "rendererPercent": 57,
+              "tilerPercent": 11
+            },
+            {
+              "atMs": 43866.6737705,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 62,
+              "rendererPercent": 55,
+              "tilerPercent": 11
+            },
+            {
+              "atMs": 44929.183520499995,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 60,
+              "rendererPercent": 56,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 45987.699792,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 60,
+              "rendererPercent": 56,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 47047.651771,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 61,
+              "rendererPercent": 58,
+              "tilerPercent": 11
+            }
+          ]
+        }
+      },
+      "idleAfter": {
+        "cpu": {
+          "wallSeconds": 3.001889395999999,
+          "totalPercent": 0.08571268493198471,
+          "machineCapacityPercent": 0.004761815829554706,
+          "byTypePercent": {
+            "browser": 0.05133433637006709,
+            "renderer": 0.006062848292894267,
+            "GPU": 0.013691377188906976,
+            "network.mojom.NetworkService": 0.013824626601932235,
+            "storage.mojom.StorageService": 0.0007994964781841414
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 57.5,
+          "deviceMinPercent": 57,
+          "deviceMaxPercent": 58,
+          "rendererMeanPercent": 53.5,
+          "tilerMeanPercent": 9.5
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 48657.5882915,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.124852
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.382213
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.503558
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.156128
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 49660.7211875,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.125078
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.382335
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.503926
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.156128
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 50729.131625,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.126144
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.382335
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.439306
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.503957
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.156523
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04045
+                }
+              ]
+            },
+            {
+              "atMs": 51659.477687499995,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.126393
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.044558
+                },
+                {
+                  "type": "renderer",
+                  "id": 69925,
+                  "cpuTime": 3.382381
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.43932
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.503969
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.156543
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.040474
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 49692.8893125,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 58,
+              "rendererPercent": 54,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 50762.3587085,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 53,
+              "tilerPercent": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "wraith",
+      "repeat": 1,
+      "rate": 120,
+      "scene": {
+        "textSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "bytesPerFrame": 214581,
+        "sgrChangesPerFrame": 4800,
+        "canvas": {
+          "width": 2160,
+          "height": 1600
+        }
+      },
+      "idleBefore": {
+        "cpu": {
+          "wallSeconds": 3.002690082999994,
+          "totalPercent": 1.1300533542275653,
+          "machineCapacityPercent": 0.0627807419015314,
+          "byTypePercent": {
+            "browser": 0.15839130474791632,
+            "renderer": 0.09684649163308134,
+            "GPU": 0.8622268460730791,
+            "network.mojom.NetworkService": 0.010090951500971083,
+            "storage.mojom.StorageService": 0.0024977602725175696
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 56,
+          "deviceMinPercent": 56,
+          "deviceMaxPercent": 56,
+          "rendererMeanPercent": 50,
+          "tilerMeanPercent": 10
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 53479.334229500004,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.271722
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044235
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.311483
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.554404
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.63722
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.166722
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041104
+                }
+              ]
+            },
+            {
+              "atMs": 54482.575291500005,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.273242
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044361
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.311675
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.555952
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.654851
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.166797
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 55553.556729,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.273829
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044361
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.311827
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.556471
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.659438
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.166797
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 56482.0243125,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.276478
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044361
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.311827
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.556842
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.66311
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 54516.160458,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 48,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 55583.8955625,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 52,
+              "tilerPercent": 10
+            }
+          ]
+        }
+      },
+      "loaded": {
+        "result": {
+          "type": "wraith",
+          "durationMs": 8000,
+          "elapsedMs": 8009.599999964237,
+          "frames": 961,
+          "submittedFrames": 961,
+          "targetUpdatesPerSecond": 120,
+          "updatesPerSecond": 119.98102277320851,
+          "droppedDeadlines": 0,
+          "intervalMs": {
+            "p50": 8.299999952316284,
+            "p95": 9.300000011920929,
+            "p99": 9.600000023841858,
+            "mean": 8.332708333308497
+          },
+          "cache": {
+            "glyphVariants": 279
+          },
+          "gpuFenced": true
+        },
+        "cpu": {
+          "wallSeconds": 8.013122728999996,
+          "totalPercent": 51.209923256873665,
+          "machineCapacityPercent": 2.844995736492981,
+          "byTypePercent": {
+            "browser": 0.20998056025156903,
+            "renderer": 39.90108610752568,
+            "GPU": 11.021421109697823,
+            "network.mojom.NetworkService": 0.06856253405575416,
+            "storage.mojom.StorageService": 0.008872945342854198
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 66.28571428571429,
+          "deviceMinPercent": 63,
+          "deviceMaxPercent": 69,
+          "rendererMeanPercent": 49,
+          "tilerMeanPercent": 10
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 56482.83668750001,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.276686
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044361
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.311827
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.556842
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.66311
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 57484.461729,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.278292
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044415
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 0.749546
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.55695
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.783159
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 58546.0943125,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.279059
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044498
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 1.171646
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.55695
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 2.899616
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 59605.616687500005,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.279842
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044498
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 1.582907
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.556995
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.015322
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 60664.33125,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.282741
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044498
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 2.003637
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.557099
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.129896
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.167025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041179
+                }
+              ]
+            },
+            {
+              "atMs": 61723.995458,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.290846
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.044649
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 2.42828
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.557589
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.24561
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.172201
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041812
+                }
+              ]
+            },
+            {
+              "atMs": 62784.468687500004,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.291989
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 2.846134
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.558452
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.360525
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.172226
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041871
+                }
+              ]
+            },
+            {
+              "atMs": 63846.1649375,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.293039
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.255439
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.558497
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.475938
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.172519
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.041871
+                }
+              ]
+            },
+            {
+              "atMs": 64495.9594165,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.293512
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.506669
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.558542
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.54627
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.172519
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.04189
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 57514.650187499996,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 63,
+              "rendererPercent": 49,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 58574.2865415,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 68,
+              "rendererPercent": 53,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 59633.506375,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 67,
+              "rendererPercent": 52,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 60692.717625000005,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 64,
+              "rendererPercent": 47,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 61752.77425,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 69,
+              "rendererPercent": 45,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 62813.763395500006,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 67,
+              "rendererPercent": 50,
+              "tilerPercent": 10
+            },
+            {
+              "atMs": 63875.303708,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 66,
+              "rendererPercent": 47,
+              "tilerPercent": 10
+            }
+          ]
+        }
+      },
+      "idleAfter": {
+        "cpu": {
+          "wallSeconds": 3.0027845000000015,
+          "totalPercent": 0.7505034077536992,
+          "machineCapacityPercent": 0.0416946337640944,
+          "byTypePercent": {
+            "browser": 0.0666048462685218,
+            "renderer": 0.6563241551300151,
+            "GPU": 0.021013828997712817,
+            "network.mojom.NetworkService": 0.005561504663421581,
+            "storage.mojom.StorageService": 0.0009990726940279008
+          }
+        },
+        "gpu": {
+          "deviceMeanPercent": 56.5,
+          "deviceMinPercent": 56,
+          "deviceMaxPercent": 57,
+          "rendererMeanPercent": 54,
+          "tilerMeanPercent": 9.5
+        },
+        "samples": {
+          "cpu": [
+            {
+              "atMs": 65497.233625,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.296113
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.507871
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.58649
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.547925
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.172908
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.042108
+                }
+              ]
+            },
+            {
+              "atMs": 66499.9839165,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.297259
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.508018
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.60559
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.548361
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.173025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.042108
+                }
+              ]
+            },
+            {
+              "atMs": 67564.9987705,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.297753
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.508018
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.605958
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.548372
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.173025
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.042108
+                }
+              ]
+            },
+            {
+              "atMs": 68500.018125,
+              "processes": [
+                {
+                  "type": "browser",
+                  "id": 69666,
+                  "cpuTime": 1.298113
+                },
+                {
+                  "type": "renderer",
+                  "id": 70399,
+                  "cpuTime": 0.045142
+                },
+                {
+                  "type": "renderer",
+                  "id": 70165,
+                  "cpuTime": 3.508055
+                },
+                {
+                  "type": "renderer",
+                  "id": 69677,
+                  "cpuTime": 0.606014
+                },
+                {
+                  "type": "GPU",
+                  "id": 69672,
+                  "cpuTime": 3.548556
+                },
+                {
+                  "type": "network.mojom.NetworkService",
+                  "id": 69673,
+                  "cpuTime": 0.173075
+                },
+                {
+                  "type": "storage.mojom.StorageService",
+                  "id": 69674,
+                  "cpuTime": 0.042138
+                }
+              ]
+            }
+          ],
+          "gpu": [
+            {
+              "atMs": 66530.6858125,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 57,
+              "rendererPercent": 56,
+              "tilerPercent": 9
+            },
+            {
+              "atMs": 67601.546896,
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 56,
+              "rendererPercent": 52,
+              "tilerPercent": 10
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+}

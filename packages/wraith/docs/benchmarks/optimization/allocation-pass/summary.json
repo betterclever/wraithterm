@@ -1,0 +1,214 @@
+{
+  "date": "2026-10-10T05:13:24.661Z",
+  "repetitions": 3,
+  "versions": [
+    {
+      "name": "before",
+      "root": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/top-tier-baseline",
+      "url": "http://127.0.0.1:5190",
+      "wasmSha256": "4f2da3be7622c81dc8e72625619b440b1570ed2e555692d2d0a2fefd8657e928",
+      "rendererSha256": "116386e8befd24471009c8375c9a37a93d09b7bba812ab19bb99fbf0066b54e0"
+    },
+    {
+      "name": "after",
+      "root": "/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith",
+      "url": "http://127.0.0.1:5173",
+      "wasmSha256": "72ecb763f097c12acd2c2b7793625b561ebd0510dc9a84b5c7934d23b272456a",
+      "rendererSha256": "f4a7913c3b56f5900c2b5e8cfa09aceb79c8d037ea90e17dff01e9e1aaa12eff"
+    }
+  ],
+  "groups": [
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 311.43552311435525,
+        "redrawP50Ms": 2.100000023841858,
+        "pipelineP95Ms": 3.5,
+        "range": [
+          307.7662899911943,
+          313.1881575819268
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 399.25140358852497,
+        "redrawP50Ms": 1.4000000357627869,
+        "pipelineP95Ms": 2.600000023841858,
+        "range": [
+          397.51552795031057,
+          404.67910217924947
+        ]
+      },
+      "speedRatio": 1.2819713037100293
+    },
+    {
+      "type": "ghostty",
+      "workload": "complex",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 378.36240028980706,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 2.699999988079071,
+        "range": [
+          377.3584905792997,
+          379.9346987505442
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 415.5844155844156,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 2.400000035762787,
+        "range": [
+          413.5702746365105,
+          416.1248374189818
+        ]
+      },
+      "speedRatio": 1.0983766232218062
+    },
+    {
+      "type": "wraith",
+      "workload": "churn",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 314.9606299397373,
+        "redrawP50Ms": 2.100000023841858,
+        "pipelineP95Ms": 3.300000011920929,
+        "range": [
+          311.89083822474674,
+          315.27093596059115
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 387.1748336776965,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 2.899999976158142,
+        "range": [
+          326.11464968152865,
+          400.1250391045318
+        ]
+      },
+      "speedRatio": 1.2292800968545694
+    },
+    {
+      "type": "ghostty",
+      "workload": "churn",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 299.9765643392922,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 3.5,
+        "range": [
+          297.95158289258745,
+          301.53121319199056
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 320.64128252683025,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 3.300000011920929,
+        "range": [
+          308.58244936432357,
+          322.25579054340784
+        ]
+      },
+      "speedRatio": 1.0688877753935635
+    },
+    {
+      "type": "wraith",
+      "workload": "scroll",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 251.37470542615205,
+        "redrawP50Ms": 2.199999988079071,
+        "pipelineP95Ms": 3.5,
+        "range": [
+          249.85360139961256,
+          254.77707007578496
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 310.6042222581767,
+        "redrawP50Ms": 1.4000000357627869,
+        "pipelineP95Ms": 2.699999988079071,
+        "range": [
+          295.33917860415653,
+          315.11570655774614
+        ]
+      },
+      "speedRatio": 1.235622421641882
+    },
+    {
+      "type": "ghostty",
+      "workload": "scroll",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 415.0453956222291,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 2.400000035762787,
+        "range": [
+          414.1054674543091,
+          417.7545692231072
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 462.5948681081119,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 2.199999988079071,
+        "range": [
+          456.8165595225456,
+          466.98285293274813
+        ]
+      },
+      "speedRatio": 1.1145645102618171
+    },
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "dpr": 2,
+      "before": {
+        "updatesPerSecond": 306.95443645083935,
+        "redrawP50Ms": 2.199999988079071,
+        "pipelineP95Ms": 3.399999976158142,
+        "range": [
+          305.4163683911198,
+          308.28516378534454
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 393.84615384615387,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 2.799999952316284,
+        "range": [
+          392.397302282887,
+          395.6723338485317
+        ]
+      },
+      "speedRatio": 1.283076923076923
+    },
+    {
+      "type": "ghostty",
+      "workload": "complex",
+      "dpr": 2,
+      "before": {
+        "updatesPerSecond": 366.02802403306663,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 2.800000011920929,
+        "range": [
+          356.6453051226054,
+          370.5848292091356
+        ]
+      },
+      "after": {
+        "updatesPerSecond": 409.20716110972467,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 2.5,
+        "range": [
+          406.7365745308188,
+          410.5195638072682
+        ]
+      },
+      "speedRatio": 1.117966751837442
+    }
+  ]
+}
