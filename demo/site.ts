@@ -18,14 +18,14 @@ const resume = () => {
 };
 document.addEventListener('visibilitychange', resume);
 
-// Ghost palette: near-black through deep teal to ice, sampled as 0..1.
+// Ember palette: warm black through wine and rust to amber, sampled as 0..1.
 const stops = [
-  [3, 5, 7],
-  [5, 14, 22],
-  [8, 34, 48],
-  [14, 70, 92],
-  [52, 140, 170],
-  [150, 222, 245],
+  [12, 8, 6],
+  [24, 12, 11],
+  [52, 20, 20],
+  [104, 38, 30],
+  [196, 92, 52],
+  [255, 196, 138],
 ];
 function palette(k: number, out: RGB) {
   const x = Math.min(0.9999, Math.max(0, k)) * (stops.length - 1);
@@ -113,16 +113,16 @@ class Scene {
       g = this.glow[py * w + px]!;
     if (g > 0) {
       const halo = g * (0.55 + 0.15 * Math.sin(t * 2.1));
-      out[0] += (198 - out[0]!) * halo * 0.6;
-      out[1] += (181 - out[1]!) * halo * 0.6;
-      out[2] += (255 - out[2]!) * halo * 0.6;
+      out[0] += (255 - out[0]!) * halo * 0.55;
+      out[1] += (150 - out[1]!) * halo * 0.55;
+      out[2] += (96 - out[2]!) * halo * 0.55;
     }
     if (m > 0) {
       const scan = 0.78 + 0.22 * Math.sin(py * 0.9 - t * 7 + px * 0.02);
       const k = m * scan;
-      out[0] += (226 - out[0]!) * k;
-      out[1] += (248 - out[1]!) * k;
-      out[2] += (255 - out[2]!) * k;
+      out[0] += (255 - out[0]!) * k;
+      out[1] += (238 - out[1]!) * k;
+      out[2] += (218 - out[2]!) * k;
     }
   }
   frame(t: number) {
@@ -153,9 +153,9 @@ class Scene {
               (((top[0]! + bottom[0]!) >> 1) << 16) |
               (((top[1]! + bottom[1]!) >> 1) << 8) |
               ((top[2]! + bottom[2]!) >> 1);
-            const r = age < 1 ? 230 : 120 * k + 20,
-              gg = age < 1 ? 255 : 240 * k + 20,
-              bb = age < 1 ? 245 : 196 * k + 24;
+            const r = age < 1 ? 255 : 240 * k + 24,
+              gg = age < 1 ? 236 : 150 * k + 16,
+              bb = age < 1 ? 210 : 84 * k + 12;
             f = (r << 16) | (gg << 8) | bb;
           }
         }
@@ -192,7 +192,7 @@ async function hero() {
       fontSize: 11,
       lineHeight: 1,
       scrollback: 100,
-      theme: { background: '#030507', foreground: '#9fe8ff', cursor: '#030507' },
+      theme: { background: '#0c0806', foreground: '#ffb86b', cursor: '#0c0806' },
     });
   } catch (error) {
     $('hud-state').textContent = 'offline';

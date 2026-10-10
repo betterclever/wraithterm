@@ -3,16 +3,16 @@
   src: url('./fonts/JetBrainsMono-Regular.ttf');
 }
 :root {
-  --bg: #030507;
-  --panel: #0a0f15;
-  --line: #18212b;
-  --text: #e6eef5;
-  --dim: #7d8d9c;
-  --faint: #4a5866;
-  --ice: #9fe8ff;
-  --mint: #8ff0c4;
-  --ghost: #c6b5ff;
-  --hot: #ff8fb1;
+  --bg: #0c0806;
+  --panel: #120d0a;
+  --line: #241b16;
+  --text: #f5ece3;
+  --dim: #a6958a;
+  --faint: #6e5c50;
+  --ice: #ffb86b;
+  --mint: #ffd98a;
+  --ghost: #d9bbff;
+  --hot: #ff7f6e;
   --mono: JetBrains, ui-monospace, 'SF Mono', Menlo, monospace;
   --sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: dark;
@@ -36,7 +36,7 @@ a {
   text-decoration: none;
 }
 ::selection {
-  background: #2b5b70;
+  background: #6b3f2a;
 }
 :focus-visible {
   outline: 2px solid var(--ice);
@@ -54,7 +54,7 @@ a {
   padding: 18px clamp(16px, 4vw, 48px);
   font-family: var(--mono);
   font-size: 13px;
-  background: linear-gradient(#030507f0, #030507a0);
+  background: linear-gradient(#0c0806f0, #0c0806a0);
   backdrop-filter: blur(6px);
   pointer-events: none;
 }
@@ -104,7 +104,7 @@ a {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: radial-gradient(60% 50% at 50% 40%, #0f2a38 0%, transparent 70%), var(--bg);
+  background: radial-gradient(60% 50% at 50% 40%, #2c170d 0%, transparent 70%), var(--bg);
 }
 .hero-term canvas {
   display: block;
@@ -114,8 +114,8 @@ a {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, #030507f2 0%, #030507b0 38%, #03050700 70%),
-    linear-gradient(0deg, #030507 0%, #03050700 35%);
+    linear-gradient(90deg, #0c0806f2 0%, #0c0806b0 38%, #0c080600 70%),
+    linear-gradient(0deg, #0c0806 0%, #0c080600 35%);
 }
 .hero-copy {
   padding: 0 clamp(16px, 6vw, 96px) clamp(72px, 12vh, 140px);
@@ -152,16 +152,16 @@ h1 {
 h1 em {
   font-style: normal;
   color: transparent;
-  background: linear-gradient(100deg, var(--ice), var(--ghost) 55%, var(--hot));
+  background: linear-gradient(100deg, var(--ice), var(--hot) 55%, var(--ghost));
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 28px #9fe8ff55);
+  filter: drop-shadow(0 0 28px #ffb86b55);
 }
 .lede {
   max-width: 560px;
   margin: 26px 0 32px;
   font-size: clamp(16px, 1.6vw, 19px);
-  color: #b9c6d2;
+  color: #d2c2b4;
 }
 .cta {
   display: flex;
@@ -173,9 +173,9 @@ h1 em {
   align-items: center;
   gap: 8px;
   padding: 13px 20px;
-  border: 1px solid #2a3846;
+  border: 1px solid #3d2e25;
   border-radius: 999px;
-  background: #0b1219cc;
+  background: #150f0bcc;
   color: var(--text);
   font: 500 14px var(--mono);
   cursor: pointer;
@@ -191,12 +191,12 @@ h1 em {
 }
 .button.primary {
   border-color: transparent;
-  background: linear-gradient(100deg, var(--ice), var(--ghost));
-  color: #041016;
-  box-shadow: 0 0 36px #9fe8ff40;
+  background: linear-gradient(100deg, var(--ice), var(--hot));
+  color: #1a0d05;
+  box-shadow: 0 0 36px #ffb86b40;
 }
 .button.primary:hover {
-  box-shadow: 0 0 52px #9fe8ff70;
+  box-shadow: 0 0 52px #ffb86b70;
 }
 .button:disabled {
   opacity: 0.5;
@@ -209,9 +209,9 @@ h1 em {
   bottom: clamp(72px, 12vh, 140px);
   width: 250px;
   padding: 16px 18px;
-  border: 1px solid #1d2a36;
+  border: 1px solid #2e231c;
   border-radius: 12px;
-  background: #050a0fd0;
+  background: #0f0a07d0;
   backdrop-filter: blur(10px);
   font: 12px var(--mono);
 }
@@ -219,7 +219,7 @@ h1 em {
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
-  border-bottom: 1px dashed #15202b;
+  border-bottom: 1px dashed #221a14;
 }
 .hud span {
   color: var(--faint);
@@ -301,7 +301,7 @@ h2 {
 .track {
   height: 44px;
   border-radius: 8px;
-  background: #0a1017;
+  background: #140e0b;
   border: 1px solid var(--line);
   overflow: hidden;
 }
@@ -309,12 +309,12 @@ h2 {
   display: block;
   height: 100%;
   width: 0;
-  background: repeating-linear-gradient(90deg, #2a3440 0 6px, #222b35 6px 8px);
+  background: repeating-linear-gradient(90deg, #3a2c24 0 6px, #30251e 6px 8px);
   transition: width 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .ours .track i {
-  background: linear-gradient(90deg, var(--ice), var(--ghost));
-  box-shadow: 0 0 30px #9fe8ff80;
+  background: linear-gradient(90deg, var(--ice), var(--hot));
+  box-shadow: 0 0 30px #ffb86b80;
 }
 .bar-row b {
   text-align: right;
@@ -389,7 +389,7 @@ h2 {
 }
 select {
   padding: 11px 12px;
-  border: 1px solid #2a3846;
+  border: 1px solid #3d2e25;
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
@@ -405,7 +405,7 @@ select {
   position: relative;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #060a0e;
+  background: #0e0a08;
   overflow: hidden;
   min-height: 300px;
 }
@@ -419,7 +419,7 @@ select {
   gap: 8px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: #030507d8;
+  background: #0c0806d8;
   font: 12px var(--mono);
   color: var(--dim);
 }
@@ -447,7 +447,7 @@ select {
   height: 1220px;
   border: 0;
   transform-origin: 0 0;
-  background: #0b1018;
+  background: #140e0a;
 }
 .stage-empty {
   position: absolute;
@@ -456,7 +456,7 @@ select {
   place-items: center;
   color: var(--faint);
   font: 13px var(--mono);
-  background: repeating-linear-gradient(0deg, #0a0f14 0 2px, transparent 2px 4px);
+  background: repeating-linear-gradient(0deg, #120d0a 0 2px, transparent 2px 4px);
 }
 .race-board {
   grid-area: board;
@@ -478,7 +478,7 @@ select {
   border-color: var(--hot);
 }
 .lane.ours.done {
-  border-color: #2c5566;
+  border-color: #6b4630;
 }
 .lane .track {
   height: 30px;
@@ -559,7 +559,7 @@ select {
   height: 28px;
   border-radius: 50%;
   background: var(--bg);
-  border: 1px solid #2a3846;
+  border: 1px solid #3d2e25;
   font: 11px var(--mono);
   color: var(--ice);
 }
@@ -588,8 +588,8 @@ select {
   overflow: hidden;
 }
 .card.ghost {
-  border-color: #2b3f5a;
-  box-shadow: 0 0 80px #c6b5ff14;
+  border-color: #4a3428;
+  box-shadow: 0 0 80px #d9bbff14;
 }
 .card header {
   display: flex;
@@ -606,8 +606,8 @@ select {
   padding: 22px 20px;
   overflow-x: auto;
   font: 13px/1.7 var(--mono);
-  color: #c9d4de;
-  background: #05090d;
+  color: #e6d8cb;
+  background: #0d0907;
 }
 .card p {
   margin: 0;
