@@ -5,16 +5,16 @@ A 62-second, 1920×1080, 60 fps launch video made with
 official [`fframes-video` skill](https://github.com/dmtrKovalenko/fframes/tree/main/skills/fframes-video).
 Every scene boundary sits on the beat grid of the soundtrack (123 BPM).
 
-| time     | scene          | what happens                                                             |
-| -------- | -------------- | ------------------------------------------------------------------------ |
-| 0–7.6    | ColdOpen       | xterm.js DOM, then WebGL, then Wraith, each with its cost per update     |
-| 7.6–15.5 | Summon         | ember cells assemble a ghostly wordmark; "The spooky fast web terminal…" |
-| 15.5     | Arrival        | the drums hit: the wordmark punches in, "has arrived."                   |
-| 19–29    | Stack, Live    | the stack, then the live dashboard running in Wraith                     |
-| 29–31    | Break          | "How fast?" flickers through nine typefaces                              |
-| 31–39    | Race           | CPU per update against xterm.js: 15× and 3.9×; still climbing            |
-| 39–52    | Facts, TwoWays | three facts, then the drop-in and native APIs                            |
-| 52–62    | Finale         | wraithterm.com                                                           |
+| time      | scene       | what happens                                                             |
+| --------- | ----------- | ------------------------------------------------------------------------ |
+| 0–9.5     | ColdOpen    | xterm.js DOM, then a slow crossfade into Wraith, with their costs        |
+| 9.5–15.5  | Summon      | ember cells assemble a ghostly wordmark; "The spooky fast web terminal…" |
+| 15.5      | Arrival     | the drums hit: the wordmark punches in, "has arrived."                   |
+| 19–29     | Stack, Live | the stack, then the live dashboard running in Wraith                     |
+| 29–31     | Break       | "HOW FAST?" as glyph art changing every frame, rendered by Wraith        |
+| 31–40.7   | Race        | CPU per update against xterm.js: 15× and 3.9×; still climbing            |
+| 40.7–50.5 | TwoWays     | the drop-in and native APIs                                              |
+| 50.5–62   | Finale      | wraithterm.com                                                           |
 
 | path               | what                                                              |
 | ------------------ | ----------------------------------------------------------------- |
@@ -33,6 +33,7 @@ the repository root, then from this folder:
 ln -s ../node_modules node_modules
 node capture/dashboard.mjs             # footage/dashboard.mp4: the dashboard in Wraith
 node capture/compare-footage.mjs       # footage/{dom,webgl,wraith}.mp4 for the cold open
+node capture/howfast.mjs               # footage/howfast.mp4: the break, live in Wraith
 # The music is the author's own track (Architecting Tomorrow), trimmed to the first beat:
 ffmpeg -ss 0.116 -to 62.43 -i Architecting_Tomorrow.mp3 -af "afade=t=out:st=61.9:d=0.414" \
   -ar 48000 -c:a pcm_s16le footage/music.wav
