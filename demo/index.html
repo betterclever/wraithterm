@@ -21,7 +21,7 @@
       >
       <div class="nav-links">
         <a href="#numbers">Numbers</a><a href="#race">Race</a><a href="#pipeline">How it works</a
-        ><a href="#use">Use it</a>
+        ><a href="#labs">Labs</a><a href="#use">Use it</a>
       </div>
     </nav>
 
@@ -150,6 +150,7 @@
           <h2>From bytes to pixels.</h2>
           <p>Six steps, all off your page's main thread, and nothing drawn twice.</p>
         </div>
+        <div id="flow-term" class="flow-term" aria-hidden="true"></div>
         <div class="flow">
           <div class="rail" aria-hidden="true">
             <i class="packet"></i>
@@ -221,12 +222,52 @@ term.<span class="f">onResize</span>(({ cols, rows }) =&gt; {
           </article>
         </div>
       </section>
+      <section id="labs" class="labs">
+        <div class="section-head">
+          <span class="label">05 · Labs</span>
+          <h2>Take it for a spin.</h2>
+          <p>Two hands-on labs, both running the real thing in your browser.</p>
+        </div>
+        <div class="lab-cards">
+          <a class="lab-card" href="/playground.html">
+            <img
+              src="./labs/native.jpg"
+              alt="The native lab: a live dashboard in Wraith beside stats, demos and a benchmark."
+              loading="lazy"
+              width="1600"
+              height="1000"
+            />
+            <div>
+              <b>Native lab</b>
+              <p>Ghostty in a worker. Live stats, a dashboard, a log stream and a GPU benchmark.</p>
+              <span>Open the native lab →</span>
+            </div>
+          </a>
+          <a class="lab-card" href="/xterm.html">
+            <img
+              src="./labs/xterm.jpg"
+              alt="The xterm.js lab: the drop-in Terminal with search, themes and serialize."
+              loading="lazy"
+              width="1600"
+              height="1000"
+            />
+            <div>
+              <b>xterm.js lab</b>
+              <p>
+                The drop-in Terminal with the original addons: search, themes, Unicode 11,
+                serialize.
+              </p>
+              <span>Open the xterm.js lab →</span>
+            </div>
+          </a>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">
       <span class="mark">wraith<b>_</b></span>
       <p>MIT licensed. Built on Ghostty's libghostty-vt, wgpu, swash and harfrust.</p>
-      <a href="/playground.html">Playground</a><a href="/xterm.html">xterm API demo</a
+      <a href="/playground.html">Native lab</a><a href="/xterm.html">xterm.js lab</a
       ><a href="/compare.html">Benchmark harness</a>
     </footer>
     <script type="module" src="/site.ts"></script>

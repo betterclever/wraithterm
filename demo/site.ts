@@ -570,4 +570,170 @@ $('race-go').addEventListener('click', async () => {
   }
 });
 
+// "How it works", drawn by a second Wraith terminal: a rail with a packet that travels node
+// to node, and six boxes that light as it passes. The HTML list stays for screen readers.
+const STEPS = [
+  ['Your bytes', 'Output from your shell, batched into one message per burst.'],
+  ['A worker', "Everything after this runs off your page's main thread."],
+  ["Ghostty's engine", 'libghostty-vt reads every escape sequence the way Ghostty does.'],
+  ['Only what changed', 'Unchanged rows are skipped. Scrolled rows are reused, not redrawn.'],
+  ['Tiny cells', 'Each cell is 20 bytes on the GPU: its colors, its style and one glyph.'],
+  ['Two GPU passes', 'Backgrounds, then glyphs. Empty cells cost nothing.'],
+];
+function wrap(text: string, width: number) {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    if (line && (line + ' ' + word).length > width) {
+      lines.push(line);
+      line = word;
+    } else line = line ? line + ' ' + word : word;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function flowFrame(cols: number, rows: number, t: number) {
+  const n = cols * rows;
+  const ch = new Array<string>(n).fill(' ');
+  const fg = new Uint32Array(n).fill(0xf2e6da);
+  const bg = new Uint32Array(n).fill(0x0c0806);
+  const bold = new Uint8Array(n);
+  const put = (x: number, y: number, text: string, f: number, b?: number, heavy = false) => {
+    let i = 0;
+    for (const c of text) {
+      const xx = x + i++;
+      if (xx < 0 || xx >= cols || y < 0 || y >= rows) continue;
+      const k = y * cols + xx;
+      ch[k] = c;
+      fg[k] = f;
+      if (b !== undefined) bg[k] = b;
+      bold[k] = heavy ? 1 : 0;
+    }
+  };
+  const run = 6;
+  const p = (t % run) / (run * 0.8);
+  const perRow = cols >= 100 ? 6 : cols >= 60 ? 3 : 2;
+  const gap = 2;
+  const boxW = Math.floor((cols - (perRow - 1) * gap) / perRow);
+  // Centre the row: spread the leftover columns on both sides.
+  const left = Math.floor((cols - (perRow * boxW + (perRow - 1) * gap)) / 2);
+  const boxH = Math.min(
+    rows - (perRow === 6 ? 3 : 0),
+    perRow === 6 ? rows - 3 : Math.floor(rows / Math.ceil(6 / perRow)),
+  );
+  const centers = STEPS.map((_, i) => left + (i % perRow) * (boxW + gap) + Math.floor(boxW / 2));
+  // The rail, its nodes and the packet, when every step is on one row.
+  const top = perRow === 6 ? 2 : 0;
+  if (perRow === 6) {
+    const a = centers[0]!,
+      b = centers[5]!;
+    for (let x = a; x <= b; x++) put(x, 0, '─', 0x5a3d2c);
+    const head = a + Math.min(1, p) * (b - a);
+    STEPS.forEach((_, i) => {
+      const passed = p * 5 >= i;
+      const since = p * 5 - i;
+      const lit = passed && since < 1.2 && p <= 1;
+      put(centers[i]!, 0, lit ? '●' : '○', lit ? 0xffb86b : 0x6b4630, undefined, lit);
+    });
+    if (p <= 1) {
+      for (let k = 1; k <= 10; k++) {
+        const x = Math.round(head) - k;
+        if (x < a) break;
+        const glow = 1 - k / 11;
+        put(
+          x,
+          0,
+          '━',
+          ((255 << 16) | (Math.round(110 + 74 * glow) << 8) | Math.round(60 + 47 * glow)) >>> 0,
+        );
+      }
+      put(Math.round(head), 0, '◆', 0xfff3e6, undefined, true);
+    }
+  }
+  const active = p <= 1 ? Math.min(5, Math.floor(p * 5 + 0.15)) : -1;
+  STEPS.forEach(([title, body], i) => {
+    const bx = left + (i % perRow) * (boxW + gap);
+    const by = top + Math.floor(i / perRow) * (boxH + 1);
+    const on = i === active;
+    const border = on ? 0xffb86b : 0x3d2e25;
+    const panel = on ? 0x1c130d : 0x120d0a;
+    for (let y = by; y < by + boxH; y++)
+      for (let x = bx; x < bx + boxW; x++) put(x, y, ' ', 0xf2e6da, panel);
+    put(
+      bx,
+      by,
+      (on ? '┏' : '╭') + (on ? '━' : '─').repeat(boxW - 2) + (on ? '┓' : '╮'),
+      border,
+      0x0c0806,
+    );
+    for (let y = by + 1; y < by + boxH - 1; y++) {
+      put(bx, y, on ? '┃' : '│', border, 0x0c0806);
+      put(bx + boxW - 1, y, on ? '┃' : '│', border, 0x0c0806);
+    }
+    put(
+      bx,
+      by + boxH - 1,
+      (on ? '┗' : '╰') + (on ? '━' : '─').repeat(boxW - 2) + (on ? '┛' : '╯'),
+      border,
+      0x0c0806,
+    );
+    put(bx + 2, by + 1, String(i + 1).padStart(2, '0'), 0xffb86b, panel);
+    put(bx + 2, by + 2, title!.slice(0, boxW - 4), on ? 0xffd98a : 0xf5ece3, panel, true);
+    wrap(body!, boxW - 4)
+      .slice(0, boxH - 5)
+      .forEach((line, k) => put(bx + 2, by + 4 + k, line, on ? 0xd8c8bb : 0xa6958a, panel));
+  });
+  let out = '\x1b[?25l';
+  let last = '';
+  for (let y = 0; y < rows; y++) {
+    out += `\x1b[${y + 1};1H`;
+    for (let x = 0; x < cols; x++) {
+      const k = y * cols + x;
+      const style = `${bold[k] ? '1;' : ''}38;2;${fg[k]! >>> 16};${(fg[k]! >>> 8) & 255};${fg[k]! & 255};48;2;${bg[k]! >>> 16};${(bg[k]! >>> 8) & 255};${bg[k]! & 255}`;
+      if (style !== last) {
+        out += `\x1b[0;${style}m`;
+        last = style;
+      }
+      out += ch[k];
+    }
+  }
+  return out + '\x1b[0m';
+}
+
+async function pipeline() {
+  const host = $('flow-term');
+  let visible = false;
+  let term: Wraith;
+  try {
+    term = await Wraith.mount(host, {
+      fontSize: 13,
+      lineHeight: 1.25,
+      scrollback: 0,
+      theme: { background: '#0c0806', foreground: '#f2e6da', cursor: '#0c0806' },
+    });
+  } catch {
+    return; // No WebGPU: the HTML steps stay visible.
+  }
+  document.body.classList.add('has-flow-term');
+  let wakeFlow: (() => void) | undefined;
+  new IntersectionObserver(([entry]) => {
+    visible = entry!.isIntersecting;
+    if (visible) wakeFlow?.();
+  }).observe(host);
+  const start = performance.now();
+  for (;;) {
+    if (!visible || racing || document.hidden) {
+      await new Promise<void>((resolve) => {
+        wakeFlow = resolve;
+        setTimeout(resolve, 500);
+      });
+      continue;
+    }
+    const t = reduced ? 3.6 : (performance.now() - start) / 1000;
+    await term.write(flowFrame(term.cols, term.rows, t)).catch(() => {});
+    await nextFrame();
+  }
+}
+
 void hero();
+void pipeline();
