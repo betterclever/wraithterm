@@ -253,7 +253,7 @@ try {
       const submitted = compositor.frames;
       let rejected = false;
       try {
-        compositor.render_staged(compositor.staging_words / 8 + 1, 0);
+        compositor.render_staged(compositor.staging_words / 5 + 1, 0);
       } catch (error) {
         rejected = String(error).includes('capacity');
       }
@@ -294,7 +294,7 @@ try {
         return upload(...args);
       };
       compositor.render_staged = (count, start) => {
-        observed = Array.from(renderer.staging.subarray(0, count * 8));
+        observed = Array.from(renderer.staging.subarray(0, count * 5));
         return staged(count, start);
       };
       try {

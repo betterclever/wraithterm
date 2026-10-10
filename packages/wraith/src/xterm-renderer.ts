@@ -13,6 +13,8 @@ import {
   type Colors,
 } from './xterm-internals.js';
 export type RendererState = 'initializing' | 'webgpu' | 'dom' | 'external';
+/** u32 words per packed GPU cell: fg, bg, underline, flags, glyph. */
+export const CELL_WORDS = 5;
 const rgb = (value: number) => ((value & 255) << 16) | (value & 0xff00) | ((value >>> 16) & 255);
 const rgba = (value: number) => rgb(value >>> 8);
 function wordColor(word: number, foreground: boolean, colors: Colors, brighten: boolean): number {
@@ -55,7 +57,6 @@ export class XtermRenderer implements Renderer {
   private font = '';
   private full = true;
   private staging = new Uint32Array(0);
-  private rects = new Float32Array(0);
   private readonly cell: Cell;
   private view = new Float32Array(4);
   private frame = new Uint32Array(8);
@@ -269,7 +270,7 @@ export class XtermRenderer implements Renderer {
       this.frame[5] = rgba(colors.cursorAccent.rgba);
       this.frame[7] =
         255 | (Math.max(1, Math.round(o.cursorWidth * this.core._coreBrowserService.dpr)) << 8);
-      if (!this.gpu!.render_staged(packed.length / 8, start * this.terminal.cols)) {
+      if (!this.gpu!.render_staged(packed.length / CELL_WORDS, start * this.terminal.cols)) {
         this.invalidate();
         return;
       }
@@ -291,7 +292,6 @@ export class XtermRenderer implements Renderer {
       this.staging.length !== words
     ) {
       this.staging = new Uint32Array(buffer, pointer, words);
-      this.rects = new Float32Array(buffer, pointer, words);
       this.view = new Float32Array(buffer, pointer + words * 4, 4);
       this.frame = new Uint32Array(buffer, pointer + (words + 4) * 4, 8);
     }
@@ -312,12 +312,12 @@ export class XtermRenderer implements Renderer {
   private pack(start: number, end: number): Uint32Array {
     const { cols, buffer, options } = this.terminal;
     const b = buffer.active,
-      c = this.core._themeService.colors;
-    const count = (end - start + 1) * cols * 8;
+      c = this.core._themeService.colors,
+      atlas = this.atlas!;
+    const count = (end - start + 1) * cols * CELL_WORDS;
     this.refreshStaging();
     if (count > this.staging.length) throw new Error('Packed rows exceed configured staging');
-    let values = this.staging.subarray(0, count);
-    let rects = this.rects;
+    let values = this.staging;
     const hasSelection = !!this.selectedStart && !!this.selectedEnd;
     const selectionBackground = rgba(
       (this.core._coreBrowserService.isFocused
@@ -328,140 +328,126 @@ export class XtermRenderer implements Renderer {
     const selectionForeground = c.selectionForeground
       ? rgba(c.selectionForeground.rgba)
       : undefined;
+    const brighten = !!options.drawBoldTextInBrightColors;
     // Attribute runs are common even when every glyph differs. Keep just the
     // previous decoded style, so RGB churn cannot grow or thrash a style cache.
-    let lastFg: number | undefined,
-      lastBg: number | undefined,
-      cached = false;
-    let styleFg = 0,
+    // Words are unsigned, so -1 never matches a real attribute word.
+    let lastFg = -1,
+      lastBg = -1,
+      styleFg = 0,
       styleBg = 0,
       styleUnderline = 0,
-      styleFlags = 0,
-      underlineDefault = false;
+      styleFlags = 0;
     for (let y = start; y <= end; y++) {
-      const line = b.getLine(b.viewportY + y);
+      const row = b.viewportY + y;
+      const line = b.getLine(row);
       const words = packedRow(line, cols);
-      for (let x = 0; x < cols; x++) {
-        const i = ((y - start) * cols + x) * 8;
-        let content = words?.[x * 3],
-          fgWord = words?.[x * 3 + 1],
-          bgWord = words?.[x * 3 + 2];
-        const direct =
-          words !== undefined &&
-          !(bgWord! & CELL_HAS_EXTENDED) &&
-          !(content! & CELL_IS_COMBINED) &&
-          content! >>> 22 <= 2 &&
-          (content! & CELL_CODEPOINT_MASK) <= 0x10ffff;
-        const data = direct ? undefined : (line?.getCell(x, this.cell) as Cell | undefined);
-        if (!direct && !data) {
+      const selectable = hasSelection && this.rowSelected(row);
+      for (let x = 0, i = (y - start) * cols * CELL_WORDS; x < cols; x++, i += CELL_WORDS) {
+        if (words !== undefined) {
+          const content = words[x * 3]!,
+            fgWord = words[x * 3 + 1]!,
+            bgWord = words[x * 3 + 2]!;
+          // Ordinary scalar cells decode straight from xterm's row storage.
+          // Combined text, extended attributes and unknown widths use getters.
+          if (
+            !(bgWord & CELL_HAS_EXTENDED) &&
+            !(content & CELL_IS_COMBINED) &&
+            content >>> 22 <= 2 &&
+            (content & CELL_CODEPOINT_MASK) <= 0x10ffff
+          ) {
+            if (fgWord !== lastFg || bgWord !== lastBg) {
+              const inverse = !!(fgWord & 0x4000000);
+              styleFg = wordColor(
+                inverse ? bgWord : fgWord,
+                !inverse,
+                c,
+                !!(fgWord & 0x8000000) && brighten,
+              );
+              styleBg = wordColor(inverse ? fgWord : bgWord, inverse, c, false);
+              styleUnderline = fgWord & 0x3000000 ? wordColor(fgWord, true, c, false) : -1;
+              styleFlags =
+                ((fgWord >>> 27) & 1) |
+                (((bgWord >>> 26) & 1) << 1) |
+                (((bgWord >>> 27) & 1) << 2) |
+                (((fgWord >>> 30) & 1) << 4) |
+                ((fgWord >>> 31) << 5) |
+                (((bgWord >>> 30) & 1) << 6) |
+                (((fgWord >>> 28) & 1) << 8);
+              lastFg = fgWord;
+              lastBg = bgWord;
+            }
+            let fg = styleFg,
+              bg = styleBg;
+            if (selectable && this.selected(x, row)) {
+              bg = selectionBackground;
+              if (selectionForeground !== undefined) fg = selectionForeground;
+            }
+            const width = content >>> 22;
+            values[i] = fg;
+            values[i + 1] = bg;
+            values[i + 2] = styleUnderline < 0 ? fg : styleUnderline;
+            values[i + 3] = width === 2 ? styleFlags | 65536 : styleFlags;
+            values[i + 4] = width ? atlas.scalar(content & CELL_CODEPOINT_MASK, styleFlags & 3) : 0;
+            continue;
+          }
+        }
+        lastFg = lastBg = -1;
+        const data = line?.getCell(x, this.cell) as Cell | undefined;
+        if (!data) {
           values[i] = rgba(c.foreground.rgba);
           values[i + 1] = rgba(c.background.rgba);
-          values.fill(0, i + 2, i + 8);
+          values.fill(0, i + 2, i + CELL_WORDS);
           continue;
         }
-        if (!direct) {
-          content = data!.content;
-          fgWord = data!.fg;
-          bgWord = data!.bg;
-        }
-        const cacheable =
-          typeof fgWord === 'number' && typeof bgWord === 'number' && !(bgWord & CELL_HAS_EXTENDED);
-        if (!cached || !cacheable || fgWord !== lastFg || bgWord !== lastBg) {
-          if (direct) {
-            const inverse = !!(fgWord! & 0x4000000);
-            styleFg = wordColor(
-              inverse ? bgWord! : fgWord!,
-              !inverse,
-              c,
-              !!(fgWord! & 0x8000000) && !!options.drawBoldTextInBrightColors,
-            );
-            styleBg = wordColor(inverse ? fgWord! : bgWord!, inverse, c, false);
-            underlineDefault = !(fgWord! & 0x3000000);
-            styleUnderline = underlineDefault ? 0 : wordColor(fgWord!, true, c, false);
-            styleFlags =
-              ((fgWord! >>> 27) & 1) |
-              (((bgWord! >>> 26) & 1) << 1) |
-              (((bgWord! >>> 27) & 1) << 2) |
-              (((fgWord! >>> 30) & 1) << 4) |
-              ((fgWord! >>> 31) << 5) |
-              (((bgWord! >>> 30) & 1) << 6) |
-              (((fgWord! >>> 28) & 1) << 8);
-          } else {
-            styleFg = resolveColor(
-              data!,
-              !data!.isInverse(),
-              true,
-              c,
-              !!options.drawBoldTextInBrightColors,
-            );
-            styleBg = resolveColor(data!, !!data!.isInverse(), false, c, false);
-            underlineDefault = !data!.isUnderlineColorRGB() && !data!.isUnderlineColorPalette();
-            styleUnderline = data!.isUnderlineColorRGB()
-              ? rgb(data!.getUnderlineColor())
-              : data!.isUnderlineColorPalette()
-                ? rgba(c.ansi[data!.getUnderlineColor()]!.rgba)
-                : 0;
-            styleFlags =
-              +!!data!.isBold() |
-              (+!!data!.isItalic() << 1) |
-              (+!!data!.isDim() << 2) |
-              (+!!data!.isInvisible() << 4) |
-              (+!!data!.isStrikethrough() << 5) |
-              (+!!data!.isOverline() << 6) |
-              (data!.getUnderlineStyle() << 8);
-          }
-          lastFg = fgWord;
-          lastBg = bgWord;
-          cached = cacheable;
-        }
-        let fg = styleFg,
-          bg = styleBg;
-        if (hasSelection && this.selected(x, b.viewportY + y)) {
+        let fg = resolveColor(data, !data.isInverse(), true, c, brighten),
+          bg = resolveColor(data, !!data.isInverse(), false, c, false);
+        const flags =
+          +!!data.isBold() |
+          (+!!data.isItalic() << 1) |
+          (+!!data.isDim() << 2) |
+          (+!!data.isInvisible() << 4) |
+          (+!!data.isStrikethrough() << 5) |
+          (+!!data.isOverline() << 6) |
+          (data.getUnderlineStyle() << 8);
+        if (selectable && this.selected(x, row)) {
           bg = selectionBackground;
           if (selectionForeground !== undefined) fg = selectionForeground;
         }
-        const width = direct ? content! >>> 22 : data!.getWidth();
-        const codepoint =
-          typeof content === 'number' && !(content & CELL_IS_COMBINED)
-            ? content & CELL_CODEPOINT_MASK
-            : undefined;
-        const bold = !!(styleFlags & 1),
-          italic = !!(styleFlags & 2);
-        const tile = !width
-          ? undefined
-          : codepoint !== undefined && codepoint <= 0x10ffff
-            ? this.atlas!.scalar(codepoint, bold, italic)
-            : this.atlas!.tile(data!.getChars(), bold, italic);
+        const width = data.getWidth();
+        const content = data.content;
         values[i] = fg;
         values[i + 1] = bg;
-        values[i + 2] = underlineDefault ? fg : styleUnderline;
-        values[i + 3] = styleFlags | ((width === 2 ? 1 : 0) << 16) | (+!!tile?.colored << 19);
-        if (tile) {
-          rects[i + 4] = tile.x;
-          rects[i + 5] = tile.y;
-          rects[i + 6] = tile.width;
-          rects[i + 7] = tile.height;
-        } else {
-          // Blank and wide continuation cells must overwrite the last glyph.
-          // Populated cells already write every word, so avoid clearing the
-          // entire staging buffer before packing each frame.
-          values[i + 4] = 0;
-          values[i + 5] = 0;
-          values[i + 6] = 0;
-          values[i + 7] = 0;
-        }
+        values[i + 2] = data.isUnderlineColorRGB()
+          ? rgb(data.getUnderlineColor())
+          : data.isUnderlineColorPalette()
+            ? rgba(c.ansi[data.getUnderlineColor()]!.rgba)
+            : fg;
+        values[i + 3] = width === 2 ? flags | 65536 : flags;
+        values[i + 4] = !width
+          ? 0
+          : typeof content === 'number' &&
+              !(content & CELL_IS_COMBINED) &&
+              (content & CELL_CODEPOINT_MASK) <= 0x10ffff
+            ? atlas.scalar(content & CELL_CODEPOINT_MASK, flags & 3)
+            : atlas.tile(data.getChars(), flags & 3);
       }
       if (values.buffer !== this.memory!.buffer) {
         // A cold glyph upload can grow Wasm memory mid-row and detach views.
         // Earlier writes survive at the same addresses; repeat this row with
         // fresh views to replace any writes skipped after detachment.
         this.refreshStaging();
-        values = this.staging.subarray(0, count);
-        rects = this.rects;
+        values = this.staging;
+        lastFg = lastBg = -1;
         y--;
       }
     }
-    return values;
+    return values.subarray(0, count);
+  }
+  private rowSelected(row: number): boolean {
+    const a = this.selectedStart!,
+      b = this.selectedEnd!;
+    return row >= Math.min(a[1], b[1]) && row <= Math.max(a[1], b[1]);
   }
   handleDevicePixelRatioChange(): void {
     this.fallback.handleDevicePixelRatioChange();

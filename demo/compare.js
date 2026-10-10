@@ -490,6 +490,30 @@ window.comparison = {
   run,
   profile,
   utilization,
+  /** Render one fixture on either GPU path for pixel differentials. */
+  async fixture({ data, options = {}, selection, focus = true }) {
+    invariant(['wraith', 'ghostty'].includes(active?.type), 'Fixture requires a GPU renderer');
+    const a = active;
+    if (a.type === 'ghostty') {
+      a.engine.write(encoder.encode('\x1bc' + data));
+      if (selection) a.engine.select(...selection);
+    } else {
+      a.terminal.reset();
+      a.terminal.options = options;
+      if (focus) a.terminal.focus();
+      else a.terminal.blur();
+      a.parse(encoder.encode(data));
+      if (selection) a.terminal.select(selection[0], selection[1], selection[2]);
+      else a.terminal.clearSelection();
+      await nextFrame();
+    }
+    a.draw();
+    await a.finish();
+    a.assert?.();
+    await nextFrame();
+    await nextFrame();
+    return a.text();
+  },
   async packedFixture({
     data,
     options = {},

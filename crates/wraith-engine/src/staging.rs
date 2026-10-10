@@ -2,6 +2,8 @@
 //! Slots use interior mutability because JS views can outlive an immutable
 //! compositor borrow. Readers must not overlap JS writes to the same slots.
 use std::{cell::UnsafeCell, slice};
+/// u32 words per packed cell, matching the renderer's GPU cell.
+const CELL_WORDS: usize = 5;
 
 pub struct Staging {
     words: Vec<UnsafeCell<u32>>,
@@ -21,7 +23,7 @@ impl Staging {
     }
     pub fn resize(&mut self, cells: usize) -> Result<(), String> {
         let words = cells
-            .checked_mul(8)
+            .checked_mul(CELL_WORDS)
             .and_then(|n| n.checked_add(12))
             .filter(|n| u32::try_from(*n).is_ok())
             .ok_or("compositor staging size overflow")?;
@@ -32,7 +34,7 @@ impl Staging {
         self.cells = cells;
         // A resized uniform region may overlap old cells. Reset every slot,
         // including reserved fields that JavaScript does not update per frame.
-        for word in &mut self.words[cells * 8..] {
+        for word in &mut self.words[cells * CELL_WORDS..] {
             *word.get_mut() = 0;
         }
         Ok(())
@@ -41,7 +43,7 @@ impl Staging {
         self.words.as_ptr().cast::<u32>().cast_mut()
     }
     pub fn cell_words(&self) -> usize {
-        self.cells * 8
+        self.cells * CELL_WORDS
     }
     pub fn read(&self, cells: usize) -> Result<StagedFrame<'_>, String> {
         if cells > self.cells {
@@ -54,7 +56,7 @@ impl Staging {
         // JS writes paused until these borrowed slices have been consumed.
         unsafe {
             Ok(StagedFrame {
-                cells: slice::from_raw_parts(pointer, cells * 8),
+                cells: slice::from_raw_parts(pointer, cells * CELL_WORDS),
                 dimensions: slice::from_raw_parts(pointer.add(self.cell_words()).cast(), 4),
                 frame: slice::from_raw_parts(pointer.add(self.cell_words() + 4), 8),
             })
@@ -75,11 +77,11 @@ mod tests {
         // outstanding read borrow. These writes model the browser's views.
         unsafe {
             *pointer = 0xff112233;
-            *pointer.add(16) = 9.5_f32.to_bits();
-            *pointer.add(20) = 2;
+            *pointer.add(10) = 9.5_f32.to_bits();
+            *pointer.add(14) = 2;
         }
         let frame = staging.read(1).unwrap();
-        assert_eq!(frame.cells.len(), 8);
+        assert_eq!(frame.cells.len(), 5);
         assert_eq!(frame.cells[0], 0xff112233);
         assert_eq!(frame.dimensions, &[9.5, 0., 0., 0.]);
         assert_eq!(frame.frame, &[2, 0, 0, 0, 0, 0, 0, 0]);
@@ -91,9 +93,9 @@ mod tests {
         staging.resize(2).unwrap();
         assert!(staging.read(3).is_err());
         assert!(staging.resize(usize::MAX).is_err());
-        assert_eq!(staging.cell_words(), 16);
+        assert_eq!(staging.cell_words(), 10);
         assert_eq!(staging.read(0).unwrap().cells.len(), 0);
-        assert_eq!(staging.read(2).unwrap().cells, &[0; 16]);
+        assert_eq!(staging.read(2).unwrap().cells, &[0; 10]);
     }
 
     #[test]
@@ -108,7 +110,7 @@ mod tests {
         }
         staging.resize(1).unwrap();
         let frame = staging.read(1).unwrap();
-        assert_eq!(frame.cells, &[u32::MAX; 8]);
+        assert_eq!(frame.cells, &[u32::MAX; 5]);
         assert_eq!(frame.dimensions, &[0.; 4]);
         assert_eq!(frame.frame, &[0; 8]);
     }

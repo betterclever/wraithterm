@@ -215,15 +215,16 @@ fn shaders_validate_and_buffer_layout_matches() {
 fn font_rasterization_and_warm_cache() {
     let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
     let mut atlas = Atlas::new(data, 16., 1.3).unwrap();
-    let cell = wraith_engine::core::Cell {
-        text: "e\u{301}".into(),
-        ..Default::default()
-    };
+    let cell = wraith_engine::core::Cell::with_text("e\u{301}");
     let first = atlas.tile(&cell);
-    assert!(first.rect[2] > 0.);
+    assert_ne!(first & wraith_engine::text::GLYPH_SLOT, 0);
+    assert!(
+        first >> 20 & 2047 > 0,
+        "combining cluster records its ink extent"
+    );
     assert!(atlas.uploads[0].pixels.iter().any(|p| *p != 0));
     let second = atlas.tile(&cell);
-    assert_eq!(first.rect, second.rect);
+    assert_eq!(first, second);
     assert_eq!(atlas.uploads.len(), 1);
     assert_eq!(atlas.hits, 1);
 }
@@ -300,4 +301,40 @@ fn sgr_mouse_press_and_release_are_byte_exact() {
         .events()
         .iter()
         .any(|(k, d)| *k == 0 && d == b"\x1b[<0;3;2m"));
+}
+#[test]
+fn scalar_table_and_cluster_cache_return_stable_glyph_words() {
+    let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+    let mut atlas = Atlas::new(data, 16., 1.3).unwrap();
+    let a = wraith_engine::core::Cell::with_text("A");
+    let space = wraith_engine::core::Cell::with_text(" ");
+    let crab = wraith_engine::core::Cell::with_text("\u{1f980}");
+    assert_eq!(a.scalar, 'A' as u32);
+    assert_eq!(atlas.tile(&space), 0);
+    let first = atlas.tile(&a);
+    let mut bold = a.clone();
+    bold.flags = 1;
+    let heavy = atlas.tile(&bold);
+    assert_ne!(first, heavy, "styles occupy separate slots");
+    assert_eq!(atlas.tile(&a), first);
+    let emoji = atlas.tile(&crab);
+    assert_eq!(atlas.tile(&crab), emoji);
+    assert_eq!(atlas.hits, 2);
+    assert_eq!(atlas.count(), 3);
+    // Ink never exceeds the tile, which is two cells plus an italic margin.
+    for glyph in [first, heavy, emoji] {
+        assert!(glyph >> 20 & 2047 <= atlas.tile_width);
+    }
+}
+#[test]
+fn blink_count_tracks_visible_cells() {
+    let mut c = term(10, 2);
+    c.write(b"\x1b[5mAB\x1b[0mC");
+    c.update().unwrap();
+    let blinking = c.cells().iter().filter(|cell| cell.flags & 8 != 0).count();
+    assert_eq!(blinking, 2);
+    assert_eq!(c.blinking(), 2);
+    c.write(b"\x1b[H\x1b[2K");
+    c.update().unwrap();
+    assert_eq!(c.blinking(), 0);
 }

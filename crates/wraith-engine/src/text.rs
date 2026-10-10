@@ -1,7 +1,10 @@
 //! Rasterization happens on cache misses. Warm frames never shape or rasterize.
 use crate::core::Cell;
 use harfrust::{FontRef as ShapeFont, ShapeOptions, ShaperData, UnicodeBuffer};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::{BuildHasherDefault, Hasher},
+};
 use swash::{
     scale::{image::Content, Render, ScaleContext, Source, StrikeWith},
     zeno::{Format, Transform},
@@ -9,6 +12,50 @@ use swash::{
 };
 
 pub const ATLAS_SIZE: u32 = 2048;
+/// Scalars below this bound (ASCII through braille) resolve through a flat
+/// table indexed by `scalar * 4 + style`, with no hashing on warm frames.
+const SCALAR_TABLE: u32 = 0x3000;
+/// A glyph word: atlas slot + 1 in bits 0..20, horizontal ink extent in pixels
+/// in bits 20..31 and the color-glyph bit in bit 31. Zero means no glyph.
+pub const GLYPH_SLOT: u32 = 0xf_ffff;
+const MAX_SLOTS: u32 = GLYPH_SLOT - 1;
+pub fn glyph_word(slot: u32, ink: u32, colored: bool) -> u32 {
+    (slot + 1) | (ink.min(2047) << 20) | ((colored as u32) << 31)
+}
+/// Rightmost covered column + 1 of a tile's RGBA pixels.
+pub fn ink_width(pixels: &[u8], width: u32) -> u32 {
+    let mut ink = 0;
+    for row in pixels.chunks_exact(width as usize * 4) {
+        for x in (ink..width).rev() {
+            if row[x as usize * 4 + 3] != 0 {
+                ink = x + 1;
+                break;
+            }
+        }
+    }
+    ink
+}
+/// FNV-style multiply hasher: warm lookups hash short grapheme strings, where
+/// SipHash's DoS resistance buys nothing and costs most of the lookup.
+#[derive(Default)]
+struct Fx(u64);
+impl Hasher for Fx {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        for chunk in bytes.chunks(8) {
+            let mut word = [0; 8];
+            word[..chunk.len()].copy_from_slice(chunk);
+            self.0 = (self.0.rotate_left(5) ^ u64::from_le_bytes(word))
+                .wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+        }
+    }
+    fn write_u8(&mut self, i: u8) {
+        self.write(&[i]);
+    }
+}
+type FxMap<K, V> = HashMap<K, V, BuildHasherDefault<Fx>>;
 pub struct Font {
     data: Vec<u8>,
     key: CacheKey,
@@ -37,11 +84,6 @@ impl Font {
     }
 }
 
-#[derive(Clone, Copy, Default)]
-pub struct Tile {
-    pub rect: [f32; 4],
-    pub colored: bool,
-}
 #[derive(Hash, Eq, PartialEq)]
 struct Key<'a> {
     text: &'a str,
@@ -64,7 +106,8 @@ pub struct Upload {
 pub struct Atlas {
     fonts: Vec<Font>,
     context: ScaleContext,
-    cache: HashMap<String, [Option<Tile>; 4]>,
+    cache: FxMap<String, [u32; 4]>,
+    scalars: Vec<u32>,
     pub uploads: Vec<Upload>,
     pub cell_width: u32,
     pub cell_height: u32,
@@ -86,7 +129,8 @@ impl Atlas {
         Self {
             fonts: Vec::new(),
             context: ScaleContext::new(),
-            cache: HashMap::new(),
+            cache: FxMap::default(),
+            scalars: vec![0; SCALAR_TABLE as usize * 4],
             uploads: Vec::new(),
             cell_width: 1,
             cell_height: 1,
@@ -95,7 +139,7 @@ impl Atlas {
             font_size: 14.,
             baseline: 0.,
             next: 0,
-            capacity: ATLAS_SIZE * ATLAS_SIZE,
+            capacity: MAX_SLOTS,
             hits: 0,
             misses: 0,
             resets: 0,
@@ -125,11 +169,12 @@ impl Atlas {
             ((ch as f32 - (metrics.ascent + metrics.descent)) * 0.5 + metrics.ascent).round();
         let tw = cw * 2 + 4;
         let th = ch;
-        let capacity = (ATLAS_SIZE / tw) * (ATLAS_SIZE / th);
+        let capacity = ((ATLAS_SIZE / tw) * (ATLAS_SIZE / th)).min(MAX_SLOTS);
         Ok(Self {
             fonts: vec![font],
             context: ScaleContext::new(),
-            cache: HashMap::new(),
+            cache: FxMap::default(),
+            scalars: vec![0; SCALAR_TABLE as usize * 4],
             uploads: Vec::new(),
             cell_width: cw,
             cell_height: ch,
@@ -144,6 +189,10 @@ impl Atlas {
             resets: 0,
         })
     }
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn is_external(&self) -> bool {
+        self.fonts.is_empty()
+    }
     pub fn add_font(&mut self, bytes: Vec<u8>) -> Result<(), String> {
         self.fonts.push(Font::new(bytes)?);
         self.reset();
@@ -151,6 +200,7 @@ impl Atlas {
     }
     fn reset(&mut self) {
         self.cache.clear();
+        self.scalars.fill(0);
         self.next = 0;
         self.uploads.clear();
         self.resets += 1;
@@ -158,34 +208,27 @@ impl Atlas {
     /// Clear the atlas before references become stale. Rebuild all visible rows
     /// in the same frame. Scrollback remains in Ghostty, independent of the atlas.
     pub fn begin(&mut self, cells: &[Cell], dirty: &mut [bool], cols: usize) -> Result<(), String> {
-        let dirty_count = cells
-            .iter()
-            .enumerate()
-            .filter(|(i, c)| dirty[i / cols] && !c.text.is_empty() && c.text != " ")
-            .count();
+        let drawable = |c: &&Cell| !c.text.is_empty() && c.text != " ";
+        let dirty_cells = || {
+            cells
+                .chunks(cols)
+                .zip(dirty.iter())
+                .filter(|(_, d)| **d)
+                .flat_map(|(row, _)| row)
+        };
+        let dirty_count = dirty_cells().filter(drawable).count();
         if self.next as usize + dirty_count <= self.capacity as usize {
             return Ok(());
         }
-        let missing: HashSet<_> = cells
-            .iter()
-            .enumerate()
-            .filter(|(i, c)| dirty[i / cols] && !c.text.is_empty() && c.text != " ")
-            .filter(|(_, c)| {
-                self.cache
-                    .get(c.text.as_str())
-                    .and_then(|v| v[(c.flags & 3) as usize])
-                    .is_none()
-            })
+        let missing: HashSet<_> = dirty_cells()
+            .filter(drawable)
+            .filter(|c| self.cached(c) == 0)
             // Cells remain borrowed for this preflight; a warm full viewport
             // allocates neither glyph strings nor a missing-glyph hash table.
-            .map(|(_, c)| Key::cell(c))
+            .map(Key::cell)
             .collect();
         if self.next as usize + missing.len() > self.capacity as usize {
-            let visible: HashSet<_> = cells
-                .iter()
-                .filter(|c| !c.text.is_empty() && c.text != " ")
-                .map(Key::cell)
-                .collect();
+            let visible: HashSet<_> = cells.iter().filter(drawable).map(Key::cell).collect();
             if visible.len() > self.capacity as usize {
                 return Err(
                     "visible glyph set exceeds atlas capacity; reduce font size or grid size"
@@ -197,25 +240,31 @@ impl Atlas {
         }
         Ok(())
     }
-    pub fn tile(&mut self, cell: &Cell) -> Tile {
-        if cell.text.is_empty() || cell.text == " " {
-            return Tile::default();
-        }
-        // Borrowed String lookup avoids a fresh allocation for every warm cell.
+    fn cached(&self, cell: &Cell) -> u32 {
         let style = (cell.flags & 3) as usize;
-        if let Some(tile) = self
-            .cache
+        if cell.scalar != 0 && cell.scalar < SCALAR_TABLE {
+            return self.scalars[cell.scalar as usize * 4 + style];
+        }
+        self.cache
             .get(cell.text.as_str())
-            .and_then(|variants| variants[style])
-        {
+            .map_or(0, |variants| variants[style])
+    }
+    /// The cell's glyph word, rasterizing and scheduling an upload on a miss.
+    pub fn tile(&mut self, cell: &Cell) -> u32 {
+        if cell.scalar == 32 || cell.text.is_empty() || cell.text == " " {
+            return 0;
+        }
+        let style = (cell.flags & 3) as usize;
+        let glyph = self.cached(cell);
+        if glyph != 0 {
             self.hits += 1;
-            return tile;
+            return glyph;
         }
         self.misses += 1;
         // Block elements and braille are geometry, not type: drawn to fill the cell exactly, so neighbours tile with no seam at any
         // font or line height (a font's block glyph fills only the font's own line). Terminals do the same (xterm customGlyphs, Ghostty sprites).
         if let Some(pixels) = self.procedural(&cell.text) {
-            return self.place(&cell.text, style, pixels, false);
+            return self.place(cell, style, pixels, false);
         }
         let font_index = self
             .fonts
@@ -304,24 +353,20 @@ impl Atlas {
             }
             pen += pos.x_advance as f32 * factor;
         }
-        self.place(&cell.text, style, pixels, colored)
+        self.place(cell, style, pixels, colored)
     }
-    fn place(&mut self, text: &str, style: usize, pixels: Vec<u8>, colored: bool) -> Tile {
+    fn place(&mut self, cell: &Cell, style: usize, pixels: Vec<u8>, colored: bool) -> u32 {
         let x = (self.next % (ATLAS_SIZE / self.tile_width)) * self.tile_width;
         let y = (self.next / (ATLAS_SIZE / self.tile_width)) * self.tile_height;
+        let glyph = glyph_word(self.next, ink_width(&pixels, self.tile_width), colored);
         self.next += 1;
-        let tile = Tile {
-            rect: [
-                x as f32,
-                y as f32,
-                self.tile_width as f32,
-                self.tile_height as f32,
-            ],
-            colored,
-        };
         self.uploads.push(Upload { x, y, pixels });
-        self.cache.entry(text.to_string()).or_insert([None; 4])[style] = Some(tile);
-        tile
+        if cell.scalar != 0 && cell.scalar < SCALAR_TABLE {
+            self.scalars[cell.scalar as usize * 4 + style] = glyph;
+        } else {
+            self.cache.entry(cell.text.clone()).or_insert([0; 4])[style] = glyph;
+        }
+        glyph
     }
     /// Coverage for U+2580..U+259F (block elements) and U+2800..U+28FF (braille), filling exactly one cell; None for anything else.
     fn procedural(&self, text: &str) -> Option<Vec<u8>> {
@@ -427,10 +472,7 @@ mod tests {
         atlas
     }
     fn cell(text: &str) -> Cell {
-        Cell {
-            text: text.into(),
-            ..Default::default()
-        }
+        Cell::with_text(text)
     }
 
     #[test]
@@ -443,7 +485,7 @@ mod tests {
         atlas.begin(&cells, &mut dirty, 4).unwrap();
         assert_eq!(atlas.resets, 0);
         assert_eq!(atlas.count(), 1);
-        assert_eq!(atlas.tile(&cells[2]).rect, tile.rect);
+        assert_eq!(atlas.tile(&cells[2]), tile);
     }
 
     #[test]

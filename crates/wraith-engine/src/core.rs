@@ -25,11 +25,30 @@ pub struct Frame {
 #[derive(Default, Clone, Debug)]
 pub struct Cell {
     pub text: String,
+    /// The Unicode scalar when `text` is exactly one scalar, otherwise zero.
+    pub scalar: u32,
     pub foreground: u32,
     pub background: u32,
     pub underline: u32,
     pub flags: u32,
 }
+impl Cell {
+    pub fn with_text(text: &str) -> Self {
+        let mut cell = Self::default();
+        cell.set_text(text);
+        cell
+    }
+    fn set_text(&mut self, text: &str) {
+        self.text.clear();
+        self.text.push_str(text);
+        let mut chars = text.chars();
+        self.scalar = match (chars.next(), chars.next()) {
+            (Some(c), None) => c as u32,
+            _ => 0,
+        };
+    }
+}
+pub(crate) const BLINK: u32 = 8;
 
 #[derive(Default)]
 pub(crate) struct State {
@@ -38,6 +57,9 @@ pub(crate) struct State {
     pub cells: Vec<Cell>,
     pub dirty: Vec<bool>,
     pub events: Vec<(u32, Vec<u8>)>,
+    /// Visible cells with the blink attribute, maintained as cells are copied
+    /// so idle frames need not scan the grid.
+    pub blinking: usize,
 }
 
 /// Owns the stable callback allocation through a raw pointer. Unlike keeping a
@@ -134,6 +156,7 @@ impl Core {
             cells: vec![Cell::default(); cols as usize * rows as usize],
             dirty: vec![true; rows.into()],
             events: Vec::new(),
+            blinking: 0,
         });
         // Ghostty borrows the stable allocation only for synchronous callbacks
         // and never after bridge_free. StateOwner then releases the allocation.
@@ -155,6 +178,9 @@ impl Core {
     }
     pub fn cells(&self) -> &[Cell] {
         &self.state.cells
+    }
+    pub fn blinking(&self) -> usize {
+        self.state.blinking
     }
     pub fn dirty_rows(&self) -> &[bool] {
         &self.state.dirty
@@ -185,6 +211,12 @@ impl Core {
         self.state
             .cells
             .resize(cols as usize * rows as usize, Cell::default());
+        self.state.blinking = self
+            .state
+            .cells
+            .iter()
+            .filter(|c| c.flags & BLINK != 0)
+            .count();
         self.state.dirty = vec![true; rows.into()];
         Ok(())
     }
@@ -381,12 +413,17 @@ pub unsafe extern "C" fn wraith_cell(
         return;
     }
     let cell = &mut state.cells[y as usize * state.cols + x as usize];
-    cell.text.clear();
-    if len > 0 {
-        cell.text.push_str(&String::from_utf8_lossy(unsafe {
-            std::slice::from_raw_parts(ptr, len)
-        }));
+    let bytes = if len == 0 {
+        &[][..]
+    } else {
+        unsafe { std::slice::from_raw_parts(ptr, len) }
+    };
+    match std::str::from_utf8(bytes) {
+        Ok(text) => cell.set_text(text),
+        Err(_) => cell.set_text(&String::from_utf8_lossy(bytes)),
     }
+    state.blinking += (flags & BLINK != 0) as usize;
+    state.blinking -= (cell.flags & BLINK != 0) as usize;
     cell.foreground = foreground;
     cell.background = background;
     cell.underline = underline;

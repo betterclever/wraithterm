@@ -12,8 +12,12 @@ struct GpuCell {
     background: u32,
     underline: u32,
     flags: u32,
-    atlas: [f32; 4],
+    glyph: u32,
 }
+/// Bytes and u32 words per packed GPU cell; terminal.wgsl's `Cell` matches.
+pub const CELL_BYTES: usize = std::mem::size_of::<GpuCell>();
+pub const CELL_WORDS: usize = CELL_BYTES / 4;
+const _: () = assert!(CELL_BYTES == 20);
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Uniforms {
@@ -35,7 +39,10 @@ pub struct Renderer {
     texture: wgpu::Texture,
     atlas_view: wgpu::TextureView,
     sampler: wgpu::Sampler,
+    /// Packed native cells. The external compositor packs into its own
+    /// staging, so this stays empty there and `cell_count` sizes the draw.
     cells: Vec<GpuCell>,
+    cell_count: usize,
     pub atlas: Atlas,
     pub frames: u64,
     pub upload_bytes: u64,
@@ -177,10 +184,15 @@ impl Renderer {
             min_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
-        let cells = vec![GpuCell::default(); cols as usize * rows as usize];
+        let cell_count = cols as usize * rows as usize;
+        let cells = if atlas.is_external() {
+            Vec::new()
+        } else {
+            vec![GpuCell::default(); cell_count]
+        };
         let cell_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith packed cells"),
-            size: (cells.len() * std::mem::size_of::<GpuCell>()) as u64,
+            size: (cell_count * CELL_BYTES) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -217,6 +229,7 @@ impl Renderer {
             atlas_view,
             sampler,
             cells,
+            cell_count,
             atlas,
             frames: 0,
             upload_bytes: 0,
@@ -263,11 +276,11 @@ impl Renderer {
         self.canvas.set_width(self.config.width);
         self.canvas.set_height(self.config.height);
         self.surface.configure(&self.device, &self.config);
-        self.cells
-            .resize(cols as usize * rows as usize, GpuCell::default());
+        self.cell_count = cols as usize * rows as usize;
+        self.cells.resize(self.cell_count, GpuCell::default());
         self.cell_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith resized packed cells"),
-            size: (self.cells.len() * 32) as u64,
+            size: (self.cell_count * CELL_BYTES) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -298,8 +311,7 @@ impl Renderer {
             return Ok(false);
         }
         let blink = ((time / 500.) as u64).is_multiple_of(2);
-        let blinking =
-            core.frame.cursor_blink != 0 || core.state.cells.iter().any(|c| c.flags & 8 != 0);
+        let blinking = core.frame.cursor_blink != 0 || core.state.blinking != 0;
         if !force
             && !self.pending_present
             && !changed
@@ -312,20 +324,22 @@ impl Renderer {
         self.atlas
             .begin(&state.cells, &mut state.dirty, state.cols)?;
         let cols = core.state.cols;
-        for (y, dirty) in core.state.dirty.iter().enumerate() {
+        let rows = core
+            .state
+            .cells
+            .chunks_exact(cols)
+            .zip(self.cells.chunks_exact_mut(cols));
+        for ((source, packed), dirty) in rows.zip(&core.state.dirty) {
             if !dirty {
                 continue;
             }
-            for x in 0..cols {
-                let i = y * cols + x;
-                let cell = &core.state.cells[i];
-                let tile = self.atlas.tile(cell);
-                self.cells[i] = GpuCell {
+            for (cell, gpu) in source.iter().zip(packed) {
+                *gpu = GpuCell {
                     foreground: cell.foreground,
                     background: cell.background,
                     underline: cell.underline,
-                    flags: cell.flags | ((tile.colored as u32) << 19),
-                    atlas: tile.rect,
+                    flags: cell.flags,
+                    glyph: self.atlas.tile(cell),
                 };
             }
         }
@@ -368,7 +382,7 @@ impl Renderer {
             }
             let bytes = bytemuck::cast_slice(&self.cells[start * cols..row * cols]);
             self.queue
-                .write_buffer(&self.cell_buffer, (start * cols * 32) as u64, bytes);
+                .write_buffer(&self.cell_buffer, (start * cols * CELL_BYTES) as u64, bytes);
             self.upload_bytes += bytes.len() as u64;
         }
         let frame = core.frame;
@@ -444,8 +458,8 @@ impl Renderer {
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind, &[]);
-            pass.draw(0..6, 0..self.cells.len() as u32);
-            pass.draw(6..12, 0..self.cells.len() as u32);
+            pass.draw(0..6, 0..self.cell_count as u32);
+            pass.draw(6..12, 0..self.cell_count as u32);
         }
         self.queue.submit([encoder.finish()]);
         self.queue.present(texture);
@@ -468,11 +482,10 @@ impl Renderer {
         self.canvas.set_width(width);
         self.canvas.set_height(height);
         self.surface.configure(&self.device, &self.config);
-        self.cells
-            .resize(cols as usize * rows as usize, GpuCell::default());
+        self.cell_count = cols as usize * rows as usize;
         self.cell_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith xterm cells"),
-            size: (self.cells.len() * 32) as u64,
+            size: (self.cell_count * CELL_BYTES) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -497,7 +510,7 @@ impl Renderer {
         if cols == 0 || rows == 0 || width == 0 || height == 0 || width > limit || height > limit {
             return Err("invalid compositor dimensions".into());
         }
-        let bytes = cols as u64 * rows as u64 * 32;
+        let bytes = cols as u64 * rows as u64 * CELL_BYTES as u64;
         let limits = self.device.limits();
         if bytes > limits.max_buffer_size || bytes > limits.max_storage_buffer_binding_size {
             return Err("compositor cell buffer exceeds this GPU's storage limit".into());
@@ -549,22 +562,22 @@ impl Renderer {
         dimensions: &[f32],
         frame: &[u32],
     ) -> Result<bool, String> {
-        if !packed.len().is_multiple_of(8)
-            || start as usize > self.cells.len()
-            || packed.len() / 8 > self.cells.len() - start as usize
+        if !packed.len().is_multiple_of(CELL_WORDS)
+            || start as usize > self.cell_count
+            || packed.len() / CELL_WORDS > self.cell_count - start as usize
             || dimensions.len() != 4
             || dimensions.iter().any(|v| !v.is_finite() || *v <= 0.)
             || frame.len() != 8
             || frame[0] == 0
             || frame[1] == 0
-            || (frame[0] as usize).checked_mul(frame[1] as usize) != Some(self.cells.len())
+            || (frame[0] as usize).checked_mul(frame[1] as usize) != Some(self.cell_count)
         {
             return Err("invalid compositor frame".into());
         }
         if !packed.is_empty() {
             let bytes = bytemuck::cast_slice(packed);
             self.queue
-                .write_buffer(&self.cell_buffer, start as u64 * 32, bytes);
+                .write_buffer(&self.cell_buffer, start as u64 * CELL_BYTES as u64, bytes);
             self.upload_bytes += bytes.len() as u64;
         }
         self.present(Uniforms {
