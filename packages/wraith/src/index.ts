@@ -790,3 +790,6 @@ export class Wraith {
     this.resizes.clear();
   }
 }
+
+export { Terminal } from './xterm.js';
+export type * from './xterm-api.js';
