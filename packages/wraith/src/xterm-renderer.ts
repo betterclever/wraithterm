@@ -1,5 +1,5 @@
 import type { Terminal, IDisposable, ITerminalOptions } from './xterm-api.js';
-import init, { Compositor } from '../wasm/wraith_engine.js';
+import init, { Compositor, type InitOutput } from '../wasm/wraith_engine.js';
 import { BrowserAtlas, AtlasFull } from './xterm-atlas.js';
 import {
   internals,
@@ -39,13 +39,14 @@ function resolveColor(
   }
   return rgba((foreground ? colors.foreground : colors.background).rgba);
 }
-let initialization: Promise<unknown> | undefined;
+let initialization: Promise<InitOutput> | undefined;
 /** Renderer replacement only: xterm keeps input, parser, scrollback and addons.
  * A retained DOM renderer provides metrics and loss/feature fallback. */
 export class XtermRenderer implements Renderer {
   state: RendererState = 'initializing';
   reason: string | undefined;
   private gpu: Compositor | undefined;
+  private memory: WebAssembly.Memory | undefined;
   private atlas: BrowserAtlas | undefined;
   private readonly canvas: HTMLCanvasElement;
   private readonly rows: HTMLElement | null;
@@ -56,8 +57,8 @@ export class XtermRenderer implements Renderer {
   private staging = new Uint32Array(0);
   private rects = new Float32Array(0);
   private readonly cell: Cell;
-  private readonly view = new Float32Array(4);
-  private readonly frame = new Uint32Array(8);
+  private view = new Float32Array(4);
+  private frame = new Uint32Array(8);
   private disposed = false;
   private fatal = false;
   private hovering = false;
@@ -133,7 +134,7 @@ export class XtermRenderer implements Renderer {
       if (!navigator.gpu || !this.canvas.transferControlToOffscreen)
         throw new Error('WebGPU or OffscreenCanvas is unavailable');
       initialization ??= init();
-      await initialization;
+      const wasm = await initialization;
       if (this.disposed) return false;
       const gpu = await Compositor.create(this.canvas.transferControlToOffscreen());
       if (this.disposed) {
@@ -141,6 +142,7 @@ export class XtermRenderer implements Renderer {
         return false;
       }
       this.gpu = gpu;
+      this.memory = wasm.memory;
       this.state = 'webgpu';
       this.invalidate();
       return true;
@@ -267,7 +269,7 @@ export class XtermRenderer implements Renderer {
       this.frame[5] = rgba(colors.cursorAccent.rgba);
       this.frame[7] =
         255 | (Math.max(1, Math.round(o.cursorWidth * this.core._coreBrowserService.dpr)) << 8);
-      if (!this.gpu!.render(packed, start * this.terminal.cols, this.view, this.frame)) {
+      if (!this.gpu!.render_staged(packed.length / 8, start * this.terminal.cols)) {
         this.invalidate();
         return;
       }
@@ -277,6 +279,21 @@ export class XtermRenderer implements Renderer {
     } catch (error) {
       this.fail(String(error));
       this.fallback.renderRows(0, this.terminal.rows - 1);
+    }
+  }
+  private refreshStaging(): void {
+    const pointer = this.gpu!.staging_ptr;
+    const words = this.gpu!.staging_words;
+    const buffer = this.memory!.buffer;
+    if (
+      this.staging.buffer !== buffer ||
+      this.staging.byteOffset !== pointer ||
+      this.staging.length !== words
+    ) {
+      this.staging = new Uint32Array(buffer, pointer, words);
+      this.rects = new Float32Array(buffer, pointer, words);
+      this.view = new Float32Array(buffer, pointer + words * 4, 4);
+      this.frame = new Uint32Array(buffer, pointer + (words + 4) * 4, 8);
     }
   }
   private selected(x: number, y: number): boolean {
@@ -297,12 +314,10 @@ export class XtermRenderer implements Renderer {
     const b = buffer.active,
       c = this.core._themeService.colors;
     const count = (end - start + 1) * cols * 8;
-    if (this.staging.length < count) {
-      this.staging = new Uint32Array(this.terminal.rows * cols * 8);
-      this.rects = new Float32Array(this.staging.buffer);
-    }
-    const values = this.staging.subarray(0, count);
-    const rects = this.rects;
+    this.refreshStaging();
+    if (count > this.staging.length) throw new Error('Packed rows exceed configured staging');
+    let values = this.staging.subarray(0, count);
+    let rects = this.rects;
     const hasSelection = !!this.selectedStart && !!this.selectedEnd;
     const selectionBackground = rgba(
       (this.core._coreBrowserService.isFocused
@@ -435,6 +450,15 @@ export class XtermRenderer implements Renderer {
           values[i + 6] = 0;
           values[i + 7] = 0;
         }
+      }
+      if (values.buffer !== this.memory!.buffer) {
+        // A cold glyph upload can grow Wasm memory mid-row and detach views.
+        // Earlier writes survive at the same addresses; repeat this row with
+        // fresh views to replace any writes skipped after detachment.
+        this.refreshStaging();
+        values = this.staging.subarray(0, count);
+        rects = this.rects;
+        y--;
       }
     }
     return values;

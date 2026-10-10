@@ -1,4 +1,4 @@
-use crate::{core::Core, gpu::Renderer};
+use crate::{core::Core, gpu::Renderer, staging::Staging};
 use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 extern "C" {
@@ -258,12 +258,14 @@ impl Engine {
 #[wasm_bindgen]
 pub struct Compositor {
     renderer: Renderer,
+    staging: Staging,
 }
 #[wasm_bindgen]
 impl Compositor {
     pub async fn create(canvas: web_sys::OffscreenCanvas) -> Result<Compositor, JsValue> {
         Ok(Self {
             renderer: Renderer::external(canvas).await.map_err(error)?,
+            staging: Staging::new(),
         })
     }
     pub fn configure(
@@ -273,6 +275,12 @@ impl Compositor {
         width: u32,
         height: u32,
     ) -> Result<(), JsValue> {
+        self.renderer
+            .validate_external(cols, rows, width, height)
+            .map_err(error)?;
+        self.staging
+            .resize(cols as usize * rows as usize)
+            .map_err(error)?;
         self.renderer
             .configure_external(cols, rows, width, height)
             .map_err(error)
@@ -298,6 +306,23 @@ impl Compositor {
     ) -> Result<bool, JsValue> {
         self.renderer
             .render_external(packed, start, dimensions, frame)
+            .map_err(error)
+    }
+    /// Cell words followed by four f32 dimensions and eight u32 frame words.
+    /// Views are valid until configure/free; refresh them after memory growth.
+    /// Fill them only between synchronous calls, with rendering paused at fences.
+    #[wasm_bindgen(getter)]
+    pub fn staging_ptr(&self) -> u32 {
+        self.staging.pointer() as u32
+    }
+    #[wasm_bindgen(getter)]
+    pub fn staging_words(&self) -> u32 {
+        self.staging.cell_words() as u32
+    }
+    pub fn render_staged(&mut self, cells: u32, start: u32) -> Result<bool, JsValue> {
+        let staged = self.staging.read(cells as usize).map_err(error)?;
+        self.renderer
+            .render_external(staged.cells, start, staged.dimensions, staged.frame)
             .map_err(error)
     }
     /// Wait for submitted GPU work. Call only while the renderer is paused;

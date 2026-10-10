@@ -117,7 +117,7 @@ console.log(available, terminal.renderer, terminal.rendererFallbackReason);
 ```
 
 The GPU renderer reads changed xterm rows directly, resolves colors/styles and
-selection, and packs 32-byte cells into reusable staging memory. Canvas2D
+selection, and packs 32-byte cells directly into reusable Wasm staging memory. Canvas2D
 rasterizes CSS font glyphs only on cache misses; Rust owns texture uploads,
 resident cell buffers and the shared two-draw WebGPU pipeline. Font options and
 DPR changes update geometry and the atlas. There is no ANSI replay into Ghostty.

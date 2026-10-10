@@ -462,10 +462,7 @@ impl Renderer {
         width: u32,
         height: u32,
     ) -> Result<(), String> {
-        let limit = self.device.limits().max_texture_dimension_2d;
-        if cols == 0 || rows == 0 || width == 0 || height == 0 || width > limit || height > limit {
-            return Err("invalid compositor dimensions".into());
-        }
+        self.validate_external(cols, rows, width, height)?;
         self.config.width = width;
         self.config.height = height;
         self.canvas.set_width(width);
@@ -487,6 +484,24 @@ impl Renderer {
             &self.atlas_view,
             &self.sampler,
         );
+        Ok(())
+    }
+    pub fn validate_external(
+        &self,
+        cols: u16,
+        rows: u16,
+        width: u32,
+        height: u32,
+    ) -> Result<(), String> {
+        let limit = self.device.limits().max_texture_dimension_2d;
+        if cols == 0 || rows == 0 || width == 0 || height == 0 || width > limit || height > limit {
+            return Err("invalid compositor dimensions".into());
+        }
+        let bytes = cols as u64 * rows as u64 * 32;
+        let limits = self.device.limits();
+        if bytes > limits.max_buffer_size || bytes > limits.max_storage_buffer_binding_size {
+            return Err("compositor cell buffer exceeds this GPU's storage limit".into());
+        }
         Ok(())
     }
     pub fn upload_external(

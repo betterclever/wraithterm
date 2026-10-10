@@ -230,9 +230,11 @@ try {
     expect(a.renderer === 'webgpu', 'Atlas reset');
     checks.push('original Fit addon, mutable fonts/geometry and atlas reset');
     const compositor = a._core._renderService._renderer.value.gpu;
-    const render = compositor.render.bind(compositor);
+    const renderMethod =
+      typeof compositor.render_staged === 'function' ? 'render_staged' : 'render';
+    const render = compositor[renderMethod].bind(compositor);
     let attempts = 0;
-    compositor.render = (...args) => (++attempts === 1 ? false : render(...args));
+    compositor[renderMethod] = (...args) => (++attempts === 1 ? false : render(...args));
     try {
       a.refresh(0, a.rows - 1);
       await frame();
@@ -243,9 +245,73 @@ try {
       );
       expect(a.renderer === 'webgpu', 'Presentation retry keeps GPU rendering');
     } finally {
-      compositor.render = render;
+      compositor[renderMethod] = render;
     }
     checks.push('transient presentation retries without discarding the pending frame');
+    if (typeof compositor.render_staged === 'function') {
+      const renderer = a._core._renderService._renderer.value;
+      const submitted = compositor.frames;
+      let rejected = false;
+      try {
+        compositor.render_staged(compositor.staging_words / 8 + 1, 0);
+      } catch (error) {
+        rejected = String(error).includes('capacity');
+      }
+      expect(rejected && compositor.frames === submitted, 'Invalid staged count cannot submit');
+      renderer.refreshStaging();
+      const columns = renderer.frame[0];
+      renderer.frame[0] = 0;
+      rejected = false;
+      try {
+        compositor.render_staged(0, 0);
+      } catch (error) {
+        rejected = String(error).includes('invalid compositor frame');
+      } finally {
+        renderer.refreshStaging();
+        renderer.frame[0] = columns;
+      }
+      expect(rejected && compositor.frames === submitted, 'Invalid staged uniforms cannot submit');
+
+      const oldBuffer = renderer.staging.buffer;
+      renderer.memory.grow(1);
+      renderer.renderRows(0, a.rows - 1);
+      expect(oldBuffer.byteLength === 0, 'Memory growth detaches the old arena view');
+      expect(renderer.staging.buffer === renderer.memory.buffer, 'Views refreshed before packing');
+      expect(a.renderer === 'webgpu', 'Memory growth preserves GPU rendering');
+
+      renderer.clearTextureAtlas();
+      renderer.renderRows(0, a.rows - 1);
+      const expected = Array.from(renderer.staging);
+      const upload = compositor.upload.bind(compositor);
+      const staged = compositor.render_staged.bind(compositor);
+      let grew = false,
+        observed;
+      compositor.upload = (...args) => {
+        if (!grew) {
+          grew = true;
+          renderer.memory.grow(1);
+        }
+        return upload(...args);
+      };
+      compositor.render_staged = (count, start) => {
+        observed = Array.from(renderer.staging.subarray(0, count * 8));
+        return staged(count, start);
+      };
+      try {
+        renderer.clearTextureAtlas();
+        renderer.renderRows(0, a.rows - 1);
+        expect(grew, 'Cold glyph upload exercised memory growth during packing');
+        same(observed, expected, 'Actually submitted cells after mid-row memory growth');
+        expect(a.renderer === 'webgpu', 'Mid-row memory growth preserves GPU rendering');
+      } finally {
+        compositor.upload = upload;
+        compositor.render_staged = staged;
+      }
+      checks.push('staged frame bounds and uniform validation reject before submission');
+      checks.push(
+        'Wasm views refresh before packing and cold mid-row growth preserves submitted cells',
+      );
+    }
     a.reset();
     b.reset();
     await Promise.all([a, b].map((t) => write(t, 'first Wraith\r\nsecond Wraith')));
@@ -387,7 +453,9 @@ try {
   // Device/renderer failure falls back without corrupting parser or buffer state.
   const loss = await page.evaluate(async () => {
     const term = window.compat.term;
-    term.wraithRenderer.gpu.render = () => {
+    const gpu = term.wraithRenderer.gpu;
+    const method = typeof gpu.render_staged === 'function' ? 'render_staged' : 'render';
+    gpu[method] = () => {
       throw new Error('simulated device failure');
     };
     term.refresh(0, term.rows - 1);

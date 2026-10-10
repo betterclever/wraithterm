@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-10T12:31:53.565Z",
+  "date": "2026-10-10T12:52:41.775Z",
   "version": "0.2.0",
-  "wasmSha256": "c9991d95b022a8ab9643a9e2f4e84e1af4ba80fd363135f79804e40dc3a2c986",
+  "wasmSha256": "c0fbfda9394b415511d5fa4882512b39d0b55136e87ba99356ec203fdfc45795",
   "target": "@xterm/xterm 6.0.0",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
   "pixels": {
@@ -19,6 +19,8 @@
     "title/bell, DSR replies, paste, input, modes and alternate screen",
     "original Fit addon, mutable fonts/geometry and atlas reset",
     "transient presentation retries without discarding the pending frame",
+    "staged frame bounds and uniform validation reject before submission",
+    "Wasm views refresh before packing and cold mid-row growth preserves submitted cells",
     "original Search addon, decoration fallback and GPU resumption",
     "markers/decorations/joiners and visual option fallbacks",
     "original Attach addon and disposal",

@@ -134,8 +134,21 @@ instance disposed during GPU initialization immediately frees a late result.
 Warm scalar glyphs use numeric cache keys referencing the same text/style tiles.
 Combining clusters retain the string path. Ordinary adjacent attribute runs
 reuse one decoded style; extended attributes bypass that optimization. These
-paths read optional pinned CellData words through the private adapter and retain
-getter-based behavior when those words are unavailable.
+paths read the guarded three-word BufferLine storage through the private adapter.
+Ordinary scalar cells bypass public cell loading; combined text, extended
+attributes, invalid scalars and unfamiliar row layouts retain getter behavior.
+
+The compositor owns a reusable Wasm arena containing cell words, four dimensions
+and eight frame words. JavaScript packs directly into views of that allocation,
+then submits a cell count and destination offset. This removes the three binding
+allocations and JS-to-Wasm array copies from the compatible redraw path. GPU
+upload copies remain. Bounds and device storage limits are checked before use.
+
+Views refresh when configuration changes or Wasm memory grows. A cold glyph
+upload can detach them during packing; the adapter refreshes the views and
+repeats the affected row before submission. Arena slots use `UnsafeCell` to make
+their JS write ownership explicit. Writes and synchronous Rust slice consumption
+must not overlap, and rendering remains paused during benchmark fences.
 
 Buffers, float views and uniforms are reused. Every packed cell overwrites its
 complete record, including explicit zero UVs for blank and continuation cells.
@@ -144,7 +157,7 @@ actual submission. The native worker retries at its next animation opportunity;
 the compatible renderer requests another redraw.
 
 xterm's render service coalesces changed row ranges. The adapter reads those rows
-from the authoritative buffer, reuses a Uint32 staging allocation, and uses a
+from the authoritative buffer, reuses compositor-owned staging storage, and uses a
 borrowed-text glyph cache with four bold/italic variants. Browser Canvas2D handles
 CSS font rasterization on misses. Atlas exhaustion resets and repacks the full
 viewport before submission, avoiding stale references. If a visible glyph set
