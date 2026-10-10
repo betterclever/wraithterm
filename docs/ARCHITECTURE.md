@@ -50,7 +50,9 @@ This is deliberately not described as an entirely zero-copy pipeline.
    and copies their grapheme, colors, and flags into reusable Rust cell storage.
 4. Atlas hits reuse an existing tile. A miss chooses a fallback font, shapes the
    grapheme with HarfRust, rasterizes with swash, and schedules one texture upload.
-5. Each changed cell becomes a 32-byte GPU record. Adjacent dirty rows merge into
+5. Each changed cell becomes a 20-byte GPU record: colors, flags and one glyph
+   word (atlas slot, ink width, color bit). Rows that only moved are copied
+   by libghostty row id and raw cells instead of re-read. Adjacent changed rows merge into
    one `write_buffer` call. The GPU cell buffer stays resident between frames.
 6. A single render pass issues two instanced draw calls: backgrounds first, then
    glyphs and decorations. This prevents a wide glyph from being covered by the

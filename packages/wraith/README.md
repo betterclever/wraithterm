@@ -213,16 +213,10 @@ with xterm DOM and WebGL on a 240×80 styled Unicode scene. Run
 Raw measurements and a separate CPU profile are retained under
 `docs/benchmarks/comparison`.
 
-The [utilization report](docs/benchmarks/comparison/UTILIZATION.md) measures Chrome
-CPU usage and macOS device-wide GPU activity for the same dense scene. Run
-`npm run benchmark:usage` on macOS, then `node scripts/summarize-utilization.mjs`.
-GPU readings include other applications and are paired with idle baselines.
-
-The [optimization report](docs/benchmarks/optimization/REPORT.md) records
-alternating before/after runs for the newer allocation and glyph-cache changes.
-The [engineering plan](docs/TOP_TIER.md) prioritizes GPU feature coverage, scrolling,
+The [efficiency report](docs/benchmarks/efficiency/REPORT.md) has the current
+before/after numbers for both profiles, with pixel-identical output. The
+[engineering plan](docs/TOP_TIER.md) prioritizes GPU feature coverage, scrolling,
 latency, recovery, memory, compatibility and integration for a stable release.
-
-The [bulk packing and Wasm staging pass](docs/benchmarks/packing/REPORT.md) records
-the next implementation and its independent comparisons, including memory-growth
-checks and the limits of attributing extra throughput to staging alone.
+Earlier passes: [optimization](docs/benchmarks/optimization/REPORT.md),
+[packing](docs/benchmarks/packing/REPORT.md) and
+[utilization](docs/benchmarks/comparison/UTILIZATION.md).

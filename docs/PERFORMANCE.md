@@ -1,5 +1,12 @@
 # Performance
 
+**Current results:** the [efficiency pass](benchmarks/efficiency/REPORT.md)
+measures both profiles against `a136240` with interleaved runs. Dense
+240×80 updates are 23–60% faster, and log streaming is about 95% faster.
+Redraw CPU drops to 0.3 ms (compat) and 0.5 ms (native). Every scene is
+pixel-identical to the earlier build. Sections below are earlier
+measurements, retained with their original builds.
+
 These measurements cover the **libghostty `Wraith.mount()` worker profile**.
 The xterm-compatible `Terminal` profile uses a different semantic core and
 browser rasterizer; these throughput figures do not measure that profile.

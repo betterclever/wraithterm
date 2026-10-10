@@ -1,0 +1,202 @@
+{
+  "date": "2026-10-10T14:25:07.218Z",
+  "repetitions": 3,
+  "versions": [
+    {
+      "name": "before",
+      "root": "a136240",
+      "url": "http://127.0.0.1:5190",
+      "wasmSha256": "c0fbfda9394b415511d5fa4882512b39d0b55136e87ba99356ec203fdfc45795",
+      "rendererSha256": "5d91f6f228765f70b6b8e002f43186669ef292409b050e9ce4d64a8dc8159d89"
+    },
+    {
+      "name": "after",
+      "root": "414b3df",
+      "url": "http://127.0.0.1:5173",
+      "wasmSha256": "3e0ddeca0325316050d5ec9384542e6f0233445ebb74b9327039b54416eea6db",
+      "rendererSha256": "dc27c99bcc6fef86ddd370e86697bf2fe227928ed45fd92e01c44d261d57acc2"
+    }
+  ],
+  "groups": [
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 513.6951941468081,
+        "redrawP50Ms": 0.8999999761581421,
+        "pipelineP95Ms": 2.100000023841858,
+        "range": [510.0109572787724, 515.3497735279316]
+      },
+      "after": {
+        "updatesPerSecond": 732.8943601238569,
+        "redrawP50Ms": 0.30000001192092896,
+        "pipelineP95Ms": 1.5,
+        "range": [677.5175334234175, 744.2942288381238]
+      },
+      "speedRatio": 1.4267105639193585
+    },
+    {
+      "type": "ghostty",
+      "workload": "complex",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 410.1249599565669,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 2.5,
+        "range": [384.61538461882884, 411.4763320703165]
+      },
+      "after": {
+        "updatesPerSecond": 611.9278116060966,
+        "redrawP50Ms": 0.5,
+        "pipelineP95Ms": 1.7000000476837158,
+        "range": [610.5413784705981, 612.6600454796021]
+      },
+      "speedRatio": 1.4920521093641828
+    },
+    {
+      "type": "wraith",
+      "workload": "churn",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 504.1851304775972,
+        "redrawP50Ms": 0.8999999761581421,
+        "pipelineP95Ms": 2.100000023841858,
+        "range": [461.46913023884633, 508.6934923000497]
+      },
+      "after": {
+        "updatesPerSecond": 735.843633215332,
+        "redrawP50Ms": 0.30000001192092896,
+        "pipelineP95Ms": 1.5,
+        "range": [735.5265047873347, 742.5670775924583]
+      },
+      "speedRatio": 1.4594711123636126
+    },
+    {
+      "type": "ghostty",
+      "workload": "churn",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 316.6749134068685,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 3.300000011920929,
+        "range": [297.2941586363628, 320.40050062578223]
+      },
+      "after": {
+        "updatesPerSecond": 428.59534573524843,
+        "redrawP50Ms": 0.5,
+        "pipelineP95Ms": 2.5,
+        "range": [425.9567387687188, 431.8852804723745]
+      },
+      "speedRatio": 1.3534237402145681
+    },
+    {
+      "type": "wraith",
+      "workload": "scroll",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 378.2785371259697,
+        "redrawP50Ms": 0.8999999761581421,
+        "pipelineP95Ms": 2.199999988079071,
+        "range": [376.9695184836503, 380.32981724993647]
+      },
+      "after": {
+        "updatesPerSecond": 464.2306646215143,
+        "redrawP50Ms": 0.30000001192092896,
+        "pipelineP95Ms": 1.699999988079071,
+        "range": [463.34841628959276, 488.45640145566006]
+      },
+      "speedRatio": 1.2272191495414444
+    },
+    {
+      "type": "ghostty",
+      "workload": "scroll",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 460.3488581239775,
+        "redrawP50Ms": 1.300000011920929,
+        "pipelineP95Ms": 2.200000047683716,
+        "range": [459.7701149326852, 462.8457783452518]
+      },
+      "after": {
+        "updatesPerSecond": 737.7521613832853,
+        "redrawP50Ms": 0.5,
+        "pipelineP95Ms": 1.4000000357627869,
+        "range": [737.3271889021186, 737.9648313508255]
+      },
+      "speedRatio": 1.602593659925186
+    },
+    {
+      "type": "wraith",
+      "workload": "append",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 2026.1179264905152,
+        "redrawP50Ms": 0.3999999761581421,
+        "pipelineP95Ms": 0.5,
+        "range": [2000.7815554814472, 2048]
+      },
+      "after": {
+        "updatesPerSecond": 3911.382735624558,
+        "redrawP50Ms": 0.19999998807907104,
+        "pipelineP95Ms": 0.30000001192092896,
+        "range": [3582.9251230610466, 4203.612479063128]
+      },
+      "speedRatio": 1.930481283683005
+    },
+    {
+      "type": "ghostty",
+      "workload": "append",
+      "dpr": 1,
+      "before": {
+        "updatesPerSecond": 1349.1436100131752,
+        "redrawP50Ms": 0.699999988079071,
+        "pipelineP95Ms": 0.800000011920929,
+        "range": [1337.5130618176008, 1357.730044995039]
+      },
+      "after": {
+        "updatesPerSecond": 2637.815559476227,
+        "redrawP50Ms": 0.3999999761581421,
+        "pipelineP95Ms": 0.40000003576278687,
+        "range": [2636.457260717966, 2645.9948320413437]
+      },
+      "speedRatio": 1.9551777437914613
+    },
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "dpr": 2,
+      "before": {
+        "updatesPerSecond": 510.1125834170329,
+        "redrawP50Ms": 0.8999999761581421,
+        "pipelineP95Ms": 2.099999964237213,
+        "range": [509.5541401213432, 513.0260521042084]
+      },
+      "after": {
+        "updatesPerSecond": 726.9629419773737,
+        "redrawP50Ms": 0.30000001192092896,
+        "pipelineP95Ms": 1.5999999642372131,
+        "range": [666.4063517268993, 734.8930672670555]
+      },
+      "speedRatio": 1.425102939252645
+    },
+    {
+      "type": "ghostty",
+      "workload": "complex",
+      "dpr": 2,
+      "before": {
+        "updatesPerSecond": 360.28428682913574,
+        "redrawP50Ms": 1.5,
+        "pipelineP95Ms": 3.100000023841858,
+        "range": [348.67883409665643, 369.6750902527076]
+      },
+      "after": {
+        "updatesPerSecond": 554.4726012705432,
+        "redrawP50Ms": 0.5999999642372131,
+        "pipelineP95Ms": 2,
+        "range": [536.8001677433433, 561.0344071735962]
+      },
+      "speedRatio": 1.538986354776835
+    }
+  ]
+}
