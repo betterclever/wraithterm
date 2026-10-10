@@ -22,6 +22,8 @@ export class BrowserAtlas {
   private readonly columns: number;
   private readonly capacity: number;
   private readonly baseline: number;
+  private readonly cellWidth: number;
+  private readonly cellHeight: number;
   constructor(
     document: Document,
     private readonly gpu: Compositor,
@@ -30,6 +32,8 @@ export class BrowserAtlas {
     cellWidth: number,
     cellHeight: number,
   ) {
+    this.cellWidth = cellWidth;
+    this.cellHeight = cellHeight;
     this.width = Math.ceil(cellWidth * 2 + 4);
     this.height = Math.ceil(cellHeight);
     this.columns = Math.floor(ATLAS_SIZE / this.width);
@@ -70,6 +74,68 @@ export class BrowserAtlas {
   private miss(codepoint: number, style: number): Glyph {
     return this.tile(String.fromCodePoint(codepoint), style);
   }
+  /** Block elements and braille are geometry, not type: draw them to fill the cell exactly so
+   * neighbours tile without seams at any line height, as the native atlas does. */
+  private procedural(text: string): boolean {
+    const c = text.codePointAt(0)!;
+    if (text.length !== 1 || !((c >= 0x2580 && c <= 0x259f) || (c >= 0x2800 && c <= 0x28ff)))
+      return false;
+    const g = this.context,
+      w = Math.round(this.cellWidth),
+      h = Math.round(this.cellHeight);
+    // [x0, x1) × [y0, y1) in eighths of the cell, split points rounded once so neighbours meet.
+    const fill = (x0: number, y0: number, x1: number, y1: number, alpha = 1) => {
+      const px0 = Math.floor((x0 * w + 4) / 8),
+        px1 = Math.floor((x1 * w + 4) / 8);
+      const py0 = Math.floor((y0 * h + 4) / 8),
+        py1 = Math.floor((y1 * h + 4) / 8);
+      g.globalAlpha = alpha;
+      g.fillRect(px0, py0, px1 - px0, py1 - py0);
+      g.globalAlpha = 1;
+    };
+    if (c === 0x2580) fill(0, 0, 8, 4);
+    else if (c <= 0x2587) fill(0, 8 - (c - 0x2580), 8, 8);
+    else if (c === 0x2588) fill(0, 0, 8, 8);
+    else if (c <= 0x258f) fill(0, 0, 8 - (c - 0x2588), 8);
+    else if (c === 0x2590) fill(4, 0, 8, 8);
+    else if (c <= 0x2593) fill(0, 0, 8, 8, [64, 128, 191][c - 0x2591]! / 255);
+    else if (c === 0x2594) fill(0, 0, 8, 1);
+    else if (c === 0x2595) fill(7, 0, 8, 8);
+    else if (c <= 0x259f) {
+      // Quadrants as bits: 1 upper-left, 2 upper-right, 4 lower-left, 8 lower-right.
+      const q = [4, 8, 1, 13, 9, 7, 11, 2, 6, 14][c - 0x2596]!;
+      if (q & 1) fill(0, 0, 4, 4);
+      if (q & 2) fill(4, 0, 8, 4);
+      if (q & 4) fill(0, 4, 4, 8);
+      if (q & 8) fill(4, 4, 8, 8);
+    } else {
+      // Braille: dots 1-3 and 7 down the left column, 4-6 and 8 down the right.
+      const dots = [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [0, 3],
+        [1, 3],
+      ];
+      const sw = w / 2,
+        sh = h / 4,
+        r = Math.max(1, Math.min(sw, sh) * 0.34);
+      dots.forEach(([dx, dy], k) => {
+        if (!((c - 0x2800) & (1 << k))) return;
+        const cx = (dx! + 0.5) * sw,
+          cy = (dy! + 0.5) * sh;
+        const x0 = Math.max(0, Math.round(cx - r)),
+          x1 = Math.min(w, Math.round(cx + r));
+        const y0 = Math.max(0, Math.round(cy - r)),
+          y1 = Math.min(h, Math.round(cy + r));
+        g.fillRect(x0, y0, x1 - x0, y1 - y0);
+      });
+    }
+    return true;
+  }
   tile(text: string, style: number): Glyph {
     if (!text || text === ' ') return 0;
     const variants = this.cache.get(text);
@@ -81,7 +147,7 @@ export class BrowserAtlas {
     c.font = this.font(!!(style & 1), !!(style & 2));
     c.textBaseline = 'alphabetic';
     c.fillStyle = '#fff';
-    c.fillText(text, 0, this.baseline);
+    if (!this.procedural(text)) c.fillText(text, 0, this.baseline);
     const pixels = c.getImageData(0, 0, this.width, this.height).data;
     let colored = false,
       ink = 0;
