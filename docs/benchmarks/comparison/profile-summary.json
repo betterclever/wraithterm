@@ -1,0 +1,147 @@
+{
+  "samplingIntervalUs": 500,
+  "measuredSeparatelyFromBenchmark": true,
+  "activeSampledMs": 1319.727,
+  "hot": [
+    {
+      "name": "pack",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts",
+      "line": 245,
+      "selfMs": 308.06,
+      "selfPercent": 23.342706483992522
+    },
+    {
+      "name": "tile",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-atlas.ts",
+      "line": 43,
+      "selfMs": 134.894,
+      "selfPercent": 10.221356386586015
+    },
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 6606,
+      "selfMs": 116.111,
+      "selfPercent": 8.798107487381861
+    },
+    {
+      "name": "addDigit",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 6294,
+      "selfMs": 99.637,
+      "selfPercent": 7.549819015599438
+    },
+    {
+      "name": "e",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 8898,
+      "selfMs": 90.196,
+      "selfPercent": 6.834443790268745
+    },
+    {
+      "name": "_extractColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 7374,
+      "selfMs": 70.186,
+      "selfPercent": 5.318221116943126
+    },
+    {
+      "name": "decode",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 87,
+      "selfMs": 61.5,
+      "selfPercent": 4.660054693129716
+    },
+    {
+      "name": "print",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 6917,
+      "selfMs": 45.947,
+      "selfPercent": 3.4815533818736757
+    },
+    {
+      "name": "writeBuffer",
+      "url": "",
+      "line": 0,
+      "selfMs": 43.774,
+      "selfPercent": 3.316898116049759
+    },
+    {
+      "name": "charAttributes",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 7406,
+      "selfMs": 41.11,
+      "selfPercent": 3.115038185927847
+    },
+    {
+      "name": "addParam",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 6261,
+      "selfMs": 33.297,
+      "selfPercent": 2.5230218067827668
+    },
+    {
+      "name": "resolveColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts",
+      "line": 6,
+      "selfMs": 30.724,
+      "selfPercent": 2.328057242141746
+    },
+    {
+      "name": "loadCell",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 5416,
+      "selfMs": 30.572,
+      "selfPercent": 2.3165397085912467
+    },
+    {
+      "name": "setCellFromCodepoint",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 5422,
+      "selfMs": 22.758,
+      "selfPercent": 1.724447556199123
+    },
+    {
+      "name": "renderRows",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts",
+      "line": 146,
+      "selfMs": 19.673,
+      "selfPercent": 1.4906870890722095
+    },
+    {
+      "name": "isUnderlineColorRGB",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 275,
+      "selfMs": 17.719,
+      "selfPercent": 1.3426261643506574
+    },
+    {
+      "name": "(garbage collector)",
+      "url": "",
+      "line": 0,
+      "selfMs": 17.294,
+      "selfPercent": 1.3104225343574847
+    },
+    {
+      "name": "e",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 5940,
+      "selfMs": 13.333,
+      "selfPercent": 1.0102847028211137
+    },
+    {
+      "name": "charProperties",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=5c6621bd",
+      "line": 6140,
+      "selfMs": 11.414,
+      "selfPercent": 0.8648758417460581
+    },
+    {
+      "name": "rgb",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts",
+      "line": 4,
+      "selfMs": 11.388,
+      "selfPercent": 0.8629057373229464
+    }
+  ]
+}
