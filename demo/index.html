@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090c10" />
+    <title>Wraith — terminal at the edge</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" />
+          <path d="m9 31 17-4-7 6z" fill="currentColor" opacity=".45" /></svg
+        ><strong>wraith<span>_</span></strong></a
+      >
+      <nav>
+        <a href="#lab">Playground</a><a href="#integration">Integration</a
+        ><span class="version">v0.1.0 · development</span>
+      </nav>
+    </header>
+    <main>
+      <section class="intro">
+        <div class="eyebrow"><i></i> GHOSTTY SEMANTICS. RUST PRECISION.</div>
+        <h1>A terminal<br />at the <em>edge.</em></h1>
+        <p>
+          Built for the browser. Engineered for the GPU.<br />One small API over a seriously capable
+          engine.
+        </p>
+        <div class="stack">
+          <span>libghostty-vt</span><span>Rust → Wasm</span><span>WebGPU</span
+          ><span>Worker isolated</span>
+        </div>
+        <div class="intro-index">01 / THE RENDERING LAB</div>
+      </section>
+      <section id="lab" class="lab">
+        <div class="lab-heading">
+          <div>
+            <span class="small-label">LIVE PLAYGROUND</span>
+            <h2>Feel the pipeline.</h2>
+          </div>
+          <div id="status" class="status"><i></i> Initializing WebGPU</div>
+        </div>
+        <div class="terminal-shell">
+          <div class="terminal-bar">
+            <div class="terminal-title">
+              <span class="diamond">◇</span><span id="title">wraith / interactive demo</span>
+            </div>
+            <div class="terminal-actions">
+              <span id="grid">— × —</span><button id="clear" title="Clear terminal">Clear</button
+              ><button id="stream">Start stream <span>↗</span></button>
+            </div>
+          </div>
+          <div id="terminal"></div>
+          <div class="terminal-foot">
+            <span id="adapter">Connecting to your GPU…</span
+            ><span>Click to type · try <code>help</code></span>
+          </div>
+        </div>
+        <div class="metrics">
+          <div>
+            <span class="small-label">RENDER CPU · P50</span
+            ><strong id="p50">—<small>ms</small></strong
+            ><span>Snapshot + encode + submit</span>
+          </div>
+          <div>
+            <span class="small-label">RENDER CPU · P95</span
+            ><strong id="p95">—<small>ms</small></strong
+            ><span>Target budget: 1.00 ms</span>
+          </div>
+          <div>
+            <span class="small-label">ACTIVE RENDER FRAMES</span
+            ><strong id="fps">—<small>/s</small></strong
+            ><span>Canvas submissions, refresh paced</span>
+          </div>
+          <div>
+            <span class="small-label">GLYPH CACHE</span><strong id="cache">—<small>%</small></strong
+            ><span>Shaped once. Drawn repeatedly.</span>
+          </div>
+        </div>
+      </section>
+      <section class="bench">
+        <div class="bench-intro">
+          <span class="small-label">02 / PERFORMANCE, MEASURED</span>
+          <h2>Numbers.<br />With the receipts.</h2>
+          <p>
+            Warm the atlas, change the screen, submit frames, and wait for GPU completion. Measured
+            on your machine.
+          </p>
+          <div class="bench-controls">
+            <select id="workload" aria-label="Benchmark workload">
+              <option value="dense">Dense · redraw every cell</option>
+              <option value="sparse">Sparse · update one row</option>
+              <option value="scroll">Scroll · continuous output</option></select
+            ><button id="benchmark">Run benchmark <span>→</span></button>
+          </div>
+          <p class="fine">
+            Throughput counts frames completed in GPU-fenced batches. Display refresh, GPU duration,
+            and CPU time are different measurements.
+          </p>
+        </div>
+        <div class="bench-results">
+          <div class="results-top">
+            <span class="small-label">512 FRAMES / 64 WARMUP / 32 PER BATCH</span
+            ><span id="bench-state">Ready when you are</span>
+          </div>
+          <div class="bench-number">
+            <strong id="throughput">—</strong><span>GPU-fenced frames / second</span>
+          </div>
+          <div id="budget-chart" class="budget-chart">
+            <div class="chart-row">
+              <span>P50</span>
+              <div><i id="bar50"></i></div>
+              <b id="bench50">—</b>
+            </div>
+            <div class="chart-row">
+              <span>P95</span>
+              <div><i id="bar95"></i></div>
+              <b id="bench95">—</b>
+            </div>
+            <div class="chart-row">
+              <span>P99</span>
+              <div><i id="bar99"></i></div>
+              <b id="bench99">—</b>
+            </div>
+          </div>
+          <div class="results-bottom">
+            <span id="bench-details">A benchmark result will appear here.</span
+            ><button id="export" disabled>Export JSON ↗</button>
+          </div>
+        </div>
+      </section>
+      <section id="integration" class="integration">
+        <div>
+          <span class="small-label">03 / THE DEVELOPER EXPERIENCE</span>
+          <h2>Powerful underneath.<br />Simple at the surface.</h2>
+          <p>
+            Mount it. Connect a transport. Ship your interface.<br />No Rust or Zig toolchain
+            required by consumers.
+          </p>
+          <div class="feature-list">
+            <span>Streaming UTF-8 & ANSI</span><span>Scrollback & reflow</span
+            ><span>Kitty keyboard encoding</span><span>Selection, IME & hyperlinks</span>
+          </div>
+        </div>
+        <div class="code-card">
+          <div><span>your-app.ts</span><span>TypeScript</span></div>
+          <pre><code><span class="purple">import</span> { Wraith } <span class="purple">from</span> <span class="green">'wraithterm'</span>;
+
+<span class="purple">const</span> terminal = <span class="purple">await</span> Wraith.<span class="blue">mount</span>(element);
+
+<span class="gray">// Wire your PTY over a WebSocket.</span>
+terminal.<span class="blue">connect</span>(socket);
+terminal.<span class="blue">onResize</span>(({ cols, rows }) =&gt; {
+  <span class="gray">// Tell your backend about the new geometry.</span>
+});
+
+<span class="purple">await</span> terminal.<span class="blue">write</span>(<span class="green">'Hello, \x1b[36mworld\x1b[0m'</span>);</code></pre>
+          <div class="code-footer">Local package preview · npm publication pending</div>
+        </div>
+      </section>
+      <footer>
+        <span>wraith<span class="blue">_</span></span>
+        <p>Ghostty core. Custom Rust renderer. Real measurements.</p>
+        <span>MIT licensed</span>
+      </footer>
+    </main>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
