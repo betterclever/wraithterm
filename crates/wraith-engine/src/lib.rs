@@ -3,3 +3,5 @@ pub mod core;
 #[cfg(target_arch = "wasm32")]
 mod gpu;
 pub mod text;
+#[cfg(target_arch = "wasm32")]
+mod web;
