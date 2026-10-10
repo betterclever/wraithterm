@@ -1,0 +1,43 @@
+name: Verify Wraith
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  engine-and-sdk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:native
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build:demo
+      - run: cargo fmt --all --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wraith-playground
+          path: dist
+  hardware-browser:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, wraith-webgpu]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci && npm run build:sdk
+      - run: npm run dev > /tmp/wraith-vite.log 2>&1 &
+      - run: npm run test:browser
+      - run: npm run test:xterm
+      - run: npm run test:xterm-consumer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wraith-gpu-results
+          path: docs/benchmarks
