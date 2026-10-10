@@ -16,6 +16,10 @@ export class Compositor {
      */
     fence(): Promise<void>;
     render(packed: Uint32Array, start: number, dimensions: Float32Array, frame: Uint32Array): boolean;
+    /**
+     * Upload staged cells `start..start + cells` (indices into the grid, at
+     * the same offsets in staging) and present with the staged uniforms.
+     */
     render_staged(cells: number, start: number): boolean;
     upload(x: number, y: number, width: number, height: number, pixels: Uint8Array): void;
     readonly frames: bigint;

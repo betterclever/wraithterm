@@ -41,6 +41,10 @@ function resolveColor(
   }
   return rgba((foreground ? colors.foreground : colors.background).rgba);
 }
+function sameRow(words: Uint32Array, rows: Uint32Array, offset: number, count: number): boolean {
+  for (let i = 0; i < count; i++) if (words[i] !== rows[offset + i]) return false;
+  return true;
+}
 let initialization: Promise<InitOutput> | undefined;
 /** Renderer replacement only: xterm keeps input, parser, scrollback and addons.
  * A retained DOM renderer provides metrics and loss/feature fallback. */
@@ -57,6 +61,17 @@ export class XtermRenderer implements Renderer {
   private font = '';
   private full = true;
   private staging = new Uint32Array(0);
+  /** Raw xterm words (3 per cell) that produced each staged row. Staging
+   * mirrors the GPU cell buffer, so a row whose words recur needs no packing:
+   * in place it is skipped, after scrolling it is copied within staging. */
+  private rowWords = new Uint32Array(0);
+  /** 1 while staging row y is exactly the packing of rowWords row y. */
+  private rowCached = new Uint8Array(0);
+  /** Frame stamp of the last write to each staging row this frame. */
+  private rowStamp = new Uint32Array(0);
+  private stamp = 0;
+  private shift = 1;
+  private lastViewportY = 0;
   private readonly cell: Cell;
   private view = new Float32Array(4);
   private frame = new Uint32Array(8);
@@ -214,6 +229,10 @@ export class XtermRenderer implements Renderer {
         this.canvas.style.height = `${d.css.canvas.height}px`;
         this.geometry = geometry;
         this.full = true;
+        const rows = this.terminal.rows;
+        this.rowWords = new Uint32Array(rows * this.terminal.cols * 3);
+        this.rowCached = new Uint8Array(rows);
+        this.rowStamp = new Uint32Array(rows);
       }
       const font = `${o.fontFamily}|${o.fontSize}|${o.fontWeight}|${o.fontWeightBold}|${d.device.cell.width}|${d.device.cell.height}|${this.core._coreBrowserService.dpr}`;
       if (font !== this.font) {
@@ -231,16 +250,16 @@ export class XtermRenderer implements Renderer {
       if (this.full || this.state !== 'webgpu') {
         start = 0;
         end = this.terminal.rows - 1;
+        this.rowCached.fill(0);
       }
-      let packed: Uint32Array;
+      let changed: [number, number] | undefined;
       try {
-        packed = this.pack(start, end);
+        changed = this.pack(start, end);
       } catch (error) {
         if (!(error instanceof AtlasFull)) throw error;
         this.atlas!.reset();
-        start = 0;
-        end = this.terminal.rows - 1;
-        packed = this.pack(start, end);
+        this.rowCached.fill(0);
+        changed = this.pack(0, this.terminal.rows - 1);
       }
       const b = this.terminal.buffer.active,
         colors = this.core._themeService.colors;
@@ -270,7 +289,9 @@ export class XtermRenderer implements Renderer {
       this.frame[5] = rgba(colors.cursorAccent.rgba);
       this.frame[7] =
         255 | (Math.max(1, Math.round(o.cursorWidth * this.core._coreBrowserService.dpr)) << 8);
-      if (!this.gpu!.render_staged(packed.length / CELL_WORDS, start * this.terminal.cols)) {
+      const cols = this.terminal.cols;
+      const [first, last] = changed ?? [0, -1];
+      if (!this.gpu!.render_staged((last - first + 1) * cols, first * cols)) {
         this.invalidate();
         return;
       }
@@ -309,15 +330,31 @@ export class XtermRenderer implements Renderer {
       );
     return (y > a[1] || (y === a[1] && x >= a[0])) && (y < b[1] || (y === b[1] && x < b[0]));
   }
-  private pack(start: number, end: number): Uint32Array {
-    const { cols, buffer, options } = this.terminal;
+  /** Bring staging rows start..end up to date with the buffer. Returns the
+   * first and last rows whose staging changed, or undefined when none did. */
+  private pack(start: number, end: number): [number, number] | undefined {
+    const { cols, rows, buffer, options } = this.terminal;
     const b = buffer.active,
       c = this.core._themeService.colors,
       atlas = this.atlas!;
-    const count = (end - start + 1) * cols * CELL_WORDS;
     this.refreshStaging();
-    if (count > this.staging.length) throw new Error('Packed rows exceed configured staging');
+    if (rows * cols * CELL_WORDS > this.staging.length || end >= rows)
+      throw new Error('Packed rows exceed configured staging');
     let values = this.staging;
+    const rowWords = this.rowWords,
+      cached = this.rowCached,
+      stamps = this.rowStamp,
+      stamp = ++this.stamp,
+      raw = cols * 3,
+      packed = cols * CELL_WORDS;
+    // Content moves up when the viewport advances, so copy from rows below
+    // first; when it moves back, walk upwards so copy sources stay intact.
+    const delta = b.viewportY - this.lastViewportY;
+    this.lastViewportY = b.viewportY;
+    const step = delta < 0 ? -1 : 1;
+    let first = rows,
+      last = -1,
+      searched = false;
     const hasSelection = !!this.selectedStart && !!this.selectedEnd;
     const selectionBackground = rgba(
       (this.core._coreBrowserService.isFocused
@@ -338,12 +375,46 @@ export class XtermRenderer implements Renderer {
       styleBg = 0,
       styleUnderline = 0,
       styleFlags = 0;
-    for (let y = start; y <= end; y++) {
+    rowLoop: for (let y = step > 0 ? start : end; y >= start && y <= end; y += step) {
       const row = b.viewportY + y;
       const line = b.getLine(row);
       const words = packedRow(line, cols);
       const selectable = hasSelection && this.rowSelected(row);
-      for (let x = 0, i = (y - start) * cols * CELL_WORDS; x < cols; x++, i += CELL_WORDS) {
+      if (words !== undefined && !selectable) {
+        if (cached[y] && sameRow(words, rowWords, y * raw, raw)) continue;
+        // Scrolled content: find this row's words among rows staged last
+        // frame that have not been overwritten yet, and move them.
+        const candidates = [this.shift, delta, 1];
+        for (let k = 0; k <= candidates.length; k++) {
+          let source = -1;
+          if (k < candidates.length) {
+            const s = y + candidates[k]!;
+            if (s !== y && s >= 0 && s < rows && cached[s] && stamps[s] !== stamp)
+              if (sameRow(words, rowWords, s * raw, raw)) source = s;
+          } else if (!searched) {
+            searched = true;
+            for (let s = 0; s < rows && source < 0; s++)
+              if (
+                s !== y &&
+                cached[s] &&
+                stamps[s] !== stamp &&
+                sameRow(words, rowWords, s * raw, raw)
+              )
+                source = s;
+          }
+          if (source < 0) continue;
+          values.copyWithin(y * packed, source * packed, (source + 1) * packed);
+          rowWords.copyWithin(y * raw, source * raw, (source + 1) * raw);
+          cached[y] = 1;
+          stamps[y] = stamp;
+          this.shift = source - y;
+          first = Math.min(first, y);
+          last = Math.max(last, y);
+          continue rowLoop;
+        }
+      }
+      let direct = words !== undefined && !selectable;
+      for (let x = 0, i = y * packed; x < cols; x++, i += CELL_WORDS) {
         if (words !== undefined) {
           const content = words[x * 3]!,
             fgWord = words[x * 3 + 1]!,
@@ -393,6 +464,7 @@ export class XtermRenderer implements Renderer {
           }
         }
         lastFg = lastBg = -1;
+        direct = false;
         const data = line?.getCell(x, this.cell) as Cell | undefined;
         if (!data) {
           values[i] = rgba(c.foreground.rgba);
@@ -439,10 +511,18 @@ export class XtermRenderer implements Renderer {
         this.refreshStaging();
         values = this.staging;
         lastFg = lastBg = -1;
-        y--;
+        y -= step;
+        continue;
       }
+      // Rows with combined text, extended attributes or selection depend on
+      // more than their words; they are always repacked.
+      if (direct) rowWords.set(words!.subarray(0, raw), y * raw);
+      cached[y] = +direct;
+      stamps[y] = stamp;
+      first = Math.min(first, y);
+      last = Math.max(last, y);
     }
-    return values.subarray(0, count);
+    return last < 0 ? undefined : [first, last];
   }
   private rowSelected(row: number): boolean {
     const a = this.selectedStart!,

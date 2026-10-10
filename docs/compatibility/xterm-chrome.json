@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-10T13:52:00.176Z",
+  "date": "2026-10-10T14:01:48.133Z",
   "version": "0.2.0",
-  "wasmSha256": "cc78a7f07396c7b257b4a8243d6fd7594ed4fdcd873a42101e8ebad6dc415c1a",
+  "wasmSha256": "05d517983bb8a867d6200b056a2e51bfe0da11a602efccf33ffee8a1d4c4035d",
   "target": "@xterm/xterm 6.0.0",
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
   "pixels": {
@@ -21,6 +21,7 @@
     "transient presentation retries without discarding the pending frame",
     "staged frame bounds and uniform validation reject before submission",
     "Wasm views refresh before packing and cold mid-row growth preserves submitted cells",
+    "reused and scrolled rows equal a full repack and every change is submitted",
     "original Search addon, decoration fallback and GPU resumption",
     "markers/decorations/joiners and visual option fallbacks",
     "original Attach addon and disposal",

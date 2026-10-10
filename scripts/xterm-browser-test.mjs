@@ -294,7 +294,7 @@ try {
         return upload(...args);
       };
       compositor.render_staged = (count, start) => {
-        observed = Array.from(renderer.staging.subarray(0, count * 5));
+        observed = Array.from(renderer.staging.subarray(start * 5, (start + count) * 5));
         return staged(count, start);
       };
       try {
@@ -311,6 +311,76 @@ try {
       checks.push(
         'Wasm views refresh before packing and cold mid-row growth preserves submitted cells',
       );
+    }
+    if (typeof compositor.render_staged === 'function') {
+      // Row reuse: mirror every submitted span as the GPU buffer would hold
+      // it, and require it to equal a fresh full repack after each step.
+      const renderer = a._core._renderService._renderer.value;
+      const staged = compositor.render_staged.bind(compositor);
+      let mirror = [];
+      compositor.render_staged = (count, start) => {
+        const words = renderer.staging.subarray(start * 5, (start + count) * 5);
+        mirror.splice(start * 5, words.length, ...words);
+        return staged(count, start);
+      };
+      const options = { scrollback: a.options.scrollback };
+      const verify = async (label) => {
+        await frame();
+        const incremental = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
+        same(mirror.slice(0, incremental.length), incremental, `${label}: submitted cells`);
+        renderer.rowCached.fill(0);
+        renderer.pack(0, a.rows - 1);
+        const fresh = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
+        same(incremental, fresh, `${label}: reused rows equal a full repack`);
+      };
+      const line = (i) =>
+        `\x1b[3${i % 8};4${(i * 3) % 8}m${String(i).padStart(5, '0')}\x1b[0m ` +
+        (i % 5 === 0 ? 'é 🦀 ' : '') +
+        (i % 7 === 0 ? '\x1b[4:3;58:2::255:0:0mcurly\x1b[0m ' : '') +
+        'stream '.repeat(4) +
+        '\r\n';
+      try {
+        a.reset();
+        renderer.invalidate();
+        await frame();
+        mirror = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
+        for (let i = 0; i < 3 * a.rows; i += 3) {
+          await write(a, line(i) + line(i + 1) + line(i + 2));
+          if (i % 9 === 0) await verify(`append ${i}`);
+        }
+        await verify('append');
+        a.options.scrollback = 10;
+        for (let i = 0; i < 40; i++) await write(a, line(1000 + i));
+        await verify('trimmed scrollback');
+        a.scrollLines(-6);
+        await verify('viewport up');
+        a.scrollLines(2);
+        await verify('viewport down');
+        a.select(0, a.buffer.active.viewportY + 2, 30);
+        a.scrollLines(-1);
+        await verify('selection while scrolling');
+        a.clearSelection();
+        a.scrollToBottom();
+        await write(a, '\x1b[5;1H\x1b[2Kedited row\x1b[10;1H\x1b[M');
+        await verify('in-place edit and deleted line');
+        let submitted = -1;
+        const counting = compositor.render_staged;
+        compositor.render_staged = (count, start) => {
+          submitted = count;
+          return counting(count, start);
+        };
+        // Combined text is always repacked; measure on plain rows.
+        await write(a, '\x1bc' + 'plain row\r\n'.repeat(a.rows - 1));
+        await verify('plain rows');
+        await write(a, '\x1b[3;1Hx');
+        await verify('single cell edit');
+        compositor.render_staged = counting;
+        expect(submitted === a.cols, `A one-cell edit submits one row, not ${submitted / a.cols}`);
+      } finally {
+        compositor.render_staged = staged;
+        a.options.scrollback = options.scrollback;
+      }
+      checks.push('reused and scrolled rows equal a full repack and every change is submitted');
     }
     a.reset();
     b.reset();

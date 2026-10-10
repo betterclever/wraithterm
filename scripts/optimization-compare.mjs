@@ -27,7 +27,7 @@ assert(types.length && types.every((type) => ['wraith', 'ghostty'].includes(type
 assert(dprs.length && dprs.every((dpr) => [1, 2].includes(dpr)));
 assert(
   workloads.length &&
-    workloads.every((workload) => ['complex', 'churn', 'scroll'].includes(workload)),
+    workloads.every((workload) => ['complex', 'churn', 'scroll', 'append'].includes(workload)),
 );
 const results = [],
   errors = [];

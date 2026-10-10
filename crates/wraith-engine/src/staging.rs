@@ -45,18 +45,20 @@ impl Staging {
     pub fn cell_words(&self) -> usize {
         self.cells * CELL_WORDS
     }
-    pub fn read(&self, cells: usize) -> Result<StagedFrame<'_>, String> {
-        if cells > self.cells {
+    /// Borrow `cells` packed cells beginning at cell index `start`. Staging
+    /// mirrors the GPU cell buffer, so unchanged rows need not be resubmitted.
+    pub fn read(&self, start: usize, cells: usize) -> Result<StagedFrame<'_>, String> {
+        if start.checked_add(cells).is_none_or(|end| end > self.cells) {
             return Err("staged cell count exceeds configured capacity".into());
         }
         let pointer = self.pointer();
         // SAFETY: UnsafeCell<u32> has u32's layout and alignment. All slots are
-        // initialized, cell count is bounded, and the final 12 slots hold four
+        // initialized, the cell range is bounded, and the final 12 slots hold four
         // f32 bit patterns and eight frame words. The synchronous caller keeps
         // JS writes paused until these borrowed slices have been consumed.
         unsafe {
             Ok(StagedFrame {
-                cells: slice::from_raw_parts(pointer, cells * CELL_WORDS),
+                cells: slice::from_raw_parts(pointer.add(start * CELL_WORDS), cells * CELL_WORDS),
                 dimensions: slice::from_raw_parts(pointer.add(self.cell_words()).cast(), 4),
                 frame: slice::from_raw_parts(pointer.add(self.cell_words() + 4), 8),
             })
@@ -80,8 +82,9 @@ mod tests {
             *pointer.add(10) = 9.5_f32.to_bits();
             *pointer.add(14) = 2;
         }
-        let frame = staging.read(1).unwrap();
+        let frame = staging.read(0, 1).unwrap();
         assert_eq!(frame.cells.len(), 5);
+        assert_eq!(staging.read(1, 1).unwrap().cells, &[0; 5]);
         assert_eq!(frame.cells[0], 0xff112233);
         assert_eq!(frame.dimensions, &[9.5, 0., 0., 0.]);
         assert_eq!(frame.frame, &[2, 0, 0, 0, 0, 0, 0, 0]);
@@ -91,11 +94,14 @@ mod tests {
     fn invalid_counts_and_overflow_leave_existing_storage_valid() {
         let mut staging = Staging::new();
         staging.resize(2).unwrap();
-        assert!(staging.read(3).is_err());
+        assert!(staging.read(0, 3).is_err());
+        assert!(staging.read(2, 1).is_err());
+        assert!(staging.read(usize::MAX, 1).is_err());
         assert!(staging.resize(usize::MAX).is_err());
         assert_eq!(staging.cell_words(), 10);
-        assert_eq!(staging.read(0).unwrap().cells.len(), 0);
-        assert_eq!(staging.read(2).unwrap().cells, &[0; 10]);
+        assert_eq!(staging.read(0, 0).unwrap().cells.len(), 0);
+        assert_eq!(staging.read(2, 0).unwrap().cells.len(), 0);
+        assert_eq!(staging.read(0, 2).unwrap().cells, &[0; 10]);
     }
 
     #[test]
@@ -109,7 +115,7 @@ mod tests {
             }
         }
         staging.resize(1).unwrap();
-        let frame = staging.read(1).unwrap();
+        let frame = staging.read(0, 1).unwrap();
         assert_eq!(frame.cells, &[u32::MAX; 5]);
         assert_eq!(frame.dimensions, &[0.; 4]);
         assert_eq!(frame.frame, &[0; 8]);

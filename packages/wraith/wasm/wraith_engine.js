@@ -77,6 +77,8 @@ export class Compositor {
         return ret[0] !== 0;
     }
     /**
+     * Upload staged cells `start..start + cells` (indices into the grid, at
+     * the same offsets in staging) and present with the staged uniforms.
      * @param {number} cells
      * @param {number} start
      * @returns {boolean}

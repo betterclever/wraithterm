@@ -319,8 +319,13 @@ impl Compositor {
     pub fn staging_words(&self) -> u32 {
         self.staging.cell_words() as u32
     }
+    /// Upload staged cells `start..start + cells` (indices into the grid, at
+    /// the same offsets in staging) and present with the staged uniforms.
     pub fn render_staged(&mut self, cells: u32, start: u32) -> Result<bool, JsValue> {
-        let staged = self.staging.read(cells as usize).map_err(error)?;
+        let staged = self
+            .staging
+            .read(start as usize, cells as usize)
+            .map_err(error)?;
         self.renderer
             .render_external(staged.cells, start, staged.dimensions, staged.frame)
             .map_err(error)

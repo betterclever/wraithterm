@@ -34,6 +34,22 @@ const chars = [
   'ä',
 ];
 function workload(cols, rows, variant, kind) {
+  if (kind === 'append') {
+    // Log streaming: eight styled lines per update scroll the viewport.
+    let output = '';
+    for (let k = 0; k < 8; k++) {
+      const n = variant * 8 + k;
+      const level = ['INFO', 'WARN', 'DEBUG', 'ERROR'][n % 4];
+      output +=
+        `\x1b[38;2;${rgb(foregrounds[n % foregrounds.length])}m12:00:${String(n % 60).padStart(2, '0')}.${String(n * 37).padStart(4, '0')}\x1b[0m ` +
+        `\x1b[1;3${(n % 6) + 1}m${level.padEnd(5)}\x1b[0m ` +
+        `worker-${n % 13} ${'processed batch ' + n + ' αβγ ─│ '}`
+          .repeat(1 + (n % 5))
+          .slice(0, cols - 30) +
+        '\r\n';
+    }
+    return { bytes: encoder.encode(output), sgrChanges: 24, variant };
+  }
   let output = '\x1b[?25l' + (kind === 'scroll' ? `\x1b[${rows};1H\r\n` : '');
   let sgrChanges = 0;
   for (let y = 0; y < rows; y++) {
@@ -224,7 +240,7 @@ async function mount(type, config) {
 let active;
 async function setup(config) {
   invariant(['dom', 'webgl', 'wraith', 'ghostty'].includes(config.type), 'Unknown renderer');
-  invariant(['complex', 'churn', 'scroll'].includes(config.workload), 'Unknown workload');
+  invariant(['complex', 'churn', 'scroll', 'append'].includes(config.workload), 'Unknown workload');
   active?.dispose();
   active = await mount(config.type, config);
   const inputs = Array.from({ length: 8 }, (_, i) =>
@@ -573,8 +589,15 @@ window.comparison = {
         });
       };
     try {
-      const full = Array.from(a.renderer.pack(0, a.terminal.rows - 1));
-      const rows = Array.from(a.renderer.pack(...partial));
+      // Packing updates staging in place; force a repack and read the rows.
+      const staged = (start, end) => {
+        a.renderer.rowCached.fill(0);
+        a.renderer.pack(start, end);
+        const words = a.terminal.cols * 5;
+        return Array.from(a.renderer.staging.subarray(start * words, (end + 1) * words));
+      };
+      const full = staged(0, a.terminal.rows - 1);
+      const rows = staged(...partial);
       return {
         full,
         rows,
