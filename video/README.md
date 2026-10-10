@@ -5,16 +5,16 @@ A 62-second, 1920×1080, 60 fps launch video made with
 official [`fframes-video` skill](https://github.com/dmtrKovalenko/fframes/tree/main/skills/fframes-video).
 Every scene boundary sits on the beat grid of the soundtrack (123 BPM).
 
-| time     | scene          | what happens                                                         |
-| -------- | -------------- | -------------------------------------------------------------------- |
-| 0–7.6    | ColdOpen       | xterm.js DOM, then WebGL, then Wraith, each with its cost per update |
-| 7.6–15.5 | Summon         | ember cells assemble a ghostly wordmark; the headline; cut to black  |
-| 15.5     | Arrival        | the drums hit: the wordmark punches in, "has arrived."               |
-| 19–29    | Stack, Live    | the stack, then the live dashboard running in Wraith                 |
-| 29–31    | Break          | "How fast?" flickers through nine typefaces                          |
-| 31–39    | Race           | CPU per update against xterm.js: 15× and 3.9×; still climbing        |
-| 39–52    | Facts, TwoWays | three facts, then the drop-in and native APIs                        |
-| 52–62    | Finale         | wraithterm.com                                                       |
+| time     | scene          | what happens                                                             |
+| -------- | -------------- | ------------------------------------------------------------------------ |
+| 0–7.6    | ColdOpen       | xterm.js DOM, then WebGL, then Wraith, each with its cost per update     |
+| 7.6–15.5 | Summon         | ember cells assemble a ghostly wordmark; "The spooky fast web terminal…" |
+| 15.5     | Arrival        | the drums hit: the wordmark punches in, "has arrived."                   |
+| 19–29    | Stack, Live    | the stack, then the live dashboard running in Wraith                     |
+| 29–31    | Break          | "How fast?" flickers through nine typefaces                              |
+| 31–39    | Race           | CPU per update against xterm.js: 15× and 3.9×; still climbing            |
+| 39–52    | Facts, TwoWays | three facts, then the drop-in and native APIs                            |
+| 52–62    | Finale         | wraithterm.com                                                           |
 
 | path               | what                                                              |
 | ------------------ | ----------------------------------------------------------------- |

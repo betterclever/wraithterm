@@ -423,7 +423,7 @@ fn cold_open<'a>(frame: &Frame, ctx: &FFramesContext<'a, '_>, t: f32) -> Svgr<'a
 
 /// Measured advance of each headline word plus a space, at 104 px Inter Black, memoized.
 static HEADLINE_WIDTHS: OnceLock<Vec<f32>> = OnceLock::new();
-const HEADLINE: [&str; 8] = ["The", "terminal", "the", "web", "has", "been", "waiting", "for…"];
+const HEADLINE: [&str; 5] = ["The", "spooky", "fast", "web", "terminal…"];
 
 fn summon<'a>(frame: &mut Frame, ctx: &FFramesContext<'a, '_>, t: f32, length: f32) -> Svgr<'a> {
     let font = FontQuery { family: HEAD, size: 112, weight: 800, ..Default::default() };
@@ -465,8 +465,8 @@ fn summon<'a>(frame: &mut Frame, ctx: &FFramesContext<'a, '_>, t: f32, length: f
         }
         v
     };
-    let mut headline = x_cursor(0..4, H / 2.0 - 10.0, 5.5);
-    headline.extend(x_cursor(4..8, H / 2.0 + 110.0, 5.86));
+    let mut headline = x_cursor(0..3, H / 2.0 - 10.0, 5.5);
+    headline.extend(x_cursor(3..5, H / 2.0 + 110.0, 5.8));
     let blackout = if t >= length - BEAT * 0.5 { 1.0 } else { 0.0 };
     out.push(svgr!(<g>{headline}</g>));
     out.push(svgr!(<rect width={W} height={H} fill="#000" opacity={blackout} />));
