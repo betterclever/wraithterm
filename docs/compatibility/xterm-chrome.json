@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-10T05:31:43.267Z",
+  "version": "0.2.0",
+  "wasmSha256": "c9991d95b022a8ab9643a9e2f4e84e1af4ba80fd363135f79804e40dc3a2c986",
+  "target": "@xterm/xterm 6.0.0",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "pixels": {
+    "width": 954,
+    "height": 442,
+    "colors": 388,
+    "bright": 5091
+  },
+  "checks": [
+    "Rust/Wasm/WebGPU pixels",
+    "buffers, styles, wide/combining cells, history and fragmented UTF-8",
+    "resize/reflow, all scroll and selection methods",
+    "original Serialize and Unicode11 addons",
+    "async CSI, OSC, DCS and ESC parser hooks",
+    "title/bell, DSR replies, paste, input, modes and alternate screen",
+    "original Fit addon, mutable fonts/geometry and atlas reset",
+    "transient presentation retries without discarding the pending frame",
+    "original Search addon, decoration fallback and GPU resumption",
+    "markers/decorations/joiners and visual option fallbacks",
+    "original Attach addon and disposal",
+    "link provider registration, clear/reset and resource disposal",
+    "real keyboard events, custom key handler, focus/blur",
+    "missing WebGPU preserves a working DOM terminal",
+    "renderer failure releases GPU resources and restores DOM",
+    "disposal during asynchronous GPU initialization"
+  ],
+  "errors": []
+}

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Wraith · xterm compatibility</title>
+    <link rel="icon" href="data:," />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #0c1017;
+        color: #cdd9ea;
+        font: 15px system-ui;
+      }
+      main {
+        max-width: 1080px;
+        margin: 60px auto;
+        padding: 0 32px;
+      }
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+      }
+      h1 {
+        font-size: 28px;
+        letter-spacing: -1px;
+        margin: 0;
+      }
+      a {
+        color: #87a7ff;
+      }
+      p {
+        line-height: 1.7;
+        color: #8999ad;
+      }
+      #terminal-wrapper {
+        width: 100%;
+        height: 490px;
+        padding: 20px;
+        background: #101620;
+        border: 1px solid #253145;
+        border-radius: 12px;
+      }
+      #terminal {
+        width: 100%;
+        height: 448px;
+      }
+      code {
+        font: 13px monospace;
+        color: #94c8c4;
+      }
+      #status {
+        font: 12px monospace;
+        color: #b4d6a4;
+      }
+      .reference {
+        position: absolute;
+        left: -10000px;
+        top: 0;
+        width: 900px;
+        height: 500px;
+      }
+      button {
+        background: #1b2639;
+        color: #cdd9ea;
+        border: 1px solid #31435f;
+        padding: 8px 16px;
+        border-radius: 6px;
+        margin: 16px 8px 0 0;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav>
+        <h1>Wraith <span style="color: #6c86ad">/ xterm</span></h1>
+        <span id="status">Initializing WebGPU…</span>
+      </nav>
+      <section id="terminal-wrapper"><div id="terminal"></div></section>
+      <button id="search">Search “Wraith”</button><button id="clear-search">Clear search</button>
+      <p>
+        The xterm.js 6.0 API, with Rust / Wasm / WebGPU rendering. Real Fit, Search and Serialize
+        addons. Try typing, selecting text, scrolling or resizing the window.
+      </p>
+      <code>import { Terminal } from 'wraithterm/xterm';</code>
+      <p><a href="/">Open the libghostty playground →</a></p>
+    </main>
+    <div id="reference" class="reference"></div>
+    <script type="module" src="/xterm-demo.ts"></script>
+  </body>
+</html>
