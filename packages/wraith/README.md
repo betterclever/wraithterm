@@ -30,10 +30,6 @@
   <a href="CHANGELOG.md"><b>Changelog</b></a>
 </p>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/banner.jpg" alt="The WRAITH wordmark, built from glowing terminal cells: has arrived." width="100%">
-</p>
-
 ## Why Wraith
 
 <table>
