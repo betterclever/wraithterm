@@ -1,97 +1,90 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Wraith · xterm compatibility</title>
-    <link rel="icon" href="data:," />
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: #0c1017;
-        color: #cdd9ea;
-        font: 15px system-ui;
-      }
-      main {
-        max-width: 1080px;
-        margin: 60px auto;
-        padding: 0 32px;
-      }
-      nav {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 28px;
-      }
-      h1 {
-        font-size: 28px;
-        letter-spacing: -1px;
-        margin: 0;
-      }
-      a {
-        color: #87a7ff;
-      }
-      p {
-        line-height: 1.7;
-        color: #8999ad;
-      }
-      #terminal-wrapper {
-        width: 100%;
-        height: 490px;
-        padding: 20px;
-        background: #101620;
-        border: 1px solid #253145;
-        border-radius: 12px;
-      }
-      #terminal {
-        width: 100%;
-        height: 448px;
-      }
-      code {
-        font: 13px monospace;
-        color: #94c8c4;
-      }
-      #status {
-        font: 12px monospace;
-        color: #b4d6a4;
-      }
-      .reference {
-        position: absolute;
-        left: -10000px;
-        top: 0;
-        width: 900px;
-        height: 500px;
-      }
-      button {
-        background: #1b2639;
-        color: #cdd9ea;
-        border: 1px solid #31435f;
-        padding: 8px 16px;
-        border-radius: 6px;
-        margin: 16px 8px 0 0;
-        cursor: pointer;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Wraith xterm.js Playground</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/playground.css" />
   </head>
   <body>
-    <main>
+    <header class="nav">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
       <nav>
-        <h1>Wraith <span style="color: #6c86ad">/ xterm</span></h1>
-        <span id="status">Initializing WebGPU…</span>
+        <a href="/">Home</a><a href="/playground.html">Native</a
+        ><a href="/xterm.html" aria-current="page">xterm.js API</a><a href="/#race">Race</a
+        ><a class="keep" href="https://github.com/betterclever/wraithterm">GitHub</a>
       </nav>
-      <section id="terminal-wrapper"><div id="terminal"></div></section>
-      <button id="search">Search “Wraith”</button><button id="clear-search">Clear search</button>
-      <p>
-        The xterm.js 6.0 API, with Rust / Wasm / WebGPU rendering. Real Fit, Search and Serialize
-        addons. Try typing, selecting text, scrolling or resizing the window.
-      </p>
-      <code>import { Terminal } from 'wraithterm/xterm';</code>
-      <p><a href="/playground.html">Open the libghostty playground →</a></p>
+    </header>
+    <main class="page">
+      <section class="intro">
+        <div>
+          <h1>xterm.js API playground: <em>same code, new engine.</em></h1>
+          <p>
+            A complete xterm.js 6.0 <code>Terminal</code>, with the original addons, rendered by
+            Wraith on WebGPU. Swap one import; everything else stays.
+          </p>
+        </div>
+        <div class="status"><i></i> <span id="status">Initializing WebGPU…</span></div>
+      </section>
+      <section class="window">
+        <div class="titlebar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="title">wraithterm/xterm · Terminal</span>
+          <span id="grid" class="tag">— × —</span>
+        </div>
+        <div class="screen"><div id="terminal"></div></div>
+        <div class="foot">
+          Type here: it is a real xterm.js Terminal · any key stops the dashboard
+        </div>
+      </section>
+      <aside class="side">
+        <section class="panel">
+          <h2>Try</h2>
+          <div class="buttons">
+            <button id="demo-dashboard" class="primary">Live dashboard</button>
+            <button id="demo-colors">Colors</button>
+          </div>
+          <div class="row"><button id="unicode11">Unicode 11: off</button></div>
+        </section>
+        <section class="panel">
+          <h2>Search addon</h2>
+          <input id="search-input" value="Wraith" aria-label="Search text" />
+          <div class="row">
+            <button id="search-prev">Previous</button><button id="search">Next</button
+            ><button id="clear-search">Clear</button>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Theme and font</h2>
+          <div class="buttons">
+            <button data-theme="ember" class="on">Ember</button
+            ><button data-theme="midnight">Midnight</button><button data-theme="paper">Paper</button
+            ><button data-theme="matrix">Matrix</button>
+          </div>
+          <div class="row">
+            <button id="font-down" aria-label="Smaller font">A−</button
+            ><button id="font-up" aria-label="Larger font">A+</button>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Serialize addon</h2>
+          <div class="row"><button id="serialize">Serialize the screen</button></div>
+          <p id="serialized-info" class="note">Turns the buffer back into ANSI.</p>
+          <pre id="serialized" class="code output" hidden></pre>
+        </section>
+        <section class="panel">
+          <h2>Swap one import</h2>
+          <pre class="code"><span class="c">- import { Terminal } from '@xterm/xterm';</span>
+<span class="k">import</span> { Terminal } <span class="k">from</span> <span class="s">'wraithterm/xterm'</span>;</pre>
+        </section>
+      </aside>
     </main>
-    <div id="reference" class="reference"></div>
     <script type="module" src="/xterm-demo.ts"></script>
   </body>
 </html>

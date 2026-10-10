@@ -1,64 +1,140 @@
+// The native playground: Wraith.mount() with a small demo shell, live stats and a benchmark.
 import { Wraith, type BenchmarkResult, type Workload } from '../packages/wraith/dist/index.js';
+import { showcase } from './showcase.js';
 (window as unknown as { Wraith: typeof Wraith }).Wraith = Wraith;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+const encoder = new TextEncoder();
 let term: Wraith;
-let stream: ReturnType<typeof setInterval> | undefined;
+let demo: ReturnType<typeof setInterval> | undefined;
 let latest: BenchmarkResult | undefined;
-let input = '',
-  streamCount = 0;
-const prompt =
-  '\x1b[38;2;145;214;240mwraith\x1b[0m \x1b[38;2;91;111;129m~/playground\x1b[0m \x1b[38;2;164;217;174m❯\x1b[0m ';
+let input = '';
+
+const amber = (s: string) => `\x1b[38;2;255;184;107m${s}\x1b[0m`;
+const gold = (s: string) => `\x1b[38;2;255;217;138m${s}\x1b[0m`;
+const coral = (s: string) => `\x1b[38;2;255;127;110m${s}\x1b[0m`;
+const lilac = (s: string) => `\x1b[38;2;217;187;255m${s}\x1b[0m`;
+const dim = (s: string) => `\x1b[38;2;110;92;80m${s}\x1b[0m`;
+const prompt = `${amber('wraith')} ${dim('~/playground')} ${gold('❯')} `;
+
 async function welcome() {
   await term.write(
-    '\x1b[2J\x1b[H\x1b]2;wraith / interactive demo\x07' +
-      '\x1b[38;2;145;214;240m  W R A I T H\x1b[0m\r\n' +
-      '\x1b[38;2;99;125;143m  libghostty-vt × Rust × WebAssembly × WebGPU\x1b[0m\r\n\r\n' +
-      '  Your GPU is rendering this terminal. Your browser UI stays free.\r\n' +
-      '  \x1b[38;2;164;217;174mStreaming parser\x1b[0m  ·  changed-row uploads  ·  cached glyph atlas\r\n\r\n' +
-      '  \x1b[1mOne small API. A full terminal engine underneath.\x1b[0m\r\n' +
-      '  \x1b[4mUnderline\x1b[0m  \x1b[3mItalic\x1b[0m  \x1b[9mStrike\x1b[0m  é  ┌──┬──┐\r\n\r\n' +
-      '  \x1b[38;2;99;125;143mThis is a local demo shell. Connect a PTY for real programs.\x1b[0m\r\n' +
-      '  Type \x1b[38;2;145;214;240mhelp\x1b[0m, start a stream, or run a benchmark below.\r\n\r\n' +
+    '\x1b[0m\x1b[2J\x1b[H\x1b[?25h\x1b]2;wraith / native\x07' +
+      `  ${amber('W R A I T H')}  ${dim('·  spooky fast web terminal')}\r\n\r\n` +
+      `  ${dim('Ghostty’s libghostty-vt and a Rust WebGPU renderer, in a worker.')}\r\n\r\n` +
+      `  ${gold('dashboard')}  a live full-screen dashboard\r\n` +
+      `  ${gold('stream   ')}  a fast log stream\r\n` +
+      `  ${gold('colors   ')}  256 colors and true-color gradients\r\n` +
+      `  ${gold('unicode  ')}  wide, combining, box drawing and braille\r\n` +
+      `  ${gold('help     ')}  everything else\r\n\r\n` +
+      `  \x1b[1mBold\x1b[0m  \x1b[3mItalic\x1b[0m  \x1b[4:3;58:2::255:127:110mCurly\x1b[0m  \x1b[9mStrike\x1b[0m  ${lilac('é  ┌──┬──┐')}\r\n\r\n` +
       prompt,
   );
 }
+
+function stopDemo() {
+  if (demo === undefined) return false;
+  clearInterval(demo);
+  demo = undefined;
+  $('demo-dashboard').classList.remove('on');
+  $('demo-dashboard').textContent = 'Live dashboard';
+  $('stream').classList.remove('on');
+  $('stream').textContent = 'Log stream';
+  return true;
+}
+
+function dashboard() {
+  stopDemo();
+  $('demo-dashboard').classList.add('on');
+  $('demo-dashboard').textContent = 'Stop dashboard';
+  let variant = 0;
+  demo = setInterval(() => {
+    void term.write(showcase(term.cols, term.rows, variant++ % 8, encoder).bytes);
+  }, 125);
+}
+
+function stream() {
+  stopDemo();
+  $('stream').classList.add('on');
+  $('stream').textContent = 'Stop stream';
+  let n = 0;
+  const levels = [gold('INFO '), lilac('DEBUG'), amber('WARN '), coral('ERROR')];
+  demo = setInterval(() => {
+    let out = '';
+    for (let i = 0; i < 8; i++, n++)
+      out += `\r\n${dim(String(n).padStart(7, '0'))} ${levels[n % 4]} ${dim('worker →')} wasm ${dim('→')} gpu  ${'▁▂▃▄▅▆▇█'.repeat(4).slice(n % 8, (n % 8) + 24)}  ${gold('ok')}`;
+    void term.write(out).catch(() => stopDemo());
+  }, 8);
+}
+
+async function colors() {
+  let out = '\r\n';
+  for (let row = 0; row < 6; row++) {
+    out += '  ';
+    for (let col = 0; col < 36; col++) out += `\x1b[48;5;${16 + row * 36 + col}m  `;
+    out += '\x1b[0m\r\n';
+  }
+  out += '\r\n  ';
+  for (let x = 0; x < 72; x++) {
+    const k = x / 71;
+    out += `\x1b[48;2;${Math.round(255 * (1 - k) + 217 * k)};${Math.round(184 * (1 - k) + 127 * k)};${Math.round(107 + 148 * k)}m `;
+  }
+  await term.write(out + '\x1b[0m\r\n\r\n');
+}
+
+async function unicode() {
+  await term.write(
+    `\r\n  ${dim('wide     ')} 界面 漢字 한국어 日本語\r\n` +
+      `  ${dim('emoji    ')} 🦀 🚀 👻 ✨\r\n` +
+      `  ${dim('combining')} é ñ ü å é ä\r\n` +
+      `  ${dim('box      ')} ┌─┬─┐ ╭───╮ ║ ╔═╗ ━━━\r\n` +
+      `  ${dim('blocks   ')} ▁▂▃▄▅▆▇█ ░▒▓ ▖▗▘▙▚▛▜▝▞▟\r\n` +
+      `  ${dim('braille  ')} ⠁⠃⠇⡇⣇⣧⣷⣿ ⣿⣷⣧⣇⡇⠇⠃⠁\r\n\r\n`,
+  );
+}
+
 async function command(line: string) {
   const [name, ...args] = line.trim().split(/\s+/);
-  if (name === 'clear') {
-    await welcome();
-    return;
+  switch (name) {
+    case '':
+      break;
+    case 'clear':
+      return welcome();
+    case 'dashboard':
+      return dashboard();
+    case 'stream':
+      return stream();
+    case 'colors':
+      await colors();
+      break;
+    case 'unicode':
+      await unicode();
+      break;
+    case 'echo':
+      await term.write(args.join(' ') + '\r\n');
+      break;
+    case 'about':
+      await term.write(
+        `  Ghostty owns terminal semantics and input encoding.\r\n  Rust shapes glyphs, keeps the atlas and drives wgpu.\r\n  WGSL draws backgrounds, then glyphs sized to their ink.\r\n  All of it runs in a worker; your page keeps its frame budget.\r\n`,
+      );
+      break;
+    case 'help':
+      await term.write(
+        `  ${gold('dashboard')} ${gold('stream')} ${gold('colors')} ${gold('unicode')} ${gold('about')} ${gold('echo')} ${gold('clear')}\r\n  Any key stops a running demo.\r\n`,
+      );
+      break;
+    default:
+      await term.write(`  ${coral('unknown command:')} ${name}. Try ${gold('help')}.\r\n`);
   }
-  if (name === 'help')
-    await term.write(
-      '  help     This message\r\n  colors   ANSI 256-color palette\r\n  echo     Print text\r\n  about    The architecture\r\n  clear    Reset the demo\r\n',
-    );
-  else if (name === 'colors') {
-    for (let row = 0; row < 12; row++) {
-      let text = '  ';
-      for (let col = 0; col < 18; col++) {
-        const color = 16 + row * 18 + col;
-        text += `\x1b[48;5;${color}m  `;
-      }
-      await term.write(text + '\x1b[0m\r\n');
-    }
-  } else if (name === 'echo') await term.write(args.join(' ') + '\r\n');
-  else if (name === 'about')
-    await term.write(
-      '  Ghostty owns terminal semantics and input encoding.\r\n  Rust shapes glyphs, tracks uploads, and drives wgpu.\r\n  WGSL draws the grid in two instanced passes.\r\n  A worker keeps the application thread responsive.\r\n',
-    );
-  else if (name) await term.write(`  Unknown demo command: ${name}. Try help.\r\n`);
   await term.write(prompt);
 }
-function stopStream() {
-  if (stream) {
-    clearInterval(stream);
-    stream = undefined;
-    $('stream').innerHTML = 'Start stream <span>↗</span>';
-  }
-}
+
 async function boot() {
   try {
-    term = await Wraith.mount($('terminal'), { fontSize: 13, lineHeight: 1.45 });
+    term = await Wraith.mount($('terminal'), {
+      fontSize: 14,
+      lineHeight: 1.3,
+      theme: { foreground: '#f2e6da', background: '#120d0a', cursor: '#ffb86b' },
+    });
     (window as unknown as { wraith: Wraith }).wraith = term;
     const errors: string[] = [];
     (window as unknown as { wraithErrors: string[] }).wraithErrors = errors;
@@ -75,19 +151,23 @@ async function boot() {
       $('p50').innerHTML = `${stats.renderP50Ms.toFixed(2)}<small>ms</small>`;
       $('p95').innerHTML = `${stats.renderP95Ms.toFixed(2)}<small>ms</small>`;
       $('fps').innerHTML = `${stats.activeFps}<small>/s</small>`;
-      const hits = stats.atlasHits + stats.atlasMisses;
+      const lookups = stats.atlasHits + stats.atlasMisses;
       $('cache').innerHTML =
-        `${hits ? ((stats.atlasHits / hits) * 100).toFixed(1) : '—'}<small>%</small>`;
-      $('adapter').textContent = stats.adapter || 'WebGPU adapter';
+        `${lookups ? ((stats.atlasHits / lookups) * 100).toFixed(1) : '—'}<small>%</small>`;
+      $('adapter').textContent = `${stats.adapter || 'WebGPU adapter'} · libghostty-vt in a worker`;
     });
-    let commands = Promise.resolve();
+    let queue = Promise.resolve();
     term.onData((data) => {
-      if (stream) return;
+      if (stopDemo()) {
+        input = '';
+        queue = queue.then(welcome);
+        return;
+      }
       for (const char of data) {
         if (char === '\r') {
           const line = input;
           input = '';
-          commands = commands.then(async () => {
+          queue = queue.then(async () => {
             await term.write('\r\n');
             await command(line);
           });
@@ -99,7 +179,7 @@ async function boot() {
         } else if (char === '\x03') {
           input = '';
           void term.write('^C\r\n' + prompt);
-        } else if (char >= ' ' && char !== '\x7f') {
+        } else if (char >= ' ') {
           input += char;
           void term.write(char);
         }
@@ -108,31 +188,31 @@ async function boot() {
     await welcome();
     await term.flush();
     $('clear').onclick = () => {
-      stopStream();
+      stopDemo();
       input = '';
       void welcome();
     };
-    $('stream').onclick = () => {
-      if (stream) {
-        stopStream();
-        void term.write('\r\n' + prompt);
-        return;
-      }
-      $('stream').innerHTML = 'Stop stream <span>■</span>';
-      stream = setInterval(() => {
-        let output = '';
-        for (let i = 0; i < 8; i++) {
-          const n = streamCount++;
-          output += `\r\n\x1b[38;5;${16 + (n % 216)}m${String(n).padStart(7, '0')}\x1b[0m  \x1b[38;2;99;125;143mworker → wasm → gpu\x1b[0m  ${'▁▂▃▄▅▆▇█'.repeat(4).slice(n % 8, (n % 8) + 24)}  \x1b[32mOK\x1b[0m`;
-        }
-        void term.write(output).catch(() => stopStream());
-      }, 8);
+    $('demo-dashboard').onclick = () =>
+      demo !== undefined && $('demo-dashboard').classList.contains('on')
+        ? (stopDemo(), void welcome())
+        : dashboard();
+    $('stream').onclick = () =>
+      demo !== undefined && $('stream').classList.contains('on')
+        ? (stopDemo(), void term.write('\r\n' + prompt))
+        : stream();
+    $('demo-colors').onclick = () => {
+      if (stopDemo()) void welcome();
+      void colors().then(() => term.write(prompt));
+    };
+    $('demo-unicode').onclick = () => {
+      if (stopDemo()) void welcome();
+      void unicode().then(() => term.write(prompt));
     };
     $('benchmark').onclick = async () => {
-      stopStream();
+      stopDemo();
       const button = $<HTMLButtonElement>('benchmark');
       button.disabled = true;
-      $('bench-state').textContent = 'Warming atlas…';
+      $('bench-state').textContent = 'Warming the atlas…';
       try {
         const result = await term.benchmark({
           frames: 512,
@@ -174,7 +254,7 @@ async function boot() {
     window.addEventListener(
       'pagehide',
       () => {
-        stopStream();
+        stopDemo();
         void term.dispose();
       },
       { once: true },
@@ -182,7 +262,8 @@ async function boot() {
   } catch (error) {
     $('status').classList.add('error');
     $('status').textContent = String(error);
-    $('terminal').textContent = 'Open this demo in a WebGPU-capable browser on localhost or HTTPS.';
+    $('terminal').textContent =
+      'Open this playground in a WebGPU-capable browser on localhost or HTTPS.';
   }
 }
 void boot();
