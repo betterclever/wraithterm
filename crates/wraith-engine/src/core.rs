@@ -65,6 +65,34 @@ pub(crate) struct State {
     /// Visible cells with the blink attribute, maintained as cells are copied
     /// so idle frames need not scan the grid.
     pub blinking: usize,
+    /// What produced each viewport row, for reusing rows that only moved.
+    pub keys: Vec<RowKey>,
+    /// Update stamp of the last write to each row; copy sources must predate
+    /// the current update.
+    pub stamps: Vec<u32>,
+    pub stamp: u32,
+    /// The last source-minus-destination shift, tried first.
+    pub shift: isize,
+    /// Stamp of the update that already ran its one full search for a
+    /// moved row; later misses in that update only try `shift`.
+    pub searched: u32,
+    /// Rows copied instead of snapshotted, for diagnostics.
+    pub reused: u64,
+    /// A unique version per snapshotted row content; a moved row keeps its
+    /// version. Zero is unknown. The renderer keys packed GPU rows by it.
+    pub versions: Vec<u64>,
+    pub next_version: u64,
+}
+/// Ghostty's row identity, its raw cells and its selection range. Equal keys
+/// produce equal snapshots: a row id changes when the row is edited in place,
+/// raw cells hold codepoints, widths and page-local style ids, and rows with
+/// grapheme clusters are never reusable.
+#[derive(Default, Clone)]
+pub(crate) struct RowKey {
+    id: [u64; 2],
+    raw: Vec<u64>,
+    selection: u32,
+    reusable: bool,
 }
 
 /// Owns the stable callback allocation through a raw pointer. Unlike keeping a
@@ -162,6 +190,14 @@ impl Core {
             dirty: vec![true; rows.into()],
             events: Vec::new(),
             blinking: 0,
+            keys: vec![RowKey::default(); rows.into()],
+            stamps: vec![0; rows.into()],
+            stamp: 0,
+            shift: 1,
+            searched: 0,
+            reused: 0,
+            versions: vec![0; rows.into()],
+            next_version: 0,
         });
         // Ghostty borrows the stable allocation only for synchronous callbacks
         // and never after bridge_free. StateOwner then releases the allocation.
@@ -184,6 +220,10 @@ impl Core {
     pub fn cells(&self) -> &[Cell] {
         &self.state.cells
     }
+    /// Rows copied from a moved, unchanged row instead of being snapshotted.
+    pub fn reused_rows(&self) -> u64 {
+        self.state.reused
+    }
     pub fn blinking(&self) -> usize {
         self.state.blinking
     }
@@ -201,6 +241,7 @@ impl Core {
         self.state.dirty.fill(false);
     }
     pub fn update(&mut self) -> Result<bool, String> {
+        self.state.stamp = self.state.stamp.wrapping_add(1);
         let previous = self.frame;
         let dirty = unsafe { wraith_bridge_update(self.bridge.as_ptr(), &mut self.frame) };
         check(dirty)?;
@@ -223,11 +264,15 @@ impl Core {
             .filter(|c| c.flags & BLINK != 0)
             .count();
         self.state.dirty = vec![true; rows.into()];
+        self.state.keys = vec![RowKey::default(); rows.into()];
+        self.state.stamps = vec![0; rows.into()];
+        self.state.versions = vec![0; rows.into()];
         Ok(())
     }
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         unsafe { wraith_bridge_theme(self.bridge.as_ptr(), fg, bg, cursor) }
         self.state.dirty.fill(true);
+        self.state.keys.iter_mut().for_each(|k| k.reusable = false);
     }
     pub fn scroll(&mut self, delta: i32) {
         unsafe { wraith_bridge_scroll(self.bridge.as_ptr(), delta) }
@@ -393,6 +438,8 @@ pub unsafe extern "C" fn wraith_row(user: *mut c_void, row: u32) {
     let state = unsafe { &mut *user.cast::<State>() };
     if let Some(dirty) = state.dirty.get_mut(row as usize) {
         *dirty = true;
+        // Unknown until wraith_row_store completes the snapshot.
+        state.versions[row as usize] = 0;
     }
 }
 #[no_mangle]
@@ -439,4 +486,113 @@ pub unsafe extern "C" fn wraith_cell(
     cell.background = background;
     cell.underline = underline;
     cell.flags = flags;
+}
+
+#[no_mangle]
+/// Reuse a dirty row whose identity, raw cells and selection equal a row staged
+/// earlier and not overwritten during this update. Returns whether it did.
+///
+/// # Safety
+/// `user` must point to the live, uniquely borrowed State. For nonzero `len`,
+/// `raw` must remain readable for `len` u64 values during this call.
+pub unsafe extern "C" fn wraith_row_reuse(
+    user: *mut c_void,
+    row: u32,
+    id0: u64,
+    id1: u64,
+    raw: *const u64,
+    len: usize,
+    selection: u32,
+) -> bool {
+    let state = unsafe { &mut *user.cast::<State>() };
+    let y = row as usize;
+    if y >= state.rows || len != state.cols || raw.is_null() || (id0 | id1) == 0 {
+        return false;
+    }
+    let raw = unsafe { std::slice::from_raw_parts(raw, len) };
+    let matches = |state: &State, s: usize| {
+        let key = &state.keys[s];
+        key.reusable
+            && key.id == [id0, id1]
+            && key.selection == selection
+            && (s == y || state.stamps[s] != state.stamp)
+            && key.raw == raw
+    };
+    let guess = y as isize + state.shift;
+    let source = if matches(state, y) {
+        Some(y)
+    } else if guess >= 0 && (guess as usize) < state.rows && matches(state, guess as usize) {
+        Some(guess as usize)
+    } else if state.searched != state.stamp {
+        // One full search per update finds a new shift; rows rewritten in
+        // place (dense output) then cost two comparisons each, not a scan.
+        state.searched = state.stamp;
+        (0..state.rows).find(|&s| s != y && matches(state, s))
+    } else {
+        None
+    };
+    let Some(source) = source else {
+        return false;
+    };
+    state.reused += 1;
+    if source == y {
+        // Conservatively dirty but unchanged: nothing to copy or upload.
+        state.stamps[y] = state.stamp;
+        return true;
+    }
+    state.shift = source as isize - y as isize;
+    let cols = state.cols;
+    for x in 0..cols {
+        let (from, to) = (source * cols + x, y * cols + x);
+        state.blinking += (state.cells[from].flags & BLINK != 0) as usize;
+        state.blinking -= (state.cells[to].flags & BLINK != 0) as usize;
+        let (a, b) = if from < to {
+            let (head, tail) = state.cells.split_at_mut(to);
+            (&head[from], &mut tail[0])
+        } else {
+            let (head, tail) = state.cells.split_at_mut(from);
+            (&tail[0], &mut head[to])
+        };
+        b.clone_from(a);
+    }
+    let key = state.keys[source].clone();
+    state.keys[y].clone_from(&key);
+    state.versions[y] = state.versions[source];
+    state.stamps[y] = state.stamp;
+    state.dirty[y] = true;
+    true
+}
+#[no_mangle]
+/// Record what produced a freshly snapshotted row.
+///
+/// # Safety
+/// `user` must point to the live, uniquely borrowed State. For nonzero `len`,
+/// `raw` must remain readable for `len` u64 values during this call.
+pub unsafe extern "C" fn wraith_row_store(
+    user: *mut c_void,
+    row: u32,
+    id0: u64,
+    id1: u64,
+    raw: *const u64,
+    len: usize,
+    selection: u32,
+    reusable: bool,
+) {
+    let state = unsafe { &mut *user.cast::<State>() };
+    let y = row as usize;
+    if y >= state.rows {
+        return;
+    }
+    state.stamps[y] = state.stamp;
+    state.next_version += 1;
+    state.versions[y] = state.next_version;
+    let key = &mut state.keys[y];
+    key.id = [id0, id1];
+    key.selection = selection;
+    key.reusable = reusable && len == state.cols && !raw.is_null();
+    key.raw.clear();
+    if key.reusable {
+        key.raw
+            .extend_from_slice(unsafe { std::slice::from_raw_parts(raw, len) });
+    }
 }

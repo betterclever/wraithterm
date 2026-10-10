@@ -283,7 +283,13 @@ function cacheInfo(a) {
     };
   if (a.type === 'ghostty') {
     const m = Array.from(a.engine.metrics());
-    return { glyphVariants: m[5], atlasHits: m[6], atlasMisses: m[7], atlasResets: m[8] };
+    return {
+      glyphVariants: m[5],
+      atlasHits: m[6],
+      atlasMisses: m[7],
+      atlasResets: m[8],
+      reusedRows: m[9],
+    };
   }
   return { spans: a.host.querySelectorAll('.xterm-rows span').length };
 }

@@ -43,6 +43,17 @@ pub struct Renderer {
     /// staging, so this stays empty there and `cell_count` sizes the draw.
     cells: Vec<GpuCell>,
     cell_count: usize,
+    /// The core row version each packed native row holds (zero: none), so
+    /// unchanged rows are skipped and moved rows are copied, not repacked.
+    packed_versions: Vec<u64>,
+    /// Pack pass that last wrote each row; copy sources must predate it.
+    pack_stamps: Vec<u32>,
+    pack_stamp: u32,
+    /// Rows whose packed cells changed this frame and must be uploaded.
+    changed_rows: Vec<bool>,
+    /// Atlas resets already reflected in packed rows; any other reset (a
+    /// font change, say) invalidates every packed glyph reference.
+    atlas_resets: u64,
     pub atlas: Atlas,
     pub frames: u64,
     pub upload_bytes: u64,
@@ -230,6 +241,11 @@ impl Renderer {
             sampler,
             cells,
             cell_count,
+            packed_versions: vec![0; rows as usize],
+            pack_stamps: vec![0; rows as usize],
+            pack_stamp: 0,
+            changed_rows: vec![false; rows as usize],
+            atlas_resets: 0,
             atlas,
             frames: 0,
             upload_bytes: 0,
@@ -278,6 +294,9 @@ impl Renderer {
         self.surface.configure(&self.device, &self.config);
         self.cell_count = cols as usize * rows as usize;
         self.cells.resize(self.cell_count, GpuCell::default());
+        self.packed_versions = vec![0; rows as usize];
+        self.pack_stamps = vec![0; rows as usize];
+        self.changed_rows = vec![false; rows as usize];
         self.cell_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith resized packed cells"),
             size: (self.cell_count * CELL_BYTES) as u64,
@@ -320,29 +339,27 @@ impl Renderer {
         {
             return Ok(false);
         }
-        let state = &mut *core.state;
-        self.atlas
-            .begin(&state.cells, &mut state.dirty, state.cols)?;
-        let cols = core.state.cols;
-        let rows = core
-            .state
-            .cells
-            .chunks_exact(cols)
-            .zip(self.cells.chunks_exact_mut(cols));
-        for ((source, packed), dirty) in rows.zip(&core.state.dirty) {
-            if !dirty {
-                continue;
-            }
-            for (cell, gpu) in source.iter().zip(packed) {
-                *gpu = GpuCell {
-                    foreground: cell.foreground,
-                    background: cell.background,
-                    underline: cell.underline,
-                    flags: cell.flags,
-                    glyph: self.atlas.tile(cell),
-                };
+        // A miss with no free atlas slot resets the atlas; every visible row
+        // is then repacked once so no stale glyph reference is drawn.
+        self.changed_rows.fill(false);
+        if self.atlas.resets != self.atlas_resets {
+            self.packed_versions.fill(0);
+        }
+        self.pack(core);
+        if self.atlas.overflow {
+            self.atlas.reset();
+            self.packed_versions.fill(0);
+            core.state.dirty.fill(true);
+            self.pack(core);
+            if self.atlas.overflow {
+                self.atlas.reset();
+                return Err(
+                    "visible glyph set exceeds atlas capacity; reduce font size or grid size"
+                        .into(),
+                );
             }
         }
+        self.atlas_resets = self.atlas.resets;
         for upload in self.atlas.uploads.drain(..) {
             self.queue.write_texture(
                 wgpu::TexelCopyTextureInfo {
@@ -369,15 +386,16 @@ impl Renderer {
             );
             self.upload_bytes += upload.pixels.len() as u64;
         }
-        // Adjacent dirty rows merge into one writeBuffer call.
+        // Adjacent changed rows merge into one writeBuffer call.
+        let cols = core.state.cols;
         let mut row = 0;
         while row < core.state.rows {
-            if !core.state.dirty[row] {
+            if !self.changed_rows[row] {
                 row += 1;
                 continue;
             }
             let start = row;
-            while row < core.state.rows && core.state.dirty[row] {
+            while row < core.state.rows && self.changed_rows[row] {
                 row += 1;
             }
             let bytes = bytemuck::cast_slice(&self.cells[start * cols..row * cols]);
@@ -414,6 +432,59 @@ impl Renderer {
             self.last_blink = blink;
         }
         Ok(rendered)
+    }
+    /// Pack dirty rows. A row already holding its core version is left alone;
+    /// a row whose version another packed row holds (it moved) is copied from
+    /// that row unless this pass already overwrote it; others are packed.
+    fn pack(&mut self, core: &Core) {
+        let state = &*core.state;
+        let cols = state.cols;
+        self.pack_stamp = self.pack_stamp.wrapping_add(1);
+        let (mut shift, mut searched) = (1isize, false);
+        for y in 0..state.rows {
+            if !state.dirty[y] {
+                continue;
+            }
+            let version = state.versions[y];
+            if version != 0 && self.packed_versions[y] == version {
+                continue;
+            }
+            let usable = |r: usize| {
+                r != y
+                    && self.packed_versions[r] == version
+                    && self.pack_stamps[r] != self.pack_stamp
+            };
+            let guess = y as isize + shift;
+            let source = if version == 0 {
+                None
+            } else if guess >= 0 && (guess as usize) < state.rows && usable(guess as usize) {
+                Some(guess as usize)
+            } else if !searched {
+                // One full search per pass, as in the core's snapshot reuse.
+                searched = true;
+                (0..state.rows).find(|&r| usable(r))
+            } else {
+                None
+            };
+            if let Some(r) = source {
+                shift = r as isize - y as isize;
+                self.cells.copy_within(r * cols..(r + 1) * cols, y * cols);
+            } else {
+                let row = &state.cells[y * cols..(y + 1) * cols];
+                for (cell, gpu) in row.iter().zip(&mut self.cells[y * cols..(y + 1) * cols]) {
+                    *gpu = GpuCell {
+                        foreground: cell.foreground,
+                        background: cell.background,
+                        underline: cell.underline,
+                        flags: cell.flags,
+                        glyph: self.atlas.tile(cell),
+                    };
+                }
+            }
+            self.packed_versions[y] = version;
+            self.pack_stamps[y] = self.pack_stamp;
+            self.changed_rows[y] = true;
+        }
     }
     fn present(&mut self, uniforms: Uniforms) -> Result<bool, String> {
         if let Some(error) = &*self.lost.lock().unwrap() {

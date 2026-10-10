@@ -7,6 +7,12 @@ extern void* wraith_alloc(size_t len, uint8_t alignment);
 extern void wraith_dealloc(void* ptr, size_t len, uint8_t alignment);
 extern void wraith_emit(void* user, uint32_t kind, const uint8_t* data, size_t len);
 extern void wraith_row(void* user, uint32_t row);
+/* Row reuse: a dirty row whose id, raw cells and selection match a row staged
+ * last update is copied by Rust instead of being snapshotted cell by cell. */
+extern bool wraith_row_reuse(void* user, uint32_t row, uint64_t id0, uint64_t id1,
+                             const uint64_t* raw, size_t len, uint32_t selection);
+extern void wraith_row_store(void* user, uint32_t row, uint64_t id0, uint64_t id1,
+                             const uint64_t* raw, size_t len, uint32_t selection, bool reusable);
 extern void wraith_cell(void* user, uint32_t x, uint32_t y, uint32_t scalar, const uint8_t* text,
                         size_t len, uint32_t fg, uint32_t bg, uint32_t ul, uint32_t flags);
 
@@ -37,6 +43,8 @@ struct WraithBridge {
   GhosttyMouseEvent mouse_event;
   uint32_t cols, height, cw, ch;
   bool held;
+  /* Colors the cached rows were resolved with; any change disables reuse. */
+  GhosttyColorRgb palette[256], foreground, background;
 };
 
 static uint32_t rgb(GhosttyColorRgb c) { return c.r | ((uint32_t)c.g << 8) | ((uint32_t)c.b << 16); }
@@ -160,17 +168,40 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
   frame->cursor_x = cursor.viewport_has_value ? cursor.viewport_x : 0;
   frame->cursor_y = cursor.viewport_has_value ? cursor.viewport_y : 0;
   frame->cursor_style = cursor.visual_style; frame->cursor_blink = cursor.blinking;
+  /* Scrolling makes every update a full rebuild (the viewport pin moved), so
+   * reuse cannot depend on the dirty level. Its other full-rebuild causes are
+   * covered: palette and reverse video change these colors, clears and screen
+   * switches change raw cells or row ids, selection is compared per row,
+   * resizes reset Rust's keys, and preedit, link hover and glyph registrations
+   * are not drawn by this renderer. */
+  bool reuse = __builtin_memcmp(b->palette, colors.palette, sizeof(b->palette)) == 0 &&
+      __builtin_memcmp(&b->foreground, &colors.foreground, sizeof(GhosttyColorRgb)) == 0 &&
+      __builtin_memcmp(&b->background, &colors.background, sizeof(GhosttyColorRgb)) == 0;
+  __builtin_memcpy(b->palette, colors.palette, sizeof(b->palette));
+  b->foreground = colors.foreground;
+  b->background = colors.background;
   ghostty_render_state_get(b->render, GHOSTTY_RENDER_STATE_DATA_ROW_ITERATOR, &b->rows);
   static const GhosttyCellData keys[] = {GHOSTTY_CELL_DATA_CONTENT_TAG, GHOSTTY_CELL_DATA_WIDE,
                                          GHOSTTY_CELL_DATA_CODEPOINT, GHOSTTY_CELL_DATA_STYLE_ID};
   uint16_t y;
   while (ghostty_render_state_row_iterator_next_dirty(b->rows, &y)) {
-    wraith_row(b->user, y);
-    ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_CELLS, &b->cells);
     /* One selection range per row instead of a query per cell. */
     GhosttyRenderStateRowSelection selection = GHOSTTY_INIT_SIZED(GhosttyRenderStateRowSelection);
     bool any_selected = ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_SELECTION,
                                                      &selection) == GHOSTTY_SUCCESS;
+    uint32_t selected_range = any_selected ? selection.start_x | ((uint32_t)selection.end_x << 16) : UINT32_MAX;
+    GhosttyRenderStateRowId id = {{0, 0}};
+    GhosttyCellsView raw_row = {0};
+    bool keyed = ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_ID, &id) == GHOSTTY_SUCCESS &&
+        ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_CELLS_RAW, &raw_row) == GHOSTTY_SUCCESS &&
+        raw_row.len == b->cols;
+    const uint64_t* raw_words = (const uint64_t*)raw_row.ptr;
+    if (keyed && reuse &&
+        wraith_row_reuse(b->user, y, id.bits[0], id.bits[1], raw_words, raw_row.len, selected_range))
+      continue;
+    bool reusable = keyed;
+    wraith_row(b->user, y);
+    ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_CELLS, &b->cells);
     /* Style IDs are page-local and every row lies within one page, so a run
      * of equal IDs within a row shares one decoded style. */
     uint32_t style_id = UINT32_MAX, style_flags = 0;
@@ -218,6 +249,8 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
       } else if (tag == GHOSTTY_CELL_CONTENT_CODEPOINT) {
         scalar = codepoint;
       } else if (tag == GHOSTTY_CELL_CONTENT_CODEPOINT_GRAPHEME) {
+        /* Grapheme text lives outside the raw cell; never reuse such rows. */
+        reusable = false;
         result = ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_UTF8, &text);
         if (result == GHOSTTY_OUT_OF_SPACE) {
           text.cap = text.len; text.ptr = wraith_alloc(text.cap, 0); allocated = true;
@@ -230,6 +263,8 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
                   ul_default ? rgb(fg) : rgb(style_ul), flags);
       if (allocated) wraith_dealloc(text.ptr, text.cap, 0);
     }
+    wraith_row_store(b->user, y, id.bits[0], id.bits[1], keyed ? raw_words : NULL,
+                     keyed ? raw_row.len : 0, selected_range, reusable);
   }
   ghostty_render_state_clean(b->render);
   return dirty;

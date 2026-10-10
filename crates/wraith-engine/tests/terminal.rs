@@ -198,8 +198,9 @@ fn dirty_rows_are_incremental() {
     c.acknowledge_damage();
     c.write(b"\x1b[3;1HX");
     c.update().unwrap();
-    // Moving the cursor damages its previous row and the destination row.
-    assert_eq!(c.dirty_rows(), vec![true, false, true, false, false]);
+    // Ghostty also damages the cursor's previous row, but its cells are
+    // unchanged (the cursor is a uniform), so that row is reused in place.
+    assert_eq!(c.dirty_rows(), vec![false, false, true, false, false]);
 }
 #[test]
 fn shaders_validate_and_buffer_layout_matches() {
@@ -337,4 +338,80 @@ fn blink_count_tracks_visible_cells() {
     c.write(b"\x1b[H\x1b[2K");
     c.update().unwrap();
     assert_eq!(c.blinking(), 0);
+}
+#[test]
+fn moved_rows_are_reused_and_match_a_fresh_snapshot() {
+    fn cells(c: &Core) -> Vec<(String, u32, u32, u32, u32)> {
+        c.cells()
+            .iter()
+            .map(|x| {
+                (
+                    x.text.clone(),
+                    x.foreground,
+                    x.background,
+                    x.underline,
+                    x.flags,
+                )
+            })
+            .collect()
+    }
+    let line = |i: usize| {
+        format!(
+            "\x1b[3{};4{}m{i:05}\x1b[0m {} stream {}\r\n",
+            i % 8,
+            (i * 3) % 8,
+            if i % 5 == 0 { "e\u{301}" } else { "plain" },
+            if i % 7 == 0 {
+                "\x1b[5mblink\x1b[0m"
+            } else {
+                ""
+            },
+        )
+    };
+    let mut incremental = term(40, 10);
+    let mut input = Vec::new();
+    let check = |incremental: &mut Core, input: &[u8], setup: &dyn Fn(&mut Core)| {
+        let mut fresh = term(40, 10);
+        fresh.write(input);
+        setup(&mut fresh);
+        fresh.update().unwrap();
+        incremental.update().unwrap();
+        assert_eq!(cells(incremental), cells(&fresh));
+        assert_eq!(incremental.blinking(), fresh.blinking());
+    };
+    for i in 0..60 {
+        let bytes = line(i);
+        incremental.write(bytes.as_bytes());
+        input.extend_from_slice(bytes.as_bytes());
+        incremental.update().unwrap();
+    }
+    check(&mut incremental, &input, &|_| {});
+    assert!(
+        incremental.reused_rows() > 100,
+        "{}",
+        incremental.reused_rows()
+    );
+    incremental.scroll(-4);
+    check(&mut incremental, &input, &|c| c.scroll(-4));
+    incremental.scroll(2);
+    check(&mut incremental, &input, &|c| c.scroll(-2));
+    incremental.scroll(2);
+    incremental.select(1, 2, 6, 3).unwrap();
+    check(&mut incremental, &input, &|c| c.select(1, 2, 6, 3).unwrap());
+    incremental.select(-1, 0, 0, 0).unwrap();
+    // A palette change resolves cached colors differently.
+    let palette = b"\x1b]4;1;rgb:12/34/56\x1b\\";
+    incremental.write(palette);
+    input.extend_from_slice(palette);
+    check(&mut incremental, &input, &|_| {});
+    let edit = b"\x1b[3;1H\x1b[2Kedited\x1b[6;1H\x1b[M";
+    incremental.write(edit);
+    input.extend_from_slice(edit);
+    check(&mut incremental, &input, &|_| {});
+    // The alternate screen has new rows and ids.
+    for step in [&b"\x1b[?1049halt\r\nscreen\r\n"[..], b"\x1b[?1049l"] {
+        incremental.write(step);
+        input.extend_from_slice(step);
+        check(&mut incremental, &input, &|_| {});
+    }
 }

@@ -2,7 +2,7 @@
 use crate::core::Cell;
 use harfrust::{FontRef as ShapeFont, ShapeOptions, ShaperData, UnicodeBuffer};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     hash::{BuildHasherDefault, Hasher},
 };
 use swash::{
@@ -84,20 +84,6 @@ impl Font {
     }
 }
 
-#[derive(Hash, Eq, PartialEq)]
-struct Key<'a> {
-    text: &'a str,
-    style: u32,
-}
-impl<'a> Key<'a> {
-    fn cell(cell: &'a Cell) -> Self {
-        Self {
-            text: &cell.text,
-            style: cell.flags & 3,
-        }
-    }
-}
-
 pub struct Upload {
     pub x: u32,
     pub y: u32,
@@ -120,6 +106,9 @@ pub struct Atlas {
     pub hits: u64,
     pub misses: u64,
     pub resets: u64,
+    /// Set when a miss found no free slot. The renderer then resets the atlas
+    /// and repacks every visible row before any stale reference is drawn.
+    pub overflow: bool,
 }
 impl Atlas {
     /// The compatibility compositor receives already-rasterized browser glyphs.
@@ -143,6 +132,7 @@ impl Atlas {
             hits: 0,
             misses: 0,
             resets: 0,
+            overflow: false,
         }
     }
     pub fn new(data: Vec<u8>, size: f32, line_height: f32) -> Result<Self, String> {
@@ -187,6 +177,7 @@ impl Atlas {
             hits: 0,
             misses: 0,
             resets: 0,
+            overflow: false,
         })
     }
     #[cfg(target_arch = "wasm32")]
@@ -198,47 +189,13 @@ impl Atlas {
         self.reset();
         Ok(())
     }
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.cache.clear();
         self.scalars.fill(0);
         self.next = 0;
         self.uploads.clear();
+        self.overflow = false;
         self.resets += 1;
-    }
-    /// Clear the atlas before references become stale. Rebuild all visible rows
-    /// in the same frame. Scrollback remains in Ghostty, independent of the atlas.
-    pub fn begin(&mut self, cells: &[Cell], dirty: &mut [bool], cols: usize) -> Result<(), String> {
-        let drawable = |c: &&Cell| !c.text.is_empty() && c.text != " ";
-        let dirty_cells = || {
-            cells
-                .chunks(cols)
-                .zip(dirty.iter())
-                .filter(|(_, d)| **d)
-                .flat_map(|(row, _)| row)
-        };
-        let dirty_count = dirty_cells().filter(drawable).count();
-        if self.next as usize + dirty_count <= self.capacity as usize {
-            return Ok(());
-        }
-        let missing: HashSet<_> = dirty_cells()
-            .filter(drawable)
-            .filter(|c| self.cached(c) == 0)
-            // Cells remain borrowed for this preflight; a warm full viewport
-            // allocates neither glyph strings nor a missing-glyph hash table.
-            .map(Key::cell)
-            .collect();
-        if self.next as usize + missing.len() > self.capacity as usize {
-            let visible: HashSet<_> = cells.iter().filter(drawable).map(Key::cell).collect();
-            if visible.len() > self.capacity as usize {
-                return Err(
-                    "visible glyph set exceeds atlas capacity; reduce font size or grid size"
-                        .into(),
-                );
-            }
-            self.reset();
-            dirty.fill(true);
-        }
-        Ok(())
     }
     fn cached(&self, cell: &Cell) -> u32 {
         let style = (cell.flags & 3) as usize;
@@ -261,6 +218,10 @@ impl Atlas {
             return glyph;
         }
         self.misses += 1;
+        if self.next >= self.capacity {
+            self.overflow = true;
+            return 0;
+        }
         // Block elements and braille are geometry, not type: drawn to fill the cell exactly, so neighbours tile with no seam at any
         // font or line height (a font's block glyph fills only the font's own line). Terminals do the same (xterm customGlyphs, Ghostty sprites).
         if let Some(pixels) = self.procedural(&cell.text) {
@@ -476,42 +437,28 @@ mod tests {
     }
 
     #[test]
-    fn cached_viewport_and_spaces_do_not_evict_a_full_atlas() {
+    fn cached_glyphs_and_spaces_never_overflow_a_full_atlas() {
         let mut atlas = small_atlas(1);
-        let a = cell("A");
-        let tile = atlas.tile(&a);
-        let cells = [a, cell(" "), cell("A"), cell("")];
-        let mut dirty = [true];
-        atlas.begin(&cells, &mut dirty, 4).unwrap();
-        assert_eq!(atlas.resets, 0);
+        let tile = atlas.tile(&cell("A"));
+        assert_eq!(atlas.tile(&cell(" ")), 0);
+        assert_eq!(atlas.tile(&cell("")), 0);
+        assert_eq!(atlas.tile(&cell("A")), tile);
+        assert!(!atlas.overflow);
         assert_eq!(atlas.count(), 1);
-        assert_eq!(atlas.tile(&cells[2]), tile);
     }
 
     #[test]
-    fn eviction_invalidates_every_visible_row_before_reusing_slots() {
-        let mut atlas = small_atlas(2);
+    fn a_miss_without_a_free_slot_flags_overflow_and_places_nothing() {
+        let mut atlas = small_atlas(1);
         atlas.tile(&cell("A"));
-        atlas.tile(&cell("B"));
-        let cells = [cell("B"), cell("C")];
-        let mut dirty = [false, true];
-        atlas.begin(&cells, &mut dirty, 1).unwrap();
-        assert_eq!(dirty, [true, true]);
-        assert_eq!(atlas.resets, 1);
+        assert_eq!(atlas.tile(&cell("B")), 0);
+        assert!(atlas.overflow);
+        assert_eq!(atlas.count(), 1);
+        assert_eq!(atlas.uploads.len(), 1);
+        atlas.reset();
+        assert!(!atlas.overflow);
         assert!(atlas.uploads.is_empty());
-        atlas.tile(&cells[0]);
-        atlas.tile(&cells[1]);
-        assert_eq!(atlas.count(), 2);
-    }
-
-    #[test]
-    fn visible_overflow_preserves_existing_tiles_and_damage() {
-        let mut atlas = small_atlas(1);
-        atlas.tile(&cell("A"));
-        let mut dirty = [true];
-        assert!(atlas.begin(&[cell("A"), cell("B")], &mut dirty, 2).is_err());
-        assert_eq!(atlas.resets, 0);
+        assert_ne!(atlas.tile(&cell("B")), 0);
         assert_eq!(atlas.count(), 1);
-        assert_eq!(dirty, [true]);
     }
 }

@@ -227,6 +227,7 @@ impl Engine {
             self.renderer.atlas.hits as f64,
             self.renderer.atlas.misses as f64,
             self.renderer.atlas.resets as f64,
+            self.core.reused_rows() as f64,
         ]
     }
     #[wasm_bindgen(getter)]

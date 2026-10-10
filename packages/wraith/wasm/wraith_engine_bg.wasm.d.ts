@@ -51,6 +51,8 @@ export const wraith_cell: (a: number, b: number, c: number, d: number, e: number
 export const wraith_dealloc: (a: number, b: number, c: number) => void;
 export const wraith_emit: (a: number, b: number, c: number, d: number) => void;
 export const wraith_row: (a: number, b: number) => void;
+export const wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
+export const wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
 export const wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
 export const wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
 export const wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
