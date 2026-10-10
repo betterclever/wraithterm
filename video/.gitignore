@@ -1,0 +1,11 @@
+/.cache/
+/target/
+out.mp4
+*.mp4
+frames/
+strip.png
+onion.png
+node_modules
+# Recorded footage and the rendered soundtrack are generated (see README).
+footage/
+media/*.wav
