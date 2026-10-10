@@ -1,8 +1,101 @@
-# Wraith
+<p align="center">
+  <a href="https://wraithterm.com">
+    <picture>
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/logo-light.svg">
+      <img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/logo.svg" alt="Wraith" width="560">
+    </picture>
+  </a>
+</p>
 
-**Rust / Wasm / WebGPU terminals. Full xterm.js API or a lean libghostty core.**
+<h3 align="center">The terminal the web has been waiting for.</h3>
 
-[wraithterm.com](https://wraithterm.com) · [npm](https://www.npmjs.com/package/wraithterm)
+<p align="center">
+  Ghostty's terminal engine and a Rust WebGPU renderer, compiled into one Wasm module.<br>
+  Drop it in where xterm.js was, or run Ghostty itself in a worker.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/wraithterm"><img alt="npm" src="https://img.shields.io/npm/v/wraithterm?style=flat-square&color=ffb86b&labelColor=0c0806"></a>
+  <a href="https://github.com/betterclever/wraithterm/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/betterclever/wraithterm/ci.yml?branch=main&style=flat-square&label=ci&color=ffd98a&labelColor=0c0806"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ff7f6e?style=flat-square&labelColor=0c0806"></a>
+  <img alt="xterm.js 6.0 compatible" src="https://img.shields.io/badge/xterm.js-6.0%20compatible-d9bbff?style=flat-square&labelColor=0c0806">
+  <img alt="WebGPU" src="https://img.shields.io/badge/WebGPU-Rust%20%2B%20Wasm-ffb86b?style=flat-square&labelColor=0c0806">
+</p>
+
+<p align="center">
+  <a href="https://wraithterm.com"><b>Website</b></a> ·
+  <a href="https://wraithterm.com/#race"><b>Race it in your browser</b></a> ·
+  <a href="docs/ARCHITECTURE.md"><b>Architecture</b></a> ·
+  <a href="docs/PERFORMANCE.md"><b>Performance</b></a> ·
+  <a href="CHANGELOG.md"><b>Changelog</b></a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/banner.jpg" alt="The WRAITH wordmark, built from glowing terminal cells: has arrived." width="100%">
+</p>
+
+## Why Wraith
+
+<table>
+<tr>
+<td width="50%">
+
+**Less CPU per update.** One dense, full-screen update (240×80 cells, about 4,800 style changes):
+
+| Renderer         | CPU per update |
+| ---------------- | -------------: |
+| xterm.js, DOM    |        37.7 ms |
+| xterm.js + WebGL |         9.8 ms |
+| **Wraith**       |     **2.5 ms** |
+
+That is **15× less** than xterm.js DOM and **3.9× less** than xterm.js + WebGL, and we are still climbing.
+
+<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates ([report](docs/benchmarks/launch/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
+
+</td>
+<td width="50%">
+
+<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="15× less CPU than xterm.js DOM, 3.9× less than xterm.js + WebGL" width="100%">
+
+</td>
+</tr>
+</table>
+
+- **Two ways in.** `wraithterm/xterm` is a complete xterm.js 6.0 `Terminal`: keep your code and addons, get a WebGPU renderer. `Wraith.mount()` runs Ghostty's own `libghostty-vt` in a worker.
+- **Built for the GPU.** 20-byte cells, glyph quads sized to their ink, and row reuse: a one-cell edit uploads one row.
+- **Off your main thread.** The native profile parses, snapshots and renders in a dedicated worker; your app keeps its frame budget.
+- **One module, one allocator.** Zig owns the terminal model; Rust owns shaping, the glyph atlas and wgpu, in a single Wasm binary.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/dashboard.jpg" alt="A btop-style dashboard rendered live by Wraith: CPU meters, a braille network graph, a process table, highlighted Rust, logs and a frame-time histogram." width="100%">
+  <br><sub>A full-screen dashboard rewritten every update, rendered live by Wraith on WebGPU.</sub>
+</p>
+
+## Quick start
+
+```sh
+npm i wraithterm
+```
+
+```ts
+// Keep your xterm.js code: swap one import.
+import { Terminal } from 'wraithterm/xterm';
+import 'wraithterm/css/xterm.css';
+
+const term = new Terminal({ fontSize: 14 });
+term.open(document.getElementById('terminal')!);
+term.write('hello from the other side\r\n');
+```
+
+```ts
+// Or go native: Ghostty's terminal semantics in a worker.
+import { Wraith } from 'wraithterm';
+
+const term = await Wraith.mount(document.getElementById('terminal')!);
+term.connect(new WebSocket(ptyUrl));
+```
+
+## About this repository
 
 The `Wraith.mount()` profile is built around upstream
 `libghostty-vt`. Zig owns the terminal model; Rust owns text shaping, glyph
