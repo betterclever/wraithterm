@@ -1,0 +1,182 @@
+{
+  "date": "2026-10-10T11:40:29.859Z",
+  "iterations": 1024,
+  "warmup": 32,
+  "wasmSha256": "c9991d95b022a8ab9643a9e2f4e84e1af4ba80fd363135f79804e40dc3a2c986",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "samplingIntervalUs": 500,
+  "measuredSeparatelyFromBenchmark": true,
+  "activeSampledMs": 2338.581,
+  "inclusiveGroups": [
+    {
+      "name": "parser including callees",
+      "sampledMs": 1049.207,
+      "sampledPercent": 44.865112647370346
+    },
+    {
+      "name": "other renderer work",
+      "sampledMs": 433.119,
+      "sampledPercent": 18.520590050120138
+    },
+    {
+      "name": "other sampled work",
+      "sampledMs": 63.393,
+      "sampledPercent": 2.7107463885150866
+    },
+    {
+      "name": "packing including callees",
+      "sampledMs": 792.862,
+      "sampledPercent": 33.90355091399443
+    }
+  ],
+  "hot": [
+    {
+      "name": "pack",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts?t=1791610255143",
+      "line": 250,
+      "selfMs": 606.815,
+      "selfPercent": 25.948000090653263
+    },
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 6606,
+      "selfMs": 465.128,
+      "selfPercent": 19.8893260485739
+    },
+    {
+      "name": "renderRows",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts?t=1791610255143",
+      "line": 156,
+      "selfMs": 205.196,
+      "selfPercent": 8.774380703512087
+    },
+    {
+      "name": "print",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 6917,
+      "selfMs": 159.928,
+      "selfPercent": 6.838676958377751
+    },
+    {
+      "name": "_extractColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 7374,
+      "selfMs": 159.431,
+      "selfPercent": 6.817424754584084
+    },
+    {
+      "name": "writeBuffer",
+      "url": "",
+      "line": 0,
+      "selfMs": 157.466,
+      "selfPercent": 6.7333994417982534
+    },
+    {
+      "name": "e",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 8898,
+      "selfMs": 133.248,
+      "selfPercent": 5.697814187321286
+    },
+    {
+      "name": "charAttributes",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 7406,
+      "selfMs": 127.078,
+      "selfPercent": 5.433978981271121
+    },
+    {
+      "name": "decode",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 87,
+      "selfMs": 126.247,
+      "selfPercent": 5.398444612352534
+    },
+    {
+      "name": "(garbage collector)",
+      "url": "",
+      "line": 0,
+      "selfMs": 35.983,
+      "selfPercent": 1.5386681068562518
+    },
+    {
+      "name": "resolveColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-renderer.ts?t=1791610255143",
+      "line": 11,
+      "selfMs": 25.967,
+      "selfPercent": 1.1103741970023702
+    },
+    {
+      "name": "e",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 5940,
+      "selfMs": 16.456,
+      "selfPercent": 0.7036745787295801
+    },
+    {
+      "name": "tile",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/src/xterm-atlas.ts?t=1791610255044",
+      "line": 56,
+      "selfMs": 14.974,
+      "selfPercent": 0.6403028161094271
+    },
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 6899,
+      "selfMs": 14.598,
+      "selfPercent": 0.6242246901005354
+    },
+    {
+      "name": "passArray32ToWasm0",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/packages/wraith/wasm/wraith_engine.js?t=1791610034894",
+      "line": 1834,
+      "selfMs": 14.594,
+      "selfPercent": 0.6240536462068238
+    },
+    {
+      "name": "submit",
+      "url": "",
+      "line": 0,
+      "selfMs": 8.165,
+      "selfPercent": 0.3491433480388321
+    },
+    {
+      "name": "draw",
+      "url": "http://127.0.0.1:5173/compare.js?t=1791629823461",
+      "line": 208,
+      "selfMs": 5.755,
+      "selfPercent": 0.24608940207758467
+    },
+    {
+      "name": "getUnderlineColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 260,
+      "selfMs": 5.687,
+      "selfPercent": 0.2431816558844872
+    },
+    {
+      "name": "(anonymous)",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/outputs/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=a09ed86b",
+      "line": 6880,
+      "selfMs": 5.06,
+      "selfPercent": 0.2163705255451917
+    },
+    {
+      "name": "wasm-to-js",
+      "url": "",
+      "line": 0,
+      "selfMs": 4.436,
+      "selfPercent": 0.18968767812617995
+    }
+  ]
+}

@@ -1,35 +1,74 @@
 import { chromium } from '@playwright/test';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-const output = resolve('docs/benchmarks/comparison');
+const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/comparison');
+const iterations = Number(process.env.WRAITH_PROFILE_ITERATIONS ?? 256);
+if (!Number.isInteger(iterations) || iterations < 32 || iterations > 8192)
+  throw new Error('WRAITH_PROFILE_ITERATIONS must be an integer between 32 and 8192');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  executablePath:
+    process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   headless: true,
 });
 try {
-  const page = await browser.newPage({ viewport: { width: 2600, height: 2100 } });
-  await page.goto('http://127.0.0.1:5173/compare.html?type=wraith');
+  const page = await browser.newPage({
+    viewport: { width: 2600, height: 2100 },
+    deviceScaleFactor: 1,
+  });
+  await page.goto(process.env.WRAITH_URL ?? 'http://127.0.0.1:5173/compare.html?type=wraith');
   await page.waitForFunction(() => window.comparison?.ready);
   await page.evaluate(() => window.comparison.ready);
   await page.evaluate(() => window.comparison.profile(32));
+  const adapter = await page.evaluate(() => window.comparison.adapterInfo());
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Profiler.enable');
   await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
   await cdp.send('Profiler.start');
-  await page.evaluate(() => window.comparison.profile(256));
+  await page.evaluate((count) => window.comparison.profile(count), iterations);
   const { profile } = await cdp.send('Profiler.stop');
   await writeFile(resolve(output, 'wraith.cpuprofile'), JSON.stringify(profile));
   const nodes = new Map(profile.nodes.map((n) => [n.id, n]));
+  const parents = new Map();
+  for (const node of profile.nodes)
+    for (const child of node.children ?? []) parents.set(child, node.id);
+  const categories = new Map();
+  function category(id) {
+    if (categories.has(id)) return categories.get(id);
+    let current = id,
+      result = 'other sampled work';
+    while (nodes.has(current)) {
+      const frame = nodes.get(current).callFrame;
+      if (frame.url.includes('xterm-renderer') && frame.functionName === 'pack') {
+        result = 'packing including callees';
+        break;
+      }
+      if (frame.url.includes('xterm-base') && frame.functionName === 'parse') {
+        result = 'parser including callees';
+        break;
+      }
+      if (frame.url.includes('xterm-renderer') && frame.functionName === 'renderRows') {
+        result = 'other renderer work';
+        break;
+      }
+      current = parents.get(current);
+    }
+    categories.set(id, result);
+    return result;
+  }
   const samples = profile.samples ?? [];
   const times = profile.timeDeltas ?? [];
   const totals = new Map();
+  const grouped = new Map();
   for (let i = 0; i < samples.length; i++) {
     const n = nodes.get(samples[i]);
     const name = n.callFrame.functionName || '(anonymous)';
     if (['(idle)', '(program)', '(root)'].includes(name)) continue;
     const key = JSON.stringify({ name, url: n.callFrame.url, line: n.callFrame.lineNumber + 1 });
     totals.set(key, (totals.get(key) ?? 0) + (times[i] ?? 500));
+    const group = category(samples[i]);
+    grouped.set(group, (grouped.get(group) ?? 0) + (times[i] ?? 500));
   }
   const total = [...totals.values()].reduce((a, b) => a + b, 0);
   const hot = [...totals]
@@ -40,9 +79,21 @@ try {
     resolve(output, 'profile-summary.json'),
     JSON.stringify(
       {
+        date: new Date().toISOString(),
+        iterations,
+        warmup: 32,
+        wasmSha256: createHash('sha256')
+          .update(await readFile(resolve('packages/wraith/wasm/wraith_engine_bg.wasm')))
+          .digest('hex'),
+        adapter,
         samplingIntervalUs: 500,
         measuredSeparatelyFromBenchmark: true,
         activeSampledMs: total / 1000,
+        inclusiveGroups: [...grouped].map(([name, us]) => ({
+          name,
+          sampledMs: us / 1000,
+          sampledPercent: (us / total) * 100,
+        })),
         hot,
       },
       null,
