@@ -7,7 +7,7 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2022',
     rollupOptions: {
-      input: { main: 'demo/index.html', xterm: 'demo/xterm.html' },
+      input: { main: 'demo/index.html', xterm: 'demo/xterm.html', compare: 'demo/compare.html' },
     },
   },
   worker: { format: 'es' },
