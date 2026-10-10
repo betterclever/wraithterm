@@ -76,3 +76,19 @@ sync. Package contents are governed by `packages/wraith/package.json`.
 Performance results must distinguish CPU usage, device-wide GPU activity,
 GPU-completed throughput, and physical display presentation. Preserve raw runs
 and disclose fallback renderers and measurement limits.
+
+## Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please).
+Every push to `main` updates a release pull request that bumps `wraithterm`'s version
+from the conventional commit types since the last release (`feat` → minor before 1.0,
+`fix` and `perf` → patch) and writes `CHANGELOG.md`. Merging that pull request is the
+authorization to release: it tags `vX.Y.Z`, creates the GitHub Release, and the
+`publish` job in `.github/workflows/release.yml` builds, tests and publishes the package
+to npm with provenance through npm trusted publishing. No npm token is stored in the
+repository.
+
+Configure the trusted publisher once on npmjs.com under the package's settings
+(GitHub Actions, repository `betterclever/wraithterm`, workflow `release.yml`,
+environment `npm`). A run of the Release workflow with `publish` checked republishes the
+current version after a failed publish.

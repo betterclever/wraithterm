@@ -1,0 +1,56 @@
+# Releases: release-please keeps a release PR up to date from conventional commits on main.
+# Merging it tags vX.Y.Z, writes CHANGELOG.md, creates the GitHub Release and publishes
+# wraithterm to npm with provenance through npm trusted publishing (no token).
+name: Release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the current packages/wraith version to npm
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release-please:
+    runs-on: ubuntu-24.04
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or newer.
+      - run: npm install --global npm@latest
+      - run: npm ci
+      - run: npm run build:sdk
+      - run: npm run typecheck
+      - run: npm test
+      - name: Check the package contents
+        working-directory: packages/wraith
+        run: npm pack --dry-run
+      - name: Publish to npm
+        working-directory: packages/wraith
+        run: npm publish --provenance --access public
