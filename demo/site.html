@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#030507" />
+    <title>Wraith Terminal</title>
+    <meta
+      name="description"
+      content="A browser terminal with Ghostty's engine, a Rust WebGPU renderer and an xterm.js-compatible API."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a class="mark" href="#top" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
+      <div class="nav-links">
+        <a href="#numbers">Numbers</a><a href="#race">Race</a><a href="#pipeline">Pipeline</a
+        ><a href="#use">Use it</a>
+      </div>
+    </nav>
+
+    <header id="top" class="hero">
+      <div id="hero-term" class="hero-term" aria-hidden="true"></div>
+      <div class="hero-veil"></div>
+      <div class="hero-copy">
+        <p class="kicker"><i></i>Everything behind this text is a terminal</p>
+        <h1>The terminal<br />that <em>haunts</em> the GPU.</h1>
+        <p class="lede">
+          Ghostty's terminal engine and a Rust WebGPU renderer, compiled into one Wasm module. Drop
+          it in where xterm.js was, or run Ghostty itself in a worker.
+        </p>
+        <div class="cta">
+          <a class="button primary" href="#race">Race it against xterm.js →</a
+          ><a class="button" href="#use">npm i wraithterm</a>
+        </div>
+      </div>
+      <aside class="hud" aria-live="off">
+        <div><span>renderer</span><b id="hud-state">booting</b></div>
+        <div><span>grid</span><b id="hud-grid">—</b></div>
+        <div><span>cells / frame</span><b id="hud-cells">—</b></div>
+        <div><span>bytes / frame</span><b id="hud-bytes">—</b></div>
+        <div><span>render p50</span><b id="hud-p50">—</b></div>
+        <div><span>frames / s</span><b id="hud-fps">—</b></div>
+        <p id="hud-adapter">Waiting for WebGPU…</p>
+      </aside>
+      <a class="scroll-cue" href="#numbers" aria-label="Scroll to the numbers">↓</a>
+    </header>
+
+    <main>
+      <section id="numbers" class="numbers">
+        <div class="section-head">
+          <span class="label">01 · CPU per update</span>
+          <h2>Nearly 4× less CPU<br />than xterm WebGL.</h2>
+          <p>
+            One dense screen: 240×80 cells rewritten every update, with about 4,800 style changes.
+            Lower is better. Bars show milliseconds of CPU for parsing plus redraw.
+          </p>
+        </div>
+        <div class="bars" id="bars">
+          <div class="bar-row" data-ms="37.7">
+            <span class="who">xterm.js<small>DOM renderer</small></span>
+            <div class="track"><i></i></div>
+            <b>37.7<small>ms</small></b>
+          </div>
+          <div class="bar-row" data-ms="9.8">
+            <span class="who">xterm.js<small>+ WebGL addon</small></span>
+            <div class="track"><i></i></div>
+            <b>9.8<small>ms</small></b>
+          </div>
+          <div class="bar-row ours" data-ms="3.1">
+            <span class="who">Wraith<small>native · libghostty</small></span>
+            <div class="track"><i></i></div>
+            <b>3.1<small>ms</small></b>
+          </div>
+          <div class="bar-row ours" data-ms="2.5">
+            <span class="who">Wraith<small>xterm-compatible</small></span>
+            <div class="track"><i></i></div>
+            <b>2.5<small>ms</small></b>
+          </div>
+        </div>
+        <div class="stats">
+          <div>
+            <strong>0.6<small>ms</small></strong
+            ><span>Wraith redraw of the full screen, versus 8.8 ms for xterm WebGL</span>
+          </div>
+          <div>
+            <strong>20<small>bytes</small></strong
+            ><span>per GPU cell, so a full 240×80 screen uploads 375 KiB</span>
+          </div>
+          <div>
+            <strong>1<small>row</small></strong
+            ><span>uploaded when one cell changes; unchanged and scrolled rows are reused</span>
+          </div>
+          <div>
+            <strong>4.2→2.5<small>ms</small></strong
+            ><span>compatible path, from the first recorded build to this one</span>
+          </div>
+        </div>
+        <p class="receipt">
+          Medians from interleaved runs, 10 Oct 2026: Chrome 155, Apple M5 Max, hardware WebGPU,
+          Wraith build c6a77bd, xterm 6.0 with WebGL addon 0.19. GPU-completed updates, not display
+          frames. Native figures drive the engine directly, without the worker hop. Your machine
+          will differ, so race it yourself below.
+        </p>
+      </section>
+
+      <section id="race" class="race">
+        <div class="section-head">
+          <span class="label">02 · Live, in this browser</span>
+          <h2>Race it.<br />On your hardware.</h2>
+          <p>
+            This runs the repository's own benchmark harness: real xterm.js 6.0, its official WebGL
+            addon, and both Wraith paths, each fed the same bytes and fenced on the GPU.
+          </p>
+        </div>
+        <div class="race-grid">
+          <div class="race-controls">
+            <label
+              >Scene
+              <select id="race-workload">
+                <option value="complex">Dense styled screen</option>
+                <option value="churn">Random RGB colors</option>
+                <option value="scroll">Scroll + repaint</option>
+              </select></label
+            >
+            <label class="check"
+              ><input id="race-dom" type="checkbox" /> Include xterm DOM (slow)</label
+            >
+            <button id="race-go" class="button primary">Start the race</button>
+            <p id="race-status" class="race-status">Needs a WebGPU browser. Takes about 20 s.</p>
+          </div>
+          <div class="race-stage">
+            <div class="stage-label"><i></i><span id="stage-name">Stage idle</span></div>
+            <div id="stage" class="stage"></div>
+          </div>
+          <div class="race-board" id="race-board"></div>
+        </div>
+      </section>
+
+      <section id="pipeline" class="pipeline">
+        <div class="section-head">
+          <span class="label">03 · Where the time goes</span>
+          <h2>Bytes in.<br />Pixels out. Nothing wasted.</h2>
+        </div>
+        <ol class="flow">
+          <li>
+            <span>01</span><b>PTY bytes</b>
+            <p>Writes in one microtask batch become one transfer and one acknowledgement.</p>
+          </li>
+          <li>
+            <span>02</span><b>Worker</b>
+            <p>Parsing and rendering stay off your app's main thread.</p>
+          </li>
+          <li>
+            <span>03</span><b>libghostty-vt</b>
+            <p>Ghostty's terminal engine, compiled from Zig to Wasm with ReleaseFast.</p>
+          </li>
+          <li>
+            <span>04</span><b>Row snapshot</b>
+            <p>
+              Rows keyed by identity and contents. Moved rows are copied, unchanged rows skipped.
+            </p>
+          </li>
+          <li>
+            <span>05</span><b>20-byte cells</b>
+            <p>Colors, flags and one glyph word: atlas slot, ink width, color bit.</p>
+          </li>
+          <li>
+            <span>06</span><b>WGSL, two passes</b>
+            <p>Backgrounds, then glyph quads sized to ink. Blank cells draw nothing.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="use" class="use">
+        <div class="section-head">
+          <span class="label">04 · Two ways in</span>
+          <h2>Keep your xterm code.<br />Or go full ghost.</h2>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <header><b>Drop-in</b><span>xterm.js 6.0 API</span></header>
+            <pre><code><span class="k">import</span> { Terminal } <span class="k">from</span> <span class="s">'wraithterm/xterm'</span>;
+<span class="k">import</span> { FitAddon } <span class="k">from</span> <span class="s">'@xterm/addon-fit'</span>;
+
+<span class="k">const</span> term = <span class="k">new</span> <span class="f">Terminal</span>({ fontSize: <span class="n">14</span> });
+term.<span class="f">loadAddon</span>(<span class="k">new</span> <span class="f">FitAddon</span>());
+term.<span class="f">open</span>(element);
+term.<span class="f">write</span>(<span class="s">'same API, WebGPU underneath'</span>);</code></pre>
+            <p>
+              xterm's parser and buffer, Wraith's renderer. Addons such as fit, search, serialize
+              and web links keep working.
+            </p>
+          </article>
+          <article class="card ghost">
+            <header><b>Native</b><span>Ghostty in a worker</span></header>
+            <pre><code><span class="k">import</span> { Wraith } <span class="k">from</span> <span class="s">'wraithterm'</span>;
+
+<span class="k">const</span> term = <span class="k">await</span> Wraith.<span class="f">mount</span>(element);
+term.<span class="f">connect</span>(<span class="k">new</span> <span class="f">WebSocket</span>(ptyUrl));
+term.<span class="f">onResize</span>(({ cols, rows }) =&gt; {
+  <span class="c">// tell the PTY</span>
+});</code></pre>
+            <p>
+              Ghostty's terminal semantics, Kitty keyboard encoding and reflow, with the whole
+              terminal off the main thread.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="mark">wraith<b>_</b></span>
+      <p>MIT licensed. Built on Ghostty's libghostty-vt, wgpu, swash and harfrust.</p>
+      <a href="/">Playground</a><a href="/xterm.html">xterm API demo</a
+      ><a href="/compare.html">Benchmark harness</a>
+    </footer>
+    <script type="module" src="/site.ts"></script>
+  </body>
+</html>
