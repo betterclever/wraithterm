@@ -9,9 +9,9 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'demo/index.html',
+        playground: 'demo/playground.html',
         xterm: 'demo/xterm.html',
         compare: 'demo/compare.html',
-        site: 'demo/site.html',
       },
     },
   },

@@ -2,6 +2,8 @@
 
 **Rust / Wasm / WebGPU terminals. Full xterm.js API or a lean libghostty core.**
 
+[wraithterm.com](https://wraithterm.com) · [npm](https://www.npmjs.com/package/wraithterm)
+
 The `Wraith.mount()` profile is built around upstream
 `libghostty-vt`. Zig owns the terminal model; Rust owns text shaping, glyph
 rasterization, and the WebGPU renderer. Both live in **one Wasm module with one
@@ -23,8 +25,9 @@ npm run build:sdk
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Try `help` or `colors`, start a stream, and run a
-benchmark. The playground's shell is an interactive demonstration; connect a PTY
+Open **http://127.0.0.1:5173** for the landing page and its in-browser race, or
+**http://127.0.0.1:5173/playground.html** for the playground. In the playground,
+try `help` or `colors`, start a stream, and run a benchmark. The playground's shell is an interactive demonstration; connect a PTY
 backend to run actual programs.
 
 ## Drop-in xterm API

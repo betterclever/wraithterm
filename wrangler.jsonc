@@ -1,0 +1,11 @@
+// Static deployment of the demo build (landing page, playground, xterm demo and
+// benchmark harness) to wraithterm.com. Build with `npm run build:demo` first.
+{
+  "name": "wraithterm",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" },
+  "routes": [
+    { "pattern": "wraithterm.com", "custom_domain": true },
+    { "pattern": "www.wraithterm.com", "custom_domain": true },
+  ],
+}

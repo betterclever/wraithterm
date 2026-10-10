@@ -4,6 +4,26 @@
   "type": "module",
   "description": "xterm-compatible Terminal API and libghostty terminal core with Rust/Wasm/WebGPU rendering.",
   "license": "MIT",
+  "homepage": "https://wraithterm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/betterclever/wraithterm.git",
+    "directory": "packages/wraith"
+  },
+  "bugs": {
+    "url": "https://github.com/betterclever/wraithterm/issues"
+  },
+  "keywords": [
+    "terminal",
+    "xterm",
+    "xterm.js",
+    "ghostty",
+    "libghostty",
+    "webgpu",
+    "wasm",
+    "rust",
+    "terminal-emulator"
+  ],
   "sideEffects": [
     "**/*.css"
   ],
@@ -36,15 +56,7 @@
     "LICENSE",
     "css",
     "docs/*.md",
-    "docs/compatibility/*.json",
-    "docs/benchmarks/*.json",
-    "docs/benchmarks/comparison/*.md",
-    "docs/benchmarks/comparison/*.json",
-    "docs/benchmarks/optimization/*.md",
-    "docs/benchmarks/optimization/*.json",
-    "docs/benchmarks/optimization/usage-after/*.json",
-    "docs/benchmarks/packing/**/*.md",
-    "docs/benchmarks/packing/**/*.json"
+    "docs/compatibility/*.json"
   ],
   "dependencies": {
     "@wraith-terminal/xterm-base": "npm:@xterm/xterm@6.0.0"

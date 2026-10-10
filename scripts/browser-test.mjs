@@ -31,7 +31,7 @@ try {
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text());
   });
-  await page.goto(process.env.WRAITH_URL ?? 'http://127.0.0.1:5173/');
+  await page.goto(process.env.WRAITH_URL ?? 'http://127.0.0.1:5173/playground.html');
   await page.waitForFunction(
     () => window.wraith || document.getElementById('status')?.classList.contains('error'),
     { timeout: 30000 },

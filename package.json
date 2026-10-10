@@ -25,7 +25,8 @@
     "test:xterm-consumer": "node scripts/xterm-consumer-test.mjs",
     "benchmark:compare": "node scripts/compare-renderers.mjs",
     "benchmark:usage": "node scripts/measure-utilization.mjs",
-    "benchmark:optimization": "node scripts/optimization-compare.mjs"
+    "benchmark:optimization": "node scripts/optimization-compare.mjs",
+    "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
