@@ -6,6 +6,5 @@ frames/
 strip.png
 onion.png
 node_modules
-# Recorded footage and the rendered soundtrack are generated (see README).
+# Recorded footage and the music are generated or supplied locally (see README).
 footage/
-media/*.wav

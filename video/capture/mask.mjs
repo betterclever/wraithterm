@@ -10,7 +10,8 @@ const browser = await chromium.launch({
 const page = await browser.newPage();
 await page.setContent('<canvas></canvas>');
 const mask = await page.evaluate(() => {
-  const w = 104, h = 26;
+  const w = 104,
+    h = 26;
   const c = document.querySelector('canvas');
   c.width = w;
   c.height = h;
@@ -27,7 +28,8 @@ const mask = await page.evaluate(() => {
   const rows = [];
   for (let y = 0; y < h; y++) {
     let r = '';
-    for (let x = 0; x < w; x++) r += '_.:-=+*#%@'[Math.min(9, Math.floor((a[(y * w + x) * 4 + 3] / 256) * 10))];
+    for (let x = 0; x < w; x++)
+      r += '_.:-=+*#%@'[Math.min(9, Math.floor((a[(y * w + x) * 4 + 3] / 256) * 10))];
     rows.push(r);
   }
   return rows.join('\n');
