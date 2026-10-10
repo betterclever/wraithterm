@@ -415,3 +415,28 @@ fn moved_rows_are_reused_and_match_a_fresh_snapshot() {
         check(&mut incremental, &input, &|_| {});
     }
 }
+#[test]
+fn synthetic_bold_never_loses_coverage() {
+    // Outline emboldening once collapsed JetBrains Mono's bold `i` to a speck.
+    let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+    let mut atlas = Atlas::new(data, 15., 20. / 15.).unwrap();
+    let coverage = |atlas: &mut Atlas, text: &str, flags: u32| {
+        let mut cell = wraith_engine::core::Cell::with_text(text);
+        cell.flags = flags;
+        atlas.tile(&cell);
+        let tile = atlas.uploads.last().unwrap();
+        tile.pixels
+            .chunks_exact(4)
+            .map(|p| p[3] as u32)
+            .sum::<u32>()
+    };
+    for c in '!'..='~' {
+        let text = c.to_string();
+        let regular = coverage(&mut atlas, &text, 0);
+        let bold = coverage(&mut atlas, &text, 1);
+        assert!(
+            bold > regular,
+            "bold {c:?} covers {bold}, regular {regular}"
+        );
+    }
+}

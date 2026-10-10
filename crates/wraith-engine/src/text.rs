@@ -22,6 +22,26 @@ const MAX_SLOTS: u32 = GLYPH_SLOT - 1;
 pub fn glyph_word(slot: u32, ink: u32, colored: bool) -> u32 {
     (slot + 1) | (ink.min(2047) << 20) | ((colored as u32) << 31)
 }
+/// Synthetic bold for mask glyphs: widen coverage to the right by `strength`
+/// pixels. Outline emboldening (swash `embolden`) can collapse glyphs whose
+/// contours overlap after offsetting, such as JetBrains Mono's `i`, which
+/// rendered as a lone speck; dilating the rasterized coverage cannot.
+fn embolden(pixels: &mut [u8], width: u32, strength: u32) {
+    for row in pixels.chunks_exact_mut(width as usize * 4) {
+        for x in (0..width as usize).rev() {
+            let mut a = row[x * 4 + 3];
+            for k in 1..=strength as usize {
+                if x >= k {
+                    a = a.max(row[(x - k) * 4 + 3]);
+                }
+            }
+            if a != 0 {
+                row[x * 4..x * 4 + 3].fill(255);
+                row[x * 4 + 3] = a;
+            }
+        }
+    }
+}
 /// Rightmost covered column + 1 of a tile's RGBA pixels.
 pub fn ink_width(pixels: &[u8], width: u32) -> u32 {
     let mut ink = 0;
@@ -257,9 +277,6 @@ impl Atlas {
             Source::Outline,
         ]);
         render.format(Format::Alpha);
-        if cell.flags & 1 != 0 {
-            render.embolden(self.font_size / 24.0);
-        }
         if cell.flags & 2 != 0 {
             render.transform(Some(Transform::new(1., 0., 0.2, 1., 0., 0.)));
         }
@@ -313,6 +330,13 @@ impl Atlas {
                 }
             }
             pen += pos.x_advance as f32 * factor;
+        }
+        if cell.flags & 1 != 0 && !colored {
+            embolden(
+                &mut pixels,
+                self.tile_width,
+                (self.font_size / 24.0).round().max(1.0) as u32,
+            );
         }
         self.place(cell, style, pixels, colored)
     }
