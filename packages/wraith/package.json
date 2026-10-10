@@ -1,0 +1,54 @@
+{
+  "name": "wraithterm",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "xterm-compatible Terminal API and libghostty terminal core with Rust/Wasm/WebGPU rendering.",
+  "license": "MIT",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.js",
+      "default": "./dist/vite.js"
+    },
+    "./xterm": {
+      "types": "./dist/xterm.d.ts",
+      "import": "./dist/xterm.js",
+      "require": "./dist/xterm.js",
+      "default": "./dist/xterm.js"
+    },
+    "./css/xterm.css": "./css/xterm.css"
+  },
+  "files": [
+    "dist",
+    "wasm",
+    "licenses",
+    "README.md",
+    "LICENSE",
+    "css",
+    "docs/*.md",
+    "docs/compatibility/*.json",
+    "docs/benchmarks/*.json",
+    "docs/benchmarks/comparison/*.md",
+    "docs/benchmarks/comparison/*.json",
+    "docs/benchmarks/optimization/*.md",
+    "docs/benchmarks/optimization/*.json",
+    "docs/benchmarks/optimization/usage-after/*.json"
+  ],
+  "dependencies": {
+    "@wraith-terminal/xterm-base": "npm:@xterm/xterm@6.0.0"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./css/xterm.css"
+}

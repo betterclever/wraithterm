@@ -1,0 +1,16 @@
+node_modules/
+target/
+dist/
+.cache/
+playwright-report/
+test-results/
+packages/wraith/dist/
+*.log
+.DS_Store
+*.orig
+*.rej
+*.cpuprofile
+
+# Full-resolution benchmark captures are retained locally; commit summaries
+# and validation records instead of hundreds of megabytes of generated images.
+**/benchmarks/comparison/*.png

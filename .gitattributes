@@ -1,0 +1,11 @@
+*.wasm binary
+*.ttf binary
+*.png binary
+*.csv text eol=lf
+
+# Preserve third-party legal notices verbatim, including upstream whitespace.
+licenses/** -text -whitespace
+packages/wraith/licenses/** -text -whitespace
+demo/fonts/OFL.txt -text -whitespace
+packages/wraith/wasm/OFL.txt -text -whitespace
+packages/wraith/wasm/Ghostty-MIT.txt -text -whitespace

@@ -1,0 +1,8 @@
+{
+  "ghostty": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "zig": "0.16.0",
+  "source": "https://github.com/ghostty-org/ghostty",
+  "license": "MIT",
+  "xterm": "6.0.0",
+  "xtermSource": "https://github.com/xtermjs/xterm.js"
+}

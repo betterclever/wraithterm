@@ -1,0 +1,10 @@
+node_modules
+dist
+.cache
+packages/wraith/dist
+packages/wraith/wasm
+demo/fonts
+docs/benchmarks/*.json
+
+# Generated from pinned upstream declarations.
+packages/wraith/src/xterm-api.d.ts
