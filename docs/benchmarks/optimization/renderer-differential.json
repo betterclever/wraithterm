@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-10T05:45:24.596Z",
+  "checks": [
+    {
+      "dpr": 1,
+      "label": "getter fallback when private attribute/content words are unavailable",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "attribute runs, inverse, palette, truecolor and style transitions",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "extended attributes sharing fg/bg words",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "spaces, erased glyphs, wide continuation, combining and emoji",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "selection across attribute runs",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "bold bright colors disabled and theme mutation",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "attribute cache rebuilt after options and theme change",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "getter fallback when private attribute/content words are unavailable",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "attribute runs, inverse, palette, truecolor and style transitions",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "extended attributes sharing fg/bg words",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "spaces, erased glyphs, wide continuation, combining and emoji",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "selection across attribute runs",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "bold bright colors disabled and theme mutation",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "attribute cache rebuilt after options and theme change",
+      "packedWords": 8192
+    }
+  ]
+}
