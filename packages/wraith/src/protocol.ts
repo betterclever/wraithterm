@@ -12,7 +12,7 @@ export type Command =
       history: number;
       theme: number[];
     }
-  | { type: 'write'; bytes: Uint8Array; id: number }
+  | { type: 'write'; bytes: Uint8Array; ids: number[] }
   | { type: 'resize'; cols: number; rows: number; id: number }
   | { type: 'key'; key: number; mods: number; action: number; text: string; unshifted: number }
   | {
@@ -38,6 +38,7 @@ export type Command =
 export type Reply =
   | { type: 'ready'; width: number; height: number; adapter: string }
   | { type: 'result'; id: number; value?: unknown; error?: string }
+  | { type: 'written'; ids: number[]; error?: string }
   | { type: 'data'; bytes: Uint8Array }
   | { type: 'title'; title: string }
   | { type: 'bell' }

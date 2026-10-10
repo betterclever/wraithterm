@@ -80,7 +80,11 @@ export class Wraith {
   private pending = new Map<number, Pending>();
   private sequence = 1;
   private pendingBytes = 0;
-  private queue: { id: number; bytes: Uint8Array }[] = [];
+  /** Writes queued this task, encoded or copied once into one buffer that
+   * crosses to the worker as a single transfer with one acknowledgement. */
+  private batch = new Uint8Array(0);
+  private batchLength = 0;
+  private batchIds: number[] = [];
   private flushScheduled = false;
   private observer?: ResizeObserver;
   private abort = new AbortController();
@@ -243,6 +247,16 @@ export class Wraith {
         this.cellHeight = reply.height;
         this.readyResolve();
         break;
+      case 'written':
+        for (const id of reply.ids) {
+          const pending = this.pending.get(id);
+          if (!pending) continue;
+          this.pending.delete(id);
+          this.pendingBytes -= pending.bytes;
+          if (reply.error) pending.reject(new Error(reply.error));
+          else pending.resolve(undefined);
+        }
+        break;
       case 'result': {
         const pending = this.pending.get(reply.id);
         if (pending) {
@@ -306,7 +320,8 @@ export class Wraith {
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
     this.pendingBytes = 0;
-    this.queue = [];
+    this.batchIds = [];
+    this.batchLength = 0;
     this.observer?.disconnect();
     clearInterval(this.mirrorTimer);
     this.worker.terminate();
@@ -314,31 +329,49 @@ export class Wraith {
   /** Resolves after bytes have been parsed. Use flush() to wait for rendering. */
   write(data: string | Uint8Array): Promise<void> {
     this.assertLive();
-    const encoded = typeof data === 'string' ? this.encoder.encode(data) : data;
-    if (this.pendingBytes + encoded.byteLength > (this.options.maxPendingBytes ?? 8 * 1024 * 1024))
-      return Promise.reject(new BackpressureError());
-    // Own the transferred copy; callers retain their original buffer.
-    const bytes = typeof data === 'string' ? encoded : encoded.slice();
+    const limit = this.options.maxPendingBytes ?? 8 * 1024 * 1024;
+    // Strings encode straight into the batch; byte arrays are copied once,
+    // so callers retain ownership of their original buffer.
+    let length: number;
+    if (typeof data === 'string') {
+      if (this.pendingBytes + data.length > limit) return Promise.reject(new BackpressureError());
+      this.reserve(data.length * 3);
+      length = this.encoder.encodeInto(data, this.batch.subarray(this.batchLength)).written;
+    } else length = data.byteLength;
+    if (this.pendingBytes + length > limit) return Promise.reject(new BackpressureError());
+    if (typeof data !== 'string') {
+      this.reserve(length);
+      this.batch.set(data, this.batchLength);
+    }
+    this.batchLength += length;
     const id = this.sequence++;
-    this.pendingBytes += bytes.byteLength;
+    this.pendingBytes += length;
     const done = new Promise<void>((resolve, reject) =>
-      this.pending.set(id, { resolve: () => resolve(), reject, bytes: bytes.byteLength }),
+      this.pending.set(id, { resolve: () => resolve(), reject, bytes: length }),
     );
-    this.queue.push({ id, bytes });
+    this.batchIds.push(id);
     if (!this.flushScheduled) {
       this.flushScheduled = true;
       queueMicrotask(() => this.flushWrites());
     }
     return done;
   }
+  private reserve(bytes: number) {
+    if (this.batchLength + bytes <= this.batch.length) return;
+    const next = new Uint8Array(Math.max(4096, (this.batchLength + bytes) * 2));
+    next.set(this.batch.subarray(0, this.batchLength));
+    this.batch = next;
+  }
   private flushWrites() {
     this.flushScheduled = false;
-    if (this.disposed || this.failed) return;
-    // Separate acknowledgements preserve the ordering contract. Each write
-    // crosses the worker boundary once; rendering coalesces at the next frame.
-    for (const { id, bytes } of this.queue)
-      this.send({ type: 'write', id, bytes }, [bytes.buffer as ArrayBuffer]);
-    this.queue = [];
+    if (this.disposed || this.failed || !this.batchIds.length) return;
+    // Writes keep their order and each promise still resolves after its bytes
+    // are parsed; a burst crosses the worker boundary once.
+    const bytes = this.batch.subarray(0, this.batchLength);
+    this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
+    this.batch = new Uint8Array(0);
+    this.batchLength = 0;
+    this.batchIds = [];
   }
   async flush(): Promise<void> {
     this.flushWrites();
@@ -760,7 +793,8 @@ export class Wraith {
     clearInterval(this.mirrorTimer);
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
-    this.queue = [];
+    this.batchIds = [];
+    this.batchLength = 0;
     // Allow Ghostty and wgpu destructors to run; terminate a stalled worker after a bounded wait.
     if (!this.failed)
       await new Promise<void>((resolve) => {

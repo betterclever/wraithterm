@@ -156,6 +156,19 @@ try {
     } catch (error) {
       backpressure = error.name === 'BackpressureError';
     }
+    // A burst crosses to the worker as one batch; every write still resolves,
+    // in order, after parsing. A caller's mutation after write() is not seen.
+    const order = [];
+    await second.write('\x1b[2J');
+    await second.write('\x1b[H');
+    const burst = new TextEncoder().encode('ab');
+    const writes = [second.write(burst), second.write('c'), second.write('é')].map((p, i) =>
+      p.then(() => order.push(i)),
+    );
+    burst.fill(0x58);
+    await Promise.all(writes);
+    await second.flush();
+    const batched = { order: order.join(','), text: await second.getText() };
     let ime = '';
     const subscription = second.onData((data) => (ime += data));
     second.input.dispatchEvent(new CompositionEvent('compositionstart'));
@@ -171,12 +184,13 @@ try {
     const cancelled = await pending;
     const removed = host.childElementCount === 0;
     host.remove();
-    return { text, ownsCopy, backpressure, ime, mirror, cancelled, removed };
+    return { text, ownsCopy, backpressure, batched, ime, mirror, cancelled, removed };
   });
   assert.deepEqual(lifecycle, {
     text: 'hello',
     ownsCopy: true,
     backpressure: true,
+    batched: { order: '0,1,2', text: 'abcé' },
     ime: '界',
     mirror: true,
     cancelled: true,

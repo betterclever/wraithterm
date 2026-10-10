@@ -15,6 +15,7 @@ let raf = 0,
 let samples: number[] = [],
   frameTimes: number[] = [];
 let cursor = '';
+let mouseTracking = false;
 let serial = Promise.resolve();
 const encoder = new TextEncoder(),
   decoder = new TextDecoder();
@@ -43,10 +44,11 @@ function drain() {
       if (bytes[0]) holdTimer = setTimeout(releaseAbandonedHold, 150);
     }
   }
-  post({
-    type: 'modes',
-    mouse: engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9),
-  });
+  const mouse = engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9);
+  if (mouse !== mouseTracking) {
+    mouseTracking = mouse;
+    post({ type: 'modes', mouse });
+  }
 }
 function draw(time: number, force = false) {
   const start = performance.now();
@@ -209,7 +211,7 @@ async function handle(command: Command) {
       engine.write(command.bytes);
       drain();
       schedule();
-      result(command.id);
+      post({ type: 'written', ids: command.ids });
       break;
     case 'resize':
       engine.resize(command.cols, command.rows);
@@ -306,7 +308,9 @@ scope.onmessage = (event: MessageEvent<Command>) => {
   serial = serial
     .then(() => handle(command))
     .catch((error) => {
-      if ('id' in command) post({ type: 'result', id: command.id, error: String(error) });
+      if (command.type === 'write')
+        post({ type: 'written', ids: command.ids, error: String(error) });
+      else if ('id' in command) post({ type: 'result', id: command.id, error: String(error) });
       else post({ type: 'error', error: String(error) });
     });
 };
