@@ -70,8 +70,7 @@ const fixtures = [
   },
   {
     label: 'box drawing, block elements, shades and braille',
-    data:
-      '┌─┬─┐│▀▄█▌▐░▒▓▖▗▘▙▚▛▜▝▞▟\r\n├─┼─┤ ⠁⠃⠇⡇⣇⣧⣷⣿ ▁▂▃▄▅▆▇█\r\n└─┴─┘',
+    data: '┌─┬─┐│▀▄█▌▐░▒▓▖▗▘▙▚▛▜▝▞▟\r\n├─┼─┤ ⠁⠃⠇⡇⣇⣧⣷⣿ ▁▂▃▄▅▆▇█\r\n└─┴─┘',
   },
   {
     label: 'selection across styles and wide cells',
@@ -143,7 +142,9 @@ try {
             await writeFile(resolve(output, `${name}-after.png`), after.png);
           }
           checks.push({ type, dpr, label, width: a.width, height: a.height, differing });
-          console.log(`${differing ? 'DIFF' : 'same'} ${type} DPR${dpr} ${label} (${differing} bytes)`);
+          console.log(
+            `${differing ? 'DIFF' : 'same'} ${type} DPR${dpr} ${label} (${differing} bytes)`,
+          );
         }
       }
 } finally {
