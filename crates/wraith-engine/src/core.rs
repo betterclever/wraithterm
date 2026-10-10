@@ -38,6 +38,11 @@ impl Cell {
         cell.set_text(text);
         cell
     }
+    fn set_scalar(&mut self, scalar: char) {
+        self.text.clear();
+        self.text.push(scalar);
+        self.scalar = scalar as u32;
+    }
     fn set_text(&mut self, text: &str) {
         self.text.clear();
         self.text.push_str(text);
@@ -391,7 +396,8 @@ pub unsafe extern "C" fn wraith_row(user: *mut c_void, row: u32) {
     }
 }
 #[no_mangle]
-/// Copy one cell from Ghostty's borrowed render snapshot.
+/// Copy one cell from Ghostty's borrowed render snapshot. A nonzero `scalar`
+/// is the cell's sole codepoint; otherwise `ptr`/`len` hold its UTF-8 cluster.
 ///
 /// # Safety
 /// `user` must point to a live, uniquely borrowed State. For nonzero `len`,
@@ -401,6 +407,7 @@ pub unsafe extern "C" fn wraith_cell(
     user: *mut c_void,
     x: u32,
     y: u32,
+    scalar: u32,
     ptr: *const u8,
     len: usize,
     foreground: u32,
@@ -413,14 +420,18 @@ pub unsafe extern "C" fn wraith_cell(
         return;
     }
     let cell = &mut state.cells[y as usize * state.cols + x as usize];
-    let bytes = if len == 0 {
-        &[][..]
+    if let Some(c) = char::from_u32(scalar).filter(|_| scalar != 0) {
+        cell.set_scalar(c);
     } else {
-        unsafe { std::slice::from_raw_parts(ptr, len) }
-    };
-    match std::str::from_utf8(bytes) {
-        Ok(text) => cell.set_text(text),
-        Err(_) => cell.set_text(&String::from_utf8_lossy(bytes)),
+        let bytes = if len == 0 {
+            &[][..]
+        } else {
+            unsafe { std::slice::from_raw_parts(ptr, len) }
+        };
+        match std::str::from_utf8(bytes) {
+            Ok(text) => cell.set_text(text),
+            Err(_) => cell.set_text(&String::from_utf8_lossy(bytes)),
+        }
     }
     state.blinking += (flags & BLINK != 0) as usize;
     state.blinking -= (cell.flags & BLINK != 0) as usize;

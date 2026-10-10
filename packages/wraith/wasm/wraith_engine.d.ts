@@ -125,7 +125,7 @@ export interface InitOutput {
     readonly headless_text: (a: number) => [number, number, number, number];
     readonly headless_write: (a: number, b: number, c: number) => void;
     readonly wraith_alloc: (a: number, b: number) => number;
-    readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
+    readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
     readonly wraith_emit: (a: number, b: number, c: number, d: number) => void;
     readonly wraith_row: (a: number, b: number) => void;

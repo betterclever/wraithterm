@@ -7,7 +7,7 @@ extern void* wraith_alloc(size_t len, uint8_t alignment);
 extern void wraith_dealloc(void* ptr, size_t len, uint8_t alignment);
 extern void wraith_emit(void* user, uint32_t kind, const uint8_t* data, size_t len);
 extern void wraith_row(void* user, uint32_t row);
-extern void wraith_cell(void* user, uint32_t x, uint32_t y, const uint8_t* text,
+extern void wraith_cell(void* user, uint32_t x, uint32_t y, uint32_t scalar, const uint8_t* text,
                         size_t len, uint32_t fg, uint32_t bg, uint32_t ul, uint32_t flags);
 
 static void* alloc_fn(void* ctx, size_t n, uint8_t a, uintptr_t r) {
@@ -161,43 +161,73 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
   frame->cursor_y = cursor.viewport_has_value ? cursor.viewport_y : 0;
   frame->cursor_style = cursor.visual_style; frame->cursor_blink = cursor.blinking;
   ghostty_render_state_get(b->render, GHOSTTY_RENDER_STATE_DATA_ROW_ITERATOR, &b->rows);
+  static const GhosttyCellData keys[] = {GHOSTTY_CELL_DATA_CONTENT_TAG, GHOSTTY_CELL_DATA_WIDE,
+                                         GHOSTTY_CELL_DATA_CODEPOINT, GHOSTTY_CELL_DATA_STYLE_ID};
   uint16_t y;
   while (ghostty_render_state_row_iterator_next_dirty(b->rows, &y)) {
     wraith_row(b->user, y);
     ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_CELLS, &b->cells);
+    /* One selection range per row instead of a query per cell. */
+    GhosttyRenderStateRowSelection selection = GHOSTTY_INIT_SIZED(GhosttyRenderStateRowSelection);
+    bool any_selected = ghostty_render_state_row_get(b->rows, GHOSTTY_RENDER_STATE_ROW_DATA_SELECTION,
+                                                     &selection) == GHOSTTY_SUCCESS;
+    /* Style IDs are page-local and every row lies within one page, so a run
+     * of equal IDs within a row shares one decoded style. */
+    uint32_t style_id = UINT32_MAX, style_flags = 0;
+    GhosttyColorRgb style_fg = colors.foreground, style_bg = colors.background, style_ul = {0};
+    bool inverse = false, ul_default = true;
     uint32_t x = 0;
     while (ghostty_render_state_row_cells_next(b->cells)) {
-      GhosttyStyle style = GHOSTTY_INIT_SIZED(GhosttyStyle);
-      ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_STYLE, &style);
       GhosttyCell raw = 0;
-      GhosttyCellWide wide = 0;
       ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW, &raw);
-      ghostty_cell_get(raw, GHOSTTY_CELL_DATA_WIDE, &wide);
-      GhosttyColorRgb fg = resolve(style.fg_color, &colors, colors.foreground);
-      GhosttyColorRgb bg = colors.background;
-      ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_BG_COLOR, &bg);
-      if (style.inverse) { GhosttyColorRgb temp = fg; fg = bg; bg = temp; }
-      uint32_t flags = style.bold | (style.italic << 1) | (style.faint << 2) |
-          (style.blink << 3) | (style.invisible << 4) | (style.strikethrough << 5) |
-          (style.overline << 6) | ((uint32_t)style.underline << 8) |
+      GhosttyCellContentTag tag = 0;
+      GhosttyCellWide wide = 0;
+      uint32_t codepoint = 0;
+      GhosttyStyleId id = 0;
+      void* values[] = {&tag, &wide, &codepoint, &id};
+      ghostty_cell_get_multi(raw, 4, keys, values, NULL);
+      if (id != style_id) {
+        GhosttyStyle style = GHOSTTY_INIT_SIZED(GhosttyStyle);
+        if (id) ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_STYLE, &style);
+        style_id = id;
+        style_fg = resolve(style.fg_color, &colors, colors.foreground);
+        style_bg = resolve(style.bg_color, &colors, colors.background);
+        ul_default = style.underline_color.tag == GHOSTTY_STYLE_COLOR_NONE;
+        style_ul = resolve(style.underline_color, &colors, colors.foreground);
+        inverse = style.inverse;
+        style_flags = style.bold | (style.italic << 1) | (style.faint << 2) |
+            (style.blink << 3) | (style.invisible << 4) | (style.strikethrough << 5) |
+            (style.overline << 6) | ((uint32_t)style.underline << 8);
+      }
+      GhosttyColorRgb fg = style_fg, bg = style_bg;
+      if (tag == GHOSTTY_CELL_CONTENT_BG_COLOR_PALETTE || tag == GHOSTTY_CELL_CONTENT_BG_COLOR_RGB) {
+        bg = colors.background;
+        ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_BG_COLOR, &bg);
+      }
+      if (inverse) { GhosttyColorRgb temp = fg; fg = bg; bg = temp; }
+      uint32_t flags = style_flags |
           ((wide == GHOSTTY_CELL_WIDE_WIDE) << 16) |
-          ((wide == GHOSTTY_CELL_WIDE_SPACER_TAIL) << 20);
-      bool selected = false;
-      ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_SELECTED, &selected);
-      flags |= (uint32_t)selected << 17;
+          ((wide == GHOSTTY_CELL_WIDE_SPACER_TAIL) << 20) |
+          ((any_selected && x >= selection.start_x && x <= selection.end_x) << 17);
       uint8_t scratch[256];
       GhosttyBuffer text = {.ptr = scratch, .cap = sizeof(scratch), .len = 0};
-      result = ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_UTF8, &text);
       bool allocated = false;
-      if (result == GHOSTTY_OUT_OF_SPACE) {
-        text.cap = text.len; text.ptr = wraith_alloc(text.cap, 0); allocated = true;
-        if (!text.ptr) return GHOSTTY_OUT_OF_MEMORY;
+      uint32_t scalar = 0;
+      if (wide == GHOSTTY_CELL_WIDE_SPACER_TAIL || wide == GHOSTTY_CELL_WIDE_SPACER_HEAD) {
+        /* Continuations draw nothing. */
+      } else if (tag == GHOSTTY_CELL_CONTENT_CODEPOINT) {
+        scalar = codepoint;
+      } else if (tag == GHOSTTY_CELL_CONTENT_CODEPOINT_GRAPHEME) {
         result = ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_UTF8, &text);
+        if (result == GHOSTTY_OUT_OF_SPACE) {
+          text.cap = text.len; text.ptr = wraith_alloc(text.cap, 0); allocated = true;
+          if (!text.ptr) return GHOSTTY_OUT_OF_MEMORY;
+          result = ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_UTF8, &text);
+        }
+        if (result) { if (allocated) wraith_dealloc(text.ptr, text.cap, 0); return result; }
       }
-      if (result) { if (allocated) wraith_dealloc(text.ptr, text.cap, 0); return result; }
-      if (wide == GHOSTTY_CELL_WIDE_SPACER_TAIL || wide == GHOSTTY_CELL_WIDE_SPACER_HEAD) text.len = 0;
-      wraith_cell(b->user, x++, y, text.ptr, text.len, rgb(fg), rgb(bg),
-                  rgb(resolve(style.underline_color, &colors, fg)), flags);
+      wraith_cell(b->user, x++, y, scalar, text.ptr, text.len, rgb(fg), rgb(bg),
+                  ul_default ? rgb(fg) : rgb(style_ul), flags);
       if (allocated) wraith_dealloc(text.ptr, text.cap, 0);
     }
   }
