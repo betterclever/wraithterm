@@ -45,8 +45,7 @@ cargo run --release -- render -o wraith-the-arrival.mp4
 
 ## Claims on screen
 
-The CPU-per-update numbers (37.7, 9.8 and 2.5 ms; 15× and 3.9×) are medians from an
-interleaved `scripts/compare-renderers.mjs` run on 10 October 2026: dense 240×80 scene,
-Chrome 155, Apple M5 Max. The cold open shows each terminal running the dashboard; its
-counters are those benchmark costs, as the on-screen footnote says. The 0.6 ms redraw is the
-same run's redraw p50 for the compatible renderer.
+The CPU-per-update numbers (37.7, 9.8 and 2.5 ms; 15× and 3.9×) and the 0.6 ms redraw are
+the medians recorded in [docs/benchmarks/launch](../docs/benchmarks/launch/REPORT.md):
+dense 240×80 scene, Chrome 155, Apple M5 Max. The cold open shows each terminal running the
+dashboard; its counters are those benchmark costs, as the on-screen footnote says.

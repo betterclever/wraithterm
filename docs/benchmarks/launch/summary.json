@@ -1,0 +1,242 @@
+[
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "dom",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 42.15,
+  "redrawMsP50": 38.3,
+  "updatesPerSecond": 22.9
+ },
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.8,
+  "redrawMsP50": 1,
+  "updatesPerSecond": 209.4
+ },
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 5.8,
+  "redrawMsP50": 2.5,
+  "updatesPerSecond": 172.6
+ },
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "webgl",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 8.45,
+  "redrawMsP50": 6.35,
+  "updatesPerSecond": 112.3
+ },
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.5,
+  "redrawMsP50": 0.6,
+  "updatesPerSecond": 388.6
+ },
+ {
+  "workload": "churn",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.4,
+  "redrawMsP50": 2.3,
+  "updatesPerSecond": 219.5
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "dom",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 37.65,
+  "redrawMsP50": 37.25,
+  "updatesPerSecond": 25.7
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 3.1,
+  "redrawMsP50": 1,
+  "updatesPerSecond": 316.8
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.6,
+  "redrawMsP50": 2.3,
+  "updatesPerSecond": 214.7
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "webgl",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 9.8,
+  "redrawMsP50": 8.8,
+  "updatesPerSecond": 93.9
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.5,
+  "redrawMsP50": 0.6,
+  "updatesPerSecond": 388.2
+ },
+ {
+  "workload": "complex",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.2,
+  "redrawMsP50": 2.1,
+  "updatesPerSecond": 233.3
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "dom",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 39.05,
+  "redrawMsP50": 34.95,
+  "updatesPerSecond": 24.8
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "ghostty",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.8,
+  "redrawMsP50": 1,
+  "updatesPerSecond": 350.4
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "ghostty",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.3,
+  "redrawMsP50": 2.3,
+  "updatesPerSecond": 226.3
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "webgl",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 10.0,
+  "redrawMsP50": 8.3,
+  "updatesPerSecond": 83.2
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "wraith",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.7,
+  "redrawMsP50": 0.6,
+  "updatesPerSecond": 351.1
+ },
+ {
+  "workload": "complex",
+  "dpr": 2,
+  "renderer": "wraith",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4,
+  "redrawMsP50": 2,
+  "updatesPerSecond": 245.0
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "dom",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 38.65,
+  "redrawMsP50": 34.1,
+  "updatesPerSecond": 25.1
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.6,
+  "redrawMsP50": 1.1,
+  "updatesPerSecond": 372.1
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "ghostty",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 4.1,
+  "redrawMsP50": 2.6,
+  "updatesPerSecond": 241.6
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "webgl",
+  "build": "xterm",
+  "runs": 6,
+  "pipelineCpuMsP50": 10.4,
+  "redrawMsP50": 8.6,
+  "updatesPerSecond": 56.7
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "head",
+  "runs": 3,
+  "pipelineCpuMsP50": 2.8,
+  "redrawMsP50": 0.7,
+  "updatesPerSecond": 230.0
+ },
+ {
+  "workload": "scroll",
+  "dpr": 1,
+  "renderer": "wraith",
+  "build": "start",
+  "runs": 3,
+  "pipelineCpuMsP50": 3.9,
+  "redrawMsP50": 1.9,
+  "updatesPerSecond": 190.6
+ }
+]
