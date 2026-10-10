@@ -1,7 +1,7 @@
 /** The only private xterm 6.0 renderer integration surface. Keep the runtime
  * dependency pinned and test this boundary before upgrading it. Public API
  * compatibility is inherited from upstream, not implemented with these types. */
-import type { IDisposable, IEvent, Terminal, IBufferCell } from './xterm-api.js';
+import type { IDisposable, IEvent, Terminal, IBufferCell, IBufferLine } from './xterm-api.js';
 export interface Dimensions {
   css: { canvas: { width: number; height: number }; cell: { width: number; height: number } };
   device: {
@@ -57,6 +57,18 @@ export interface Cell extends IBufferCell {
 export const CELL_HAS_EXTENDED = 0x10000000;
 export const CELL_IS_COMBINED = 0x200000;
 export const CELL_CODEPOINT_MASK = 0x1fffff;
+/** BufferLineApiView and BufferLine storage in the pinned xterm 6 runtime.
+ * Reject unfamiliar layouts once per row; its public getters remain usable. */
+export function packedRow(line: IBufferLine | undefined, cols: number): Uint32Array | undefined {
+  const raw = (line as { _line?: { length?: number; _data?: unknown } } | undefined)?._line;
+  const words = raw?._data;
+  return words instanceof Uint32Array &&
+    raw?.length === line?.length &&
+    line!.length >= cols &&
+    words.length === line!.length * 3
+    ? words
+    : undefined;
+}
 export interface Core {
   screenElement: HTMLElement;
   _renderService: {

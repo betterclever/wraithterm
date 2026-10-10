@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-10T12:31:51.717Z",
+  "checks": [
+    {
+      "dpr": 1,
+      "label": "ordinary scalar rows bypass cell loading",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 0
+    },
+    {
+      "dpr": 1,
+      "label": "public getter fallback for absent private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 1,
+      "label": "public getter fallback for short private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 1,
+      "label": "public getter fallback for wrongType private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 1,
+      "label": "getter fallback when private attribute/content words are unavailable",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "attribute runs, inverse, palette, truecolor and style transitions",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "extended attributes sharing fg/bg words",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 32
+    },
+    {
+      "dpr": 1,
+      "label": "spaces, erased glyphs, wide continuation, combining and emoji",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "selection across attribute runs",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "bold bright colors disabled and theme mutation",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 1,
+      "label": "attribute cache rebuilt after options and theme change",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "ordinary scalar rows bypass cell loading",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 0
+    },
+    {
+      "dpr": 2,
+      "label": "public getter fallback for absent private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 2,
+      "label": "public getter fallback for short private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 2,
+      "label": "public getter fallback for wrongType private row storage",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 2048
+    },
+    {
+      "dpr": 2,
+      "label": "getter fallback when private attribute/content words are unavailable",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "attribute runs, inverse, palette, truecolor and style transitions",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "extended attributes sharing fg/bg words",
+      "packedWords": 8192,
+      "beforeGetterCalls": 2048,
+      "afterGetterCalls": 32
+    },
+    {
+      "dpr": 2,
+      "label": "spaces, erased glyphs, wide continuation, combining and emoji",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "selection across attribute runs",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "bold bright colors disabled and theme mutation",
+      "packedWords": 8192
+    },
+    {
+      "dpr": 2,
+      "label": "attribute cache rebuilt after options and theme change",
+      "packedWords": 8192
+    }
+  ]
+}

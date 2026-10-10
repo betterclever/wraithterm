@@ -6,6 +6,7 @@ import {
   CELL_HAS_EXTENDED,
   CELL_IS_COMBINED,
   CELL_CODEPOINT_MASK,
+  packedRow,
   type Core,
   type Renderer,
   type Cell,
@@ -14,6 +15,15 @@ import {
 export type RendererState = 'initializing' | 'webgpu' | 'dom' | 'external';
 const rgb = (value: number) => ((value & 255) << 16) | (value & 0xff00) | ((value >>> 16) & 255);
 const rgba = (value: number) => rgb(value >>> 8);
+function wordColor(word: number, foreground: boolean, colors: Colors, brighten: boolean): number {
+  const mode = word & 0x3000000;
+  if (mode === 0x3000000) return rgb(word);
+  if (mode) {
+    const index = word & 255;
+    return rgba(colors.ansi[index + (brighten && index < 8 ? 8 : 0)]!.rgba);
+  }
+  return rgba((foreground ? colors.foreground : colors.background).rgba);
+}
 function resolveColor(
   data: Cell,
   foreground: boolean,
@@ -315,44 +325,78 @@ export class XtermRenderer implements Renderer {
       underlineDefault = false;
     for (let y = start; y <= end; y++) {
       const line = b.getLine(b.viewportY + y);
+      const words = packedRow(line, cols);
       for (let x = 0; x < cols; x++) {
         const i = ((y - start) * cols + x) * 8;
-        const data = line?.getCell(x, this.cell) as Cell | undefined;
-        if (!data) {
+        let content = words?.[x * 3],
+          fgWord = words?.[x * 3 + 1],
+          bgWord = words?.[x * 3 + 2];
+        const direct =
+          words !== undefined &&
+          !(bgWord! & CELL_HAS_EXTENDED) &&
+          !(content! & CELL_IS_COMBINED) &&
+          content! >>> 22 <= 2 &&
+          (content! & CELL_CODEPOINT_MASK) <= 0x10ffff;
+        const data = direct ? undefined : (line?.getCell(x, this.cell) as Cell | undefined);
+        if (!direct && !data) {
           values[i] = rgba(c.foreground.rgba);
           values[i + 1] = rgba(c.background.rgba);
           values.fill(0, i + 2, i + 8);
           continue;
         }
+        if (!direct) {
+          content = data!.content;
+          fgWord = data!.fg;
+          bgWord = data!.bg;
+        }
         const cacheable =
-          typeof data.fg === 'number' &&
-          typeof data.bg === 'number' &&
-          !(data.bg & CELL_HAS_EXTENDED);
-        if (!cached || !cacheable || data.fg !== lastFg || data.bg !== lastBg) {
-          styleFg = resolveColor(
-            data,
-            !data.isInverse(),
-            true,
-            c,
-            !!options.drawBoldTextInBrightColors,
-          );
-          styleBg = resolveColor(data, !!data.isInverse(), false, c, false);
-          underlineDefault = !data.isUnderlineColorRGB() && !data.isUnderlineColorPalette();
-          styleUnderline = data.isUnderlineColorRGB()
-            ? rgb(data.getUnderlineColor())
-            : data.isUnderlineColorPalette()
-              ? rgba(c.ansi[data.getUnderlineColor()]!.rgba)
-              : 0;
-          styleFlags =
-            +!!data.isBold() |
-            (+!!data.isItalic() << 1) |
-            (+!!data.isDim() << 2) |
-            (+!!data.isInvisible() << 4) |
-            (+!!data.isStrikethrough() << 5) |
-            (+!!data.isOverline() << 6) |
-            (data.getUnderlineStyle() << 8);
-          lastFg = data.fg;
-          lastBg = data.bg;
+          typeof fgWord === 'number' && typeof bgWord === 'number' && !(bgWord & CELL_HAS_EXTENDED);
+        if (!cached || !cacheable || fgWord !== lastFg || bgWord !== lastBg) {
+          if (direct) {
+            const inverse = !!(fgWord! & 0x4000000);
+            styleFg = wordColor(
+              inverse ? bgWord! : fgWord!,
+              !inverse,
+              c,
+              !!(fgWord! & 0x8000000) && !!options.drawBoldTextInBrightColors,
+            );
+            styleBg = wordColor(inverse ? fgWord! : bgWord!, inverse, c, false);
+            underlineDefault = !(fgWord! & 0x3000000);
+            styleUnderline = underlineDefault ? 0 : wordColor(fgWord!, true, c, false);
+            styleFlags =
+              ((fgWord! >>> 27) & 1) |
+              (((bgWord! >>> 26) & 1) << 1) |
+              (((bgWord! >>> 27) & 1) << 2) |
+              (((fgWord! >>> 30) & 1) << 4) |
+              ((fgWord! >>> 31) << 5) |
+              (((bgWord! >>> 30) & 1) << 6) |
+              (((fgWord! >>> 28) & 1) << 8);
+          } else {
+            styleFg = resolveColor(
+              data!,
+              !data!.isInverse(),
+              true,
+              c,
+              !!options.drawBoldTextInBrightColors,
+            );
+            styleBg = resolveColor(data!, !!data!.isInverse(), false, c, false);
+            underlineDefault = !data!.isUnderlineColorRGB() && !data!.isUnderlineColorPalette();
+            styleUnderline = data!.isUnderlineColorRGB()
+              ? rgb(data!.getUnderlineColor())
+              : data!.isUnderlineColorPalette()
+                ? rgba(c.ansi[data!.getUnderlineColor()]!.rgba)
+                : 0;
+            styleFlags =
+              +!!data!.isBold() |
+              (+!!data!.isItalic() << 1) |
+              (+!!data!.isDim() << 2) |
+              (+!!data!.isInvisible() << 4) |
+              (+!!data!.isStrikethrough() << 5) |
+              (+!!data!.isOverline() << 6) |
+              (data!.getUnderlineStyle() << 8);
+          }
+          lastFg = fgWord;
+          lastBg = bgWord;
           cached = cacheable;
         }
         let fg = styleFg,
@@ -361,10 +405,10 @@ export class XtermRenderer implements Renderer {
           bg = selectionBackground;
           if (selectionForeground !== undefined) fg = selectionForeground;
         }
-        const width = data.getWidth();
+        const width = direct ? content! >>> 22 : data!.getWidth();
         const codepoint =
-          typeof data.content === 'number' && !(data.content & CELL_IS_COMBINED)
-            ? data.content & CELL_CODEPOINT_MASK
+          typeof content === 'number' && !(content & CELL_IS_COMBINED)
+            ? content & CELL_CODEPOINT_MASK
             : undefined;
         const bold = !!(styleFlags & 1),
           italic = !!(styleFlags & 2);
@@ -372,7 +416,7 @@ export class XtermRenderer implements Renderer {
           ? undefined
           : codepoint !== undefined && codepoint <= 0x10ffff
             ? this.atlas!.scalar(codepoint, bold, italic)
-            : this.atlas!.tile(data.getChars(), bold, italic);
+            : this.atlas!.tile(data!.getChars(), bold, italic);
         values[i] = fg;
         values[i + 1] = bg;
         values[i + 2] = underlineDefault ? fg : styleUnderline;

@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-const output = resolve('docs/benchmarks/optimization');
+const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/optimization');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
@@ -11,6 +11,19 @@ const browser = await chromium.launch({
 });
 const checks = [];
 const cases = [
+  {
+    label: 'ordinary scalar rows bypass cell loading',
+    packingDiagnostics: true,
+    requireDirect: true,
+    data: '\x1b[?25l\x1b[1;31m' + 'Aλ─█ '.repeat(180),
+  },
+  ...['absent', 'short', 'wrongType'].map((rowLayout) => ({
+    label: `public getter fallback for ${rowLayout} private row storage`,
+    rowLayout,
+    packingDiagnostics: true,
+    requireFallback: true,
+    data: '\x1b[?25l\x1b[1;7;38;5;21mABλ界é 🦀\x1b[0mordinary',
+  })),
   {
     label: 'getter fallback when private attribute/content words are unavailable',
     hideWords: true,
@@ -28,6 +41,8 @@ const cases = [
   },
   {
     label: 'extended attributes sharing fg/bg words',
+    packingDiagnostics: true,
+    requireFallback: true,
     data: '\x1b[?25l\x1b[4:3;58:2::255:0:0mAAAA\x1b[4:4;58:2::0:255:0mBBBB\x1b[4:5;58:5:21mCCCC\x1b[0m\x1b]8;;https://example.com\x1b\\DDDD\x1b]8;;\x1b\\',
   },
   {
@@ -81,8 +96,18 @@ try {
     for (const fixture of cases) {
       const old = await pages[0].evaluate((f) => window.comparison.packedFixture(f), fixture);
       const current = await pages[1].evaluate((f) => window.comparison.packedFixture(f), fixture);
-      assert.deepEqual(current, old, fixture.label + ' DPR' + dpr);
-      checks.push({ dpr, label: fixture.label, packedWords: current.full.length });
+      const { getterCalls: beforeCalls, ...before } = old;
+      const { getterCalls: afterCalls, ...after } = current;
+      assert.deepEqual(after, before, fixture.label + ' DPR' + dpr);
+      if (fixture.requireDirect) assert.equal(afterCalls, 0, fixture.label);
+      if (fixture.requireFallback) assert(afterCalls > 0, fixture.label);
+      checks.push({
+        dpr,
+        label: fixture.label,
+        packedWords: current.full.length,
+        beforeGetterCalls: beforeCalls,
+        afterGetterCalls: afterCalls,
+      });
     }
     await context.close();
   }

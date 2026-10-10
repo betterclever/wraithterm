@@ -490,7 +490,15 @@ window.comparison = {
   run,
   profile,
   utilization,
-  async packedFixture({ data, options = {}, selection, partial = [0, 7], hideWords = false }) {
+  async packedFixture({
+    data,
+    options = {},
+    selection,
+    partial = [0, 7],
+    hideWords = false,
+    rowLayout = 'normal',
+    packingDiagnostics = false,
+  }) {
     invariant(active?.type === 'wraith', 'Packed fixture requires Wraith');
     const a = active;
     a.terminal.reset();
@@ -498,33 +506,58 @@ window.comparison = {
     a.parse(encoder.encode(data));
     if (selection) a.terminal.select(...selection);
     else a.terminal.clearSelection();
+    // Selection redraw events are delivered on an animation frame, independent
+    // of the GPU fence. Consume them before comparing renderer snapshots.
+    await nextFrame();
     a.draw();
     await a.finish();
     a.assert();
     const buffer = a.terminal.buffer.active;
     const getLine = buffer.getLine;
-    if (hideWords)
+    let getterCalls = 0;
+    if (hideWords || rowLayout !== 'normal' || packingDiagnostics)
       buffer.getLine = function (index) {
         const line = getLine.call(this, index);
         if (!line) return line;
-        return {
-          getCell(x, cell) {
-            const data = line.getCell(x, cell);
-            if (!data) return data;
-            return new Proxy(data, {
-              get(target, key) {
-                if (['fg', 'bg', 'content'].includes(key)) return undefined;
-                const value = Reflect.get(target, key);
-                return typeof value === 'function' ? value.bind(target) : value;
-              },
-            });
+        return new Proxy(line, {
+          get(target, key) {
+            if (key === '_line') {
+              if (hideWords || rowLayout === 'absent') return undefined;
+              if (rowLayout !== 'normal')
+                return {
+                  length: line.length,
+                  _data:
+                    rowLayout === 'short' ? new Uint32Array(1) : new Uint8Array(line.length * 3),
+                };
+            }
+            if (key === 'getCell')
+              return (x, cell) => {
+                getterCalls++;
+                const data = target.getCell(x, cell);
+                if (!data || !hideWords) return data;
+                return new Proxy(data, {
+                  get(cell, property) {
+                    if (['fg', 'bg', 'content'].includes(property)) return undefined;
+                    const value = Reflect.get(cell, property);
+                    return typeof value === 'function' ? value.bind(cell) : value;
+                  },
+                });
+              };
+            const value = Reflect.get(target, key, target);
+            return typeof value === 'function' ? value.bind(target) : value;
           },
-        };
+        });
       };
     try {
       const full = Array.from(a.renderer.pack(0, a.terminal.rows - 1));
       const rows = Array.from(a.renderer.pack(...partial));
-      return { full, rows, text: hideWords ? undefined : a.text(), renderer: a.terminal.renderer };
+      return {
+        full,
+        rows,
+        text: hideWords ? undefined : a.text(),
+        renderer: a.terminal.renderer,
+        ...(packingDiagnostics ? { getterCalls } : {}),
+      };
     } finally {
       buffer.getLine = getLine;
     }

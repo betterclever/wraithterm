@@ -17,6 +17,16 @@ for (const v of versions) {
   v.rendererSha256 = hash(await readFile(join(v.root, 'packages/wraith/src/xterm-renderer.ts')));
 }
 const repetitions = Number(process.env.WRAITH_REPETITIONS ?? 3);
+const types = (process.env.WRAITH_TYPES ?? 'wraith,ghostty').split(',');
+const dprs = (process.env.WRAITH_DPRS ?? '1,2').split(',').map(Number);
+const workloads = (process.env.WRAITH_WORKLOADS ?? 'complex,churn,scroll').split(',');
+assert(Number.isInteger(repetitions) && repetitions > 0);
+assert(types.length && types.every((type) => ['wraith', 'ghostty'].includes(type)));
+assert(dprs.length && dprs.every((dpr) => [1, 2].includes(dpr)));
+assert(
+  workloads.length &&
+    workloads.every((workload) => ['complex', 'churn', 'scroll'].includes(workload)),
+);
 const results = [],
   errors = [];
 const metadata = {
@@ -24,6 +34,9 @@ const metadata = {
   headless: true,
   versions,
   repetitions,
+  types,
+  dprs,
+  workloads,
   results,
   errors,
 };
@@ -35,13 +48,13 @@ const browser = await chromium.launch({
   headless: true,
 });
 try {
-  for (const dpr of [1, 2]) {
+  for (const dpr of dprs) {
     const context = await browser.newContext({
       viewport: { width: 2600, height: 2100 },
       deviceScaleFactor: dpr,
     });
-    for (const workload of dpr === 1 ? ['complex', 'churn', 'scroll'] : ['complex']) {
-      for (const type of ['wraith', 'ghostty']) {
+    for (const workload of dpr === 1 ? workloads : workloads.filter((w) => w === 'complex')) {
+      for (const type of types) {
         for (let repeat = 0; repeat < repetitions; repeat++) {
           let reference;
           const order = repeat % 2 ? [...versions].reverse() : versions;
@@ -107,9 +120,9 @@ try {
 }
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const groups = [];
-for (const dpr of [1, 2])
-  for (const workload of dpr === 1 ? ['complex', 'churn', 'scroll'] : ['complex'])
-    for (const type of ['wraith', 'ghostty']) {
+for (const dpr of dprs)
+  for (const workload of dpr === 1 ? workloads : workloads.filter((w) => w === 'complex'))
+    for (const type of types) {
       const pair = {};
       for (const v of versions) {
         const runs = results.filter(
