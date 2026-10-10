@@ -20,7 +20,7 @@
         >wraith<b>_</b></a
       >
       <div class="nav-links">
-        <a href="#numbers">Numbers</a><a href="#race">Race</a><a href="#pipeline">Pipeline</a
+        <a href="#numbers">Numbers</a><a href="#race">Race</a><a href="#pipeline">How it works</a
         ><a href="#use">Use it</a>
       </div>
     </nav>
@@ -146,37 +146,43 @@
 
       <section id="pipeline" class="pipeline">
         <div class="section-head">
-          <span class="label">03 · Where the time goes</span>
-          <h2>Bytes in.<br />Pixels out. Nothing wasted.</h2>
+          <span class="label">03 · How it works</span>
+          <h2>From bytes to pixels.</h2>
+          <p>Six steps, all off your page's main thread, and nothing drawn twice.</p>
         </div>
-        <ol class="flow">
-          <li>
-            <span>01</span><b>PTY bytes</b>
-            <p>Writes in one microtask batch become one transfer and one acknowledgement.</p>
-          </li>
-          <li>
-            <span>02</span><b>Worker</b>
-            <p>Parsing and rendering stay off your app's main thread.</p>
-          </li>
-          <li>
-            <span>03</span><b>libghostty-vt</b>
-            <p>Ghostty's terminal engine, compiled from Zig to Wasm with ReleaseFast.</p>
-          </li>
-          <li>
-            <span>04</span><b>Row snapshot</b>
-            <p>
-              Rows keyed by identity and contents. Moved rows are copied, unchanged rows skipped.
-            </p>
-          </li>
-          <li>
-            <span>05</span><b>20-byte cells</b>
-            <p>Colors, flags and one glyph word: atlas slot, ink width, color bit.</p>
-          </li>
-          <li>
-            <span>06</span><b>WGSL, two passes</b>
-            <p>Backgrounds, then glyph quads sized to ink. Blank cells draw nothing.</p>
-          </li>
-        </ol>
+        <div class="flow">
+          <div class="rail" aria-hidden="true">
+            <i class="packet"></i>
+            <b style="--i: 0"></b><b style="--i: 1"></b><b style="--i: 2"></b><b style="--i: 3"></b
+            ><b style="--i: 4"></b><b style="--i: 5"></b>
+          </div>
+          <ol>
+            <li style="--i: 0">
+              <span>01</span><b>Your bytes</b>
+              <p>Output from your shell, batched into one message per burst.</p>
+            </li>
+            <li style="--i: 1">
+              <span>02</span><b>A worker</b>
+              <p>Everything after this runs off your page's main thread.</p>
+            </li>
+            <li style="--i: 2">
+              <span>03</span><b>Ghostty's engine</b>
+              <p>libghostty-vt reads every escape sequence the way Ghostty does.</p>
+            </li>
+            <li style="--i: 3">
+              <span>04</span><b>Only what changed</b>
+              <p>Unchanged rows are skipped. Scrolled rows are reused, not redrawn.</p>
+            </li>
+            <li style="--i: 4">
+              <span>05</span><b>Tiny cells</b>
+              <p>Each cell is 20 bytes on the GPU: its colors, its style and one glyph.</p>
+            </li>
+            <li style="--i: 5">
+              <span>06</span><b>Two GPU passes</b>
+              <p>Backgrounds, then glyphs. Empty cells cost nothing.</p>
+            </li>
+          </ol>
+        </div>
       </section>
 
       <section id="use" class="use">
