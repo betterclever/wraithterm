@@ -3,6 +3,7 @@ import { Terminal as XtermTerminal } from '@xterm/xterm';
 import { WebglAddon } from '@xterm/addon-webgl';
 import init, { Engine, Headless } from '../packages/wraith/wasm/wraith_engine.js';
 import '../packages/wraith/css/xterm.css';
+import { showcase } from './showcase.js';
 const encoder = new TextEncoder();
 const scene = document.querySelector('#scene');
 const status = document.querySelector('#status');
@@ -34,6 +35,7 @@ const chars = [
   'ä',
 ];
 function workload(cols, rows, variant, kind) {
+  if (kind === 'showcase') return showcase(cols, rows, variant, encoder);
   if (kind === 'append') {
     // Log streaming: eight styled lines per update scroll the viewport.
     let output = '';
@@ -240,7 +242,10 @@ async function mount(type, config) {
 let active;
 async function setup(config) {
   invariant(['dom', 'webgl', 'wraith', 'ghostty'].includes(config.type), 'Unknown renderer');
-  invariant(['complex', 'churn', 'scroll', 'append'].includes(config.workload), 'Unknown workload');
+  invariant(
+    ['complex', 'churn', 'scroll', 'append', 'showcase'].includes(config.workload),
+    'Unknown workload',
+  );
   active?.dispose();
   active = await mount(config.type, config);
   const inputs = Array.from({ length: 8 }, (_, i) =>
