@@ -77,6 +77,26 @@ class Scene {
   moved = -1e9;
   ghost = { x: -40, y: 0, vx: 0, vy: 0, homeX: 0, homeY: 0, tail: 0, lookX: 0, lookY: 0 };
   trail: { x: number; y: number }[] = [];
+  /** Recent pointer positions in cells, with the wall-clock time they were stamped. */
+  sparks: { col: number; row: number; at: number }[] = [];
+  /** Records the pointer path, filling gaps between events so fast flicks stay continuous. */
+  stamp(col: number, row: number) {
+    const now = performance.now();
+    const last = this.sparks[this.sparks.length - 1];
+    if (last && now - last.at < 200) {
+      const steps = Math.min(60, Math.ceil(Math.hypot(col - last.col, (row - last.row) * 2)));
+      for (let i = 1; i < steps; i++) {
+        const k = i / steps;
+        this.sparks.push({
+          col: last.col + (col - last.col) * k,
+          row: last.row + (row - last.row) * k,
+          at: now,
+        });
+      }
+    }
+    this.sparks.push({ col, row, at: now });
+    if (this.sparks.length > 900) this.sparks.splice(0, this.sparks.length - 900);
+  }
   aspect = 1.2;
   lastT = 0;
   bytes = 0;
@@ -229,22 +249,24 @@ class Scene {
   }
   /** Spring the ghost toward the pointer, or wander and settle at home when it rests. */
   move(t: number) {
-    const dt = Math.min(0.05, Math.max(0, t - this.lastT));
+    const dt = Math.min(0.02, Math.max(0, t - this.lastT));
     this.lastT = t;
     const g = this.ghost;
     const idle = (performance.now() - this.moved) / 1000;
     let tx: number, ty: number;
     if (idle < 2 && this.mouse.x > -1e3) {
       // Hover just up and to the left of the pointer, never under it.
-      tx = this.mouse.x - 14 / this.aspect;
-      ty = this.mouse.y - 10;
+      tx = this.mouse.x - 10 / this.aspect;
+      ty = this.mouse.y - 8;
     } else {
       const roam = Math.max(0, 1 - Math.max(0, idle - 2) / 4);
       tx = g.homeX + Math.sin(t * 0.9) * 26 * roam;
       ty = g.homeY + Math.sin(t * 1.4) * 12 * roam + Math.sin(t * 2.2) * 1.5;
     }
-    const k = 22,
-      damping = 6.5;
+    // Stiff and well damped when chasing the pointer: it keeps up with fast flicks.
+    const chasing = idle < 2 && this.mouse.x > -1e3;
+    const k = chasing ? 260 : 22,
+      damping = chasing ? 28 : 6.5;
     g.vx += ((tx - g.x) * k - g.vx * damping) * dt;
     g.vy += ((ty - g.y) * k - g.vy * damping) * dt;
     g.x += g.vx * dt;
@@ -259,6 +281,22 @@ class Scene {
   frame(t: number) {
     this.move(t);
     const { cols, rows } = this;
+    // Heat of the pointer trail per cell, from sparks younger than half a second.
+    const now = performance.now();
+    while (this.sparks.length && now - this.sparks[0]!.at > 550) this.sparks.shift();
+    const heat = new Map<number, number>();
+    for (const s of this.sparks) {
+      const life = 1 - (now - s.at) / 550;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -2; dx <= 2; dx++) {
+          const c = Math.round(s.col) + dx,
+            r = Math.round(s.row) + dy;
+          if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+          const v = life * (1 - (Math.abs(dx) * 0.22 + Math.abs(dy) * 0.4));
+          const key = r * cols + c;
+          if (v > (heat.get(key) ?? 0)) heat.set(key, v);
+        }
+    }
     const top: RGB = [0, 0, 0],
       bottom: RGB = [0, 0, 0];
     const parts: string[] = [];
@@ -290,6 +328,16 @@ class Scene {
               bb = age < 1 ? 210 : 84 * k + 12;
             f = (r << 16) | (gg << 8) | bb;
           }
+        }
+        const hot = heat.get(y * cols + x);
+        if (hot && hot > 0.05) {
+          // The trail: a new glyph every frame, white-hot at the head, cooling to ember.
+          char = rain[Math.floor(Math.random() * rain.length)]!;
+          const r = 255,
+            gg = 140 + 115 * hot,
+            bb = 70 + 170 * hot * hot;
+          f = (r << 16) | ((gg | 0) << 8) | (bb | 0);
+          if (hot > 0.7) b = 0x3a1c10;
         }
         // Quantize to 4-level steps; neighbours then often share a color and skip the SGR.
         f &= 0xfcfcfc;
@@ -354,6 +402,7 @@ async function hero() {
     scene.mouse.x = ((event.clientX - box.left) / box.width) * scene.cols;
     scene.mouse.y = ((event.clientY - box.top) / box.height) * scene.rows * 2;
     scene.moved = performance.now();
+    scene.stamp(scene.mouse.x, scene.mouse.y / 2);
   });
   hero.addEventListener('pointerleave', () => {
     scene.mouse.x = scene.mouse.y = -1e4;
