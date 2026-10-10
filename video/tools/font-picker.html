@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wraith Video Fonts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Big+Shoulders+Display:wght@900&family=Bricolage+Grotesque:opsz,wdth,wght@96,75,800&family=Bungee&family=Doto:wght@900&family=Geist:wght@800&family=Geist+Mono:wght@500&family=IBM+Plex+Mono:wght@500&family=Inter:wght@800&family=JetBrains+Mono:wght@500&family=Major+Mono+Display&family=Manrope:wght@800&family=Michroma&family=Orbitron:wght@900&family=Outfit:wght@800&family=Press+Start+2P&family=Rubik+Mono+One&family=Silkscreen:wght@700&family=Sixtyfour&family=Sora:wght@800&family=Space+Grotesk:wght@700&family=Space+Mono:wght@700&family=Syne:wght@800&family=Tektur:wght@900&family=Unbounded:wght@900&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0c0806;
+        --panel: #120d0a;
+        --line: #241b16;
+        --text: #f5ece3;
+        --dim: #a6958a;
+        --faint: #6e5c50;
+        --amber: #ffb86b;
+        --coral: #ff7f6e;
+        --lilac: #d9bbff;
+        --gold: #ffd98a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 Inter,
+          system-ui,
+          sans-serif;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 20px;
+        padding: 14px 24px;
+        background: #0c0806ee;
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      header h1 {
+        margin: 0;
+        font:
+          800 20px Inter,
+          sans-serif;
+        letter-spacing: -0.02em;
+      }
+      header p {
+        margin: 0;
+        color: var(--dim);
+        flex: 1;
+        min-width: 240px;
+      }
+      button {
+        font:
+          13px 'JetBrains Mono',
+          monospace;
+        color: var(--text);
+        background: #17110d;
+        border: 1px solid #3d2e25;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--amber);
+      }
+      button.primary {
+        background: linear-gradient(100deg, var(--amber), var(--coral));
+        color: #1a0d05;
+        border-color: transparent;
+        font-weight: 600;
+      }
+      main {
+        display: grid;
+        gap: 22px;
+        padding: 22px 24px 80px;
+        max-width: 1500px;
+        margin: 0 auto;
+      }
+      .screen {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 18px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+      }
+      .label {
+        grid-column: 1/-1;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .label b {
+        font:
+          800 16px Inter,
+          sans-serif;
+      }
+      .label span {
+        font:
+          12px 'JetBrains Mono',
+          monospace;
+        color: var(--faint);
+      }
+      .label code {
+        font:
+          12px 'JetBrains Mono',
+          monospace;
+        color: var(--amber);
+      }
+      .frame {
+        position: relative;
+        aspect-ratio: 16/9;
+        border-radius: 10px;
+        overflow: hidden;
+        background: radial-gradient(60% 70% at 55% 45%, #3a1a0e 0%, #140b07 55%, #090605 100%);
+        display: grid;
+        place-items: center;
+        container-type: inline-size;
+      }
+      .frame .bars::before,
+      .frame .bars::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 9%;
+        background: #000;
+      }
+      .frame .bars::before {
+        top: 0;
+      }
+      .frame .bars::after {
+        bottom: 0;
+      }
+      .sample {
+        text-align: center;
+        padding: 0 6%;
+        line-height: 1.05;
+      }
+      .grad {
+        background: linear-gradient(100deg, var(--amber), var(--coral) 55%, var(--lilac));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .fonts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-content: start;
+      }
+      .fonts button {
+        font-size: 18px;
+        padding: 8px 12px;
+        line-height: 1.1;
+      }
+      .fonts button small {
+        display: block;
+        font:
+          10px 'JetBrains Mono',
+          monospace;
+        color: var(--faint);
+        margin-top: 3px;
+      }
+      .fonts button.on {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 1px var(--amber) inset;
+      }
+      .fonts button.on small {
+        color: var(--amber);
+      }
+      #out {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        max-width: min(520px, calc(100vw - 40px));
+        max-height: 50vh;
+        overflow: auto;
+        margin: 0;
+        padding: 14px;
+        border: 1px solid #3d2e25;
+        border-radius: 12px;
+        background: #0a0705;
+        font:
+          12px/1.5 'JetBrains Mono',
+          monospace;
+        color: #e6d8cb;
+        display: none;
+      }
+      @media (max-width: 900px) {
+        .screen {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Wraith launch video · fonts</h1>
+      <p>
+        Click a font under each screen. Choices are saved in this browser. When you're happy, press
+        <b>Copy choices</b> and paste them back.
+      </p>
+      <button id="reset">Reset to current</button>
+      <button id="copy" class="primary">Copy choices</button>
+    </header>
+    <main id="screens"></main>
+    <pre id="out"></pre>
+    <script>
+      // Every candidate is an OFL font from Google Fonts. `w` is the weight to use.
+      const FONTS = {
+        display: [
+          ['Unbounded', 900],
+          ['Archivo Black', 400],
+          ['Anton', 400],
+          ['Bebas Neue', 400],
+          ['Big Shoulders Display', 900],
+          ['Bungee', 400],
+          ['Rubik Mono One', 400],
+          ['Syne', 800],
+          ['Sora', 800],
+          ['Outfit', 800],
+          ['Geist', 800],
+          ['Inter', 800],
+          ['Manrope', 800],
+          ['Space Grotesk', 700],
+          ['Bricolage Grotesque', 800],
+          ['Orbitron', 900],
+          ['Michroma', 400],
+          ['Tektur', 900],
+        ],
+        pixel: [
+          ['Doto', 900],
+          ['Press Start 2P', 400],
+          ['Silkscreen', 700],
+          ['Sixtyfour', 400],
+          ['VT323', 400],
+          ['Major Mono Display', 400],
+        ],
+        mono: [
+          ['JetBrains Mono', 500],
+          ['Geist Mono', 500],
+          ['IBM Plex Mono', 500],
+          ['Space Mono', 700],
+          ['VT323', 400],
+          ['Major Mono Display', 400],
+        ],
+      };
+      const all = (...k) => k.flatMap((x) => FONTS[x]);
+      // The screens of the video, in order, with the text each shows and its current font.
+      const SCREENS = [
+        {
+          id: 'opening',
+          name: 'Opening captions',
+          time: '0–9.5 s',
+          current: 'Bricolage Grotesque',
+          fonts: all('display'),
+          render: (f) =>
+            `<div class="sample" style="font-size:6cqw">This is a terminal on the web.</div>`,
+        },
+        {
+          id: 'counter',
+          name: 'Opening counters',
+          time: '0–9.5 s',
+          current: 'Unbounded',
+          fonts: all('display', 'pixel', 'mono'),
+          render: () =>
+            `<div class="sample"><div style="font-size:14cqw;color:#ff7f6e">37.7 ms</div><div style="font:2.2cqw 'JetBrains Mono';color:#a6958a;margin-top:1cqw">CPU per update</div></div>`,
+        },
+        {
+          id: 'headline',
+          name: 'The headline',
+          time: '13–15.5 s',
+          current: 'Bricolage Grotesque',
+          fonts: all('display', 'pixel'),
+          render: () =>
+            `<div class="sample" style="font-size:8.5cqw">The spooky fast<br>web terminal…</div>`,
+        },
+        {
+          id: 'arrived',
+          name: '"has arrived."',
+          time: '15.5–19 s',
+          current: 'Unbounded',
+          fonts: all('display', 'pixel'),
+          render: () =>
+            `<div class="sample"><div style="font:900 15cqw Unbounded;letter-spacing:-.4cqw;color:#e9c49a;opacity:.75">WRAITH</div><div class="grad" style="font-size:7.5cqw;margin-top:1.5cqw">has arrived.</div></div>`,
+        },
+        {
+          id: 'stack',
+          name: 'The stack',
+          time: '19–23 s',
+          current: 'Unbounded',
+          fonts: all('display', 'pixel'),
+          render: () =>
+            `<div class="sample" style="text-align:left;font-size:7cqw;width:100%">Ghostty's engine<br>Rust<br>WebAssembly<br>WebGPU</div>`,
+        },
+        {
+          id: 'live',
+          name: 'Live title',
+          time: '23–29 s',
+          current: 'Bricolage Grotesque',
+          fonts: all('display'),
+          render: () =>
+            `<div class="sample" style="font-size:5.5cqw">This is Wraith. Running live.</div>`,
+        },
+        {
+          id: 'howfast',
+          name: 'HOW FAST? (glyph art, rendered by Wraith)',
+          time: '29–31 s',
+          current: 'Helvetica',
+          fonts: all('display', 'pixel'),
+          render: () => `<canvas width="960" height="540"></canvas>`,
+          glyphs: true,
+        },
+        {
+          id: 'race',
+          name: 'Race numbers',
+          time: '31–41 s',
+          current: 'Unbounded',
+          fonts: all('display', 'pixel'),
+          render: () =>
+            `<div class="sample" style="display:flex;gap:6cqw;align-items:end"><div><div class="grad" style="font-size:17cqw">15×</div><div style="font:600 2.6cqw Inter">less CPU than xterm.js DOM</div></div><div><div style="font-size:17cqw">3.9×</div><div style="font:600 2.6cqw Inter">less than xterm.js + WebGL</div></div></div>`,
+        },
+        {
+          id: 'code',
+          name: 'Code and terminal text',
+          time: '41–50 s',
+          current: 'JetBrains Mono',
+          fonts: all('mono'),
+          render: () =>
+            `<div class="sample" style="text-align:left;font-size:3.3cqw;line-height:1.6"><span style="color:#d9bbff">import</span> { Terminal } <span style="color:#d9bbff">from</span> <span style="color:#ffd98a">'wraithterm/xterm'</span>;<br><br><span style="color:#d9bbff">const</span> term = <span style="color:#d9bbff">new</span> <span style="color:#ffb86b">Terminal</span>();<br>term.<span style="color:#ffb86b">open</span>(element);</div>`,
+        },
+        {
+          id: 'finale',
+          name: 'Finale URL',
+          time: '50–62 s',
+          current: 'JetBrains Mono',
+          fonts: all('mono', 'display', 'pixel'),
+          render: () =>
+            `<div class="sample"><div class="grad" style="font-size:9cqw">wraithterm.com</div><div style="font:3cqw 'JetBrains Mono';color:#ffd98a;margin-top:2cqw">npm i wraithterm</div></div>`,
+        },
+      ];
+      const saved = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('wraith-fonts') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      const choice = Object.fromEntries(SCREENS.map((s) => [s.id, saved[s.id] || s.current]));
+      const weightOf = (name) =>
+        (Object.values(FONTS)
+          .flat()
+          .find(([f]) => f === name) || [name, 800])[1];
+      const save = () => {
+        try {
+          localStorage.setItem('wraith-fonts', JSON.stringify(choice));
+        } catch {}
+      };
+
+      const solid = [...'█▓▒#@%&$WM'];
+      const storm = [...'░▒│─┼╳/\\<>=+*·:;01λψΩΣπ∂≈{}[]'];
+      const warm = ['#ffb86b', '#ffd98a', '#ff7f6e', '#d9bbff', '#fff0e1'];
+      const arts = new Map();
+      const root = document.getElementById('screens');
+      for (const s of SCREENS) {
+        const el = document.createElement('section');
+        el.className = 'screen';
+        el.innerHTML = `<div class="label"><b>${s.name}</b><span>${s.time} · now <code data-now></code></span></div>
+    <div class="frame"><div class="bars"></div><div class="inner" style="width:100%;height:100%;display:grid;place-items:center"></div></div>
+    <div class="fonts"></div>`;
+        root.append(el);
+        const inner = el.querySelector('.inner');
+        const fonts = el.querySelector('.fonts');
+        for (const [name, w] of s.fonts) {
+          const b = document.createElement('button');
+          b.innerHTML = `<span style="font-family:'${name}';font-weight:${w}">Aa 15×</span><small>${name}</small>`;
+          b.dataset.font = name;
+          b.onclick = () => {
+            choice[s.id] = name;
+            save();
+            paint();
+          };
+          fonts.append(b);
+        }
+        const paint = () => {
+          const f = choice[s.id];
+          inner.innerHTML = s.render(f);
+          const sample = inner.querySelector('.sample');
+          if (sample) {
+            sample.style.fontFamily = `'${f}'`;
+            sample.style.fontWeight = weightOf(f);
+          }
+          if (s.id === 'race')
+            inner.querySelectorAll('.sample > div > div:first-child').forEach((d) => {
+              d.style.fontFamily = `'${f}'`;
+              d.style.fontWeight = weightOf(f);
+            });
+          if (s.id === 'arrived') {
+            const d = inner.querySelector('.grad');
+            d.style.fontFamily = `'${f}'`;
+            d.style.fontWeight = weightOf(f);
+          }
+          if (s.id === 'counter') {
+            const d = inner.querySelector('.sample > div');
+            d.style.fontFamily = `'${f}'`;
+            d.style.fontWeight = weightOf(f);
+          }
+          if (s.id === 'finale') {
+            const d = inner.querySelector('.grad');
+            d.style.fontFamily = `'${f}'`;
+            d.style.fontWeight = weightOf(f);
+          }
+          el.querySelector('[data-now]').textContent = f;
+          fonts
+            .querySelectorAll('button')
+            .forEach((b) => b.classList.toggle('on', b.dataset.font === f));
+          if (s.glyphs) glyphArt(inner.querySelector('canvas'), f, weightOf(f));
+        };
+        s.paint = paint;
+        paint();
+      }
+
+      // HOW FAST? as the video does it: the text rasterized to a cell grid, filled with glyphs that
+      // change every frame over a glyph storm. The font decides how bold the letters are.
+      function glyphArt(canvas, family, weight) {
+        const cols = 120,
+          rows = 34;
+        const mask = document.createElement('canvas');
+        mask.width = cols;
+        mask.height = rows;
+        const m = mask.getContext('2d');
+        m.fillStyle = '#fff';
+        m.textAlign = 'center';
+        m.textBaseline = 'middle';
+        m.setTransform(1, 0, 0, 0.8, cols / 2, rows / 2);
+        let size = 40;
+        m.font = `${weight} ${size}px '${family}'`;
+        size = (size * cols * 0.9) / m.measureText('HOW FAST?').width;
+        size = Math.min(size, ((rows * 1.25) / 0.8) * 0.72);
+        m.font = `${weight} ${size}px '${family}'`;
+        m.fillText('HOW FAST?', 0, 0);
+        const a = m.getImageData(0, 0, cols, rows).data;
+        arts.set(canvas, { cols, rows, inside: (x, y) => a[(y * cols + x) * 4 + 3] > 110 });
+      }
+      let tick = 0;
+      function frame() {
+        tick++;
+        for (const [canvas, art] of arts) {
+          if (!canvas.isConnected) {
+            arts.delete(canvas);
+            continue;
+          }
+          const g = canvas.getContext('2d');
+          const cw = canvas.width / art.cols,
+            ch = canvas.height / art.rows;
+          g.fillStyle = '#0c0806';
+          g.fillRect(0, 0, canvas.width, canvas.height);
+          g.font = `${ch * 0.9}px 'JetBrains Mono', monospace`;
+          g.textBaseline = 'top';
+          for (let y = 0; y < art.rows; y++)
+            for (let x = 0; x < art.cols; x++) {
+              if (art.inside(x, y)) {
+                g.fillStyle = warm[(x + y + tick) % warm.length];
+                g.fillText(solid[(Math.random() * solid.length) | 0], x * cw, y * ch);
+              } else if (Math.random() < 0.14) {
+                const k = 0.25 + Math.random() * 0.35;
+                g.fillStyle = `rgb(${255 * k},${150 * k},${90 * k})`;
+                g.fillText(storm[(Math.random() * storm.length) | 0], x * cw, y * ch);
+              }
+            }
+        }
+        requestAnimationFrame(frame);
+      }
+      document.fonts.ready.then(() => {
+        for (const s of SCREENS) s.paint();
+        requestAnimationFrame(frame);
+      });
+
+      document.getElementById('reset').onclick = () => {
+        for (const s of SCREENS) choice[s.id] = s.current;
+        save();
+        for (const s of SCREENS) s.paint();
+      };
+      document.getElementById('copy').onclick = async () => {
+        const text =
+          'Wraith video fonts:\n' + SCREENS.map((s) => `- ${s.name}: ${choice[s.id]}`).join('\n');
+        const out = document.getElementById('out');
+        out.textContent = text;
+        out.style.display = 'block';
+        try {
+          await navigator.clipboard.writeText(text);
+          document.getElementById('copy').textContent = 'Copied ✓';
+        } catch {
+          document.getElementById('copy').textContent = 'Select and copy below';
+        }
+      };
+    </script>
+  </body>
+</html>
