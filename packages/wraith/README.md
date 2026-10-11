@@ -119,8 +119,9 @@ Open **http://127.0.0.1:5173** for the landing page and its in-browser race, or
 try `help` or `colors`, start a stream, and run a benchmark. The playground's shell is an interactive demonstration; connect a PTY
 backend to run actual programs.
 
-Open **http://127.0.0.1:5173/pipes.html** for [Pipes / 95](docs/PIPES.md): a shaded
-3D pipe network drawn entirely with ANSI truecolor half-blocks. Choose Wraith,
+Open **http://127.0.0.1:5173/pipes.html** for the [Pipes lab](docs/PIPES.md): a shaded
+3D pipe network drawn entirely with ANSI truecolor half-blocks. The default XP
+mode grows one pipe, or a chosen count, then clears and starts a new layout. Choose Wraith,
 xterm WebGL or DOM, switch between live geometry and replay, or run the same
 scene in another terminal with `npm run pipes -- --preset inferno`.
 

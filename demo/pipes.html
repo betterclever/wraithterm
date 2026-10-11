@@ -8,7 +8,7 @@
       name="description"
       content="Windows-era 3D pipes, rendered entirely as ANSI truecolor terminal characters. Stress-test Wraith WebGPU and xterm.js."
     />
-    <title>Pipes / 95 · Wraith terminal stress lab</title>
+    <title>Pipes / XP · Wraith terminal lab</title>
     <link rel="icon" href="/favicon.svg" />
     <link rel="stylesheet" href="/pipes.css" />
   </head>
@@ -29,11 +29,11 @@
       <section class="intro">
         <div>
           <p class="eyebrow">Terminal stress lab · ANSI truecolor</p>
-          <h1>Pipes <em>/ 95.</em></h1>
+          <h1>Pipes <em id="mode-title">/ XP.</em></h1>
         </div>
         <p>
-          Rounded elbows. Chrome highlights. A depth-tested tangle of geometry.<br />Every pixel is
-          a terminal character. Every frame is an ANSI stream.
+          A pipe grows, turns, fills the screen, then starts again.<br />Every pixel is a terminal
+          character. Every frame is an ANSI stream.
         </p>
       </section>
       <section class="controls" aria-label="Scene controls">
@@ -45,7 +45,7 @@
           </select></label
         >
         <label
-          >Load<select id="preset">
+          >Resolution<select id="preset">
             <option value="classic">Classic · 120 × 42</option>
             <option value="pressure" selected>Pressure · 180 × 60</option>
             <option value="inferno">Inferno · 240 × 80</option>
@@ -53,8 +53,18 @@
         >
         <label
           >Source<select id="source">
+            <option value="growth" selected>XP · growing pipes</option>
             <option value="replay">Prebaked stress loop</option>
             <option value="live">Live 3D / worker</option>
+          </select></label
+        >
+        <label>Growing pipes<input id="pipes" type="number" min="1" max="80" value="1" /></label>
+        <label
+          >Growth speed<select id="speed">
+            <option value="0.5">½×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
           </select></label
         >
         <label
@@ -114,6 +124,11 @@
           terminal escape sequences. Download a frame or run the same generator in another terminal.
         </p>
         <p>
+          <b>The XP screensaver.</b> Set one growing pipe, or up to 80. A fixed camera follows
+          smooth growth through rounded elbows. After filling, the scene holds briefly, clears, and
+          grows a new seeded network. The speed control changes the growth rate.
+        </p>
+        <p>
           <b>Turn up the pressure.</b> Inferno paints 19,200 cells with 38,400 color assignments per
           frame. Replay removes geometry generation from playback; live mode computes each frame in
           a worker. Only one terminal write is in flight. Use the GPU benchmark for completed
@@ -121,7 +136,7 @@
         </p>
       </section>
       <footer class="pipes-footer">
-        <code>npm run pipes -- --preset inferno</code
+        <code id="cli">npm run pipes -- --mode growth --pipes 1</code
         ><button id="download" disabled>Download ANSI frame ↓</button
         ><a href="/compare.html?workload=pipes">Compare renderers →</a>
       </footer>

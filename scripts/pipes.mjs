@@ -9,6 +9,7 @@ import {
   PIPE_PRESETS,
   PIPE_SEED,
 } from '../demo/pipes-scene.js';
+import { createPipeGrowth } from '../demo/pipes-growth.js';
 
 const args = process.argv.slice(2),
   values = {};
@@ -16,7 +17,7 @@ for (let i = 0; i < args.length; i++) {
   const name = args[i];
   if (name === '--help') {
     console.log(
-      'npm run pipes -- [--preset classic|pressure|inferno] [--cols N] [--rows N] [--seed N] [--fps 1..120] [--frames N] [--compact] [--colors truecolor|rgb444]\nCtrl+C restores the terminal. Non-interactive output requires --frames.',
+      'npm run pipes -- [--mode growth|orbit] [--pipes 1..80] [--speed 0.25..4] [--preset classic|pressure|inferno] [--cols N] [--rows N] [--seed N] [--fps 1..120] [--frames N] [--compact] [--colors truecolor|rgb444]\nCtrl+C restores the terminal. Non-interactive output requires --frames.',
     );
     process.exit(0);
   }
@@ -25,7 +26,18 @@ for (let i = 0; i < args.length; i++) {
     continue;
   }
   if (
-    !['--preset', '--cols', '--rows', '--seed', '--fps', '--frames', '--colors'].includes(name) ||
+    ![
+      '--mode',
+      '--pipes',
+      '--speed',
+      '--preset',
+      '--cols',
+      '--rows',
+      '--seed',
+      '--fps',
+      '--frames',
+      '--colors',
+    ].includes(name) ||
     !args[i + 1]
   )
     throw new Error(`Unknown or incomplete option: ${name}. Use --help.`);
@@ -44,12 +56,18 @@ if (
   throw new Error('Expected fps in 1..120 and a positive integer frame count');
 if (!process.stdout.isTTY && frames === Infinity)
   throw new Error('Use --frames N when writing to a file or pipe');
-const scene = createPipesScene({
+const mode = values.mode ?? 'orbit';
+if (!['orbit', 'growth'].includes(mode)) throw new Error('Mode must be growth or orbit');
+const config = {
   ...preset,
   cols: Number(values.cols ?? Math.min(preset.cols, process.stdout.columns || preset.cols)),
   rows: Number(values.rows ?? Math.min(preset.rows, process.stdout.rows || preset.rows)),
   seed: Number(values.seed ?? PIPE_SEED),
-});
+  pipes: Number(values.pipes ?? (mode === 'growth' ? 1 : preset.pipes)),
+  speed: Number(values.speed ?? 1),
+};
+const growth = mode === 'growth' ? createPipeGrowth(config) : undefined;
+let scene = growth ? growth.frame(0).scene : createPipesScene(config);
 let stopped = false,
   brokenPipe = false;
 const stop = () => {
@@ -76,7 +94,11 @@ try {
   if (process.stdout.isTTY) await write('\x1b[?1049h');
   for (let frame = 0; !stopped && frame < frames; frame++) {
     const before = performance.now();
-    const image = rasterizePipes(scene, frame / fps, { colors: values.colors ?? 'truecolor' });
+    if (growth) scene = growth.frame(frame / fps).scene;
+    const image = rasterizePipes(scene, frame / fps, {
+      colors: values.colors ?? 'truecolor',
+      ...(growth ? { camera: 'fixed', framing: 'lattice', backdrop: 'black' } : {}),
+    });
     await write(encodePipeFrame(image, { traffic: values.traffic ?? 'stress' }).bytes);
     await delay(Math.max(0, 1000 / fps - (performance.now() - before)));
   }

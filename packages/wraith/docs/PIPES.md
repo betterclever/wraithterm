@@ -1,8 +1,20 @@
-# Pipes / 95
+# Pipes / XP and Pipes / 95
 
 A Windows-era 3D Pipes stress scene rendered entirely through terminal characters.
 Open `http://127.0.0.1:5173/pipes.html` after `npm run dev`. The lab shares the
 website's ember theme and the existing playground stylesheet.
+
+The default **XP · growing pipes** mode starts with one metallic pipe against a
+black background. Set **Growing pipes** to any count from 1 to 80, choose a speed,
+then select **Rebuild scene**. Each pipe continuously extends along its curved
+centerline with a closed moving tip. The camera stays fixed while the pipes grow.
+At 1× speed, growth takes 16 seconds, followed by a 1.2-second hold and a
+0.35-second clear before a new seeded layout starts. Shorter paths stop growing
+when they reach an occupied node or the lattice boundary.
+
+Pause and hidden tabs freeze the animation clock. XP mode generates one frame at
+a time and allocates no replay bank. The other source choices retain the original
+rotating stress scene.
 
 The geometry uses seeded lattice walks, cylindrical sweeps, rounded torus elbows,
 end caps, perspective projection, a depth buffer and metallic lighting. A worker
@@ -16,6 +28,9 @@ renders ordinary glyph cells, not those triangles directly.
 | Control               | Behavior                                                                                                                    |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Renderer              | Wraith WebGPU, official xterm WebGL, or xterm DOM. All receive the same generator's ANSI.                                   |
+| XP · growing pipes    | Grow one or multiple sealed pipes, hold, clear and repeat with a new layout.                                                |
+| Growing pipes         | 1–80 simultaneous pipes in XP mode; the rotating stress modes use their preset counts.                                      |
+| Growth speed          | ½×, 1×, 2× or 4×; the hold and clear intervals stay constant.                                                               |
 | Classic               | 120×42 cells, up to 12 pipes.                                                                                               |
 | Pressure              | 180×60 cells, up to 28 pipes.                                                                                               |
 | Inferno               | 240×80 cells, up to 52 pipes; 19,200 cells and 38,400 RGB assignments per stress frame.                                     |
@@ -31,7 +46,10 @@ and worker. Playback awaits public `write` and `onRender` before sending another
 frame, so slow renderers do not accumulate an unbounded input queue. Hidden pages
 stop scheduling frames. Reduced-motion preferences start the scene paused.
 
-The default seed's Inferno scene has 50 pipes, 957 straight steps, 548 rounded
+The pipe-count and speed controls apply to XP mode. In replay or live-orbit mode,
+the selected resolution preset supplies the original stress scene's pipe count.
+
+In the rotating stress modes, the default seed's Inferno scene has 50 pipes, 957 straight steps, 548 rounded
 elbows and 104,916 software triangles. Its 48-frame bank is approximately 26 MiB.
 Scene generation and ANSI encoding run in JavaScript; Wraith's terminal renderer
 remains Rust/Wasm/WebGPU. The live counter reports browser render callbacks,
@@ -42,6 +60,8 @@ not physical display FPS or GPU-completed throughput.
 From this repository, in a terminal with truecolor support:
 
 ```sh
+npm run pipes -- --mode growth --pipes 1
+npm run pipes -- --mode growth --pipes 6 --speed 2
 npm run pipes -- --preset inferno
 npm run pipes -- --preset pressure --compact --colors rgb444 --fps 30
 ```
@@ -67,7 +87,9 @@ npm run benchmark:pipes
 
 Unit tests check exact ANSI foreground/background round trips, no accidental
 scrolling, deterministic geometry, depth-order independence, color quantization
-and input bounds. Browser checks exercise all three lab renderers, replay/live
+and input bounds. Growth tests check cycle timing, reproducibility, closed tip caps,
+fixed framing and 80-pipe bounds. Browser checks exercise all three lab renderers,
+single/multiple growth, automatic reset, pause-clock behavior, replay/live
 switching, cancellation, pause/resume, downloads, desktop/mobile layouts and
 reduced motion. Local screenshots are written under `.cache/pipes`.
 

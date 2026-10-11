@@ -6,11 +6,12 @@ import { PIPE_PRESETS, PIPE_SEED } from './pipes-scene.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-for (const id of ['renderer', 'preset', 'source', 'traffic', 'colors']) {
+for (const id of ['renderer', 'preset', 'source', 'traffic', 'colors', 'speed']) {
   if ([...$(id).options].some((option) => option.value === params.get(id)))
     $(id).value = params.get(id);
 }
 $('seed').value = String(Number(params.get('seed') ?? PIPE_SEED) >>> 0);
+if (params.has('pipes')) $('pipes').value = params.get('pipes');
 const font = new FontFace(
   'PipesMono',
   `url(${new URL('./fonts/JetBrainsMono-Regular.ttf', import.meta.url)})`,
@@ -24,7 +25,7 @@ let terminal,
   running = false,
   ready = false,
   generation = 0,
-  activeMode = 'replay',
+  activeMode = 'growth',
   activeType = 'wraith',
   activeSeed = PIPE_SEED;
 let lastSample = 0,
@@ -36,7 +37,8 @@ let lastSample = 0,
 let requestId = 0,
   cancelWrite,
   lastFrameTime = 0,
-  liveStarted = 0;
+  animationTime = 0,
+  clockAt = 0;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const setStatus = (value) => {
   $('status').textContent = value;
@@ -54,6 +56,9 @@ function fit() {
 }
 new ResizeObserver(fit).observe($('viewport'));
 function pause(value) {
+  const now = performance.now();
+  if (running && !document.hidden) animationTime += (now - clockAt) / 1000;
+  clockAt = now;
   running = !value;
   $('pause').textContent = running ? 'Ⅱ' : '▶';
   $('pause').setAttribute('aria-label', running ? 'Pause animation' : 'Resume animation');
@@ -134,11 +139,22 @@ async function present(frame, version) {
       lastWriteToRenderMs: performance.now() - start,
       bankBytes,
       completed: ++serial,
+      growth: frame.growth,
     };
     $('bytes').textContent = `${(frame.bytes.length / 1024).toFixed(0)} KiB`;
     $('sgr').textContent = `${frame.sgrChanges.toLocaleString()} SGR sequences / frame`;
     $('generation').textContent = `${frame.generationMs.toFixed(1)} ms`;
     $('download').disabled = false;
+    if (frame.scene) {
+      sceneStats = frame.scene;
+      $('triangles').textContent = frame.scene.triangles.toLocaleString();
+      $('geometry').textContent =
+        `${frame.scene.pipes} growing ${frame.scene.pipes === 1 ? 'pipe' : 'pipes'} · cycle ${frame.growth.cycle + 1}`;
+      if (running)
+        setStatus(
+          `XP · ${frame.growth.stage.toUpperCase()} · cycle ${frame.growth.cycle + 1} · ${Math.round(frame.growth.progress * 100)}%`,
+        );
+    }
     if (running && performance.now() - lastSample >= 800) {
       $('rate').textContent = ((completed * 1000) / (performance.now() - lastSample)).toFixed(1);
       lastSample = performance.now();
@@ -168,7 +184,9 @@ function tick(time) {
     void present(frames[step < frames.length ? step : frames.length * 2 - 2 - step], generation);
   } else if (!workerPending) {
     workerPending = true;
-    lastFrameTime = (time - liveStarted) / 1000;
+    animationTime += Math.max(0, time - clockAt) / 1000;
+    clockAt = time;
+    lastFrameTime = animationTime;
     worker.postMessage({ kind: 'frame', time: lastFrameTime });
   }
 }
@@ -183,17 +201,28 @@ async function start() {
   serial = 0;
   completed = 0;
   bankBytes = 0;
+  animationTime = 0;
   const preset = PIPE_PRESETS[$('preset').value];
   const seed = Number($('seed').value);
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error('Seed must be 0..4294967295');
   const type = $('renderer').value,
     mode = $('source').value;
+  const pipeCount = Number($('pipes').value),
+    speed = Number($('speed').value);
+  if (!Number.isInteger(pipeCount) || pipeCount < 1 || pipeCount > 80)
+    throw new Error('Growing pipe count must be 1..80');
   activeType = type;
   activeMode = mode;
   activeSeed = seed;
-  const options = { ...preset, seed, colors: $('colors').value, traffic: $('traffic').value };
-  for (const id of ['renderer', 'preset', 'source', 'traffic', 'colors', 'seed'])
+  const options = {
+    ...preset,
+    ...(mode === 'growth' ? { pipes: pipeCount, speed } : {}),
+    seed,
+    colors: $('colors').value,
+    traffic: $('traffic').value,
+  };
+  for (const id of ['renderer', 'preset', 'source', 'traffic', 'colors', 'seed', 'pipes', 'speed'])
     params.set(id, $(id).value);
   history.replaceState(null, '', `${location.pathname}?${params}`);
   setStatus('INITIALIZING · terminal + software geometry worker');
@@ -226,6 +255,11 @@ async function start() {
   if (!gpuReady) throw new Error(`WebGPU unavailable: ${target.rendererFallbackReason}`);
   $('window-renderer').textContent = `/ ${$('renderer').selectedOptions[0].textContent}`;
   $('grid').textContent = `${preset.cols} × ${preset.rows} CELLS`;
+  $('mode-title').textContent = mode === 'growth' ? '/ XP.' : '/ 95.';
+  $('cli').textContent =
+    mode === 'growth'
+      ? `npm run pipes -- --mode growth --pipes ${pipeCount}`
+      : `npm run pipes -- --preset ${$('preset').value}`;
   $('generation-note').textContent =
     mode === 'replay'
       ? 'Prebaked in worker; excluded from playback'
@@ -260,11 +294,11 @@ async function start() {
       }
     } else if (data.kind === 'ready') {
       ready = true;
-      liveStarted = performance.now();
-      lastSample = liveStarted;
+      clockAt = performance.now();
+      lastSample = clockAt;
       $('pause').disabled = false;
       pause(reducedMotion || params.get('paused') === '1');
-      if (!running && mode === 'live') {
+      if (!running && mode !== 'replay') {
         workerPending = true;
         worker.postMessage({ kind: 'frame', time: 0 });
       }
@@ -297,7 +331,10 @@ $('download').onclick = () => {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-document.addEventListener('visibilitychange', schedule);
+document.addEventListener('visibilitychange', () => {
+  clockAt = performance.now();
+  schedule();
+});
 window.addEventListener('pagehide', () => {
   ++generation;
   stop();

@@ -35,7 +35,7 @@ try {
     page.on('console', (m) => {
       if (m.type() === 'error') errors.push(m.text());
     });
-    await page.goto(`${base}/pipes.html?renderer=${renderer}&paused=1`);
+    await page.goto(`${base}/pipes.html?renderer=${renderer}&source=replay&paused=1`);
     const state = await ready(page);
     assert.equal(state.frames, 48);
     assert.equal(state.running, false);
@@ -105,6 +105,55 @@ try {
     });
     await page.close();
   }
+  for (const renderer of ['wraith', 'webgl', 'dom']) {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1250 } });
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.clock.install();
+    await page.goto(`${base}/pipes.html?renderer=${renderer}&pipes=1`);
+    let state = await ready(page);
+    assert.equal(state.source, 'growth');
+    assert.equal(state.frames, 0);
+    assert.equal(state.bankBytes, 0);
+    assert.equal(state.stats.growth.pipeCount, 1);
+    const firstTriangles = state.scene.triangles;
+    await page.clock.fastForward(8000);
+    await page.waitForFunction(() => window.pipesLab.state.stats.growth.progress >= 0.45);
+    state = await page.evaluate(() => window.pipesLab.state);
+    assert(state.scene.triangles > firstTriangles, 'Single tube must extend');
+    await page.locator('#pause').click();
+    await page.waitForFunction(
+      () => !window.pipesLab.state.inFlight && !window.pipesLab.state.workerPending,
+    );
+    const paused = await page.evaluate(() => window.pipesLab.state.stats.growth);
+    await page.clock.fastForward(30000);
+    assert.deepEqual(await page.evaluate(() => window.pipesLab.state.stats.growth), paused);
+    await page.screenshot({ path: join(output, `xp-single-${renderer}.png`), fullPage: true });
+    await page.locator('#pause').click();
+    await page.clock.fastForward(10000);
+    await page.waitForFunction(() => window.pipesLab.state.stats.growth.cycle >= 1);
+    assert.equal(await page.evaluate(() => window.pipesLab.state.stats.growth.pipeCount), 1);
+    await page.locator('#pipes').fill('6');
+    await page.locator('#apply').click();
+    state = await ready(page);
+    assert.equal(state.stats.growth.pipeCount, 6);
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(() => window.pipesLab.state.stats.growth.progress >= 0.3);
+    await page.locator('#pause').click();
+    await page.waitForFunction(() => !window.pipesLab.state.inFlight);
+    await page.screenshot({ path: join(output, `xp-multiple-${renderer}.png`), fullPage: true });
+    checks.push({
+      renderer,
+      checks: [
+        'XP default with one pipe',
+        'continuous tube growth',
+        'pause freezes growth clock',
+        'automatic cycle reset',
+        'six simultaneous growing pipes',
+        'no replay allocation',
+      ],
+    });
+    await page.close();
+  }
   const mobile = await browser.newPage({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -125,7 +174,7 @@ try {
   });
   await mobile.close();
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1300 } });
-  await desktop.goto(`${base}/pipes.html?preset=inferno&paused=1`);
+  await desktop.goto(`${base}/pipes.html?preset=inferno&source=replay&paused=1`);
   await ready(desktop);
   await desktop.screenshot({ path: join(output, 'desktop.png'), fullPage: true });
   await desktop.close();

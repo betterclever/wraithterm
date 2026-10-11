@@ -1,9 +1,16 @@
 import { createPipesScene, rasterizePipes, encodePipeFrame } from './pipes-scene.js';
+import { createPipeGrowth } from './pipes-growth.js';
 
-let scene, options;
+let scene, options, growth;
 function frame(time) {
   const start = performance.now();
-  const image = rasterizePipes(scene, time, options);
+  const grown = growth?.frame(time);
+  const current = grown?.scene ?? scene;
+  const image = rasterizePipes(
+    current,
+    time,
+    growth ? { ...options, camera: 'fixed', framing: 'lattice', backdrop: 'black' } : options,
+  );
   const rasterMs = performance.now() - start;
   const encoded = encodePipeFrame(image, options);
   return {
@@ -12,14 +19,16 @@ function frame(time) {
     rasterMs,
     generationMs: performance.now() - start,
     fragments: image.fragments,
+    ...(grown ? { growth: grown.growth, scene: current.stats } : {}),
   };
 }
 self.onmessage = async ({ data }) => {
   try {
     if (data.kind === 'init') {
       options = data.options;
-      scene = createPipesScene(options);
-      self.postMessage({ kind: 'scene', stats: scene.stats });
+      growth = data.mode === 'growth' ? createPipeGrowth(options) : undefined;
+      scene = growth ? undefined : createPipesScene(options);
+      if (scene) self.postMessage({ kind: 'scene', stats: scene.stats });
       if (data.mode === 'replay') {
         // A bounded bank; the player ping-pongs through it. No growing write queue.
         for (let i = 0; i < 48; i++) {
@@ -32,7 +41,7 @@ self.onmessage = async ({ data }) => {
         self.postMessage({ kind: 'ready' });
       } else self.postMessage({ kind: 'ready' });
     } else if (data.kind === 'frame') {
-      if (!scene) throw new Error('Scene not initialized');
+      if (!scene && !growth) throw new Error('Scene not initialized');
       const result = frame(data.time);
       self.postMessage({ kind: 'frame', ...result }, [result.bytes.buffer]);
     }
