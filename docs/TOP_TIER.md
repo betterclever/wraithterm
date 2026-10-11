@@ -23,7 +23,9 @@ The renderer should consume stable row identities, revisions, glyph IDs and pack
 - The efficiency pass packs 20-byte cells with one glyph word and sizes glyph quads to ink. It replaces string hashing with a scalar glyph table and cuts per-cell libghostty queries. Both profiles reuse unchanged and moved rows and upload only changed rows, and write bursts reach the worker as one transfer. See [the efficiency report](benchmarks/efficiency/REPORT.md).
 - Both profiles now retain physical GPU row slots during moves. New rows and sparse edits upload separately, while a small row map controls their screen positions. Cursor-only compatible updates upload no cells. Ownership, malformed sources, memory growth, legacy partial uploads and row-stamp wrap are checked; 60 incremental frames match the previous GPU pixels exactly. See [the retained-row report](benchmarks/retained-rows/REPORT.md).
 
-Current results and limitations are in [the retained-row report](benchmarks/retained-rows/REPORT.md). Earlier measurements remain in [the efficiency report](benchmarks/efficiency/REPORT.md) and [the optimization report](benchmarks/optimization/REPORT.md), attached to their original binaries.
+- The SGR action pass removes temporary RGB/palette normalization arrays and applies supported style/color combinations atomically, preserving upstream parser hooks and extended-state handling. The compatible dense pipeline improves 14.5%, the dashboard 17.8%, and a longer dense batch 13.3%. Native code is unchanged. See [the SGR report](benchmarks/sgr-actions/REPORT.md).
+
+Current results and limitations are in [the SGR report](benchmarks/sgr-actions/REPORT.md); the [retained-row report](benchmarks/retained-rows/REPORT.md) records the previous GPU milestone. Earlier measurements remain in [the efficiency report](benchmarks/efficiency/REPORT.md) and [the optimization report](benchmarks/optimization/REPORT.md), attached to their original binaries.
 
 ## Prioritized implementation backlog
 

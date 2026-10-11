@@ -1,0 +1,375 @@
+{
+  "date": "2026-10-11T06:58:07.795Z",
+  "builds": {
+    "before": {
+      "directory": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline",
+      "head": "574b206d6c91c4661c13263060cbe7083ac0662e",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "rendererSha256": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+      "sdkSources": {
+        "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+        "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+        "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+        "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+        "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+        "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+        "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+        "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+        "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+        "xterm-internals.ts": "86ca053753d7b04c8a1884798bed1edcddf967a831f655647541e6dbf52d8271",
+        "xterm-renderer.ts": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+        "xterm.ts": "a0cfc1004d54f13529038320d770194a56bdb5f875e4f70d545d4da6b9cbbe31"
+      }
+    },
+    "after": {
+      "directory": "/Users/betterclever/projects/wraith",
+      "head": "08c117f6c17daae74b89374a701071191a9f25d5",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "rendererSha256": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+      "sdkSources": {
+        "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+        "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+        "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+        "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+        "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+        "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+        "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+        "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+        "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+        "xterm-input.ts": "743ed5ff15ad33740e0141e0ec4c75f30bef270f4894aade94570beae1f9c3c3",
+        "xterm-internals.ts": "86ca053753d7b04c8a1884798bed1edcddf967a831f655647541e6dbf52d8271",
+        "xterm-renderer.ts": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+        "xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147"
+      }
+    }
+  },
+  "repetitions": 3,
+  "frames": 512,
+  "groups": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 676.2646942066789,
+          "range": [
+            654.3967280363012,
+            699.9316473000683
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.7999999523162842,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 773.9984882842026,
+          "range": [
+            752.2774023316243,
+            798.3782940752886
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.4000000357627869,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 203.045685277268,
+          "range": [
+            193.41190692139077,
+            208.46056756950253
+          ],
+          "redrawP50Ms": 3.299999952316284,
+          "pipelineP95Ms": 5.899999976158142,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 593.2105202423993,
+          "range": [
+            555.0135501355013,
+            594.1053608643742
+          ],
+          "redrawP50Ms": 0.5,
+          "pipelineP95Ms": 1.800000011920929,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 593.3480124913434,
+          "range": [
+            589.657952312531,
+            594.9337671227233
+          ],
+          "redrawP50Ms": 0.5,
+          "pipelineP95Ms": 1.800000011920929,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        }
+      },
+      "wraithGain": 0.1445200302703582,
+      "nativeGain": 0.00023177648448968746,
+      "wraithVsXterm": 3.81194255483574,
+      "nativeVsXterm": 2.9222389615474964
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 662.7831715210356,
+          "range": [
+            621.510075251992,
+            667.797052312457
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.800000011920929,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 747.8819748497942,
+          "range": [
+            746.9000729394603,
+            764.2931780454795
+          ],
+          "redrawP50Ms": 0.3999999761581421,
+          "pipelineP95Ms": 1.5,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 198.1884338441249,
+          "range": [
+            196.8700734426681,
+            200.8236909197882
+          ],
+          "redrawP50Ms": 3.399999976158142,
+          "pipelineP95Ms": 6.299999952316284,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 406.02696272799363,
+          "range": [
+            403.7854889589905,
+            408.7824351297405
+          ],
+          "redrawP50Ms": 0.5999999642372131,
+          "pipelineP95Ms": 2.700000047683716,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 402.64234036992735,
+          "range": [
+            377.97135685146054,
+            407.3514201684398
+          ],
+          "redrawP50Ms": 0.5999999642372131,
+          "pipelineP95Ms": 2.799999952316284,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        }
+      },
+      "wraithGain": 0.12839614369426977,
+      "nativeGain": -0.008335954674846824,
+      "wraithVsXterm": 3.773590417683017,
+      "nativeVsXterm": 2.0316137150899802
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 4596.050270283468,
+          "range": [
+            4579.606439583245,
+            5009.78473639649
+          ],
+          "redrawP50Ms": 0.10000002384185791,
+          "pipelineP95Ms": 0.30000001192092896,
+          "cellUploadBytesPerUpdate": 42450,
+          "rowMapBytesPerUpdate": 316.25
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 5064.292778232027,
+          "range": [
+            5024.533857897883,
+            5089.463222485222
+          ],
+          "redrawP50Ms": 0.10000002384185791,
+          "pipelineP95Ms": 0.20000004768371582,
+          "cellUploadBytesPerUpdate": 42450,
+          "rowMapBytesPerUpdate": 316.25
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 1039.8050366059929,
+          "range": [
+            1006.8829891838741,
+            1058.069849194516
+          ],
+          "redrawP50Ms": 0.800000011920929,
+          "pipelineP95Ms": 0.9000000357627869,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 3045.806067384785,
+          "range": [
+            3018.8679241039185,
+            3112.4620060790276
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 0.40000003576278687,
+          "cellUploadBytesPerUpdate": 43200,
+          "rowMapBytesPerUpdate": 320
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 2951.008645533141,
+          "range": [
+            2677.8242679493837,
+            3042.186571382854
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 0.40000003576278687,
+          "cellUploadBytesPerUpdate": 43200,
+          "rowMapBytesPerUpdate": 320
+        }
+      },
+      "wraithGain": 0.10187932690294077,
+      "nativeGain": -0.031123919170940373,
+      "wraithVsXterm": 4.870425320079507,
+      "nativeVsXterm": 2.8380403456839085
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 1001.9569471624266,
+          "range": [
+            964.4000753870655,
+            1052.198931308906
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.100000023841858,
+          "cellUploadBytesPerUpdate": 374400,
+          "rowMapBytesPerUpdate": 0
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 1179.995390545748,
+          "range": [
+            1143.6229618352313,
+            1234.6274413820313
+          ],
+          "redrawP50Ms": 0.2999999523162842,
+          "pipelineP95Ms": 1,
+          "cellUploadBytesPerUpdate": 374400,
+          "rowMapBytesPerUpdate": 0
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 574.5062836317386,
+          "range": [
+            573.7337516578683,
+            579.7101449353609
+          ],
+          "redrawP50Ms": 0.8999999761581421,
+          "pipelineP95Ms": 1.699999988079071,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 913.7961805980844,
+          "range": [
+            907.96240472007,
+            942.5625920678134
+          ],
+          "redrawP50Ms": 0.5,
+          "pipelineP95Ms": 1.2999999523162842,
+          "cellUploadBytesPerUpdate": 375600,
+          "rowMapBytesPerUpdate": 0
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 863.9892001002378,
+          "range": [
+            815.8062459855795,
+            969.5133497005965
+          ],
+          "redrawP50Ms": 0.5,
+          "pipelineP95Ms": 1.300000011920929,
+          "cellUploadBytesPerUpdate": 375600,
+          "rowMapBytesPerUpdate": 0
+        }
+      },
+      "wraithGain": 0.17769071204858844,
+      "nativeGain": -0.05450556869831491,
+      "wraithVsXterm": 2.0539294767785883,
+      "nativeVsXterm": 1.5038812015049416
+    },
+    {
+      "workload": "complex",
+      "dpr": 2,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 629.7662976629766,
+          "range": [
+            599.7422982396034,
+            632.4891908585547
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.9000000357627869,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 689.191008233183,
+          "range": [
+            672.0041999947069,
+            731.2196514783386
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.699999988079071,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 174.54148769488015,
+          "range": [
+            169.01594427689076,
+            174.74402730375428
+          ],
+          "redrawP50Ms": 4.100000023841858,
+          "pipelineP95Ms": 7,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 565.6208572765606,
+          "range": [
+            556.6427484524274,
+            568.2574916759156
+          ],
+          "redrawP50Ms": 0.6000000238418579,
+          "pipelineP95Ms": 1.9000000357627869,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 549.4741360736743,
+          "range": [
+            548.6498071223108,
+            573.8623627066139
+          ],
+          "redrawP50Ms": 0.5999999642372131,
+          "pipelineP95Ms": 2,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        }
+      },
+      "wraithGain": 0.0943599408077691,
+      "nativeGain": -0.02854689850128944,
+      "wraithVsXterm": 3.948579889716381,
+      "nativeVsXterm": 3.14810045067464
+    }
+  ]
+}

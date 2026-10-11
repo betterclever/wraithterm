@@ -1,12 +1,17 @@
 # Performance
 
-**Current results:** the [retained GPU row pass](benchmarks/retained-rows/REPORT.md)
-records 75 paired runs against the previous build and official xterm WebGL.
-Compatible log streaming improves 33%, reaching 5,676 completed updates/s
-against xterm's 1,056. Native log streaming improves 28%. Dense full repaint
-stays roughly flat at 737 compatible updates/s; the 1000-update/s dense target
-remains open. The dashboard reaches 1,146 compatible and 1,035 native updates/s.
-These are GPU-completed batches, not monitor presentations.
+**Current results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
+records 75 paired runs plus a separate 4,096-update dense batch. Common xterm
+color/style actions improve dense compatible throughput **14.5% (676 → 774
+completed updates/s)** and dashboard throughput **17.8% (1,002 → 1,180)**.
+The longer dense batch improves **13.3% (677 → 767)**. The 1000-update/s dense
+target remains open. Native code and the GPU renderer are unchanged.
+These are GPU-completed batches, not physical display presentations; compare
+within each batch because this is shared hardware.
+
+The earlier [retained GPU row pass](benchmarks/retained-rows/REPORT.md)
+improved compatible log streaming 33% and native log streaming 28%. Its absolute
+rates belong to that historical batch and are not the baseline for the SGR pass.
 
 The earlier [efficiency pass](benchmarks/efficiency/REPORT.md)
 measures both profiles against `a136240` with interleaved runs. Dense
@@ -15,9 +20,9 @@ Redraw CPU drops to 0.3 ms (compat) and 0.5 ms (native). Every scene is
 pixel-identical to the earlier build. Sections below are earlier
 measurements, retained with their original builds.
 
-These measurements cover the **libghostty `Wraith.mount()` worker profile**.
+The older native-only benchmark table below covers the **libghostty `Wraith.mount()` worker profile**.
 The xterm-compatible `Terminal` profile uses a different semantic core and
-browser rasterizer; these throughput figures do not measure that profile.
+browser rasterizer; the native-only table does not measure that profile.
 
 The recorded Chrome suite verifies actual terminal pixels before measuring throughput.
 It ran with default Chrome WebGPU settings on macOS, devicePixelRatio 1, a 13 CSS
