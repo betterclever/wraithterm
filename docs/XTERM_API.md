@@ -120,7 +120,9 @@ The GPU renderer reads changed xterm rows directly, resolves colors/styles and
 selection, and packs 20-byte cells directly into reusable Wasm staging memory, skipping or
 moving rows whose raw xterm words are unchanged. Canvas2D
 rasterizes CSS font glyphs only on cache misses; Rust owns texture uploads,
-resident cell buffers and the shared two-draw WebGPU pipeline. Font options and
+resident cell buffers and the shared two-draw WebGPU pipeline. Moved GPU rows
+keep their physical slots; only new content and a small row map are uploaded.
+Font options and
 DPR changes update geometry and the atlas. There is no ANSI replay into Ghostty.
 
 Transparency, minimum contrast adjustment, custom character joiners, buffer

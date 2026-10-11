@@ -32,7 +32,7 @@ struct initialization, and enum constants. Rust exposes its own small `Frame`
 layout. A pinned Ghostty revision and C compilation isolate upstream API churn.
 
 `Renderer` owns the device, surface, pipeline, atlas texture, cell storage buffer,
-uniform buffer, and CPU staging cells. `Atlas` owns font bytes, shaping metadata,
+row map, uniform buffer, and CPU staging cells. `Atlas` owns font bytes, shaping metadata,
 the swash scaler context, and a bounded cache keyed by grapheme and style.
 
 The SDK copies caller-owned input once before transferring it to the worker.
@@ -52,8 +52,10 @@ This is deliberately not described as an entirely zero-copy pipeline.
    grapheme with HarfRust, rasterizes with swash, and schedules one texture upload.
 5. Each changed cell becomes a 20-byte GPU record: colors, flags and one glyph
    word (atlas slot, ink width, color bit). Rows that only moved are copied
-   by libghostty row id and raw cells instead of re-read. Adjacent changed rows merge into
-   one `write_buffer` call. The GPU cell buffer stays resident between frames.
+   by libghostty row id and raw cells instead of re-read. A visible-to-physical row
+   map retains their GPU slots. Only new or revised rows are uploaded; adjacent
+   logical sources with adjacent physical destinations merge into one write.
+   The GPU cell buffer stays resident between frames.
 6. A single render pass issues two instanced draw calls: backgrounds first, then
    glyphs and decorations. This prevents a wide glyph from being covered by the
    next cell's background. Glyph sampling uses explicit LOD 0, so per-cell branches
@@ -62,8 +64,10 @@ This is deliberately not described as an entirely zero-copy pipeline.
    flags clear only after successful submission.
 
 Moving a cursor may dirty its previous and new rows, following Ghostty's damage
-model. Scrolling currently repacks the changed viewport rows. GPU row remapping
-is a priority for reducing that work in dense and real scrolling workloads.
+model. Scrolling changes a four-byte mapping entry per viewport row and uploads
+only newly packed content. Each physical slot has one visible owner, so editing
+duplicate rows cannot overwrite each other. Identity maps bypass the shader's
+row lookup. Resizing replaces the slots and initializes every visible row.
 
 ## Input and output
 
@@ -109,6 +113,7 @@ wait.
 | Headless state ownership and snapshots       | `crates/wraith-engine/src/core.rs`       |
 | Shaping, fallback, rasterization, cache      | `crates/wraith-engine/src/text.rs`       |
 | Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`        |
+| GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`   |
 | Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl` |
 | Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`        |
 | Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`          |
@@ -141,8 +146,9 @@ Ordinary scalar cells bypass public cell loading; combined text, extended
 attributes, invalid scalars and unfamiliar row layouts retain getter behavior.
 
 The compositor owns a reusable Wasm arena containing cell words, four dimensions
-and eight frame words. JavaScript packs directly into views of that allocation,
-then submits a cell count and destination offset. This removes the three binding
+and eight frame words, followed by one previous-row source index per visible row.
+JavaScript packs directly into views of that allocation, then submits a retained
+frame. Rust reserves reusable physical slots before assigning new rows. This removes the three binding
 allocations and JS-to-Wasm array copies from the compatible redraw path. GPU
 upload copies remain. Bounds and device storage limits are checked before use.
 
@@ -153,7 +159,7 @@ their JS write ownership explicit. Writes and synchronous Rust slice consumption
 must not overlap, and rendering remains paused during benchmark fences.
 
 Buffers, float views and uniforms are reused. Every packed cell overwrites its
-complete record, including explicit zero UVs for blank and continuation cells.
+complete record, including a zero glyph word for blank and continuation cells.
 A failed surface acquisition retains pending presentation and damage until an
 actual submission. The native worker retries at its next animation opportunity;
 the compatible renderer requests another redraw.

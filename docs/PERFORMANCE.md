@@ -1,6 +1,14 @@
 # Performance
 
-**Current results:** the [efficiency pass](benchmarks/efficiency/REPORT.md)
+**Current results:** the [retained GPU row pass](benchmarks/retained-rows/REPORT.md)
+records 75 paired runs against the previous build and official xterm WebGL.
+Compatible log streaming improves 33%, reaching 5,676 completed updates/s
+against xterm's 1,056. Native log streaming improves 28%. Dense full repaint
+stays roughly flat at 737 compatible updates/s; the 1000-update/s dense target
+remains open. The dashboard reaches 1,146 compatible and 1,035 native updates/s.
+These are GPU-completed batches, not monitor presentations.
+
+The earlier [efficiency pass](benchmarks/efficiency/REPORT.md)
 measures both profiles against `a136240` with interleaved runs. Dense
 240×80 updates are 23–60% faster, and log streaming is about 95% faster.
 Redraw CPU drops to 0.3 ms (compat) and 0.5 ms (native). Every scene is
@@ -60,7 +68,7 @@ forced Wasm memory growth. All new records carry their source/binary identities.
 The sustained dense run completed **8,192 frames in 3.59 seconds**, averaging
 **2,280 GPU-completed frames/s**. Its CPU p95 was **0.50 ms**.
 
-[Latest native browser verification](benchmarks/chrome.json) includes the exact Wasm SHA-256,
+[Earlier native browser verification](benchmarks/chrome.json) includes the exact Wasm SHA-256,
 Ghostty revision, user agent, all timings, and the pixel assertion summary.
 [An earlier unoptimized run](benchmarks/baseline-chrome.json) is retained for
 context. Runs are observations on this machine, not a controlled A/B comparison.
@@ -94,7 +102,7 @@ feed. This suite does not certify a particular monitor refresh rate.
 
 ## Distribution size
 
-The optimized Wasm module is **2.27 MiB raw / 797 KiB gzip**.
+The earlier optimized Wasm module measured **2.27 MiB raw / 797 KiB gzip**.
 wasm-opt version 133 with -O3 --strip-dwarf reduced it from
 2,931,003 to 2,380,758 bytes. Font data is a separate
 270 KB asset for the libghostty profile. The xterm profile rasterizes CSS fonts
@@ -118,5 +126,6 @@ physical refresh behavior separately on the intended 120/144/240 Hz displays.
 Measure cold Unicode glyph storms, atlas rebuilding, multiple simultaneous
 terminals, large PTY output bursts, and background-to-foreground transitions.
 Optional GPU timestamp queries can separate GPU pass time from CPU time and
-queue/fence overhead. A row-identity mapping could reduce scroll uploads. These
+queue/fence overhead. Physical GPU row retention is implemented. Remaining work
+includes logical CPU row copies and broader cache eligibility for extended/combined cells. These
 should each be backed by a recorded before/after workload.
