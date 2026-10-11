@@ -27,6 +27,7 @@
     "benchmark:usage": "node scripts/measure-utilization.mjs",
     "benchmark:optimization": "node scripts/optimization-compare.mjs",
     "benchmark:retained": "node scripts/retained-rows-benchmark.mjs",
+    "pipes": "node scripts/pipes.mjs",
     "test:retained": "node scripts/retained-rows-test.mjs",
     "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy"
   },
