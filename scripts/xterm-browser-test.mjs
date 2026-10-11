@@ -178,6 +178,39 @@ try {
     same(seen[0], seen[1], 'Parser handlers');
     same(dump(a), dump(b), 'Intercepted buffer');
     checks.push('async CSI, OSC, DCS and ESC parser hooks');
+    const sgrSeen = [[], []],
+      sgrHandlers = [];
+    for (const [i, t] of [a, b].entries()) {
+      sgrHandlers.push(
+        t.parser.registerCsiHandler({ final: 'm' }, (params) => {
+          sgrSeen[i].push(['sync', params]);
+          return params[0] === 48;
+        }),
+        t.parser.registerCsiHandler({ final: 'm' }, async (params) => {
+          await Promise.resolve();
+          sgrSeen[i].push(['async', params]);
+          return false;
+        }),
+      );
+    }
+    await Promise.all(
+      [a, b].map((t) =>
+        write(
+          t,
+          '\x1b[0;1;38;2;11;22;33;48;5;21mA界' +
+            '\x1b[48;2;100;200;255mB' +
+            '\x1b[0;3;38;2;4;5;6;4:3;58:2::9:8:7mC' +
+            '\x1b[38;2;255mD\x1b[0m',
+        ),
+      ),
+    );
+    same(sgrSeen[0], sgrSeen[1], 'SGR interception order');
+    expect(sgrSeen[0].length === 10, 'Every SGR reaches both hooks');
+    same(dump(a), dump(b), 'Accelerated colors after async continuation');
+    for (const handler of sgrHandlers) handler.dispose();
+    checks.push(
+      'accelerated SGR colors preserve async interception, fallthrough and malformed parameters',
+    );
     const events = [[], []];
     for (const [i, t] of [a, b].entries()) {
       t.onData((d) => events[i].push(d));

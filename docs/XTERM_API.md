@@ -5,6 +5,11 @@ inherits the pinned upstream implementation and its exact public declarations.
 Parser hooks, modes, synchronous buffer views, keyboard/mouse input, clipboard
 behavior, accessibility, events and addons use xterm's authoritative state.
 Wraith replaces the visual renderer with its Rust/Wasm/WebGPU compositor.
+It also accelerates common SGR color/style actions inside each terminal instance.
+Every sequence still passes through upstream parser hooks, including async
+interception and fallthrough. Mixed/colon parameters, underline attributes and
+unsupported combinations use upstream actions, with differential tests against
+the unmodified runtime.
 
 This profile deliberately uses xterm's semantic core. `Wraith.mount()` remains the
 separate libghostty worker profile. A full xterm API cannot be obtained by renaming

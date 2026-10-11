@@ -126,7 +126,14 @@ visual behavior is involved, a browser pixel assertion.
 ## xterm-compatible profile
 
 `Terminal` inherits the official, pinned xterm 6.0 core. Its renderer adapter is
-isolated in `xterm-internals.ts`; no private parser or input code is patched.
+isolated in `xterm-internals.ts`. `xterm-input.ts` installs instance-local fast
+paths for complete semicolon RGB/palette colors and common SGR style combinations.
+The upstream parser still accumulates parameters, dispatches every handler and
+owns asynchronous continuation. Unsupported or mixed/colon attributes use the
+original actions; tentative fast-path changes stay local until the whole sequence
+is validated. Extended-attribute resets and hyperlink retention use upstream's
+action. Guards reject unfamiliar private layouts, and no upstream prototype is
+modified. This additional private boundary must be retested on xterm upgrades.
 `xterm-api.d.ts` and the CSS are generated from that pinned package, with the MIT
 notice preserved. An internal npm dependency alias prevents recursion when users
 install Wraith as `@xterm/xterm`.

@@ -5,6 +5,7 @@ import type {
   ITerminalInitOnlyOptions,
 } from './xterm-api.js';
 import { XtermRenderer, type RendererState } from './xterm-renderer.js';
+import { accelerateInput } from './xterm-input.js';
 const XtermTerminal: typeof TerminalApi = RuntimeTerminal;
 export type * from './xterm-api.js';
 /** Complete xterm.js 6.0 public API. Construction/open remain synchronous;
@@ -14,6 +15,7 @@ export class Terminal extends XtermTerminal {
   private wraithDisposed = false;
   constructor(options?: ITerminalOptions & ITerminalInitOnlyOptions) {
     super(options);
+    accelerateInput(this);
   }
   /** Resolves after GPU initialization. False means the DOM fallback is active. */
   get webgpuReady(): Promise<boolean> {
