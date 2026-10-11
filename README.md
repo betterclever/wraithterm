@@ -119,6 +119,11 @@ Open **http://127.0.0.1:5173** for the landing page and its in-browser race, or
 try `help` or `colors`, start a stream, and run a benchmark. The playground's shell is an interactive demonstration; connect a PTY
 backend to run actual programs.
 
+Open **http://127.0.0.1:5173/pipes.html** for [Pipes / 95](docs/PIPES.md): a shaded
+3D pipe network drawn entirely with ANSI truecolor half-blocks. Choose Wraith,
+xterm WebGL or DOM, switch between live geometry and replay, or run the same
+scene in another terminal with `npm run pipes -- --preset inferno`.
+
 ## Drop-in xterm API
 
 Wraith 0.2 exports a complete xterm.js **6.0.0** `Terminal` with original public
@@ -304,6 +309,10 @@ with xterm DOM and WebGL on a 240×80 styled Unicode scene. Run
 `npm run benchmark:compare` with the demo server active, or use `/compare.html`.
 Raw measurements and a separate CPU profile are retained under
 `docs/benchmarks/comparison`.
+
+The [Pipes stress report](docs/benchmarks/pipes/REPORT.md) compares a 240×80 scene
+with 38,400 RGB assignments per update. Run `npm run benchmark:pipes` to reproduce
+the GPU-completed comparison, or `npm run test:pipes` to check the interactive lab.
 
 The [efficiency report](docs/benchmarks/efficiency/REPORT.md) has the current
 before/after numbers for both profiles, with pixel-identical output. The
