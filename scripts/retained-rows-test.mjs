@@ -2,10 +2,15 @@
 // Screenshots validate actual GPU row bindings, not just CPU staging contents.
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pixels } from './png.mjs';
 const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/retained-rows');
+const harness = await readFile(resolve('demo/compare.js'), 'utf8');
+const helperStart = harness.indexOf('  /** Untimed incremental correctness fixture.');
+const helperEnd = harness.indexOf('  text: () => active.text(),', helperStart);
+assert(helperStart >= 0 && helperEnd > helperStart, 'Incremental fixture helper is missing');
+const fixtureHelper = harness.slice(helperStart, helperEnd);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
@@ -29,6 +34,17 @@ try {
         const page = await context.newPage();
         pages.push(page);
         page.on('pageerror', (e) => errors.push(e.message));
+        // Old Git archives do not expose the incremental test helper. Inject
+        // only that untimed helper, preserving their renderer and engine.
+        await page.route('**/compare.js*', async (route) => {
+          const response = await route.fetch();
+          let body = await response.text();
+          if (!body.includes('async step(')) {
+            assert(body.includes('  adapterInfo,'), 'Baseline harness has an unknown layout');
+            body = body.replace('  adapterInfo,', '  adapterInfo,\n' + fixtureHelper);
+          }
+          await route.fulfill({ response, body });
+        });
         await page.goto(`${url}/compare.html?type=${type}`);
         await page.waitForFunction(() => window.comparison?.ready);
         assert(await page.evaluate(() => window.comparison.ready));
