@@ -1,8 +1,16 @@
 import { chromium } from '@playwright/test';
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/comparison');
+const sourceDirectory = resolve(process.env.WRAITH_SOURCE_DIR ?? '.');
+const sdkSources = {};
+for (const file of (await readdir(resolve(sourceDirectory, 'packages/wraith/src'))).sort()) {
+  if (file.endsWith('.ts') && !file.endsWith('.test.ts'))
+    sdkSources[file] = createHash('sha256')
+      .update(await readFile(resolve(sourceDirectory, 'packages/wraith/src', file)))
+      .digest('hex');
+}
 const iterations = Number(process.env.WRAITH_PROFILE_ITERATIONS ?? 256);
 if (!Number.isInteger(iterations) || iterations < 32 || iterations > 8192)
   throw new Error('WRAITH_PROFILE_ITERATIONS must be an integer between 32 and 8192');
@@ -82,8 +90,12 @@ try {
         date: new Date().toISOString(),
         iterations,
         warmup: 32,
+        sourceDirectory,
+        sdkSources,
         wasmSha256: createHash('sha256')
-          .update(await readFile(resolve('packages/wraith/wasm/wraith_engine_bg.wasm')))
+          .update(
+            await readFile(resolve(sourceDirectory, 'packages/wraith/wasm/wraith_engine_bg.wasm')),
+          )
           .digest('hex'),
         adapter,
         samplingIntervalUs: 500,

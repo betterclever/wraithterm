@@ -3,7 +3,7 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { cpus, totalmem, platform, release } from 'node:os';
@@ -15,6 +15,15 @@ const frames = Number(process.env.WRAITH_FRAMES ?? 512);
 assert(Number.isInteger(repetitions) && repetitions > 0);
 assert(Number.isInteger(frames) && frames >= 32 && frames <= 4096);
 const sha = (data) => createHash('sha256').update(data).digest('hex');
+async function sourceHashes(directory) {
+  const source = join(directory, 'packages/wraith/src');
+  const hashes = {};
+  for (const file of (await readdir(source)).sort()) {
+    if (file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      hashes[file] = sha(await readFile(join(source, file)));
+  }
+  return hashes;
+}
 // xterm includes right-padding and every blank viewport row in its text API;
 // native text omits that padding. Preserve all non-padding content for hashes.
 const textHash = (text) =>
@@ -38,6 +47,7 @@ for (const [name, directory] of [
         : execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     wasmSha256: sha(await readFile(join(directory, 'packages/wraith/wasm/wraith_engine_bg.wasm'))),
     rendererSha256: sha(await readFile(join(directory, 'packages/wraith/src/xterm-renderer.ts'))),
+    sdkSources: await sourceHashes(directory),
   };
 }
 const before = process.env.WRAITH_BEFORE_URL ?? 'http://127.0.0.1:5190';
@@ -115,13 +125,31 @@ try {
           };
           initial ??= signature;
           assert.deepEqual(signature, initial, 'Initial text or geometry changed');
-          const result = await page.evaluate((config) => window.comparison.run(config), {
-            type: target.type,
-            workload,
-            cols: 240,
-            rows: 80,
-            frames,
-          });
+          const result = await page.evaluate(
+            async (config) => {
+              let timeout;
+              try {
+                return await Promise.race([
+                  window.comparison.run(config),
+                  new Promise((_, reject) => {
+                    timeout = setTimeout(
+                      () => reject(new Error('Comparison run timed out')),
+                      60000,
+                    );
+                  }),
+                ]);
+              } finally {
+                clearTimeout(timeout);
+              }
+            },
+            {
+              type: target.type,
+              workload,
+              cols: 240,
+              rows: 80,
+              frames,
+            },
+          );
           const finalTextSha256 = textHash(await page.evaluate(() => window.comparison.text()));
           final ??= finalTextSha256;
           assert.equal(finalTextSha256, final, 'Final visible text changed');
@@ -162,6 +190,23 @@ try {
   }
 } finally {
   await browser.close();
+}
+// A successful batch identifies the sources that actually ran. Editing files
+// while Chrome is running can trigger HMR and invalidate a paired comparison.
+for (const [name, directory] of [
+  ['before', baseline],
+  ['after', root],
+]) {
+  assert.deepEqual(
+    await sourceHashes(directory),
+    builds[name].sdkSources,
+    'SDK changed during benchmark',
+  );
+  assert.equal(
+    sha(await readFile(join(directory, 'packages/wraith/wasm/wraith_engine_bg.wasm'))),
+    builds[name].wasmSha256,
+    'Wasm changed during benchmark',
+  );
 }
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const groups = conditions.map(({ workload, dpr }) => {
