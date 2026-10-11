@@ -50,6 +50,130 @@ function integer(value, min, max, name) {
     throw new RangeError(`${name} must be an integer in ${min}..${max}`);
 }
 
+/** The same smooth centerline is used for complete pipes and moving tips. */
+export function preparePipePath(path) {
+  const rings = [{ p: path[0], t: unit(sub(path[1], path[0])) }];
+  let elbows = 0;
+  const bend = 0.32;
+  for (let i = 1; i < path.length - 1; i++) {
+    const p = path[i],
+      a = unit(sub(p, path[i - 1])),
+      b = unit(sub(path[i + 1], p));
+    if (dot(a, b) > 0.99) {
+      rings.push({ p, t: a });
+      continue;
+    }
+    elbows++;
+    const center = add(sub(p, mul(a, bend)), mul(b, bend));
+    for (let k = 0; k <= 5; k++) {
+      const angle = ((k / 5) * Math.PI) / 2;
+      rings.push({
+        p: add(center, mul(sub(mul(a, Math.sin(angle)), mul(b, Math.cos(angle))), bend)),
+        t: add(mul(a, Math.cos(angle)), mul(b, Math.sin(angle))),
+      });
+    }
+  }
+  rings.push({ p: path.at(-1), t: unit(sub(path.at(-1), path.at(-2))) });
+  let distance = 0;
+  for (let i = 0; i < rings.length; i++) {
+    if (i) distance += Math.hypot(...sub(rings[i].p, rings[i - 1].p));
+    rings[i].distance = distance;
+  }
+  return { rings, distance, elbows, segments: path.length - 1 };
+}
+
+function appendTube(mesh, rings, sides, radius) {
+  const { positions, normals, indices } = mesh;
+  const vertex = (p, n) => {
+    const index = positions.length / 3;
+    positions.push(...p);
+    normals.push(...n);
+    return index;
+  };
+  let basis = unit(cross(rings[0].t, Math.abs(rings[0].t[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
+  const first = positions.length / 3,
+    offset = indices.length;
+  for (const ring of rings) {
+    basis = unit(sub(basis, mul(ring.t, dot(basis, ring.t))));
+    const binormal = cross(ring.t, basis);
+    for (let s = 0; s < sides; s++) {
+      const angle = (s / sides) * TAU;
+      const n = add(mul(basis, Math.cos(angle)), mul(binormal, Math.sin(angle)));
+      vertex(add(ring.p, mul(n, radius)), n);
+    }
+  }
+  for (let r = 0; r < rings.length - 1; r++)
+    for (let s = 0; s < sides; s++) {
+      const a = first + r * sides + s,
+        b = first + r * sides + ((s + 1) % sides);
+      indices.push(a, b, a + sides, b, b + sides, a + sides);
+    }
+  // The moving tip has its own perpendicular cap, including inside an elbow.
+  for (const r of [0, rings.length - 1]) {
+    const ring = rings[r],
+      n = mul(ring.t, r === 0 ? -1 : 1);
+    const center = vertex(ring.p, n),
+      edge = positions.length / 3;
+    for (let s = 0; s < sides; s++) {
+      const at = (first + r * sides + s) * 3;
+      vertex(positions.slice(at, at + 3), n);
+    }
+    for (let s = 0; s < sides; s++) indices.push(center, edge + s, edge + ((s + 1) % sides));
+  }
+  return { offset, end: indices.length };
+}
+
+/** Grow a sealed tube continuously along the prepared curved centerline. */
+export function growingPipeMesh(config, paths, distance) {
+  if (!Number.isFinite(distance) || distance < 0) throw new RangeError('Invalid growth distance');
+  const mesh = { positions: [], normals: [], indices: [] },
+    groups = [];
+  let segments = 0,
+    elbows = 0;
+  if (distance > 0)
+    for (const [index, path] of paths.entries()) {
+      const visible = [path.rings[0]];
+      for (let r = 1; r < path.rings.length; r++) {
+        const ring = path.rings[r],
+          prev = path.rings[r - 1];
+        if (ring.distance <= distance) {
+          visible.push(ring);
+          continue;
+        }
+        if (distance > prev.distance) {
+          const f = (distance - prev.distance) / (ring.distance - prev.distance);
+          visible.push({
+            p: add(prev.p, mul(sub(ring.p, prev.p), f)),
+            t: unit(add(mul(prev.t, 1 - f), mul(ring.t, f))),
+          });
+        }
+        break;
+      }
+      if (visible.length < 2) continue;
+      const group = appendTube(mesh, visible, config.sides, 0.19);
+      groups.push({
+        ...group,
+        color: palette[(index + (config.seed & 7)) % palette.length],
+        phase: index,
+      });
+      segments += Math.min(path.segments, Math.ceil(distance));
+      elbows += visible.filter((ring, i) => i && dot(ring.t, visible[i - 1].t) < 0.99).length / 5;
+    }
+  return {
+    config,
+    positions: new Float32Array(mesh.positions),
+    normals: new Float32Array(mesh.normals),
+    indices: new Uint32Array(mesh.indices),
+    groups,
+    stats: {
+      pipes: paths.length,
+      segments,
+      elbows: Math.round(elbows),
+      triangles: mesh.indices.length / 3,
+    },
+  };
+}
+
 /** Seeded, non-intersecting lattice walks, swept into round cylinders and torus elbows. */
 export function createPipesScene(options = {}) {
   const config = { ...PIPE_PRESETS.pressure, seed: PIPE_SEED, ...options };
@@ -65,12 +189,6 @@ export function createPipesScene(options = {}) {
     normals = [],
     indices = [],
     groups = [];
-  const vertex = (p, n) => {
-    const index = positions.length / 3;
-    positions.push(...p);
-    normals.push(...n);
-    return index;
-  };
   let elbows = 0,
     segments = 0;
   for (let pipe = 0; pipe < config.pipes; pipe++) {
@@ -103,65 +221,18 @@ export function createPipesScene(options = {}) {
       previous = d;
     }
     if (path.length < 2) continue;
-    segments += path.length - 1;
-    const rings = [{ p: path[0], t: unit(sub(path[1], path[0])) }];
-    const bend = 0.32;
-    for (let i = 1; i < path.length - 1; i++) {
-      const p = path[i],
-        a = unit(sub(p, path[i - 1])),
-        b = unit(sub(path[i + 1], p));
-      if (dot(a, b) > 0.99) {
-        rings.push({ p, t: a });
-        continue;
-      }
-      elbows++;
-      const center = add(sub(p, mul(a, bend)), mul(b, bend));
-      for (let k = 0; k <= 5; k++) {
-        const angle = ((k / 5) * Math.PI) / 2;
-        rings.push({
-          p: add(center, mul(sub(mul(a, Math.sin(angle)), mul(b, Math.cos(angle))), bend)),
-          t: add(mul(a, Math.cos(angle)), mul(b, Math.sin(angle))),
-        });
-      }
-    }
-    rings.push({ p: path.at(-1), t: unit(sub(path.at(-1), path.at(-2))) });
-    let basis = unit(cross(rings[0].t, Math.abs(rings[0].t[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
-    const first = positions.length / 3,
-      offset = indices.length;
+    const prepared = preparePipePath(path);
+    segments += prepared.segments;
+    elbows += prepared.elbows;
     const radius = 0.14 + rng() * 0.035;
-    for (const ring of rings) {
-      // Parallel transport keeps the swept circle continuous around every elbow.
-      basis = unit(sub(basis, mul(ring.t, dot(basis, ring.t))));
-      const binormal = cross(ring.t, basis);
-      for (let s = 0; s < config.sides; s++) {
-        const angle = (s / config.sides) * TAU;
-        const n = add(mul(basis, Math.cos(angle)), mul(binormal, Math.sin(angle)));
-        vertex(add(ring.p, mul(n, radius)), n);
-      }
-    }
-    for (let r = 0; r < rings.length - 1; r++) {
-      for (let s = 0; s < config.sides; s++) {
-        const a = first + r * config.sides + s;
-        const b = first + r * config.sides + ((s + 1) % config.sides);
-        indices.push(a, b, a + config.sides, b, b + config.sides, a + config.sides);
-      }
-    }
-    // End caps seal the tubes, including paths stopped by occupied lattice nodes.
-    for (const r of [0, rings.length - 1]) {
-      const ring = rings[r],
-        n = mul(ring.t, r === 0 ? -1 : 1);
-      const center = vertex(ring.p, n),
-        edge = positions.length / 3;
-      for (let s = 0; s < config.sides; s++) {
-        const at = (first + r * config.sides + s) * 3;
-        vertex(positions.slice(at, at + 3), n);
-      }
-      for (let s = 0; s < config.sides; s++)
-        indices.push(center, edge + s, edge + ((s + 1) % config.sides));
-    }
+    const geometry = appendTube(
+      { positions, normals, indices },
+      prepared.rings,
+      config.sides,
+      radius,
+    );
     groups.push({
-      offset,
-      end: indices.length,
+      ...geometry,
       color: palette[pipe % palette.length],
       phase: rng() * TAU,
     });
@@ -177,15 +248,20 @@ export function createPipesScene(options = {}) {
 }
 
 /** Perspective-correct, depth-tested software rasterization at two pixels per terminal cell. */
-export function rasterizePipes(scene, time = 0, { colors = 'truecolor' } = {}) {
+export function rasterizePipes(
+  scene,
+  time = 0,
+  { colors = 'truecolor', camera = 'orbit', framing = 'mesh', backdrop = 'ember' } = {},
+) {
   if (!Number.isFinite(time)) throw new RangeError('time must be finite');
   if (!['truecolor', 'rgb444'].includes(colors)) throw new RangeError('Unknown color mode');
   const { cols: width, rows } = scene.config,
     height = rows * 2;
   const pixels = new Uint32Array(width * height),
     depth = new Float32Array(pixels.length);
-  const yaw = 0.47 + time * 0.19,
-    pitch = -0.3 + Math.sin(time * 0.11) * 0.14;
+  const cameraTime = camera === 'fixed' ? 0 : time;
+  const yaw = 0.47 + cameraTime * 0.19,
+    pitch = -0.3 + Math.sin(cameraTime * 0.11) * 0.14;
   const cy = Math.cos(yaw),
     sy = Math.sin(yaw),
     cp = Math.cos(pitch),
@@ -199,16 +275,28 @@ export function rasterizePipes(scene, time = 0, { colors = 'truecolor' } = {}) {
     return [xx, cp * y - sp * zz, sp * y + cp * zz];
   };
   // The site's ember background and drifting stars are also terminal pixels.
-  for (let y = 0; y < height; y++)
-    for (let x = 0; x < width; x++) {
-      const v = 3 + Math.round(4 * (1 - y / height));
-      pixels[y * width + x] = ((v + 5) << 16) | ((v + 1) << 8) | v;
-    }
+  if (backdrop !== 'black')
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const v = 3 + Math.round(4 * (1 - y / height));
+        pixels[y * width + x] = ((v + 5) << 16) | ((v + 1) << 8) | v;
+      }
   const stars = random(scene.config.seed ^ 0xa5a5a5a5);
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; backdrop !== 'black' && i < 70; i++) {
     const x = Math.floor((((stars() * width + time * 0.3) % width) + width) % width),
       y = Math.floor(stars() * height);
     pixels[y * width + x] = 0x443226;
+  }
+  if (framing === 'lattice') {
+    extentX = 0;
+    extentY = 0;
+    for (const xx of [-5.25, 5.25])
+      for (const yy of [-5.25, 5.25])
+        for (const zz of [-5.25, 5.25]) {
+          const [x, y, z] = rotate(xx, yy, zz);
+          extentX = Math.max(extentX, Math.abs(x / (z + 20)));
+          extentY = Math.max(extentY, Math.abs(y / (z + 20)));
+        }
   }
   for (let i = 0; i < scene.positions.length; i += 3) {
     const [x, y, z] = rotate(scene.positions[i], scene.positions[i + 1], scene.positions[i + 2]);
