@@ -75,6 +75,9 @@ export class XtermRenderer implements Renderer {
   private readonly cell: Cell;
   private view = new Float32Array(4);
   private frame = new Uint32Array(8);
+  /** Previous logical row backing each visible row, or 0xffffffff for new
+   * content. Rust maps these to persistent, independently owned GPU slots. */
+  private rowSources = new Uint32Array(0);
   private disposed = false;
   private fatal = false;
   private hovering = false;
@@ -252,14 +255,13 @@ export class XtermRenderer implements Renderer {
         end = this.terminal.rows - 1;
         this.rowCached.fill(0);
       }
-      let changed: [number, number] | undefined;
       try {
-        changed = this.pack(start, end);
+        this.pack(start, end);
       } catch (error) {
         if (!(error instanceof AtlasFull)) throw error;
         this.atlas!.reset();
         this.rowCached.fill(0);
-        changed = this.pack(0, this.terminal.rows - 1);
+        this.pack(0, this.terminal.rows - 1);
       }
       const b = this.terminal.buffer.active,
         colors = this.core._themeService.colors;
@@ -289,9 +291,7 @@ export class XtermRenderer implements Renderer {
       this.frame[5] = rgba(colors.cursorAccent.rgba);
       this.frame[7] =
         255 | (Math.max(1, Math.round(o.cursorWidth * this.core._coreBrowserService.dpr)) << 8);
-      const cols = this.terminal.cols;
-      const [first, last] = changed ?? [0, -1];
-      if (!this.gpu!.render_staged((last - first + 1) * cols, first * cols)) {
+      if (!this.gpu!.render_retained()) {
         this.invalidate();
         return;
       }
@@ -315,6 +315,7 @@ export class XtermRenderer implements Renderer {
       this.staging = new Uint32Array(buffer, pointer, words);
       this.view = new Float32Array(buffer, pointer + words * 4, 4);
       this.frame = new Uint32Array(buffer, pointer + (words + 4) * 4, 8);
+      this.rowSources = new Uint32Array(buffer, pointer + (words + 12) * 4, this.terminal.rows);
     }
   }
   private selected(x: number, y: number): boolean {
@@ -330,9 +331,8 @@ export class XtermRenderer implements Renderer {
       );
     return (y > a[1] || (y === a[1] && x >= a[0])) && (y < b[1] || (y === b[1] && x < b[0]));
   }
-  /** Bring staging rows start..end up to date with the buffer. Returns the
-   * first and last rows whose staging changed, or undefined when none did. */
-  private pack(start: number, end: number): [number, number] | undefined {
+  /** Bring logical staging rows up to date and record their prior GPU owners. */
+  private pack(start: number, end: number): void {
     const { cols, rows, buffer, options } = this.terminal;
     const b = buffer.active,
       c = this.core._themeService.colors,
@@ -344,17 +344,16 @@ export class XtermRenderer implements Renderer {
     const rowWords = this.rowWords,
       cached = this.rowCached,
       stamps = this.rowStamp,
-      stamp = ++this.stamp,
+      stamp = (this.stamp = (this.stamp + 1) >>> 0),
       raw = cols * 3,
       packed = cols * CELL_WORDS;
+    for (let y = 0; y < rows; y++) this.rowSources[y] = y;
     // Content moves up when the viewport advances, so copy from rows below
     // first; when it moves back, walk upwards so copy sources stay intact.
     const delta = b.viewportY - this.lastViewportY;
     this.lastViewportY = b.viewportY;
     const step = delta < 0 ? -1 : 1;
-    let first = rows,
-      last = -1,
-      searched = false;
+    let searched = false;
     const hasSelection = !!this.selectedStart && !!this.selectedEnd;
     const selectionBackground = rgba(
       (this.core._coreBrowserService.isFocused
@@ -406,10 +405,9 @@ export class XtermRenderer implements Renderer {
           values.copyWithin(y * packed, source * packed, (source + 1) * packed);
           rowWords.copyWithin(y * raw, source * raw, (source + 1) * raw);
           cached[y] = 1;
+          this.rowSources[y] = source;
           stamps[y] = stamp;
           this.shift = source - y;
-          first = Math.min(first, y);
-          last = Math.max(last, y);
           continue rowLoop;
         }
       }
@@ -518,11 +516,9 @@ export class XtermRenderer implements Renderer {
       // more than their words; they are always repacked.
       if (direct) rowWords.set(words!.subarray(0, raw), y * raw);
       cached[y] = +direct;
+      this.rowSources[y] = 0xffffffff;
       stamps[y] = stamp;
-      first = Math.min(first, y);
-      last = Math.max(last, y);
     }
-    return last < 0 ? undefined : [first, last];
   }
   private rowSelected(row: number): boolean {
     const a = this.selectedStart!,

@@ -231,6 +231,14 @@ impl Engine {
         ]
     }
     #[wasm_bindgen(getter)]
+    pub fn cell_upload_bytes(&self) -> u64 {
+        self.renderer.cell_upload_bytes
+    }
+    #[wasm_bindgen(getter)]
+    pub fn row_map_upload_bytes(&self) -> u64 {
+        self.renderer.row_map_upload_bytes
+    }
+    #[wasm_bindgen(getter)]
     pub fn cell_width(&self) -> u32 {
         self.renderer.atlas.cell_width
     }
@@ -280,7 +288,7 @@ impl Compositor {
             .validate_external(cols, rows, width, height)
             .map_err(error)?;
         self.staging
-            .resize(cols as usize * rows as usize)
+            .resize_grid(cols as usize * rows as usize, rows as usize)
             .map_err(error)?;
         self.renderer
             .configure_external(cols, rows, width, height)
@@ -330,6 +338,34 @@ impl Compositor {
         self.renderer
             .render_external(staged.cells, start, staged.dimensions, staged.frame)
             .map_err(error)
+    }
+    /// Retain previous GPU row slots using the staged source map, uploading
+    /// only new logical rows. Cells and uniforms keep the legacy arena layout.
+    pub fn render_retained(&mut self) -> Result<bool, JsValue> {
+        let staged = self
+            .staging
+            .read(0, self.staging.cell_words() / 5)
+            .map_err(error)?;
+        self.renderer
+            .render_retained(
+                staged.cells,
+                self.staging.sources(),
+                staged.dimensions,
+                staged.frame,
+            )
+            .map_err(error)
+    }
+    #[wasm_bindgen(getter)]
+    pub fn cell_upload_bytes(&self) -> u64 {
+        self.renderer.cell_upload_bytes
+    }
+    #[wasm_bindgen(getter)]
+    pub fn row_map_upload_bytes(&self) -> u64 {
+        self.renderer.row_map_upload_bytes
+    }
+    #[wasm_bindgen(getter)]
+    pub fn row_slots(&self) -> Vec<u32> {
+        self.renderer.row_slots().to_vec()
     }
     /// Wait for submitted GPU work. Call only while the renderer is paused;
     /// the Wasm borrow remains live until the asynchronous fence completes.

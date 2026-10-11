@@ -15,6 +15,7 @@ struct Uniforms {
 @group(0) @binding(1) var<uniform> u: Uniforms;
 @group(0) @binding(2) var glyphs: texture_2d<f32>;
 @group(0) @binding(3) var glyph_sampler: sampler;
+@group(0) @binding(4) var<storage, read> row_slots: array<u32>;
 // Cell words travel as flat varyings, so fragments never reread storage.
 struct Vertex {
     @builtin(position) position: vec4<f32>,
@@ -40,7 +41,11 @@ fn has_cursor(index: u32) -> bool {
 @vertex fn vs(@builtin(vertex_index) vertex: u32, @builtin(instance_index) index: u32) -> Vertex {
     let points = array<vec2<f32>, 6>(vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(0.,1.), vec2(1.,0.), vec2(1.,1.));
     let p = points[vertex % 6u];
-    let c = cells[index];
+    var cell_index = index;
+    if (u.grid.w & 1048576u) != 0u {
+        cell_index = row_slots[index / u.grid.x] * u.grid.x + index % u.grid.x;
+    }
+    let c = cells[cell_index];
     let text_layer = vertex >= 6u;
     var size = u.view.zw;
     if text_layer {

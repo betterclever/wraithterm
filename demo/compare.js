@@ -184,6 +184,10 @@ async function mount(type, config) {
       draw: () => engine.render(performance.now(), true),
       finish: () => engine.fence(),
       submitted: () => Number(engine.metrics()[0]),
+      uploads: () => ({
+        cells: Number(engine.cell_upload_bytes),
+        rowMap: Number(engine.row_map_upload_bytes),
+      }),
       text: () => engine.text(false),
       dispose: () => engine.free(),
       restore: () => {},
@@ -223,6 +227,13 @@ async function mount(type, config) {
     parse,
     finish,
     submitted: type === 'wraith' ? () => Number(renderer.gpu.frames) : undefined,
+    uploads:
+      type === 'wraith'
+        ? () => ({
+            cells: Number(renderer.gpu.cell_upload_bytes),
+            rowMap: Number(renderer.gpu.row_map_upload_bytes),
+          })
+        : undefined,
     draw: () => {
       renderer.renderRows(0, config.rows - 1);
       void host.offsetHeight;
@@ -341,6 +352,7 @@ async function run(config) {
   await a.finish();
   const pipelineTimes = [];
   const submittedBefore = a.submitted?.();
+  const uploadsBefore = a.uploads?.();
   const pipelineStart = performance.now();
   for (let i = 0; i < frames; i++) {
     const t = performance.now();
@@ -353,6 +365,7 @@ async function run(config) {
   const pipelineElapsedMs = performance.now() - pipelineStart;
   const submittedFrames =
     submittedBefore === undefined ? undefined : a.submitted() - submittedBefore;
+  const uploadsAfter = a.uploads?.();
   if (submittedFrames !== undefined)
     invariant(submittedFrames === frames, 'Pipeline did not submit every counted frame');
   a.assert?.();
@@ -364,6 +377,12 @@ async function run(config) {
     dpr: devicePixelRatio,
     frames,
     submittedFrames,
+    gpuUploadBytes: uploadsAfter
+      ? {
+          cells: uploadsAfter.cells - uploadsBefore.cells,
+          rowMap: uploadsAfter.rowMap - uploadsBefore.rowMap,
+        }
+      : undefined,
     bytesPerFrame: a.inputs[0].bytes.length,
     sgrChangesPerFrame: a.inputs[0].sgrChanges,
     dimensions: a.dimensions,
@@ -621,6 +640,28 @@ window.comparison = {
     }
   },
   adapterInfo,
+  /** Untimed incremental correctness fixture. Both versions receive the same
+   * mutations so row rotation, selection and atlas resets can be pixel-tested. */
+  async step({ data, scroll, selection, atlasReset = false, legacyUpload = false }) {
+    const a = active;
+    if (data) a.parse(encoder.encode(data));
+    if (a.terminal) {
+      if (scroll) a.terminal.scrollLines(scroll);
+      if (selection) a.terminal.select(...selection);
+      else a.terminal.clearSelection();
+      if (atlasReset) a.terminal.clearTextureAtlas();
+      await nextFrame();
+    } else {
+      if (scroll) a.engine.scroll(scroll);
+      if (selection) a.engine.select(...selection);
+    }
+    a.draw();
+    if (legacyUpload && a.type === 'wraith') a.renderer.gpu.render_staged(a.terminal.cols, 0);
+    await a.finish();
+    a.assert?.();
+    await nextFrame();
+    return a.text();
+  },
   text: () => active.text(),
   workload,
   idleCadence,

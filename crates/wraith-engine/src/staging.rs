@@ -8,6 +8,7 @@ const CELL_WORDS: usize = 5;
 pub struct Staging {
     words: Vec<UnsafeCell<u32>>,
     cells: usize,
+    rows: usize,
 }
 pub struct StagedFrame<'a> {
     pub cells: &'a [u32],
@@ -19,12 +20,18 @@ impl Staging {
         Self {
             words: (0..12).map(|_| UnsafeCell::new(0)).collect(),
             cells: 0,
+            rows: 0,
         }
     }
+    #[cfg(test)]
     pub fn resize(&mut self, cells: usize) -> Result<(), String> {
+        self.resize_grid(cells, 0)
+    }
+    pub fn resize_grid(&mut self, cells: usize, rows: usize) -> Result<(), String> {
         let words = cells
             .checked_mul(CELL_WORDS)
             .and_then(|n| n.checked_add(12))
+            .and_then(|n| n.checked_add(rows))
             .filter(|n| u32::try_from(*n).is_ok())
             .ok_or("compositor staging size overflow")?;
         self.words
@@ -32,12 +39,20 @@ impl Staging {
             .map_err(|_| "could not allocate compositor staging")?;
         self.words.resize_with(words, || UnsafeCell::new(0));
         self.cells = cells;
+        self.rows = rows;
         // A resized uniform region may overlap old cells. Reset every slot,
         // including reserved fields that JavaScript does not update per frame.
         for word in &mut self.words[cells * CELL_WORDS..] {
             *word.get_mut() = 0;
         }
         Ok(())
+    }
+    /// One previous logical row index per visible row, or u32::MAX for new
+    /// content. JS writes these alongside cells while Rust has no read borrow.
+    pub fn sources(&self) -> &[u32] {
+        // SAFETY: all rows are initialized and inside the allocation; the
+        // synchronous render caller keeps JS writes paused during this borrow.
+        unsafe { slice::from_raw_parts(self.pointer().add(self.cell_words() + 12), self.rows) }
     }
     pub fn pointer(&self) -> *mut u32 {
         self.words.as_ptr().cast::<u32>().cast_mut()
@@ -119,5 +134,19 @@ mod tests {
         assert_eq!(frame.cells, &[u32::MAX; 5]);
         assert_eq!(frame.dimensions, &[0.; 4]);
         assert_eq!(frame.frame, &[0; 8]);
+    }
+    #[test]
+    fn row_sources_follow_uniforms_and_resize_without_aliasing_cells() {
+        let mut staging = Staging::new();
+        staging.resize_grid(8, 2).unwrap();
+        assert_eq!(staging.sources(), &[0, 0]);
+        // SAFETY: mutate initialized slots without an outstanding read borrow.
+        unsafe {
+            *staging.pointer().add(52) = u32::MAX;
+        }
+        assert_eq!(staging.sources(), &[u32::MAX, 0]);
+        assert_eq!(staging.read(0, 8).unwrap().frame, &[0; 8]);
+        staging.resize_grid(4, 1).unwrap();
+        assert_eq!(staging.sources(), &[0]);
     }
 }
