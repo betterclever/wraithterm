@@ -12,6 +12,7 @@ export default defineConfig({
         playground: 'demo/playground.html',
         xterm: 'demo/xterm.html',
         compare: 'demo/compare.html',
+        pipes: 'demo/pipes.html',
       },
     },
   },

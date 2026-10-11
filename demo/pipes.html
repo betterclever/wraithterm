@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <meta
+      name="description"
+      content="Windows-era 3D pipes, rendered entirely as ANSI truecolor terminal characters. Stress-test Wraith WebGPU and xterm.js."
+    />
+    <title>Pipes / 95 · Wraith terminal stress lab</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/pipes.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
+      <nav aria-label="Labs">
+        <a href="/">Home</a><a href="/playground.html">Native lab</a
+        ><a href="/xterm.html">xterm.js lab</a><a href="/pipes.html" aria-current="page">Pipes</a
+        ><a class="keep" href="/compare.html?workload=pipes">Benchmark ↗</a>
+      </nav>
+    </header>
+    <main class="pipes-page">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Terminal stress lab · ANSI truecolor</p>
+          <h1>Pipes <em>/ 95.</em></h1>
+        </div>
+        <p>
+          Rounded elbows. Chrome highlights. A depth-tested tangle of geometry.<br />Every pixel is
+          a terminal character. Every frame is an ANSI stream.
+        </p>
+      </section>
+      <section class="controls" aria-label="Scene controls">
+        <label
+          >Renderer<select id="renderer">
+            <option value="wraith">Wraith · WebGPU</option>
+            <option value="webgl">xterm.js · WebGL</option>
+            <option value="dom">xterm.js · DOM</option>
+          </select></label
+        >
+        <label
+          >Load<select id="preset">
+            <option value="classic">Classic · 120 × 42</option>
+            <option value="pressure" selected>Pressure · 180 × 60</option>
+            <option value="inferno">Inferno · 240 × 80</option>
+          </select></label
+        >
+        <label
+          >Source<select id="source">
+            <option value="replay">Prebaked stress loop</option>
+            <option value="live">Live 3D / worker</option>
+          </select></label
+        >
+        <label
+          >ANSI traffic<select id="traffic">
+            <option value="stress">SGR every cell</option>
+            <option value="compact">Elide repeated colors</option>
+          </select></label
+        >
+        <label
+          >Color<select id="colors">
+            <option value="truecolor">24-bit metal</option>
+            <option value="rgb444">12-bit metal</option>
+          </select></label
+        >
+        <label
+          >Seed<input id="seed" type="number" min="0" max="4294967295" value="1676547"
+        /></label>
+        <button id="apply" class="primary">Rebuild scene ↗</button>
+      </section>
+      <section class="monitor window" aria-label="Terminal scene">
+        <div class="titlebar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="title">3D Pipes <small id="window-renderer">/ Wraith WebGPU</small></span>
+          <div class="window-actions">
+            <button id="pause" aria-label="Pause animation" disabled>Ⅱ</button
+            ><button id="fullscreen" aria-label="Toggle fullscreen">□</button>
+          </div>
+        </div>
+        <div class="viewport" id="viewport"><div id="terminal"></div></div>
+        <div class="window-status foot">
+          <span id="status" role="status">Building the pipe network…</span
+          ><span id="grid">180 × 60 CELLS</span>
+        </div>
+      </section>
+      <section class="meters" aria-label="Live measurements">
+        <div class="panel">
+          <span>RENDER CALLBACKS / S</span><strong id="rate">—</strong
+          ><small>Browser-paced; not GPU throughput</small>
+        </div>
+        <div class="panel">
+          <span>ANSI PER FRAME</span><strong id="bytes">—</strong
+          ><small id="sgr">Truecolor foreground + background</small>
+        </div>
+        <div class="panel">
+          <span>3D TRIANGLES</span><strong id="triangles">—</strong
+          ><small id="geometry">Seeded, rounded pipe geometry</small>
+        </div>
+        <div class="panel">
+          <span>SCENE GENERATION</span><strong id="generation">—</strong
+          ><small id="generation-note">Software rasterizer + ANSI encoder</small>
+        </div>
+      </section>
+      <section class="notes">
+        <p>
+          <b>Two half-block pixels. One cell.</b> The scene uses only <code>▀</code>, cursor
+          positioning and standard 24-bit SGR. No image protocol, canvas scene overlay or custom
+          terminal escape sequences. Download a frame or run the same generator in another terminal.
+        </p>
+        <p>
+          <b>Turn up the pressure.</b> Inferno paints 19,200 cells with 38,400 color assignments per
+          frame. Replay removes geometry generation from playback; live mode computes each frame in
+          a worker. Only one terminal write is in flight. Use the GPU benchmark for completed
+          throughput, independent of display refresh.
+        </p>
+      </section>
+      <footer class="pipes-footer">
+        <code>npm run pipes -- --preset inferno</code
+        ><button id="download" disabled>Download ANSI frame ↓</button
+        ><a href="/compare.html?workload=pipes">Compare renderers →</a>
+      </footer>
+    </main>
+    <script type="module" src="/pipes.js"></script>
+  </body>
+</html>

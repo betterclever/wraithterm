@@ -4,6 +4,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import init, { Engine, Headless } from '../packages/wraith/wasm/wraith_engine.js';
 import '../packages/wraith/css/xterm.css';
 import { showcase } from './showcase.js';
+import { pipesWorkload } from './pipes-scene.js';
 const encoder = new TextEncoder();
 const scene = document.querySelector('#scene');
 const status = document.querySelector('#status');
@@ -35,6 +36,7 @@ const chars = [
   'ä',
 ];
 function workload(cols, rows, variant, kind) {
+  if (kind === 'pipes') return pipesWorkload(cols, rows, variant);
   if (kind === 'showcase') return showcase(cols, rows, variant, encoder);
   if (kind === 'append') {
     // Log streaming: eight styled lines per update scroll the viewport.
@@ -254,7 +256,7 @@ let active;
 async function setup(config) {
   invariant(['dom', 'webgl', 'wraith', 'ghostty'].includes(config.type), 'Unknown renderer');
   invariant(
-    ['complex', 'churn', 'scroll', 'append', 'showcase'].includes(config.workload),
+    ['complex', 'churn', 'scroll', 'append', 'showcase', 'pipes'].includes(config.workload),
     'Unknown workload',
   );
   active?.dispose();
@@ -281,7 +283,8 @@ async function setup(config) {
     text: active.text(),
     bytesPerFrame: inputs[0].bytes.length,
     sgrChangesPerFrame: inputs[0].sgrChanges,
-    glyphAlphabet: chars.length,
+    glyphAlphabet: config.workload === 'pipes' ? 1 : chars.length,
+    scene: inputs[0].scene,
   };
 }
 function cacheInfo(a) {
