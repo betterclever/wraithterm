@@ -597,6 +597,9 @@ try {
   await fallbackPage.waitForFunction(() => window.compat);
   assert.equal(await fallbackPage.evaluate(() => window.compat.term.webgpuReady), false);
   assert.equal(await fallbackPage.evaluate(() => window.compat.term.renderer), 'dom');
+  await fallbackPage.waitForFunction(() =>
+    document.querySelector('.xterm-rows')?.textContent.includes('Wraith'),
+  );
   assert.match(await fallbackPage.locator('.xterm-rows').innerText(), /Wraith/);
   await fallbackPage.close();
   checks.push('missing WebGPU preserves a working DOM terminal');
