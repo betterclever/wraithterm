@@ -27,6 +27,7 @@
     "benchmark:usage": "node scripts/measure-utilization.mjs",
     "benchmark:optimization": "node scripts/optimization-compare.mjs",
     "benchmark:retained": "node scripts/retained-rows-benchmark.mjs",
+    "benchmark:experiments": "node scripts/performance-experiments.mjs",
     "pipes": "node scripts/pipes.mjs",
     "test:pipes": "node scripts/pipes-browser-test.mjs",
     "benchmark:pipes": "node scripts/pipes-benchmark.mjs",
