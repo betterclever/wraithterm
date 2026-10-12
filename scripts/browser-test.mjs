@@ -70,7 +70,7 @@ try {
   await page.keyboard.type('help');
   await page.keyboard.press('Enter');
   await page.waitForFunction(async () =>
-    (await window.wraith.getText()).includes('The architecture'),
+    (await window.wraith.getText()).includes('Any key stops a running demo.'),
   );
   // Rendering can change geometry without losing the Rust/Ghostty instance.
   await page.evaluate(async () => {
