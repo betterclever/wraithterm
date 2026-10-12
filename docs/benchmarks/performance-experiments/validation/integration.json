@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-12T03:53:25.013Z",
+  "sdkTests": 30,
+  "nativeRustTests": 44,
+  "wasmStreamBoundaries": 31,
+  "wasmCreateFreeCycles": 100,
+  "nativeChromePassed": true,
+  "originalXtermBrowserChecks": 20,
+  "experimentalXtermBrowserChecks": 20,
+  "incrementalPixelFrames": 60,
+  "packedDifferentialFixtures": 22,
+  "consumers": {
+    "native": {
+      "development": true,
+      "production": true
+    },
+    "xtermAlias": {
+      "development": true,
+      "production": true
+    }
+  },
+  "pipes": {
+    "development": true,
+    "production": true,
+    "rendererGroups": 7
+  },
+  "sdkBuild": true,
+  "typecheck": true,
+  "demoBuild": true,
+  "cargoFmt": true,
+  "researchKernelFmt": true,
+  "failuresResolved": [
+    "obsolete native help assertion",
+    "stale Pipes frame/scene stats during rebuild",
+    "DOM fallback inspected before queued welcome rendered"
+  ],
+  "sdkAndOfficialWasmRuntimeUnchanged": true
+}

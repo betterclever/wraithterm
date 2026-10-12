@@ -1,6 +1,12 @@
 # Performance
 
-**Current results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
+The [latest alternatives study](benchmarks/performance-experiments/REPORT.md)
+tests nine research paths in 162 runs plus 480 short paired triplets. The input
+combination shows about 7% on dense repaint and 12% on the dashboard; another
+2× is not established. SIMD packing and fused print staging do not provide a
+broad pipeline win. These prototypes are isolated from the shipped SDK.
+
+**Current shipped results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
 records 75 paired runs plus a separate 4,096-update dense batch. Common xterm
 color/style actions improve dense compatible throughput **14.5% (676 → 774
 completed updates/s)** and dashboard throughput **17.8% (1,002 → 1,180)**.

@@ -1,0 +1,125 @@
+{
+  "date": "2026-10-12T03:49:25.190Z",
+  "checks": [
+    {
+      "renderer": "wraith",
+      "pixels": {
+        "width": 1374,
+        "height": 1018,
+        "colors": 11709,
+        "bright": 44231
+      },
+      "bankBytes": 15232844,
+      "scene": {
+        "pipes": 28,
+        "segments": 602,
+        "elbows": 342,
+        "triangles": 56160
+      },
+      "checks": [
+        "ember theme",
+        "48-frame bounded replay",
+        "public write/render animation",
+        "pending controls",
+        "pause",
+        "ANSI download",
+        "live worker",
+        "rebuild cancellation"
+      ]
+    },
+    {
+      "renderer": "webgl",
+      "pixels": {
+        "width": 1374,
+        "height": 1018,
+        "colors": 11709,
+        "bright": 44231
+      },
+      "bankBytes": 15232844,
+      "scene": {
+        "pipes": 28,
+        "segments": 602,
+        "elbows": 342,
+        "triangles": 56160
+      },
+      "checks": [
+        "ember theme",
+        "48-frame bounded replay",
+        "public write/render animation",
+        "pending controls",
+        "pause",
+        "ANSI download",
+        "live worker",
+        "rebuild cancellation"
+      ]
+    },
+    {
+      "renderer": "dom",
+      "pixels": {
+        "width": 1374,
+        "height": 1018,
+        "colors": 15916,
+        "bright": 42600
+      },
+      "bankBytes": 15232844,
+      "scene": {
+        "pipes": 28,
+        "segments": 602,
+        "elbows": 342,
+        "triangles": 56160
+      },
+      "checks": [
+        "ember theme",
+        "48-frame bounded replay",
+        "public write/render animation",
+        "pending controls",
+        "pause",
+        "ANSI download",
+        "live worker",
+        "rebuild cancellation"
+      ]
+    },
+    {
+      "renderer": "wraith",
+      "checks": [
+        "XP default with one pipe",
+        "continuous tube growth",
+        "pause freezes growth clock",
+        "automatic cycle reset",
+        "six simultaneous growing pipes",
+        "no replay allocation"
+      ]
+    },
+    {
+      "renderer": "webgl",
+      "checks": [
+        "XP default with one pipe",
+        "continuous tube growth",
+        "pause freezes growth clock",
+        "automatic cycle reset",
+        "six simultaneous growing pipes",
+        "no replay allocation"
+      ]
+    },
+    {
+      "renderer": "dom",
+      "checks": [
+        "XP default with one pipe",
+        "continuous tube growth",
+        "pause freezes growth clock",
+        "automatic cycle reset",
+        "six simultaneous growing pipes",
+        "no replay allocation"
+      ]
+    },
+    {
+      "renderer": "wraith",
+      "checks": [
+        "390px responsive layout",
+        "DPR2",
+        "reduced motion starts paused"
+      ]
+    }
+  ],
+  "errors": []
+}
