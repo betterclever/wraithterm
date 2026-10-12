@@ -133,7 +133,13 @@ try {
     await page.waitForFunction(() => window.pipesLab.state.stats.growth.cycle >= 1);
     assert.equal(await page.evaluate(() => window.pipesLab.state.stats.growth.pipeCount), 1);
     await page.locator('#pipes').fill('6');
-    await page.locator('#apply').click();
+    const reset = await page.evaluate(() => {
+      document.getElementById('apply').click();
+      return window.pipesLab.state;
+    });
+    assert.equal(reset.ready, false);
+    assert.equal(reset.stats, undefined, 'Rebuild must clear previous frame statistics');
+    assert.equal(reset.scene, undefined, 'Rebuild must clear previous scene statistics');
     state = await ready(page);
     assert.equal(state.stats.growth.pipeCount, 6);
     await page.clock.fastForward(5000);

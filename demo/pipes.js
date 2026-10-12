@@ -193,11 +193,15 @@ function tick(time) {
 async function start() {
   const version = ++generation;
   stop();
+  stats = undefined;
+  sceneStats = undefined;
   window.pipesLab.error = undefined;
   $('pause').disabled = true;
   $('download').disabled = true;
   $('terminal').replaceChildren();
   $('rate').textContent = '—';
+  for (const id of ['bytes', 'sgr', 'generation', 'triangles']) $(id).textContent = '—';
+  $('geometry').textContent = 'Building scene…';
   serial = 0;
   completed = 0;
   bankBytes = 0;
