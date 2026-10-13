@@ -855,3 +855,5 @@ impl Video for LaunchVideo<'_> {
 pub mod velocity;
 
 pub mod phantom;
+
+pub mod product;
