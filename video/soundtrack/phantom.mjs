@@ -3,8 +3,10 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+const cut = process.argv[3] ?? 'phantom';
+if (!['phantom', 'product'].includes(cut)) throw new Error('Unknown film cut.');
 const root = resolve(import.meta.dirname, '..'),
-  cache = resolve(root, '.cache/phantom/audio');
+  cache = resolve(root, `.cache/${cut}/audio`);
 mkdirSync(cache, { recursive: true });
 const input = process.argv[2];
 if (!input) throw new Error('Pass the downloaded Lyria track path.');
@@ -46,7 +48,11 @@ function event(at, length, gain, fn, pan = 0) {
     pcm[ix * 2 + 1] += v * Math.sqrt((1 + pan) / 2);
   }
 }
-for (const [j, at] of [4, 6, 8.5, 11, 13.5, 16, 18, 20, 24, 27, 29.5, 33, 36.5].entries()) {
+const cues =
+  cut === 'product'
+    ? [4, 8, 14, 20, 24, 29, 34]
+    : [4, 6, 8.5, 11, 13.5, 16, 18, 20, 24, 27, 29.5, 33, 36.5];
+for (const [j, at] of cues.entries()) {
   let lp = 0;
   event(
     at - 0.22,
@@ -68,7 +74,7 @@ for (const [j, at] of [4, 6, 8.5, 11, 13.5, 16, 18, 20, 24, 27, 29.5, 33, 36.5].
   );
 }
 event(
-  36.5,
+  cut === 'product' ? 34 : 36.5,
   0.9,
   0.08,
   (t) => Math.sin(2 * Math.PI * (40 * t + 3 * (1 - Math.exp(-20 * t)))) * Math.exp(-6 * t),
@@ -122,6 +128,6 @@ ff([
   '48000',
   '-ac',
   '2',
-  resolve(root, 'footage/phantom-score.wav'),
+  resolve(root, `footage/${cut}-score.wav`),
 ]);
-console.log('Wrote footage/phantom-score.wav (40 seconds, stereo, normalized).');
+console.log(`Wrote footage/${cut}-score.wav (40 seconds, stereo, normalized).`);
