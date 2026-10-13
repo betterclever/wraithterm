@@ -1,5 +1,5 @@
 // Original stereo score and sound design. No samples or reference soundtrack are copied.
-// 120 BPM, D minor: muted plucks, warm sub, dry percussion, granular air and UI transients.
+// 100 BPM, D minor: muted plucks, warm sub, dry percussion, granular air and UI transients.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -36,10 +36,10 @@ function pluck(at, note, gain, pan = 0) {
     (Math.sin(TAU * f * t + 0.45 * Math.sin(TAU * f * 2 * t) * Math.exp(-t * 15)) +
       0.18 * Math.sin(TAU * f * 3 * t)) *
     Math.min(1, t / 0.003) *
-    Math.exp(-t * 5.5);
+    Math.exp(-t * 6.3);
   event(at, 1.6, synth, gain, pan);
   for (let d = 1; d < 4; d++)
-    event(at + d * 0.375, 1.6, synth, gain * 0.23 ** d, d % 2 ? -pan - 0.3 : pan + 0.3);
+    event(at + d * 0.45, 1.6, synth, gain * 0.23 ** d, d % 2 ? -pan - 0.3 : pan + 0.3);
 }
 // Sustained ninth chords, deliberately slow beneath the more precise UI motion.
 const chords = [
@@ -48,16 +48,16 @@ const chords = [
   [48, 55, 58, 62, 67],
   [45, 52, 57, 60, 64],
 ];
-for (let bar = 0; bar < 10; bar++) {
-  const at = bar * 4,
+for (let bar = 0; bar < 9; bar++) {
+  const at = bar * 4.8,
     chord = chords[bar % 4];
   chord.forEach((note, k) => {
     const f = hz(note);
     event(
       at,
-      5.5,
+      6.3,
       (t) => {
-        const env = Math.min(1, t / 1.3) * Math.max(0, Math.min(1, (5.5 - t) / 1.6));
+        const env = Math.min(1, t / 1.3) * Math.max(0, Math.min(1, (6.3 - t) / 1.6));
         return (
           env *
           (Math.sin(TAU * f * t) +
@@ -72,15 +72,15 @@ for (let bar = 0; bar < 10; bar++) {
   });
 }
 const arp = [0, 7, 12, 14, 10, 7, 3, 7];
-for (let step = 0; step < 152; step++) {
-  const t = 1 + step * 0.25,
-    rootNote = chords[Math.floor(t / 4) % 4][0] + 12;
+for (let step = 0; step < 128; step++) {
+  const t = 1.2 + step * 0.3,
+    rootNote = chords[Math.floor(t / 4.8) % 4][0] + 12;
   const sparse = t < 4 || (t >= 19 && t < 23.5) || t > 36;
   if (!sparse || step % 4 === 0)
     pluck(t, rootNote + arp[step % 8], sparse ? 0.048 : 0.082, Math.sin(step * 0.8) * 0.55);
 }
-for (let beat = 0; beat < 80; beat++) {
-  const at = beat * 0.5;
+for (let beat = 0; beat < 68; beat++) {
+  const at = beat * 0.6;
   if (at < 2 || at > 37.5) continue;
   const breakdown = at >= 19 && at < 23.5;
   if (!breakdown && beat % 2 === 0) {
@@ -93,7 +93,7 @@ for (let beat = 0; beat < 80; beat++) {
         Math.exp(-t * 12),
       0.42,
     );
-    const f = hz(chords[Math.floor(at / 4) % 4][0] - 12);
+    const f = hz(chords[Math.floor(at / 4.8) % 4][0] - 12);
     event(
       at + 0.08,
       0.75,
@@ -116,7 +116,7 @@ for (let beat = 0; beat < 80; beat++) {
     );
   }
   if (!breakdown && at >= 4) {
-    for (const extra of [0, 0.25]) {
+    for (const extra of [0, 0.3]) {
       let low = 0;
       event(
         at + extra,

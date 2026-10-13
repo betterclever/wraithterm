@@ -13,7 +13,11 @@ const browser = await chromium.launch({
 });
 const evidence = [];
 try {
-  for (const kind of ['dashboard', 'pipes', 'plasma']) {
+  const requested = process.argv.find((arg) => arg.startsWith('--only='))?.slice(7);
+  const kinds = requested ? [requested] : ['dashboard', 'pipes', 'plasma'];
+  if (kinds.some((kind) => !['dashboard', 'pipes', 'plasma'].includes(kind)))
+    throw new Error('Unknown capture workload');
+  for (const kind of kinds) {
     const page = await browser.newPage({
       viewport: { width: 1920, height: 1080 },
       deviceScaleFactor: 1,
@@ -70,7 +74,9 @@ try {
               const r = Math.round(20 + k * 230),
                 g = Math.round(12 + k * k * 150),
                 b = Math.round(10 + k * k * k * 100);
-              text += `\x1b[48;2;${r};${g};${b}m `;
+              const glyphs = '·:+=%#█';
+              const glyph = glyphs[Math.min(glyphs.length - 1, Math.floor(k * glyphs.length))];
+              text += `\x1b[38;2;${r};${g};${b}m${glyph}`;
             }
           }
           bytes = encoder.encode(text + '\x1b[0m');
@@ -110,7 +116,7 @@ try {
     await page.close();
   }
   await writeFile(
-    resolve(root, '.cache/velocity-capture/evidence.json'),
+    resolve(root, `.cache/velocity-capture/evidence${requested ? `-${requested}` : ''}.json`),
     JSON.stringify(evidence, null, 2),
   );
 } finally {

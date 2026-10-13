@@ -3,6 +3,7 @@ name = "wraith-launch"
 version = "0.1.0"
 edition = "2024"
 publish = false
+default-run = "wraith-launch"
 description = "The Wraith launch video, rendered with fframes."
 
 [dependencies]
@@ -30,3 +31,7 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[[bin]]
+name = "wraith-velocity"
+path = "src/velocity_main.rs"

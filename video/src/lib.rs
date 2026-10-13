@@ -850,3 +850,6 @@ impl Video for LaunchVideo<'_> {
         )
     }
 }
+
+/// A restrained, reference-inspired 3D product film with an original soundtrack.
+pub mod velocity;
