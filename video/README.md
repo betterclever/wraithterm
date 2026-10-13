@@ -1,6 +1,8 @@
 # Wraith launch video: "The Arrival"
 
-The newer, minimal-text 40-second product film is documented in [Wraith / Velocity](VELOCITY.md).
+The latest 40-second film, with physical Blender shots and a generated Lyria score,
+is documented in [Wraith / Phantom](PHANTOM.md). The earlier minimal-text cut is
+[Wraith / Velocity](VELOCITY.md).
 
 A 62-second, 1920×1080, 60 fps launch video made with
 [fframes](https://github.com/dmtrKovalenko/fframes) (Skia on Metal), following fframes'

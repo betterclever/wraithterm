@@ -35,3 +35,7 @@ opt-level = 3
 [[bin]]
 name = "wraith-velocity"
 path = "src/velocity_main.rs"
+
+[[bin]]
+name = "wraith-phantom"
+path = "src/phantom_main.rs"
