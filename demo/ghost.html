@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Ghost Reactor · Wraith</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/ghost.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="mark" href="/">// wraith<b>_</b></a>
+      <nav aria-label="Labs">
+        <a href="/">Home</a><a href="/pipes.html">Pipes</a><a href="/playground.html">Native lab</a>
+      </nav>
+    </header>
+    <main class="reactor-page">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Wraith / terminal showcase</p>
+          <h1>Ghost <em>Reactor.</em></h1>
+        </div>
+        <p>A little spirit. A whole universe.<br />Move to steer. Click to send a pulse.</p>
+      </section>
+      <section class="reactor-controls" aria-label="Reactor controls">
+        <label
+          >Cell grid<select id="resolution">
+            <option value="192x54">192 × 54</option>
+            <option value="240x68">240 × 68</option>
+            <option value="120x34">120 × 34</option>
+          </select></label
+        >
+        <label
+          >Time<select id="speed">
+            <option value="1">1×</option>
+            <option value="0.5">½×</option>
+            <option value="2">2×</option>
+          </select></label
+        >
+        <button id="pause" disabled>Pause</button
+        ><button id="restart" disabled>Replay entrance</button
+        ><button id="pulse" disabled>Send pulse ↗</button
+        ><button id="fullscreen">Fullscreen</button>
+      </section>
+      <section class="reactor-window" aria-label="Interactive ghost terminal">
+        <div class="reactor-bar">
+          <span><i></i><i></i><i></i></span><b>GHOST REACTOR</b><small>Wraith / WebGPU</small>
+        </div>
+        <div id="viewport"><div id="terminal"></div></div>
+        <div class="reactor-foot">
+          <span id="status" role="status">Opening the reactor…</span
+          ><a id="download" href="#" aria-disabled="true">Download ANSI frame ↗</a>
+        </div>
+      </section>
+      <section class="reactor-meters" aria-label="Actual pipeline measurements">
+        <div>
+          <span>COMPLETED UPDATES / S</span><strong id="rate">—</strong
+          ><small>Browser-paced writes and GPU fences</small>
+        </div>
+        <div>
+          <span>ANSI / FRAME</span><strong id="bytes">—</strong
+          ><small id="colors">Truecolor foreground and background</small>
+        </div>
+        <div>
+          <span>SCENE GENERATION</span><strong id="generation">—</strong
+          ><small>Particle field and encoder in a worker</small>
+        </div>
+        <div>
+          <span>TERMINAL RENDER P50</span><strong id="render">—</strong
+          ><small>Engine CPU timing from Wraith</small>
+        </div>
+      </section>
+      <p class="reactor-note">
+        The ghost, particles, rings, panels and text are terminal cells. The signal data is a
+        synthetic scene; the measurements below the terminal come from the running pipeline.
+      </p>
+    </main>
+    <script type="module" src="/ghost.js"></script>
+  </body>
+</html>

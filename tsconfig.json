@@ -7,7 +7,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "types": ["@webgpu/types", "node"]
+    "types": ["@webgpu/types", "node"],
+    "resolveJsonModule": true
   },
   "include": ["packages/wraith/src/**/*.ts", "demo/**/*.ts", "vite.config.ts"]
 }
