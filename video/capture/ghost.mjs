@@ -26,6 +26,9 @@ try {
   });
   const initial = await page.evaluate(() => ({ ready: ghostLab.ready, error: ghostLab.error }));
   if (!initial.ready || initial.error) throw new Error(JSON.stringify(initial));
+  const startupFrames = await page.evaluate(() => ghostLab.frames);
+  await page.waitForFunction((n) => ghostLab.frames > n + 4 || ghostLab.error, startupFrames);
+  if (await page.evaluate(() => ghostLab.error)) throw new Error('Automatic startup failed');
   await page.evaluate(() => ghostLab.frame(5));
   const text = await page.evaluate(() => ghostLab.getText());
   for (const label of ['GHOST REACTOR', 'SIGNAL', 'SPECTRUM', 'EVENT STREAM'])
@@ -115,6 +118,7 @@ try {
         captureFps: 30,
         captureFrames,
         verified: [
+          'automatic startup playback',
           'serialized terminal labels',
           '192×54 and 240×68 grids',
           'pause and resume',

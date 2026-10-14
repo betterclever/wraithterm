@@ -87,6 +87,8 @@ export class GhostScene {
     this.text(x + 2, y, ' ' + title + ' ', AMBER, opacity);
   }
   frame(time, input = {}) {
+    if (!Number.isFinite(time) || time < 0)
+      throw new RangeError('Scene time must be nonnegative and finite');
     const start = performance.now(),
       { cols, rows, height, pixels } = this;
     this.chars.fill('');

@@ -62,7 +62,7 @@ function fail(error) {
 }
 function advance(now) {
   if (running && !document.hidden)
-    animation += ((now - lastClock) / 1000) * Number($('speed').value);
+    animation += (Math.max(0, now - lastClock) / 1000) * Number($('speed').value);
   lastClock = now;
 }
 async function present(t) {
