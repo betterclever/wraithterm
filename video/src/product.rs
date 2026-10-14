@@ -1,10 +1,12 @@
 //! A product-led film: evidence, actual terminal output, adoption, then a clear CTA.
 use fframes::{
     AudioMap, AudioTimestamp, AudioTrack, Color, Duration, FFramesContext, FFramesSyncedVideoFrame,
-    Frame, Scene, Scenes, Shader, ShaderUniforms, Svgr, SyncVideoFrameInput, Transform, Video,
+    Frame, Overlap, Scene, Scenes, Shader, ShaderUniforms, Svgr, SyncVideoFrameInput, Transform,
+    Video,
     animation::{Easing, KeyFramesAnimation},
     svgr,
 };
+use std::sync::LazyLock;
 const HEAD: &str = "Manrope ExtraLight";
 const MONO: &str = "JetBrains Mono";
 const INK: &str = "#f5ece3";
@@ -33,11 +35,16 @@ impl Default for ProductVideo {
 }
 impl ProductVideo {
     pub fn new() -> Self {
-        let shots = (0..NAMES.len()).map(|id| ProductShot {
+        let shots = (0..NAMES.len()).map(|id| {
+            let duration = (CUES[id + 1] - CUES[id]) as f32 / 60. + if id == 0 { 0. } else { 0.2 };
+            ProductShot {
             id,
             enter: fframes::timeline!(at 0.0 => 0.6, animate 0.0 => 1.0, Easing::CubicBezier(0.16, 1.0, 0.3, 1.0)),
             detail: fframes::timeline!(at 0.25 => 1.0, animate 0.0 => 1.0, Easing::CubicBezier(0.16, 1.0, 0.3, 1.0)),
             change: fframes::timeline!(at 0.7 => 1.3, animate 0.0 => 1.0, Easing::CubicBezier(0.16, 1.0, 0.3, 1.0)),
+            fade: fframes::timeline!(at 0.0 => 0.2, animate 0.0 => 1.0, Easing::Linear),
+            exit: fframes::timeline!(at (duration - 0.2) => duration, animate 0.0 => 1.0, Easing::Linear),
+            }
         }).collect();
         Self {
             shots,
@@ -96,6 +103,8 @@ struct ProductShot {
     enter: KeyFramesAnimation<f32>,
     detail: KeyFramesAnimation<f32>,
     change: KeyFramesAnimation<f32>,
+    fade: KeyFramesAnimation<f32>,
+    exit: KeyFramesAnimation<f32>,
 }
 impl Scene for ProductShot {
     fn name(&self) -> &'static str {
@@ -104,12 +113,19 @@ impl Scene for ProductShot {
     fn duration(&self) -> Duration<'_> {
         Duration::Frames(CUES[self.id + 1] - CUES[self.id])
     }
+    fn overlap(&self) -> Overlap {
+        if self.id == 0 {
+            Overlap::None
+        } else {
+            Overlap::Previous(0.2)
+        }
+    }
     fn render_frame<'a>(&'a self, frame: Frame, ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let t = frame.seconds();
         let a = frame.animate(&self.enter);
         let detail = frame.animate(&self.detail);
         let change = frame.animate(&self.change);
-        match self.id {
+        let content = match self.id {
             0 => {
                 let left = footage(&frame, ctx, "dom.mp4", 160., 360., 760., "dom-view");
                 let right = footage(&frame, ctx, "wraith.mp4", 1000., 360., 760., "wraith-view");
@@ -129,13 +145,14 @@ impl Scene for ProductShot {
                 let mark = crate::wordmark(
                     frame.global_index as f32 / 60.,
                     t + 0.08,
-                    960.,
+                    850.,
                     430.,
-                    14.2,
+                    12.4,
                     0.8,
                     0.,
                 );
-                svgr!(<g>{mark}
+                let mascot = ghost(t, 1620. + (1. - a) * 75., 435., 11., detail, -0.5);
+                svgr!(<g>{mark}{mascot}
                     <g opacity={detail} transform={Transform::translate(0, 35. * (1.-detail))}>
                         <text x="960" y="745" text-anchor="middle" font-family={HEAD} font-weight="800" font-size="82" letter-spacing="-2" fill={INK}>"Spooky fast web terminal."</text>
                         <text x="960" y="830" text-anchor="middle" font-family={MONO} font-size="36" fill={AMBER}>"Rust · Wasm · WebGPU"</text>
@@ -143,29 +160,41 @@ impl Scene for ProductShot {
                 </g>)
             }
             2 => {
-                let dashboard =
-                    footage(&frame, ctx, "dashboard.mp4", 320., 230., 1280., "live-view");
+                let dashboard = footage(
+                    &frame,
+                    ctx,
+                    "ghost-reactor.mp4",
+                    320.,
+                    230.,
+                    1280.,
+                    "live-view",
+                );
                 svgr!(<g>
-                    {headline("A real terminal. Under pressure.", 104., a)}
+                    {headline("Just terminal cells.", 104., a)}
                     <g transform={Transform::translate(0, 45. * (1.-a))}>{dashboard}</g>
-                    <text x="960" y="1010" text-anchor="middle" font-family={MONO} font-size="32" fill={DIM}>"Recorded in Wraith · Ghostty worker · WebGPU"</text>
+                    <text x="960" y="1010" text-anchor="middle" font-family={MONO} font-size="32" fill={DIM}>"Ghost Reactor · recorded in Wraith · WebGPU"</text>
                 </g>)
             }
             3 => proof(a, detail),
-            4 => changed_rows(t, a, change),
+            4 => {
+                let rows = changed_rows(t, a, change);
+                let mascot = ghost(t, 724. + 836. * change, 475., 2.8, a, 0.5);
+                svgr!(<g>{rows}{mascot}</g>)
+            }
             5 => keep_code(a, change),
             6 => native(a, detail),
             _ => {
                 let mark = crate::wordmark(
                     frame.global_index as f32 / 60.,
                     t + 0.3,
-                    960.,
+                    850.,
                     330.,
-                    12.8,
+                    11.5,
                     0.6,
                     0.,
                 );
-                svgr!(<g>{mark}
+                let mascot = ghost(t, 1620., 330., 10., a, -0.5);
+                svgr!(<g>{mark}{mascot}
                     <g opacity={a} transform={Transform::translate(0, 35.*(1.-a))}>
                         <text x="960" y="645" text-anchor="middle" font-family={HEAD} font-weight="800" font-size="104" fill="url(#spectral)" letter-spacing="-3">"Try it. Race it."</text>
                         <text x="960" y="755" text-anchor="middle" font-family={HEAD} font-weight="800" font-size="76" fill={INK}>"wraithterm.com"</text>
@@ -175,7 +204,14 @@ impl Scene for ProductShot {
                     </g>
                 </g>)
             }
-        }
+        };
+        let exit = frame.animate(&self.exit);
+        let fade = if self.id == 0 {
+            1.
+        } else {
+            frame.animate(&self.fade)
+        };
+        svgr!(<g opacity={fade * (1. - exit)} transform={Transform::translate(0, 18. * (1. - a) - 8. * exit)}>{content}</g>)
     }
 }
 fn headline<'a>(text: &'a str, size: f32, opacity: f32) -> Svgr<'a> {
@@ -293,5 +329,31 @@ fn native<'a>(a: f32, detail: f32) -> Svgr<'a> {
             <text x="1295" y="780" text-anchor="middle" font-family={MONO} font-size="28" fill={DIM}>"one Wasm module · dedicated worker"</text>
         </g>
         <text x="960" y="968" text-anchor="middle" font-family={HEAD} font-size="48" font-weight="800" fill={INK}>"Keep your main thread for your app."</text>
+    </g>)
+}
+
+// Shared with the website and the ANSI demo, so the mascot keeps one source of truth.
+static GHOST_SPRITE: LazyLock<serde_json::Value> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("../../demo/ghost-sprite.json"))
+        .expect("checked-in ghost sprite")
+});
+fn ghost<'a>(t: f32, x: f32, y: f32, scale: f32, opacity: f32, look: f32) -> Svgr<'a> {
+    let sprite = &*GHOST_SPRITE;
+    let body = sprite["body"].as_array().into_iter().flatten();
+    let tail = sprite["tails"][((t * 6.) as usize) % 2]
+        .as_array()
+        .into_iter()
+        .flatten();
+    let pixels = body.chain(tail).enumerate().flat_map(|(row, line)| {
+        line.as_str().unwrap_or("").chars().enumerate().filter_map(move |(col, c)| {
+            if c == '.' { return None; }
+            Some(svgr!(<rect x={col as f32 * scale} y={row as f32 * scale} width={scale + 0.05} height={scale + 0.05} fill="url(#ghost-body)"/>))
+        })
+    }).collect::<Vec<_>>();
+    svgr!(<g opacity={opacity} transform={Transform::translate(x - 8. * scale, y - 8. * scale + (t * 2.).sin() * 5.)}>
+        <defs><linearGradient id="ghost-body" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2={16. * scale}><stop offset="0" stop-color="#fff8eb"/><stop offset="1" stop-color="#ffd4b4"/></linearGradient></defs>
+        {pixels}
+        <rect x={(4. + look) * scale} y="0" width={scale * 2.} height={scale * 3.} transform={Transform::translate(0, 4. * scale)} fill="#20120e"/>
+        <rect x={(10. + look) * scale} y="0" width={scale * 2.} height={scale * 3.} transform={Transform::translate(0, 4. * scale)} fill="#20120e"/>
     </g>)
 }

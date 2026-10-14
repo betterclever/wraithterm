@@ -1,5 +1,9 @@
 # Wraith product cut
 
+The [Ghost Reactor revision](GHOST_REACTOR.md) adds a shared mascot, real terminal
+showcase footage and smoother section transitions. The original product export
+and its validation are recorded below.
+
 40 seconds, 1920×1080, 60 fps. Built with fframes and Skia on Metal, following the
 product story of the earlier Opus / The Arrival film. The audience is developers
 embedding a terminal in a web application.

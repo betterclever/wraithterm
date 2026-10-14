@@ -1,6 +1,7 @@
 # Wraith launch video: "The Arrival"
 
-The latest 40-second film tells the product story: real output, measured CPU
+The latest revision adds the website ghost and an interactive terminal showcase:
+[Ghost Reactor](GHOST_REACTOR.md). The 40-second film tells the product story: real output, measured CPU
 advantage, and two integration paths. See [the product cut](PRODUCT.md). Earlier
 cuts: [Phantom](PHANTOM.md) and [Velocity](VELOCITY.md).
 
