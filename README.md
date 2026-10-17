@@ -286,11 +286,9 @@ Consumers of the prebuilt package need neither compiler.
 
 The bootstrap applies the revision- and hash-checked patches in `native/patches/`.
 The SGR patch interns the final style once per command and retains Ghostty's
-original parser semantics and individual-attribute API. A second patch inlines
-attribute parsing to reduce Wasm call/return overhead. Set `WRAITH_GHOSTTY_PATCHES=0`
-when building an unpatched reference. All patch inputs are checked before any
-file is changed; unfamiliar upstream edits are preserved. Run `npm run test:patches`
-after the first engine build to verify apply/reverse and mismatch handling.
+original parser and individual-attribute API. Set `WRAITH_GHOSTTY_PATCHES=0` when
+building an unpatched reference; the bootstrap reverses only a recognized patch
+and refuses to overwrite unfamiliar upstream edits.
 
 For real browser verification, run the demo server in another terminal:
 
