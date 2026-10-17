@@ -1,0 +1,18 @@
+{
+  "upstream": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "patch": "batch-sgr.patch",
+  "files": {
+    "src/terminal/Screen.zig": {
+      "before": "0f7fe1fa956b429ba7341cafac5acfdc85119c706b28231dd6c9cacc8512f782",
+      "after": "2fe9a2a05e0568abfb20aff8e6c9e17f31db10cedc766a3fa5530c335d59a9c3"
+    },
+    "src/terminal/stream_terminal.zig": {
+      "before": "bd143733b7ca2baff24ec820dcc92d44a775586c223f1cb8fbf9c99f3c3dda55",
+      "after": "26728a7eafd28886a8f841fc31e076caa6fe84b10ca223a15b7fb102b97c0084"
+    },
+    "src/terminal/stream.zig": {
+      "before": "5a4b2339870cffc669744823c7990187ef8fe1df46f9f3424c599a6df785f14a",
+      "after": "03065cf4e52b7d5db411b1e6e90d57ec47a22b19488f412cf1860f372d923ba7"
+    }
+  }
+}

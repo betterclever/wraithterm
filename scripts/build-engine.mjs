@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile, access, copyFile, rm } from 'node:fs/promis
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { applyGhosttyPatches } from './ghostty-patches.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const build = resolve(process.env.WRAITH_BUILD_DIR ?? join(root, '.cache'));
 const pinned = JSON.parse(await readFile(join(root, 'upstream.json'), 'utf8'));
@@ -68,6 +69,7 @@ if (revision !== pinned.ghostty)
   throw new Error(
     `Ghostty revision mismatch: ${revision}. Recreate ${ghostty} from upstream.json.`,
   );
+await applyGhosttyPatches(ghostty, pinned.ghostty, process.env.WRAITH_GHOSTTY_PATCHES !== '0');
 const output = join(build, native ? 'ghostty-native' : 'ghostty-wasm');
 const zigArgs = [
   'build',
