@@ -1,6 +1,6 @@
 {
   "name": "wraithterm",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "xterm-compatible Terminal API and libghostty terminal core with Rust/Wasm/WebGPU rendering.",
   "license": "MIT",
