@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-17T10:56:05.085Z",
+  "stage": "GPU-completed pipeline",
+  "pairs": 40,
+  "framesPerBlock": 32,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 476.9001490339443,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 501.5673981132649,
+          "pairedMedianRatio": 1.0527131783003492,
+          "pairedRatioP10": 1.0356589147402335,
+          "pairedRatioP90": 1.0647709320628629
+        }
+      ]
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 470.5882352941176,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 493.8271604881492,
+          "pairedMedianRatio": 1.0523882896531644,
+          "pairedRatioP10": 1.0368098159856227,
+          "pairedRatioP90": 1.0689127105658294
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 3018.8679246343977,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 2857.1428568577585,
+          "pairedMedianRatio": 1.0588235293473132,
+          "pairedRatioP10": 0.5357142856608298,
+          "pairedRatioP90": 1.861111110873969
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 719.1011235955057,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 763.723150351205,
+          "pairedMedianRatio": 1.058690744911597,
+          "pairedRatioP10": 1.0125313283206852,
+          "pairedRatioP90": 1.1204188481055037
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 248.44720497109986,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 284.95102404557844,
+          "pairedMedianRatio": 1.147818343736913,
+          "pairedRatioP10": 1.135758651275339,
+          "pairedRatioP90": 1.1612612612478368
+        }
+      ]
+    },
+    {
+      "workload": "complex",
+      "dpr": 2,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 412.3711340225982,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "completedUpdatesPerSecond": 431.2668463655164,
+          "pairedMedianRatio": 1.042440318292296,
+          "pairedRatioP10": 1.0266666666666666,
+          "pairedRatioP90": 1.121602288983615
+        }
+      ]
+    }
+  ]
+}

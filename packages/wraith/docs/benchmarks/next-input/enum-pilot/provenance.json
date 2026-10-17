@@ -1,0 +1,8 @@
+{
+  "actualModes": [
+    "baseline",
+    "folded"
+  ],
+  "note": "Console labels in the scratch harness retain old action names; samples and method metadata correctly identify the two enum comparison arms.",
+  "harnessSourceSha256": "103592526147a8449a91b368e6d6ca03a10fe6b1f735d94694b43980c6280e0e"
+}

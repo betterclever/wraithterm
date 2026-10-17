@@ -1,0 +1,10 @@
+{
+  "actualModes": [
+    "baseline",
+    "prefix",
+    "sgr",
+    "combined"
+  ],
+  "note": "The original generic method string names three actions; this pilot used four modes. Its prefix label denotes the separate digit-loop experiment. Combined also includes the decoder candidate.",
+  "harnessSourceSha256": "4ecce543f74176f3099b21155fc6b4e2e2f5f0ace86ec788344704c6153b53e1"
+}

@@ -1,0 +1,16 @@
+{
+  "codeCommit": "b643fb90adc00b6ba31cc5f0eb0a76905d85d7a3",
+  "tests": 33,
+  "typecheck": "passed",
+  "sdkBuild": "passed",
+  "demoBuild": "passed; existing large-chunk warning",
+  "productionParserDifferential": "passed; input.json",
+  "chromeApi": "passed; xterm-chrome.json",
+  "packedXtermAliasConsumers": {
+    "development": "passed",
+    "production": "passed"
+  },
+  "nativeEngineChanged": false,
+  "nativeConsumerRerun": false,
+  "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552"
+}

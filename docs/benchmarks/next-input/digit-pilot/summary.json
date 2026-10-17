@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-17T10:28:55.753Z",
+  "pairs": 20,
+  "framesPerBlock": 32,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 876.7123287671233,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "prefix",
+          "completedUpdatesPerSecond": 864.8648648648649,
+          "pairedMedianRatio": 0.9944751381420149,
+          "pairedRatioP10": 0.9813333333532015,
+          "pairedRatioP90": 1.0135501355012182
+        },
+        {
+          "kind": "sgr",
+          "completedUpdatesPerSecond": 883.9779005251955,
+          "pairedMedianRatio": 1.008086253389436,
+          "pairedRatioP10": 0.9944444444651405,
+          "pairedRatioP90": 1.0484330484097655
+        },
+        {
+          "kind": "combined",
+          "completedUpdatesPerSecond": 879.1208791568679,
+          "pairedMedianRatio": 1.005586592157843,
+          "pairedRatioP10": 0.978494623685526,
+          "pairedRatioP90": 1.0308123249723549
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 452.6166902452224,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "prefix",
+          "completedUpdatesPerSecond": 465.7933042263034,
+          "pairedMedianRatio": 1.0306122448647115,
+          "pairedRatioP10": 1.008571428566107,
+          "pairedRatioP90": 1.0476190476362064
+        },
+        {
+          "kind": "sgr",
+          "completedUpdatesPerSecond": 469.2082111360061,
+          "pairedMedianRatio": 1.03377386197882,
+          "pairedRatioP10": 1.0247093023144844,
+          "pairedRatioP90": 1.0502215657647354
+        },
+        {
+          "kind": "combined",
+          "completedUpdatesPerSecond": 479.760119945389,
+          "pairedMedianRatio": 1.0588235293886283,
+          "pairedRatioP10": 1.052316890881622,
+          "pairedRatioP90": 1.073134328363769
+        }
+      ]
+    }
+  ]
+}

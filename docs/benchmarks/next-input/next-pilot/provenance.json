@@ -1,0 +1,11 @@
+{
+  "actualModes": [
+    "baseline",
+    "prefix",
+    "decoder",
+    "sgr",
+    "combined"
+  ],
+  "note": "The original generic method string names three actions; this pilot actually rotated the five modes listed here. The archived harness and per-sample kind are authoritative.",
+  "harnessSourceSha256": "72a3414005c66e3a86f98e0738fd359600991a30fbd20ff44cda0128b65c5373"
+}

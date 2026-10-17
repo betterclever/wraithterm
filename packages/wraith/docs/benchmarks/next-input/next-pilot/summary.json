@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-17T10:28:03.818Z",
+  "pairs": 20,
+  "framesPerBlock": 32,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 869.565217373699,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "prefix",
+          "completedUpdatesPerSecond": 891.3649024977142,
+          "pairedMedianRatio": 1.0222222222429183,
+          "pairedRatioP10": 1.0081521738825092,
+          "pairedRatioP90": 1.0395480226089773
+        },
+        {
+          "kind": "decoder",
+          "completedUpdatesPerSecond": 867.2086720779658,
+          "pairedMedianRatio": 0.9972299168563438,
+          "pairedRatioP10": 0.9838274932713343,
+          "pairedRatioP90": 1.019283746587855
+        },
+        {
+          "kind": "sgr",
+          "completedUpdatesPerSecond": 888.8888888888889,
+          "pairedMedianRatio": 1.0192837465355529,
+          "pairedRatioP10": 1.0080000000198681,
+          "pairedRatioP90": 1.0408719345529067
+        },
+        {
+          "kind": "combined",
+          "completedUpdatesPerSecond": 903.9548022503743,
+          "pairedMedianRatio": 1.0374639769118312,
+          "pairedRatioP10": 1.011267605591828,
+          "pairedRatioP90": 1.063768115920433
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 6153.846152523565,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "prefix",
+          "completedUpdatesPerSecond": 6037.735848207837,
+          "pairedMedianRatio": 1.0227272726406829,
+          "pairedRatioP10": 0.7857142858330769,
+          "pairedRatioP90": 1.4464285717908845
+        },
+        {
+          "kind": "decoder",
+          "completedUpdatesPerSecond": 6153.846154727879,
+          "pairedMedianRatio": 0.9354838712003304,
+          "pairedRatioP10": 0.8461538463467236,
+          "pairedRatioP90": 1.3636363635209106
+        },
+        {
+          "kind": "sgr",
+          "completedUpdatesPerSecond": 6153.846154727879,
+          "pairedMedianRatio": 1.0769230770057387,
+          "pairedRatioP10": 0.7647058826429726,
+          "pairedRatioP90": 1.4210526315617484
+        },
+        {
+          "kind": "combined",
+          "completedUpdatesPerSecond": 6153.846152523565,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 0.8196721311975986,
+          "pairedRatioP90": 1.4666666665838826
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 454.54545455507565,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "prefix",
+          "completedUpdatesPerSecond": 478.32585948911526,
+          "pairedMedianRatio": 1.0546528803150845,
+          "pairedRatioP10": 1.041543026717056,
+          "pairedRatioP90": 1.0630630630224973
+        },
+        {
+          "kind": "decoder",
+          "completedUpdatesPerSecond": 451.33991538325176,
+          "pairedMedianRatio": 0.9915254237339415,
+          "pairedRatioP10": 0.9761904762010354,
+          "pairedRatioP90": 1.0099857346541892
+        },
+        {
+          "kind": "sgr",
+          "completedUpdatesPerSecond": 469.2082111360061,
+          "pairedMedianRatio": 1.032116788337483,
+          "pairedRatioP10": 1.0157593123154116,
+          "pairedRatioP90": 1.0544918998703798
+        },
+        {
+          "kind": "combined",
+          "completedUpdatesPerSecond": 493.8271604881492,
+          "pairedMedianRatio": 1.0875576036756922,
+          "pairedRatioP10": 1.0684931506857083,
+          "pairedRatioP90": 1.1009174311863896
+        }
+      ]
+    }
+  ]
+}

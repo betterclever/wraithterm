@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-17T10:54:55.997Z",
+  "pairs": 20,
+  "framesPerBlock": 32,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 500,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "folded",
+          "completedUpdatesPerSecond": 500.782472610539,
+          "pairedMedianRatio": 1.0046801872191389,
+          "pairedRatioP10": 0.9878234398671012,
+          "pairedRatioP90": 1.0157480314960632
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 3298.9690724183424,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "folded",
+          "completedUpdatesPerSecond": 3678.1609190677395,
+          "pairedMedianRatio": 1.1009174313431647,
+          "pairedRatioP10": 0.5876288661397324,
+          "pairedRatioP90": 1.7837837838450101
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 835.5091384055811,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "folded",
+          "completedUpdatesPerSecond": 853.3333333333334,
+          "pairedMedianRatio": 1.018766756011822,
+          "pairedRatioP10": 0.99732620316874,
+          "pairedRatioP90": 1.047745358059126
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 265.7807308961876,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "folded",
+          "completedUpdatesPerSecond": 278.74564460201674,
+          "pairedMedianRatio": 1.0555066079360798,
+          "pairedRatioP10": 1.0426985482329099,
+          "pairedRatioP90": 1.0801724137834692
+        }
+      ]
+    }
+  ]
+}

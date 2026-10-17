@@ -1,0 +1,10 @@
+{
+  "complete": false,
+  "reason": "Stopped after five DPR1 conditions because baseline rates varied strongly during unrelated machine activity. DPR2 canceled. Retained for transparency; not used for production speed claims.",
+  "observedBackgroundCpuPercent": [
+    120.8,
+    83.4
+  ],
+  "measurementScope": "process CPU observations, not device GPU utilization",
+  "sourceChangesDuringRun": false
+}

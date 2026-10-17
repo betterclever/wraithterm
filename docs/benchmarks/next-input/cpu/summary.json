@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-17T10:56:45.424Z",
+  "stage": "CPU parse only; zero GPU submissions",
+  "pairs": 40,
+  "framesPerBlock": 64,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "parsedUpdatesPerSecond": 691.8918918918919,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "parsedUpdatesPerSecond": 745.9207459304619,
+          "pairedMedianRatio": 1.0785463071418104,
+          "pairedRatioP10": 1.071925754050749,
+          "pairedRatioP90": 1.0909090909230852
+        }
+      ]
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "parsedUpdatesPerSecond": 680.8510638297872,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "parsedUpdatesPerSecond": 739.0300230978673,
+          "pairedMedianRatio": 1.083526682103236,
+          "pairedRatioP10": 1.0745412844256672,
+          "pairedRatioP90": 1.093641618492803
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "parsedUpdatesPerSecond": 64000,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "parsedUpdatesPerSecond": 71111.11108167672,
+          "pairedMedianRatio": 1.1111111106511986,
+          "pairedRatioP10": 0.900000000372529,
+          "pairedRatioP90": 1.2500000017462298
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "parsedUpdatesPerSecond": 1290.3225806548526,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "parsedUpdatesPerSecond": 1422.2222222222222,
+          "pairedMedianRatio": 1.1026785714643943,
+          "pairedRatioP10": 1.0931263858348619,
+          "pairedRatioP90": 1.1160714285528675
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "parsedUpdatesPerSecond": 283.31119964772984,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "production",
+          "parsedUpdatesPerSecond": 331.0915675103638,
+          "pairedMedianRatio": 1.1682194616871084,
+          "pairedRatioP10": 1.153964194371496,
+          "pairedRatioP90": 1.1790347690717873
+        }
+      ]
+    }
+  ]
+}
