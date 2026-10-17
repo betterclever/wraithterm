@@ -30,6 +30,13 @@ allocation. There are no competing Zig and Rust heaps.
 `native/bridge.c` is the sole translation layer for upstream C structs, sized
 struct initialization, and enum constants. Rust exposes its own small `Frame`
 layout. A pinned Ghostty revision and C compilation isolate upstream API churn.
+The build extracts the public `ghostty_type_json()` ABI manifest from the exact
+native or Wasm archive being linked. It generates inline readers for cell tags,
+widths, style IDs and codepoints, avoiding generic per-cell queries. Unknown
+schemas or incompatible descriptors stop the build. Both targets compare those
+readers against libghostty's getters on 100,130 raw cells before compiling the
+bridge. Styles and grapheme text still use the public out-of-line APIs; no private
+packed layout is frozen in the source.
 
 `Renderer` owns the device, surface, pipeline, atlas texture, cell storage buffer,
 row map, uniform buffer, and CPU staging cells. `Atlas` owns font bytes, shaping metadata,

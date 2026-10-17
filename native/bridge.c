@@ -2,6 +2,7 @@
  * No terminal-state pointer crosses the JavaScript boundary. */
 #include "bridge.h"
 #include <ghostty/vt.h>
+#include "ghostty-cell-layout.h"
 
 extern void* wraith_alloc(size_t len, uint8_t alignment);
 extern void wraith_dealloc(void* ptr, size_t len, uint8_t alignment);
@@ -181,8 +182,6 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
   b->foreground = colors.foreground;
   b->background = colors.background;
   ghostty_render_state_get(b->render, GHOSTTY_RENDER_STATE_DATA_ROW_ITERATOR, &b->rows);
-  static const GhosttyCellData keys[] = {GHOSTTY_CELL_DATA_CONTENT_TAG, GHOSTTY_CELL_DATA_WIDE,
-                                         GHOSTTY_CELL_DATA_CODEPOINT, GHOSTTY_CELL_DATA_STYLE_ID};
   uint16_t y;
   while (ghostty_render_state_row_iterator_next_dirty(b->rows, &y)) {
     /* One selection range per row instead of a query per cell. */
@@ -216,12 +215,10 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
         if (!ghostty_render_state_row_cells_next(b->cells)) break;
         ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW, &raw);
       }
-      GhosttyCellContentTag tag = 0;
-      GhosttyCellWide wide = 0;
-      uint32_t codepoint = 0;
-      GhosttyStyleId id = 0;
-      void* values[] = {&tag, &wide, &codepoint, &id};
-      ghostty_cell_get_multi(raw, 4, keys, values, NULL);
+      GhosttyCellContentTag tag = wraith_cell_tag(raw);
+      GhosttyCellWide wide = wraith_cell_wide(raw);
+      uint32_t codepoint = wraith_cell_codepoint(raw);
+      GhosttyStyleId id = wraith_cell_style(raw);
       /* The public raw-row view already contains ordinary cells. Position the
        * iterator only when decoding out-of-line style/grapheme/background data.
        * Keep the iterator fallback if row identity or the bulk view is absent. */

@@ -4,6 +4,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { applyGhosttyPatches } from './ghostty-patches.mjs';
+import { prepareCellLayout } from './ghostty-cell-layout.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const build = resolve(process.env.WRAITH_BUILD_DIR ?? join(root, '.cache'));
 const pinned = JSON.parse(await readFile(join(root, 'upstream.json'), 'utf8'));
@@ -91,6 +92,7 @@ run(zig, zigArgs);
 const link = join(build, native ? 'native-link' : 'wasm-link');
 await mkdir(link, { recursive: true });
 await copyFile(join(output, 'lib/libghostty-vt.a'), join(link, 'libghostty-vt.a'));
+await prepareCellLayout({ zig, ghostty, link, root, native, env });
 const object = join(link, 'bridge.o');
 const compiler = [
   'cc',
@@ -98,6 +100,7 @@ const compiler = [
   '-c',
   join(root, 'native/bridge.c'),
   '-I' + join(ghostty, 'include'),
+  '-I' + link,
   '-o',
   object,
 ];
