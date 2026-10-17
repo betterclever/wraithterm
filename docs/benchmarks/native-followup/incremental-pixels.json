@@ -1,0 +1,362 @@
+[
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "unique styled rows",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "one-line scroll",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "legacy partial upload into rotated GPU slots",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "cursor-only change",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "disjoint edits",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "insert and delete within margins",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "reverse index",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "duplicate blank rows and independent edits",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "wide combining emoji and extended underlines",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "alternate screen",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "normal screen restored",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "viewport backward",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "viewport forward",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "selection over moved rows",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "selection removed",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 1,
+    "label": "atlas reset after row rotation",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "unique styled rows",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "one-line scroll",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "cursor-only change",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "disjoint edits",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "insert and delete within margins",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "reverse index",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "duplicate blank rows and independent edits",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "wide combining emoji and extended underlines",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "alternate screen",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "normal screen restored",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "viewport backward",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "viewport forward",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "selection over moved rows",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 1,
+    "label": "selection removed",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "unique styled rows",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "one-line scroll",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "legacy partial upload into rotated GPU slots",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "cursor-only change",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "disjoint edits",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "insert and delete within margins",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "reverse index",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "duplicate blank rows and independent edits",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "wide combining emoji and extended underlines",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "alternate screen",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "normal screen restored",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "viewport backward",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "viewport forward",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "selection over moved rows",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "selection removed",
+    "differing": 0
+  },
+  {
+    "type": "wraith",
+    "dpr": 2,
+    "label": "atlas reset after row rotation",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "unique styled rows",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "one-line scroll",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "cursor-only change",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "disjoint edits",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "insert and delete within margins",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "reverse index",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "duplicate blank rows and independent edits",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "wide combining emoji and extended underlines",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "alternate screen",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "normal screen restored",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "viewport backward",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "viewport forward",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "selection over moved rows",
+    "differing": 0
+  },
+  {
+    "type": "ghostty",
+    "dpr": 2,
+    "label": "selection removed",
+    "differing": 0
+  }
+]

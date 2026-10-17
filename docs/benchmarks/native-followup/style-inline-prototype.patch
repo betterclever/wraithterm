@@ -1,0 +1,13 @@
+diff --git a/src/terminal/style.zig b/src/terminal/style.zig
+index 701356e..7bb8eda 100644
+--- a/src/terminal/style.zig
++++ b/src/terminal/style.zig
+@@ -102,7 +102,7 @@ pub const Style = struct {
+     }
+ 
+     /// True if the style is equal to another style.
+-    pub fn eql(self: Style, other: Style) bool {
++    pub inline fn eql(self: Style, other: Style) bool {
+         // On wasm, comparing packed forms wins (~13% on SGR-heavy streams).
+         // On native, the branchy early-exit field compare below measures
+         // ~5% faster (unequal styles usually differ in the first

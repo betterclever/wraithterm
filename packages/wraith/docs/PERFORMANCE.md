@@ -1,17 +1,25 @@
 # Performance
 
+The latest [native decoder pass](benchmarks/native-followup/REPORT.md) adds
+3.5% dense, 2.8% style/glyph churn and 3.7% dashboard GPU-completed throughput
+over the already optimized libghostty build. Pipes and log gains are inconclusive.
+It follows the [native core pass](benchmarks/native-core/REPORT.md), which measured
+1.47× dense, 1.26× churn, 1.23× dashboard and 1.14× Pipes throughput against its
+own earlier baseline. These are separate paired experiments; use each report's
+build hashes and conditions rather than comparing absolute rates across reports.
+
 The [latest alternatives study](benchmarks/performance-experiments/REPORT.md)
 tests nine research paths in 162 runs plus 480 short paired triplets. The input
 combination shows about 7% on dense repaint and 12% on the dashboard; another
 2× is not established. SIMD packing and fused print staging do not provide a
 broad pipeline win. These prototypes are isolated from the shipped SDK.
 
-**Current shipped results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
+**Compatible SGR results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
 records 75 paired runs plus a separate 4,096-update dense batch. Common xterm
 color/style actions improve dense compatible throughput **14.5% (676 → 774
 completed updates/s)** and dashboard throughput **17.8% (1,002 → 1,180)**.
 The longer dense batch improves **13.3% (677 → 767)**. The 1000-update/s dense
-target remains open. Native code and the GPU renderer are unchanged.
+target remains open. That pass left native code and the GPU renderer unchanged.
 These are GPU-completed batches, not physical display presentations; compare
 within each batch because this is shared hardware.
 

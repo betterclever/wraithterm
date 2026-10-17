@@ -1,0 +1,155 @@
+{
+  "date": "2026-10-17T17:15:40.440Z",
+  "iterations": 1024,
+  "warmup": 32,
+  "sourceDirectory": "/Users/betterclever/projects/wraith",
+  "head": "d38e14967b66c79a0661ea5d162a1e590719429d",
+  "url": "http://127.0.0.1:5173/compare.html?type=ghostty&workload=pipes",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "sdkSources": {
+    "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+    "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+    "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+    "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+    "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+    "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+    "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+    "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+    "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+    "xterm-input.ts": "fcb5ecdf479a1a8996eb5146d5a77d2ea4a1821e4c974dab4b99793ba5326c1e",
+    "xterm-internals.ts": "5446270585e264255878bfd351536fcff98bd7d1933dce1ba800f9fec44ee46b",
+    "xterm-parser.d.ts": "5392b9a9dc22aab9e28afbd84f0d7a781d0d8500a406864db00dae6b0160a56c",
+    "xterm-parser.js": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42",
+    "xterm-print.ts": "35704512abaf17490fe6b4271be674460e7134afa5723bc805444c7e350f5600",
+    "xterm-renderer.ts": "15c5b4b9845f897dd5ff41a91e9f1c6f9b7d51a5e44b5674a2e9278990077290",
+    "xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147"
+  },
+  "wasmSha256": "c517a0e8071a38007a9ca65dd72ee70ca944bc5b131306b166e834a008f1cca3",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "samplingIntervalUs": 500,
+  "measuredSeparatelyFromBenchmark": true,
+  "activeSampledMs": 4579.307,
+  "hot": [
+    {
+      "name": "wraith_bridge_write",
+      "selfPercent": 17.781358620420075,
+      "selfMs": 814.263
+    },
+    {
+      "name": "terminal.style.Style.eql",
+      "selfPercent": 11.755359489983965,
+      "selfMs": 538.314
+    },
+    {
+      "name": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).addContext__anon_380842",
+      "selfPercent": 11.747978460496315,
+      "selfMs": 537.976
+    },
+    {
+      "name": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).insert__anon_380864",
+      "selfPercent": 8.374673285717686,
+      "selfMs": 383.502
+    },
+    {
+      "name": "terminal.page.Page.clonePartialRowFrom",
+      "selfPercent": 6.471372196710114,
+      "selfMs": 296.344
+    },
+    {
+      "name": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).addWithId__anon_396871",
+      "selfPercent": 6.387429364312111,
+      "selfMs": 292.5
+    },
+    {
+      "name": "<wraith_engine[1c7b24a7df4611e0]::core::Core>::update",
+      "selfPercent": 5.46180895930323,
+      "selfMs": 250.113
+    },
+    {
+      "name": "terminal.style.Set__struct_362002.hash",
+      "selfPercent": 4.893731737138393,
+      "selfMs": 224.099
+    },
+    {
+      "name": "terminal.Screen.manualStyleUpdate",
+      "selfPercent": 4.79616238876319,
+      "selfMs": 219.631
+    },
+    {
+      "name": "terminal.sgr.Parser.next",
+      "selfPercent": 3.8290073148622703,
+      "selfMs": 175.342
+    },
+    {
+      "name": "terminal.Terminal.print",
+      "selfPercent": 3.5623949213276154,
+      "selfMs": 163.133
+    },
+    {
+      "name": "writeBuffer",
+      "selfPercent": 2.9957808026410984,
+      "selfMs": 137.186
+    },
+    {
+      "name": "<wraith_engine[1c7b24a7df4611e0]::gpu::Renderer>::pack",
+      "selfPercent": 1.7597422492093235,
+      "selfMs": 80.584
+    },
+    {
+      "name": "wraith_cell",
+      "selfPercent": 1.5580086681238012,
+      "selfMs": 71.346
+    },
+    {
+      "name": "terminal.stream_terminal.Handler.setAttributes",
+      "selfPercent": 1.4825824082115482,
+      "selfMs": 67.892
+    },
+    {
+      "name": "terminal.render.RowBuilder.row",
+      "selfPercent": 1.3916734562675095,
+      "selfMs": 63.729
+    },
+    {
+      "name": "mem.findScalarPos__anon_427992",
+      "selfPercent": 1.1359797454068923,
+      "selfMs": 52.02
+    },
+    {
+      "name": "terminal.stream.Stream(terminal.stream_terminal.Handler).csiDispatchFinal",
+      "selfPercent": 0.8654147887442358,
+      "selfMs": 39.63
+    },
+    {
+      "name": "terminal.Terminal.printSlice",
+      "selfPercent": 0.6351397711487786,
+      "selfMs": 29.085
+    },
+    {
+      "name": "terminal.c.render.row_cells_get",
+      "selfPercent": 0.42309895361896455,
+      "selfMs": 19.375
+    }
+  ],
+  "noncustomSectionHashes": {
+    "1": "566fe7c9b7ab47f716b65fa2f6b14ae4606a0dc8be965050d8a18d853adf1327",
+    "2": "b043693b954cbcfb015f490118001d6885a8af53bff10502c9359bec6fd60973",
+    "3": "fb26239fd8e903626daba107e105bcd15c76d73d90eebfab0e723c01fa09c1a2",
+    "4": "5538e5f08c27f0df43ae179b6f054a5bebecf3e56d6099509d8405b5d341c833",
+    "5": "a1c09eb8693e4fb8f027acac907b3cc649d93aeb2c6c9ac444c0a77ff7b63cb0",
+    "6": "a22ed07142a42cf5670c5ed487064a67e4e4113ccee80a5e7b65f4914e3d2b21",
+    "7": "2cb38e2df362099ca55938654ebf678181bbc191a3dfec4d8550b75e3cc3d97f",
+    "9": "44d8bf2df8bb7852c0f6c999242844d65d9b1c6f5a8547ef456ab9d50a959862",
+    "12": "4da123e6abe5a5d1f4c055338ef3af5c1886a6db986ae56176b813a65e516ed0",
+    "10": "d6e25eefc34821ab65b7520efaa44ae234ec57b9c5ea624557c8400e208c000e",
+    "11": "88afd8d98d9049b567f2b98ccd683138a692895008d36325d8c3756f3325a28b"
+  }
+}

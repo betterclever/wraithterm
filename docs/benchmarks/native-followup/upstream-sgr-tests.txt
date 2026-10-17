@@ -1,0 +1,37 @@
+Build Summary: 21/21 steps succeeded; 129/129 tests passed
+test-lib-vt success
++- run test 64 pass (64 total) 439ms MaxRSS:7M
+|  +- compile test Debug aarch64-macos.13.0 success 11s MaxRSS:580M
+|     +- WriteFile  success
+|     +- compile lib simdutf Debug aarch64-macos.13.0 success 1s MaxRSS:135M
+|     |  +- WriteFile libc.txt success
+|     +- WriteFile hwy success
+|     +- compile lib highway Debug aarch64-macos.13.0 success 2s MaxRSS:216M
+|     |  +- WriteFile libc.txt (reused)
+|     +- compile lib simdutf Debug aarch64-macos.13.0 (+1 more reused dependencies)
+|     +- compile lib highway Debug aarch64-macos.13.0 (+1 more reused dependencies)
+|     +- options success
+|     +- options success
+|     +- WriteFile props.zig success
+|     |  +- run exe props-unigen success 788ms
+|     |  |  +- compile exe props-unigen Debug native success 2s MaxRSS:292M
+|     |  |     +- run exe uucode_generate (tables.zig) success 1s
+|     |  |        +- compile exe uucode_generate Debug native success 3s MaxRSS:303M
+|     |  +- run exe symbols-unigen success 417ms
+|     |     +- compile exe symbols-unigen Debug native success 2s MaxRSS:270M
+|     |        +- run exe uucode_generate (tables.zig) (+1 more reused dependencies)
+|     +- WriteFile props.zig (+2 more reused dependencies)
+|     +- run exe uucode_generate (tables.zig) (+1 more reused dependencies)
++- run test 65 pass (65 total) 397ms MaxRSS:7M
+   +- compile test Debug aarch64-macos.13.0 success 11s MaxRSS:562M
+      +- WriteFile  (reused)
+      +- compile lib simdutf Debug aarch64-macos.13.0 (+1 more reused dependencies)
+      +- WriteFile hwy (reused)
+      +- compile lib highway Debug aarch64-macos.13.0 (+1 more reused dependencies)
+      +- compile lib simdutf Debug aarch64-macos.13.0 (+1 more reused dependencies)
+      +- compile lib highway Debug aarch64-macos.13.0 (+1 more reused dependencies)
+      +- options cached
+      +- options success
+      +- WriteFile props.zig (+2 more reused dependencies)
+      +- WriteFile props.zig (+2 more reused dependencies)
+      +- run exe uucode_generate (tables.zig) (+1 more reused dependencies)

@@ -13,6 +13,7 @@ const baseline = resolve(
   root,
   process.env.WRAITH_NATIVE_BASELINE ?? '.cache/native-pass/baseline/wasm',
 );
+const candidate = resolve(root, process.env.WRAITH_NATIVE_CANDIDATE ?? 'packages/wraith/wasm');
 const output = resolve(root, process.env.WRAITH_REPORT_DIR ?? '.cache/native-pass/paired');
 const pairs = Number(process.env.WRAITH_PAIRS ?? 20);
 const frames = Number(process.env.WRAITH_FRAMES ?? 128);
@@ -46,9 +47,13 @@ await writeFile(
   '<!doctype html><html><head><link rel="icon" href="data:,"></head><body style="margin:0;background:#101824"></body></html>',
 );
 const paths = [
+  ...(process.env.WRAITH_EXTRA_SOURCES ?? '').split(',').filter(Boolean),
   'scripts/native-paired.mjs',
   'scripts/build-engine.mjs',
   'scripts/ghostty-patches.mjs',
+  'scripts/ghostty-cell-layout.mjs',
+  'native/abi-probe.c',
+  'native/cell-layout-test.c',
   'native/bridge.c',
   'native/patches/batch-sgr.patch',
   'native/patches/batch-sgr.json',
@@ -62,6 +67,8 @@ const paths = [
   'demo/fonts/JetBrainsMono-Regular.ttf',
   'packages/wraith/wasm/wraith_engine.js',
   'packages/wraith/wasm/wraith_engine_bg.wasm',
+  relative(root, join(candidate, 'wraith_engine.js')),
+  relative(root, join(candidate, 'wraith_engine_bg.wasm')),
   relative(root, join(baseline, 'wraith_engine.js')),
   relative(root, join(baseline, 'wraith_engine_bg.wasm')),
 ];
@@ -106,6 +113,23 @@ const browser = await chromium.launch({
   headless: true,
 });
 try {
+  const probe = await browser.newPage();
+  await probe.goto('http://127.0.0.1:5198/.cache/native-pass/index.html');
+  data.gpuProbe = await probe.evaluate(async () => {
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (!adapter) return null;
+    const info = adapter.info;
+    return {
+      vendor: info.vendor,
+      architecture: info.architecture,
+      device: info.device,
+      description: info.description,
+      isFallbackAdapter: info.isFallbackAdapter,
+    };
+  });
+  assert(data.gpuProbe && data.gpuProbe.isFallbackAdapter === false, 'Hardware GPU required');
+  await probe.close();
+  await save();
   for (const workload of workloads)
     for (const stage of stages) {
       const page = await browser.newPage({
@@ -118,10 +142,7 @@ try {
       const systemLoadBefore = loadavg();
       const result = await page.evaluate(
         async (config) => {
-          const modules = await Promise.all([
-            import(config.before),
-            import('/packages/wraith/wasm/wraith_engine.js'),
-          ]);
+          const modules = await Promise.all([import(config.before), import(config.after)]);
           await Promise.all(modules.map((m) => m.default()));
           const { workload } = await import('/.cache/native-pass/workloads.js');
           const font = new Uint8Array(
@@ -224,6 +245,7 @@ try {
         },
         {
           before: '/@fs' + join(baseline, 'wraith_engine.js'),
+          after: '/@fs' + join(candidate, 'wraith_engine.js'),
           workload,
           stage,
           pairs,

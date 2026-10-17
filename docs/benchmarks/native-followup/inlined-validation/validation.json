@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-17",
+  "baselineCommit": "d38e14967b66c79a0661ea5d162a1e590719429d",
+  "baselineWasm": "c517a0e8071a38007a9ca65dd72ee70ca944bc5b131306b166e834a008f1cca3",
+  "candidateWasm": "a8a43a8fc9a064268b97b35e6e614590029d513e56a9d05b20d60698649b9183",
+  "checks": {
+    "build": "engine and SDK passed; optimized with Binaryen 133",
+    "generatedAbi": "100130 raw cells compared with public libghostty getters on each of native and Wasm targets",
+    "native": "44 Rust tests passed",
+    "vitest": "45 tests passed, including 12 ABI schema/offset tests",
+    "typecheck": "passed",
+    "rustfmt": "passed",
+    "demoBuild": "passed; existing large-chunk warning",
+    "wasm": "31 stream boundaries, effects, alternate screens, 100 create/free cycles passed",
+    "pixels": "60 byte-identical frames in native and compatible profiles, DPR 1 and 2",
+    "nativeBrowser": "worker, pixels, input, resize, paste, benchmark smoke and disposal passed",
+    "compatibleBrowser": "20 API, addon, fallback and disposal checks passed",
+    "nativeConsumer": "installed archive Vite dev and production passed",
+    "compatibleConsumer": "unchanged xterm imports, API, addons and GPU pixels passed in Vite dev and production",
+    "upstream": "129/129 focused SGR and batched SGR tests passed in Debug, from the Ghostty checkout",
+    "patches": "apply/reverse idempotence, revision rejection, unknown edit preservation, and all-patch preflight passed in an isolated Git fixture",
+    "differential": "23469 fragments, 810 snapshots, 239760 cells matched start-of-pass artifact"
+  },
+  "measurementLimits": "Shared host load recorded by the paired harness; frequency and thermals uncontrolled. No claim of display FPS. Browser smoke throughput is not comparative evidence.",
+  "implementationCommits": [
+    "445b7b2",
+    "5d6043c"
+  ],
+  "artifactBytes": 2400577
+}

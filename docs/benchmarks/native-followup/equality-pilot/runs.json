@@ -1,0 +1,2382 @@
+{
+  "date": "2026-10-17T17:18:06.385Z",
+  "head": "d38e14967b66c79a0661ea5d162a1e590719429d",
+  "sources": {
+    ".cache/ghostty/src/terminal/style.zig": "ee7e365c266d165654bc2877ceea7c1831aaffc83cec08586fccea5fc89e0490",
+    "scripts/native-paired.mjs": "53f217c341503213e2eb1be411e61edc0b168b784d194f6f854e8335da3c3a01",
+    "scripts/build-engine.mjs": "24f5cff6b5a5a9dece70e5df8da3a5bb0045f0d027b58d00bdc736559e847b7c",
+    "scripts/ghostty-patches.mjs": "a9bfaabf9366ba83c5a84f20ff739f70f21c4d724841fe6e4eb7392df846b99c",
+    "native/bridge.c": "35518d9a95bd96870bbe5a223803861502b78b99bf3e12acfde6a535747446d9",
+    "native/patches/batch-sgr.patch": "dddec0a7588ba739b3636a5a43624d1bc726cae70db4006489a36c6a912dcb24",
+    "native/patches/batch-sgr.json": "779ffeefe5ac1438bac36161f1c7362cfdd9caad009364fc821a81eb2afa3268",
+    "upstream.json": "7c4d6d6d7e4e4a33fca6318672e7d58c335b9aef015b5c59bf4232b6ba21675d",
+    "crates/wraith-engine/src/gpu.rs": "18f4ac210ce0f9f94dd2703c59945eccd88bf9afe6eb6c374586607f7c19a095",
+    "crates/wraith-engine/src/web.rs": "4c8b8c8292027f5b3fa3688343bc6be584147bfc8a8a7624119c4663d89a3590",
+    "crates/wraith-engine/src/core.rs": "c46069fde444547276f1f7a9c48e0ec5c4dcba6fb23427784bcac09a7a63dd1c",
+    "demo/compare.js": "8667d54a0773a618ed3f406edca4c9ecf21222fcfafefd2a9546496a3b9fb7ae",
+    "demo/showcase.js": "319443683eacf195961bbbe5da363e4d2c2bfd3525a5e64b10492b6f3b3a2cad",
+    "demo/pipes-scene.js": "9f13ae983cb2f5064d82456a55a4973a71a0d3acf6d3976b5d2b69606d9a48f1",
+    "demo/fonts/JetBrainsMono-Regular.ttf": "e6fd0d7e91550b3ed2b735d4312474362c4716edc4fc0577a0f61ed782d5aed1",
+    "packages/wraith/wasm/wraith_engine.js": "0150694fc66a4a8c21171908ec740c8ee46a1ecd9cd682ba94e9212373b1a774",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "520431c963756863eda3fb7b5f057dc61ac80736bd22514c0a4a741931d8477e",
+    ".cache/native-next/baseline/wasm/wraith_engine.js": "0150694fc66a4a8c21171908ec740c8ee46a1ecd9cd682ba94e9212373b1a774",
+    ".cache/native-next/baseline/wasm/wraith_engine_bg.wasm": "c517a0e8071a38007a9ca65dd72ee70ca944bc5b131306b166e834a008f1cca3"
+  },
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18
+  },
+  "settings": {
+    "pairs": 20,
+    "frames": 128,
+    "warmup": 128,
+    "cols": 240,
+    "rows": 80,
+    "dpr": 1,
+    "scrollback": 2000,
+    "stages": [
+      "parse",
+      "pipeline"
+    ],
+    "workloads": [
+      "complex",
+      "pipes",
+      "churn"
+    ]
+  },
+  "method": "Two isolated Wasm instances of the pinned before/after artifacts in one browser page. Alternate baseline/candidate blocks. Pipeline counts and fences every GPU submission in groups of 32; parse-only submits none. Same UTF-8 bytes, font and geometry. Not presentation FPS. Input generation and state validation excluded.",
+  "results": [
+    {
+      "workload": "complex",
+      "stage": "parse",
+      "systemLoadBefore": [
+        11.35107421875,
+        13.5087890625,
+        11.779296875
+      ],
+      "systemLoadAfter": [
+        11.40283203125,
+        13.4833984375,
+        11.7802734375
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 85.5,
+          "updatesPerSecond": 1497.076023391813,
+          "parseMs": 85.30000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 86.70000000298023,
+          "updatesPerSecond": 1476.3552479307973,
+          "parseMs": 86.39999999850988,
+          "renderMs": 0.20000000298023224,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 85.89999999850988,
+          "updatesPerSecond": 1490.1047730177,
+          "parseMs": 85.89999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 86.10000000149012,
+          "updatesPerSecond": 1486.643437837221,
+          "parseMs": 86,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 86.10000000149012,
+          "updatesPerSecond": 1486.643437837221,
+          "parseMs": 86.10000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 84.39999999850988,
+          "updatesPerSecond": 1516.5876777518945,
+          "parseMs": 84.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 83.29999999701977,
+          "updatesPerSecond": 1536.614645913319,
+          "parseMs": 83.09999999403954,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 81.30000000447035,
+          "updatesPerSecond": 1574.415744070871,
+          "parseMs": 81.10000000149012,
+          "renderMs": 0.20000000298023224,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 78.19999999552965,
+          "updatesPerSecond": 1636.828644594849,
+          "parseMs": 78.19999999552965,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 79.80000000447035,
+          "updatesPerSecond": 1604.010024972801,
+          "parseMs": 79.70000000298023,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 79,
+          "updatesPerSecond": 1620.253164556962,
+          "parseMs": 79,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 79.5,
+          "updatesPerSecond": 1610.062893081761,
+          "parseMs": 79.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 78.29999999701977,
+          "updatesPerSecond": 1634.7381865245454,
+          "parseMs": 78.20000000298023,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 79.5,
+          "updatesPerSecond": 1610.062893081761,
+          "parseMs": 79.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 80.39999999850988,
+          "updatesPerSecond": 1592.0398010245315,
+          "parseMs": 80.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 78.60000000149012,
+          "updatesPerSecond": 1628.4987277044954,
+          "parseMs": 78.60000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 79.60000000149012,
+          "updatesPerSecond": 1608.0402009749225,
+          "parseMs": 79.60000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 79.39999999850988,
+          "updatesPerSecond": 1612.09068013101,
+          "parseMs": 79.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 78.70000000298023,
+          "updatesPerSecond": 1626.4294789727173,
+          "parseMs": 78.6000000089407,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 80.19999999552965,
+          "updatesPerSecond": 1596.0099751513058,
+          "parseMs": 80.09999999403954,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 78,
+          "updatesPerSecond": 1641.025641025641,
+          "parseMs": 78,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 79.5,
+          "updatesPerSecond": 1610.062893081761,
+          "parseMs": 79.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 79.39999999850988,
+          "updatesPerSecond": 1612.09068013101,
+          "parseMs": 79.29999999701977,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 79.20000000298023,
+          "updatesPerSecond": 1616.1616161008012,
+          "parseMs": 79,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 78.70000000298023,
+          "updatesPerSecond": 1626.4294789727173,
+          "parseMs": 78.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 84.29999999701977,
+          "updatesPerSecond": 1518.3867141699307,
+          "parseMs": 84.29999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 81.39999999850988,
+          "updatesPerSecond": 1572.4815725103585,
+          "parseMs": 81.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 81.10000000149012,
+          "updatesPerSecond": 1578.2983970116911,
+          "parseMs": 81.00000000745058,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 82.89999999850988,
+          "updatesPerSecond": 1544.0289505705764,
+          "parseMs": 82.89999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 84.89999999850988,
+          "updatesPerSecond": 1507.6560659864144,
+          "parseMs": 84.79999999701977,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 83.5,
+          "updatesPerSecond": 1532.934131736527,
+          "parseMs": 83.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 81.60000000149012,
+          "updatesPerSecond": 1568.627450951747,
+          "parseMs": 81.60000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 78.10000000149012,
+          "updatesPerSecond": 1638.9244557945942,
+          "parseMs": 78.00000000745058,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 79.70000000298023,
+          "updatesPerSecond": 1606.022584632543,
+          "parseMs": 79.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 80.79999999701977,
+          "updatesPerSecond": 1584.1584159000145,
+          "parseMs": 80.79999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 78.29999999701977,
+          "updatesPerSecond": 1634.7381865245454,
+          "parseMs": 78.29999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 78.10000000149012,
+          "updatesPerSecond": 1638.9244557945942,
+          "parseMs": 78,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 78.39999999850988,
+          "updatesPerSecond": 1632.653061255521,
+          "parseMs": 78.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 79.20000000298023,
+          "updatesPerSecond": 1616.1616161008012,
+          "parseMs": 79.00000001490116,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 81.29999999701977,
+          "updatesPerSecond": 1574.4157442151552,
+          "parseMs": 81.19999999552965,
+          "renderMs": 0,
+          "submissions": 0
+        }
+      ],
+      "inputHashes": [
+        "185429da79d216a5b8d25db39e5b82a4cbd2928df036fd033e7e226c98a3d2da",
+        "946e6a70bd6fb837096dd0316415668eef363d9b32307a6ba5cf65c664740b32",
+        "ece42766f62947541496355793dfccf3f6c76732902c5a982ac80bfbeaa8ed56",
+        "b5bc9e3ef340498fc3dca1265f61d1afd8b3f974cbe913adab8968d4d4aa89ad",
+        "2ee2034781ee424c41bac0c167da650c89bd4d0c05afad282f3fe8e940fb8cd0",
+        "a9be06009012591692e953913da4f4dc4114d8d63f196207f53a11df320fdda9",
+        "2f02917b4325e978c9c618bc4d95be5389bccd8ff31578785935b21eadddcf66",
+        "4a0ec275b07e1b50dac72b1345cccbe8509adea455ebb4195abac10f4f4aa6a0"
+      ],
+      "textSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "complex",
+      "stage": "pipeline",
+      "systemLoadBefore": [
+        11.40283203125,
+        13.4833984375,
+        11.7802734375
+      ],
+      "systemLoadAfter": [
+        10.7294921875,
+        13.30908203125,
+        11.728515625
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 175.89999999850988,
+          "updatesPerSecond": 727.6861853387398,
+          "parseMs": 93.50000000745058,
+          "renderMs": 76.79999999701977,
+          "submissions": 128
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 177.20000000298023,
+          "updatesPerSecond": 722.347629784691,
+          "parseMs": 94.7999999821186,
+          "renderMs": 76.80000002682209,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 166.89999999850988,
+          "updatesPerSecond": 766.9263031824015,
+          "parseMs": 89.90000002086163,
+          "renderMs": 72.69999997317791,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 160.39999999850988,
+          "updatesPerSecond": 798.0049875385855,
+          "parseMs": 86.50000002235174,
+          "renderMs": 70.79999996721745,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 151.5,
+          "updatesPerSecond": 844.8844884488449,
+          "parseMs": 82.1000000461936,
+          "renderMs": 66.4999999627471,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 146.10000000149012,
+          "updatesPerSecond": 876.1122518733367,
+          "parseMs": 80.09999999403954,
+          "renderMs": 62.30000001192093,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 149.39999999850988,
+          "updatesPerSecond": 856.7603748412093,
+          "parseMs": 81.80000001937151,
+          "renderMs": 62.89999997615814,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 149.79999999701977,
+          "updatesPerSecond": 854.4726301905642,
+          "parseMs": 79.79999998956919,
+          "renderMs": 64.70000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 148.20000000298023,
+          "updatesPerSecond": 863.6977057856004,
+          "parseMs": 79.09999996423721,
+          "renderMs": 64.80000002682209,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 159.29999999701977,
+          "updatesPerSecond": 803.5153798015987,
+          "parseMs": 85.79999996721745,
+          "renderMs": 67.30000003427267,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 161.29999999701977,
+          "updatesPerSecond": 793.5523868714505,
+          "parseMs": 86.10000000149012,
+          "renderMs": 67.70000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 158.89999999850988,
+          "updatesPerSecond": 805.5380742680953,
+          "parseMs": 85.19999996572733,
+          "renderMs": 67.50000002980232,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 150.10000000149012,
+          "updatesPerSecond": 852.7648234425668,
+          "parseMs": 80.19999999552965,
+          "renderMs": 64.80000001192093,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 151.89999999850988,
+          "updatesPerSecond": 842.6596445112289,
+          "parseMs": 82.49999999254942,
+          "renderMs": 65.00000001490116,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 150.80000000447035,
+          "updatesPerSecond": 848.8063660225831,
+          "parseMs": 82.70000000298023,
+          "renderMs": 64.09999999403954,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 148.39999999850988,
+          "updatesPerSecond": 862.5336927310328,
+          "parseMs": 81.30000000447035,
+          "renderMs": 62.099999994039536,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 151.10000000149012,
+          "updatesPerSecond": 847.1211118381052,
+          "parseMs": 81.29999997466803,
+          "renderMs": 65.40000002086163,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 151.60000000149012,
+          "updatesPerSecond": 844.3271767727035,
+          "parseMs": 82.29999997466803,
+          "renderMs": 65.50000002980232,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 158.59999999403954,
+          "updatesPerSecond": 807.0617906986788,
+          "parseMs": 86.10000002384186,
+          "renderMs": 68.0999999716878,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 154.90000000596046,
+          "updatesPerSecond": 826.3395738868601,
+          "parseMs": 83.60000001639128,
+          "renderMs": 65.99999998509884,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 153.59999999403954,
+          "updatesPerSecond": 833.3333333656709,
+          "parseMs": 82.69999998062849,
+          "renderMs": 66.80000001192093,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 157,
+          "updatesPerSecond": 815.2866242038217,
+          "parseMs": 85.40000000596046,
+          "renderMs": 66.40000000596046,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 147.5,
+          "updatesPerSecond": 867.7966101694915,
+          "parseMs": 78.90000001341105,
+          "renderMs": 63.599999986588955,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 145.80000000447035,
+          "updatesPerSecond": 877.9149519621085,
+          "parseMs": 80.60000001639128,
+          "renderMs": 60.99999998509884,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 146.60000000149012,
+          "updatesPerSecond": 873.1241473308249,
+          "parseMs": 78.50000000745058,
+          "renderMs": 62.599999994039536,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 145.79999999701977,
+          "updatesPerSecond": 877.9149520069711,
+          "parseMs": 79.40000001341105,
+          "renderMs": 62.29999998956919,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 148.29999999701977,
+          "updatesPerSecond": 863.1153068278644,
+          "parseMs": 79.99999995529652,
+          "renderMs": 62.700000032782555,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 149.60000000149012,
+          "updatesPerSecond": 855.6149732535096,
+          "parseMs": 80.1000000089407,
+          "renderMs": 64.20000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 148.70000000298023,
+          "updatesPerSecond": 860.7935440311677,
+          "parseMs": 80.2000000178814,
+          "renderMs": 64.39999998360872,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 149.59999999403954,
+          "updatesPerSecond": 855.6149732961221,
+          "parseMs": 80.19999997317791,
+          "renderMs": 65.10000002384186,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 149.70000000298023,
+          "updatesPerSecond": 855.0434201566585,
+          "parseMs": 79.09999999403954,
+          "renderMs": 64.70000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 149.5,
+          "updatesPerSecond": 856.1872909698997,
+          "parseMs": 81.00000001490116,
+          "renderMs": 63.49999998509884,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 145.20000000298023,
+          "updatesPerSecond": 881.5426997064242,
+          "parseMs": 80.30000004917383,
+          "renderMs": 60.8999999538064,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 146.89999999850988,
+          "updatesPerSecond": 871.3410483410374,
+          "parseMs": 80.29999998956919,
+          "renderMs": 62.19999999552965,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 147.5,
+          "updatesPerSecond": 867.7966101694915,
+          "parseMs": 80.90000002086163,
+          "renderMs": 62.69999998062849,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 145.69999999552965,
+          "updatesPerSecond": 878.517501742809,
+          "parseMs": 78.49999999254942,
+          "renderMs": 62.70000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 144.90000000596046,
+          "updatesPerSecond": 883.3678398532417,
+          "parseMs": 79.69999994337559,
+          "renderMs": 61.30000005662441,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 146.89999999850988,
+          "updatesPerSecond": 871.3410483410374,
+          "parseMs": 80.49999999254942,
+          "renderMs": 61.49999999254942,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 144.60000000149012,
+          "updatesPerSecond": 885.2005532412237,
+          "parseMs": 78.80000001192093,
+          "renderMs": 61.99999999254942,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 146.79999999701977,
+          "updatesPerSecond": 871.9346049223336,
+          "parseMs": 78.99999997764826,
+          "renderMs": 62.70000001043081,
+          "submissions": 128
+        }
+      ],
+      "inputHashes": [
+        "185429da79d216a5b8d25db39e5b82a4cbd2928df036fd033e7e226c98a3d2da",
+        "946e6a70bd6fb837096dd0316415668eef363d9b32307a6ba5cf65c664740b32",
+        "ece42766f62947541496355793dfccf3f6c76732902c5a982ac80bfbeaa8ed56",
+        "b5bc9e3ef340498fc3dca1265f61d1afd8b3f974cbe913adab8968d4d4aa89ad",
+        "2ee2034781ee424c41bac0c167da650c89bd4d0c05afad282f3fe8e940fb8cd0",
+        "a9be06009012591692e953913da4f4dc4114d8d63f196207f53a11df320fdda9",
+        "2f02917b4325e978c9c618bc4d95be5389bccd8ff31578785935b21eadddcf66",
+        "4a0ec275b07e1b50dac72b1345cccbe8509adea455ebb4195abac10f4f4aa6a0"
+      ],
+      "textSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e",
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "pipes",
+      "stage": "parse",
+      "systemLoadBefore": [
+        10.7294921875,
+        13.30908203125,
+        11.728515625
+      ],
+      "systemLoadAfter": [
+        10.76025390625,
+        13.1572265625,
+        11.71044921875
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 383.6000000014901,
+          "updatesPerSecond": 333.68091762122725,
+          "parseMs": 383.40000000596046,
+          "renderMs": 0.19999999552965164,
+          "submissions": 0
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 464.6000000014901,
+          "updatesPerSecond": 275.50581144982664,
+          "parseMs": 464.5,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 608.7999999970198,
+          "updatesPerSecond": 210.24967148591753,
+          "parseMs": 608.7999999970198,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 626.7999999970198,
+          "updatesPerSecond": 204.21186981590395,
+          "parseMs": 626.5999999940395,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 624.7000000029802,
+          "updatesPerSecond": 204.89835120760262,
+          "parseMs": 624.6000000014901,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 625.3999999985099,
+          "updatesPerSecond": 204.6690118329149,
+          "parseMs": 625.2999999970198,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 625.8000000044703,
+          "updatesPerSecond": 204.5381911139112,
+          "parseMs": 625.8000000044703,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 629,
+          "updatesPerSecond": 203.49761526232115,
+          "parseMs": 628.7999999970198,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 620.7999999970198,
+          "updatesPerSecond": 206.1855670112991,
+          "parseMs": 620.5999999940395,
+          "renderMs": 0.20000000298023224,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 456.79999999701977,
+          "updatesPerSecond": 280.2101576200418,
+          "parseMs": 456.79999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 384.80000000447035,
+          "updatesPerSecond": 332.64033263646826,
+          "parseMs": 384.80000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 384.5,
+          "updatesPerSecond": 332.89986996098827,
+          "parseMs": 384.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 385.19999999552965,
+          "updatesPerSecond": 332.29491173802046,
+          "parseMs": 385.19999999552965,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 381.1000000014901,
+          "updatesPerSecond": 335.86985043164395,
+          "parseMs": 381,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 382.6000000014901,
+          "updatesPerSecond": 334.553058022743,
+          "parseMs": 382.6000000014901,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 383.20000000298023,
+          "updatesPerSecond": 334.0292275548135,
+          "parseMs": 383.1000000089407,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 381.3999999985099,
+          "updatesPerSecond": 335.60566334688014,
+          "parseMs": 381.3999999985099,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 380.1000000014901,
+          "updatesPerSecond": 336.7534859234365,
+          "parseMs": 380.1000000014901,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 380.29999999701977,
+          "updatesPerSecond": 336.5763870654827,
+          "parseMs": 380.19999999552965,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 385.8999999985099,
+          "updatesPerSecond": 331.69214822620955,
+          "parseMs": 385.8999999985099,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 380.5,
+          "updatesPerSecond": 336.3994743758213,
+          "parseMs": 380.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 380.5,
+          "updatesPerSecond": 336.3994743758213,
+          "parseMs": 380.3999999985099,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 381.70000000298023,
+          "updatesPerSecond": 335.3418915352387,
+          "parseMs": 381.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 385.5,
+          "updatesPerSecond": 332.03631647211415,
+          "parseMs": 385.3999999985099,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 381.3999999985099,
+          "updatesPerSecond": 335.60566334688014,
+          "parseMs": 381.29999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 379.19999999552965,
+          "updatesPerSecond": 337.55274262001313,
+          "parseMs": 379.09999999403954,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 379.80000000447035,
+          "updatesPerSecond": 337.0194839349484,
+          "parseMs": 379.7000000104308,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 391,
+          "updatesPerSecond": 327.36572890025576,
+          "parseMs": 391,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 383,
+          "updatesPerSecond": 334.20365535248044,
+          "parseMs": 383,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 380.69999999552965,
+          "updatesPerSecond": 336.2227475742134,
+          "parseMs": 380.59999999403954,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 379.80000000447035,
+          "updatesPerSecond": 337.0194839349484,
+          "parseMs": 379.70000000298023,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 384.29999999701977,
+          "updatesPerSecond": 333.0731199609488,
+          "parseMs": 384.19999999552965,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 387.1000000014901,
+          "updatesPerSecond": 330.663911132801,
+          "parseMs": 387.1000000014901,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 393.29999999701977,
+          "updatesPerSecond": 325.4513094354689,
+          "parseMs": 393.19999999552965,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 382.80000000447035,
+          "updatesPerSecond": 334.3782654088433,
+          "parseMs": 382.80000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 380.29999999701977,
+          "updatesPerSecond": 336.5763870654827,
+          "parseMs": 380.29999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 379.3999999985099,
+          "updatesPerSecond": 337.37480232077684,
+          "parseMs": 379.09999999403954,
+          "renderMs": 0.20000000298023224,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 381.6000000014901,
+          "updatesPerSecond": 335.4297693907237,
+          "parseMs": 381.5,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 381,
+          "updatesPerSecond": 335.95800524934384,
+          "parseMs": 380.8999999985099,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 382.20000000298023,
+          "updatesPerSecond": 334.90319204343774,
+          "parseMs": 382.20000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        }
+      ],
+      "inputHashes": [
+        "fb1c27a8b9ecb992478561c9ba26b3d2d5cf59a915dbc37fa216d65442b0c5ef",
+        "1b0829369d6f0046c49f9148aa993f3e0f52ccc5668ea705484568bbb0cbcc21",
+        "73144196b92dd552bf86b7e46e0a3dfdf21b4cc4464ab019d963054737d149de",
+        "f9b1173804287dea1a0f365f78d3dc957bfaea00291f78eea37467438314b3d7",
+        "9edbb3e5e23d54d8e51e439bf23f9ee77b68c3b08314c8c217185353ca050d9f",
+        "a0557be33d6a45af8521b7c098a2085ae4b6b3be7f7965a7cd8b3db17c3d0f2e",
+        "82f0b615086ee1d2798c2e25c3ddc98abdc8e049792854fcb32d7bb0f738c9c2",
+        "38b6d9959f845769e058f2aeab92cb47c8daca76707c48bb4da8e8d63e5cea4a"
+      ],
+      "textSha256": "54a87eb6d321478c2f477713f753390b3f1b819a5dbbeee0152cf4a948e90ac9",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "pipes",
+      "stage": "pipeline",
+      "systemLoadBefore": [
+        10.76025390625,
+        13.1572265625,
+        11.71044921875
+      ],
+      "systemLoadAfter": [
+        8.62548828125,
+        12.51416015625,
+        11.51318359375
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 467.29999999701977,
+          "updatesPerSecond": 273.91397389432126,
+          "parseMs": 389.8000000268221,
+          "renderMs": 67.59999997913837,
+          "submissions": 128
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 469.70000000298023,
+          "updatesPerSecond": 272.51437087329754,
+          "parseMs": 394,
+          "renderMs": 69.00000000745058,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 469.6000000014901,
+          "updatesPerSecond": 272.5724020434281,
+          "parseMs": 393.6999999806285,
+          "renderMs": 69.70000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 462.09999999403954,
+          "updatesPerSecond": 276.9963211461827,
+          "parseMs": 386.99999997764826,
+          "renderMs": 67.80000002682209,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 466.5,
+          "updatesPerSecond": 274.38370846730976,
+          "parseMs": 389.70000003278255,
+          "renderMs": 69.29999996721745,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 458.1000000014901,
+          "updatesPerSecond": 279.41497489540194,
+          "parseMs": 383.0000000372529,
+          "renderMs": 66.89999997615814,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 459.29999999701977,
+          "updatesPerSecond": 278.6849553686709,
+          "parseMs": 384.50000002235174,
+          "renderMs": 65.99999997764826,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 453.5,
+          "updatesPerSecond": 282.2491730981257,
+          "parseMs": 383.0000000074506,
+          "renderMs": 63.79999999701977,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 452.40000000596046,
+          "updatesPerSecond": 282.9354553455207,
+          "parseMs": 381.7999999895692,
+          "renderMs": 64.70000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 459.8999999985099,
+          "updatesPerSecond": 278.321374212687,
+          "parseMs": 388.3000000193715,
+          "renderMs": 65.2999999821186,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 454.19999999552965,
+          "updatesPerSecond": 281.81417877864334,
+          "parseMs": 382.89999997615814,
+          "renderMs": 63.70000001788139,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 450.90000000596046,
+          "updatesPerSecond": 283.87669105856725,
+          "parseMs": 380.60000003129244,
+          "renderMs": 63.69999997317791,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 454.69999999552965,
+          "updatesPerSecond": 281.5042885446633,
+          "parseMs": 383.09999995678663,
+          "renderMs": 65.70000004023314,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 455.3999999985099,
+          "updatesPerSecond": 281.0715854203312,
+          "parseMs": 382.8000000268221,
+          "renderMs": 65.69999998807907,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 453,
+          "updatesPerSecond": 282.560706401766,
+          "parseMs": 383.200000025332,
+          "renderMs": 63.599999986588955,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 450.30000000447035,
+          "updatesPerSecond": 284.2549411475223,
+          "parseMs": 379.59999998658895,
+          "renderMs": 64.70000002533197,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 450.3999999985099,
+          "updatesPerSecond": 284.19182948584256,
+          "parseMs": 381.00000002235174,
+          "renderMs": 62.099999979138374,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 449.6000000014901,
+          "updatesPerSecond": 284.69750889585356,
+          "parseMs": 382.199999935925,
+          "renderMs": 60.40000007301569,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 447.6000000014901,
+          "updatesPerSecond": 285.96961572737683,
+          "parseMs": 380.6000000014901,
+          "renderMs": 61.099999994039536,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 449.6000000014901,
+          "updatesPerSecond": 284.69750889585356,
+          "parseMs": 380.3999999985099,
+          "renderMs": 64.10000000149012,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 446.3999999985099,
+          "updatesPerSecond": 286.73835125543746,
+          "parseMs": 379.4000000208616,
+          "renderMs": 61.39999998360872,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 447.20000000298023,
+          "updatesPerSecond": 286.2254025025648,
+          "parseMs": 380.5999999791384,
+          "renderMs": 61.00000002980232,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 450.20000000298023,
+          "updatesPerSecond": 284.3180808510721,
+          "parseMs": 381.1999999731779,
+          "renderMs": 63.00000002980232,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 456.5,
+          "updatesPerSecond": 280.39430449069005,
+          "parseMs": 384.69999999552965,
+          "renderMs": 64.60000000149012,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 463.69999999552965,
+          "updatesPerSecond": 276.04054345748114,
+          "parseMs": 385.39999997615814,
+          "renderMs": 69.50000002235174,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 488.30000000447035,
+          "updatesPerSecond": 262.1339340545324,
+          "parseMs": 409.1000000014901,
+          "renderMs": 73.99999999254942,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 490.59999999403954,
+          "updatesPerSecond": 260.90501427141277,
+          "parseMs": 406.0999999716878,
+          "renderMs": 72.50000002980232,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 491.30000000447035,
+          "updatesPerSecond": 260.5332790531963,
+          "parseMs": 410.2000000104308,
+          "renderMs": 73.19999999552965,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 489,
+          "updatesPerSecond": 261.758691206544,
+          "parseMs": 409.29999999701977,
+          "renderMs": 72.69999998807907,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 482.59999999403954,
+          "updatesPerSecond": 265.2300041474946,
+          "parseMs": 403.30000000447035,
+          "renderMs": 69.39999999850988,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 456.8999999985099,
+          "updatesPerSecond": 280.14882906635466,
+          "parseMs": 384.30000001192093,
+          "renderMs": 65.69999998062849,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 455,
+          "updatesPerSecond": 281.31868131868134,
+          "parseMs": 383.8999999910593,
+          "renderMs": 64.70000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 459.1000000014901,
+          "updatesPerSecond": 278.80636026918876,
+          "parseMs": 383.40000001341105,
+          "renderMs": 67.59999998658895,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 460.20000000298023,
+          "updatesPerSecond": 278.13993915508706,
+          "parseMs": 383.7000000476837,
+          "renderMs": 68.2999999448657,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 453.40000000596046,
+          "updatesPerSecond": 282.31142478676065,
+          "parseMs": 382.200000025332,
+          "renderMs": 64.09999997913837,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 451.8999999985099,
+          "updatesPerSecond": 283.24850630763905,
+          "parseMs": 382.3000000193715,
+          "renderMs": 64.19999997317791,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 456.6000000014901,
+          "updatesPerSecond": 280.33289531226956,
+          "parseMs": 384.09999995678663,
+          "renderMs": 64.80000003427267,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 455.80000000447035,
+          "updatesPerSecond": 280.82492320918084,
+          "parseMs": 382.20000000298023,
+          "renderMs": 65.50000000745058,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 452.69999999552965,
+          "updatesPerSecond": 282.7479567070112,
+          "parseMs": 381.8999999985099,
+          "renderMs": 64.00000000745058,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 455.30000000447035,
+          "updatesPerSecond": 281.1333186882127,
+          "parseMs": 381.69999999552965,
+          "renderMs": 64.90000001341105,
+          "submissions": 128
+        }
+      ],
+      "inputHashes": [
+        "fb1c27a8b9ecb992478561c9ba26b3d2d5cf59a915dbc37fa216d65442b0c5ef",
+        "1b0829369d6f0046c49f9148aa993f3e0f52ccc5668ea705484568bbb0cbcc21",
+        "73144196b92dd552bf86b7e46e0a3dfdf21b4cc4464ab019d963054737d149de",
+        "f9b1173804287dea1a0f365f78d3dc957bfaea00291f78eea37467438314b3d7",
+        "9edbb3e5e23d54d8e51e439bf23f9ee77b68c3b08314c8c217185353ca050d9f",
+        "a0557be33d6a45af8521b7c098a2085ae4b6b3be7f7965a7cd8b3db17c3d0f2e",
+        "82f0b615086ee1d2798c2e25c3ddc98abdc8e049792854fcb32d7bb0f738c9c2",
+        "38b6d9959f845769e058f2aeab92cb47c8daca76707c48bb4da8e8d63e5cea4a"
+      ],
+      "textSha256": "54a87eb6d321478c2f477713f753390b3f1b819a5dbbeee0152cf4a948e90ac9",
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "churn",
+      "stage": "parse",
+      "systemLoadBefore": [
+        8.62548828125,
+        12.51416015625,
+        11.51318359375
+      ],
+      "systemLoadAfter": [
+        8.3349609375,
+        12.38916015625,
+        11.474609375
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 170.5,
+          "updatesPerSecond": 750.733137829912,
+          "parseMs": 170.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 168.39999999850988,
+          "updatesPerSecond": 760.0950118832104,
+          "parseMs": 168.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 169.5,
+          "updatesPerSecond": 755.1622418879056,
+          "parseMs": 169.30000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 170.10000000149012,
+          "updatesPerSecond": 752.498530269716,
+          "parseMs": 170.00000000745058,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 170.60000000149012,
+          "updatesPerSecond": 750.2930832290855,
+          "parseMs": 170.60000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 168.39999999850988,
+          "updatesPerSecond": 760.0950118832104,
+          "parseMs": 168.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 168.70000000298023,
+          "updatesPerSecond": 758.7433313440354,
+          "parseMs": 168.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 168.10000000149012,
+          "updatesPerSecond": 761.451516947444,
+          "parseMs": 168.10000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 169.39999999850988,
+          "updatesPerSecond": 755.6080283419477,
+          "parseMs": 169.19999999552965,
+          "renderMs": 0.20000000298023224,
+          "submissions": 0
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 168.69999999552965,
+          "updatesPerSecond": 758.743331377545,
+          "parseMs": 168.49999999254942,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 168,
+          "updatesPerSecond": 761.9047619047619,
+          "parseMs": 167.89999999850988,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 170,
+          "updatesPerSecond": 752.9411764705883,
+          "parseMs": 169.89999999850988,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 170.30000000447035,
+          "updatesPerSecond": 751.6147973965943,
+          "parseMs": 170.30000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 168.79999999701977,
+          "updatesPerSecond": 758.2938388759472,
+          "parseMs": 168.69999999552965,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 166.79999999701977,
+          "updatesPerSecond": 767.3860911408093,
+          "parseMs": 166.70000000298023,
+          "renderMs": 0.09999999403953552,
+          "submissions": 0
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 168.90000000596046,
+          "updatesPerSecond": 757.8448785996619,
+          "parseMs": 168.90000000596046,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 168.29999999701977,
+          "updatesPerSecond": 760.5466429130518,
+          "parseMs": 168.19999999552965,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 166.60000000149012,
+          "updatesPerSecond": 768.3073229222997,
+          "parseMs": 166.5,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 166.10000000149012,
+          "updatesPerSecond": 770.6201083615393,
+          "parseMs": 166,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 167,
+          "updatesPerSecond": 766.4670658682635,
+          "parseMs": 167,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 166.09999999403954,
+          "updatesPerSecond": 770.6201083961063,
+          "parseMs": 166.09999999403954,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 166.80000000447035,
+          "updatesPerSecond": 767.3860911065319,
+          "parseMs": 166.80000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 166.29999999701977,
+          "updatesPerSecond": 769.6933253294881,
+          "parseMs": 166.19999999552965,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 167.20000000298023,
+          "updatesPerSecond": 765.5502392208043,
+          "parseMs": 167.20000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 167.89999999850988,
+          "updatesPerSecond": 762.3585467607862,
+          "parseMs": 167.89999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 166.79999999701977,
+          "updatesPerSecond": 767.3860911408093,
+          "parseMs": 166.79999999701977,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 166.70000000298023,
+          "updatesPerSecond": 767.8464307001298,
+          "parseMs": 166.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 170.69999999552965,
+          "updatesPerSecond": 749.85354424928,
+          "parseMs": 170.59999999403954,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 169.70000000298023,
+          "updatesPerSecond": 754.2722451252333,
+          "parseMs": 169.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 166.5,
+          "updatesPerSecond": 768.7687687687687,
+          "parseMs": 166.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 166.10000000149012,
+          "updatesPerSecond": 770.6201083615393,
+          "parseMs": 166.10000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 167.39999999850988,
+          "updatesPerSecond": 764.6356033520872,
+          "parseMs": 167.30000000447035,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 166.10000000149012,
+          "updatesPerSecond": 770.6201083615393,
+          "parseMs": 166,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 166.39999999850988,
+          "updatesPerSecond": 769.2307692376577,
+          "parseMs": 166.39999999850988,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 165.69999999552965,
+          "updatesPerSecond": 772.4803862610336,
+          "parseMs": 165.69999999552965,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 170.10000000149012,
+          "updatesPerSecond": 752.498530269716,
+          "parseMs": 170.10000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 172.5,
+          "updatesPerSecond": 742.0289855072464,
+          "parseMs": 172.39999999850988,
+          "renderMs": 0.10000000149011612,
+          "submissions": 0
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 168.70000000298023,
+          "updatesPerSecond": 758.7433313440354,
+          "parseMs": 168.70000000298023,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 170.60000000149012,
+          "updatesPerSecond": 750.2930832290855,
+          "parseMs": 170.60000000149012,
+          "renderMs": 0,
+          "submissions": 0
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 169.5,
+          "updatesPerSecond": 755.1622418879056,
+          "parseMs": 169.5,
+          "renderMs": 0,
+          "submissions": 0
+        }
+      ],
+      "inputHashes": [
+        "8a42c73e63892ba2c4a7d9e20c30a20360895a2815bb8aec76f27466544523c8",
+        "2154014ffd00fe23e98d1e9ff8ad7a066e88487e3fe97adde6148f3b2fd4c967",
+        "367fb9603d2c01aab821bd3fb307c2aec32fb7515f054c4b2400a8c45b2d671a",
+        "7d982f0d32457766953fd989f24baf3762fc946d91568beaa320a4b9198d0b24",
+        "edcf6d03dca384f37b2aa98d5f669a9c7e128693298ac4f1cc3c505cafa12143",
+        "4561b0ef449112c292a6922384c0c831556ab282b72bbf089ca14b5bd6d1de42",
+        "69fd65e73bacc1f0f3b2ba619154ad6cb78e28afc7f77fef795469032c16edae",
+        "2a6c34acee53da99fec10e2e8990d9191fa20f9381b70258b1fb3f31d00ccd4a"
+      ],
+      "textSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "churn",
+      "stage": "pipeline",
+      "systemLoadBefore": [
+        8.3349609375,
+        12.38916015625,
+        11.474609375
+      ],
+      "systemLoadAfter": [
+        7.54150390625,
+        12.02392578125,
+        11.36083984375
+      ],
+      "samples": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 241,
+          "updatesPerSecond": 531.1203319502075,
+          "parseMs": 171.60000005364418,
+          "renderMs": 61.19999994337559,
+          "submissions": 128
+        },
+        {
+          "pair": 0,
+          "kind": "candidate",
+          "elapsedMs": 235.79999999701977,
+          "updatesPerSecond": 542.8329092519838,
+          "parseMs": 169.59999997913837,
+          "renderMs": 62.900000020861626,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "candidate",
+          "elapsedMs": 240.60000000149012,
+          "updatesPerSecond": 532.0033250174865,
+          "parseMs": 172.40000005066395,
+          "renderMs": 63.999999955296516,
+          "submissions": 128
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 240.39999999850988,
+          "updatesPerSecond": 532.4459234641988,
+          "parseMs": 170.99999998509884,
+          "renderMs": 64.20000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 238,
+          "updatesPerSecond": 537.8151260504202,
+          "parseMs": 171.79999999701977,
+          "renderMs": 62.1000000089407,
+          "submissions": 128
+        },
+        {
+          "pair": 2,
+          "kind": "candidate",
+          "elapsedMs": 233.69999999552965,
+          "updatesPerSecond": 547.7107402757744,
+          "parseMs": 168.10000005364418,
+          "renderMs": 61.59999994933605,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "candidate",
+          "elapsedMs": 235,
+          "updatesPerSecond": 544.6808510638298,
+          "parseMs": 169.50000004470348,
+          "renderMs": 60.9999999627471,
+          "submissions": 128
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 236.80000000447035,
+          "updatesPerSecond": 540.5405405303361,
+          "parseMs": 169.49999997764826,
+          "renderMs": 61.700000025331974,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 236.79999999701977,
+          "updatesPerSecond": 540.5405405473434,
+          "parseMs": 168.70000002533197,
+          "renderMs": 61.69999997317791,
+          "submissions": 128
+        },
+        {
+          "pair": 4,
+          "kind": "candidate",
+          "elapsedMs": 233.70000000298023,
+          "updatesPerSecond": 547.7107402583127,
+          "parseMs": 169.19999995827675,
+          "renderMs": 61.200000040233135,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "candidate",
+          "elapsedMs": 236.5,
+          "updatesPerSecond": 541.2262156448203,
+          "parseMs": 169.29999999701977,
+          "renderMs": 63.20000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 238.40000000596046,
+          "updatesPerSecond": 536.9127516644285,
+          "parseMs": 171.6000000089407,
+          "renderMs": 62.79999998211861,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 236.59999999403954,
+          "updatesPerSecond": 540.997464088016,
+          "parseMs": 170.40000000596046,
+          "renderMs": 61.69999998807907,
+          "submissions": 128
+        },
+        {
+          "pair": 6,
+          "kind": "candidate",
+          "elapsedMs": 235.10000000149012,
+          "updatesPerSecond": 544.4491705622659,
+          "parseMs": 170.20000003278255,
+          "renderMs": 60.39999996870756,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "candidate",
+          "elapsedMs": 236.29999999701977,
+          "updatesPerSecond": 541.68429962596,
+          "parseMs": 169.2999999448657,
+          "renderMs": 60.700000055134296,
+          "submissions": 128
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 234.89999999850988,
+          "updatesPerSecond": 544.9127288242315,
+          "parseMs": 169.60000001639128,
+          "renderMs": 63.099999986588955,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 236.70000000298023,
+          "updatesPerSecond": 540.7689057811085,
+          "parseMs": 169.5999999642372,
+          "renderMs": 61.80000003427267,
+          "submissions": 128
+        },
+        {
+          "pair": 8,
+          "kind": "candidate",
+          "elapsedMs": 238,
+          "updatesPerSecond": 537.8151260504202,
+          "parseMs": 170.60000001639128,
+          "renderMs": 62.19999998062849,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "candidate",
+          "elapsedMs": 237.29999999701977,
+          "updatesPerSecond": 539.4016013552783,
+          "parseMs": 170.40000002086163,
+          "renderMs": 62.29999998211861,
+          "submissions": 128
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 238.79999999701977,
+          "updatesPerSecond": 536.0134003416979,
+          "parseMs": 170.5,
+          "renderMs": 62.79999998956919,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 238.10000000149012,
+          "updatesPerSecond": 537.5892482116712,
+          "parseMs": 170.00000000745058,
+          "renderMs": 62.399999998509884,
+          "submissions": 128
+        },
+        {
+          "pair": 10,
+          "kind": "candidate",
+          "elapsedMs": 236.80000000447035,
+          "updatesPerSecond": 540.5405405303361,
+          "parseMs": 170.00000001490116,
+          "renderMs": 62.69999998062849,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "candidate",
+          "elapsedMs": 233.39999999850988,
+          "updatesPerSecond": 548.4147386496024,
+          "parseMs": 167.39999994635582,
+          "renderMs": 61.500000059604645,
+          "submissions": 128
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 236.09999999403954,
+          "updatesPerSecond": 542.1431596917892,
+          "parseMs": 169.9000000357628,
+          "renderMs": 63.39999996870756,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 234,
+          "updatesPerSecond": 547.008547008547,
+          "parseMs": 169.00000002235174,
+          "renderMs": 61.599999971687794,
+          "submissions": 128
+        },
+        {
+          "pair": 12,
+          "kind": "candidate",
+          "elapsedMs": 235.60000000149012,
+          "updatesPerSecond": 543.2937181629475,
+          "parseMs": 169.59999998658895,
+          "renderMs": 60.900000020861626,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "candidate",
+          "elapsedMs": 234.10000000149012,
+          "updatesPerSecond": 546.7748825253534,
+          "parseMs": 168.10000001639128,
+          "renderMs": 60.99999999254942,
+          "submissions": 128
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 233.89999999850988,
+          "updatesPerSecond": 547.242411290361,
+          "parseMs": 169.3999999910593,
+          "renderMs": 60.80000001192093,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 235.39999999850988,
+          "updatesPerSecond": 543.7553101138924,
+          "parseMs": 168.6999999731779,
+          "renderMs": 62.30000002682209,
+          "submissions": 128
+        },
+        {
+          "pair": 14,
+          "kind": "candidate",
+          "elapsedMs": 235.70000000298023,
+          "updatesPerSecond": 543.0632159456154,
+          "parseMs": 167.7999999895692,
+          "renderMs": 62.20000001043081,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "candidate",
+          "elapsedMs": 235.80000000447035,
+          "updatesPerSecond": 542.8329092348318,
+          "parseMs": 167.80000003427267,
+          "renderMs": 63.099999971687794,
+          "submissions": 128
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 235.39999999850988,
+          "updatesPerSecond": 543.7553101138924,
+          "parseMs": 170.3999999910593,
+          "renderMs": 61.00000000745058,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 236.39999999850988,
+          "updatesPerSecond": 541.4551607479139,
+          "parseMs": 169.3999999910593,
+          "renderMs": 61.70000000298023,
+          "submissions": 128
+        },
+        {
+          "pair": 16,
+          "kind": "candidate",
+          "elapsedMs": 240,
+          "updatesPerSecond": 533.3333333333334,
+          "parseMs": 170.60000000149012,
+          "renderMs": 64.69999998807907,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "candidate",
+          "elapsedMs": 238.30000000447035,
+          "updatesPerSecond": 537.1380612572337,
+          "parseMs": 169.59999998658895,
+          "renderMs": 63.400000013411045,
+          "submissions": 128
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 241.60000000149012,
+          "updatesPerSecond": 529.8013245000436,
+          "parseMs": 170.60000003129244,
+          "renderMs": 65.89999996870756,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 247.10000000149012,
+          "updatesPerSecond": 518.0089032749013,
+          "parseMs": 173.3999999910593,
+          "renderMs": 66.80000000447035,
+          "submissions": 128
+        },
+        {
+          "pair": 18,
+          "kind": "candidate",
+          "elapsedMs": 243,
+          "updatesPerSecond": 526.7489711934156,
+          "parseMs": 171.79999996721745,
+          "renderMs": 65.70000003278255,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "candidate",
+          "elapsedMs": 242.39999999850988,
+          "updatesPerSecond": 528.0528052837742,
+          "parseMs": 172.69999998807907,
+          "renderMs": 64.5,
+          "submissions": 128
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 242.10000000149012,
+          "updatesPerSecond": 528.7071458042634,
+          "parseMs": 171.40000001341105,
+          "renderMs": 64.39999999850988,
+          "submissions": 128
+        }
+      ],
+      "inputHashes": [
+        "8a42c73e63892ba2c4a7d9e20c30a20360895a2815bb8aec76f27466544523c8",
+        "2154014ffd00fe23e98d1e9ff8ad7a066e88487e3fe97adde6148f3b2fd4c967",
+        "367fb9603d2c01aab821bd3fb307c2aec32fb7515f054c4b2400a8c45b2d671a",
+        "7d982f0d32457766953fd989f24baf3762fc946d91568beaa320a4b9198d0b24",
+        "edcf6d03dca384f37b2aa98d5f669a9c7e128693298ac4f1cc3c505cafa12143",
+        "4561b0ef449112c292a6922384c0c831556ab282b72bbf089ca14b5bd6d1de42",
+        "69fd65e73bacc1f0f3b2ba619154ad6cb78e28afc7f77fef795469032c16edae",
+        "2a6c34acee53da99fec10e2e8990d9191fa20f9381b70258b1fb3f31d00ccd4a"
+      ],
+      "textSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad",
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    }
+  ],
+  "errors": []
+}
