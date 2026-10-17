@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-17T11:55:30.112028+00:00",
+  "sources": {
+    "native/bridge.c": "35518d9a95bd96870bbe5a223803861502b78b99bf3e12acfde6a535747446d9",
+    "native/patches/batch-sgr.patch": "dddec0a7588ba739b3636a5a43624d1bc726cae70db4006489a36c6a912dcb24",
+    "native/patches/batch-sgr.json": "779ffeefe5ac1438bac36161f1c7362cfdd9caad009364fc821a81eb2afa3268",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "c517a0e8071a38007a9ca65dd72ee70ca944bc5b131306b166e834a008f1cca3",
+    "packages/wraith/wasm/wraith_engine.js": "0150694fc66a4a8c21171908ec740c8ee46a1ecd9cd682ba94e9212373b1a774"
+  },
+  "checks": {
+    "build": "engine and SDK rebuilt; optimized Wasm; demo production build passed",
+    "rust": "44 tests passed (11 unit, 33 terminal integration); cargo fmt --all --check passed",
+    "typescript": "typecheck and 33 Vitest tests passed",
+    "wasm": "31 stream boundaries, terminal effects, alternate screen and 100 create/free cycles passed",
+    "differential": "239,760 cell comparisons across 23,469 write fragments, including 6,000 unique style updates; text, colors, flags, modes and query/event bytes match the original artifact",
+    "pixels": "60 incremental frames at DPR 1/2, across both terminal profiles, have byte-identical pixels and text. Explicitly asserted baseline JS and Wasm interception.",
+    "nativeBrowser": "worker input, ordering, resize, IME, paste, selection, backpressure, lifecycle and rendered pixels passed on final artifact",
+    "nativeConsumer": "packed npm archive installed offline; Vite dev and production pixels/text passed on final artifact",
+    "xtermBrowser": "20 API/addon/WebGPU/fallback checks passed on SGR artifact; both-profile pixel checks also passed on final extraction artifact",
+    "xtermConsumer": "unchanged @xterm/xterm imports, API/addons and GPU pixels passed in dev and production on SGR artifact",
+    "patchBootstrap": "apply/reverse idempotence, revision/hash mismatch rejection and preservation of unknown edits verified in isolated Git fixture"
+  },
+  "upstream": {
+    "configuration": "Debug, kitty-graphics disabled, pinned Ghostty revision; Zig and C ABI configurations",
+    "broadRun": {
+      "passed": 6122,
+      "skipped": 114,
+      "failed": 32,
+      "failure": "All 32 failures were FileNotFound for snapshot fixtures because the process started in the Wraith repository rather than the Ghostty checkout."
+    },
+    "correctedRerun": {
+      "filters": [
+        "terminal.snapshot",
+        "batched SGR"
+      ],
+      "cwd": ".cache/ghostty",
+      "passed": 323,
+      "skipped": 2,
+      "failed": 0,
+      "note": "Includes every failing snapshot fixture and the new batched-SGR regressions. No failing test remains unaddressed."
+    }
+  },
+  "limitations": [
+    "The deliberate allocator failure fallback in the batch handler is not separately fault-injected by the differential browser corpus.",
+    "Performance numbers embedded in smoke-test logs are validation outputs, not the controlled paired results."
+  ]
+}

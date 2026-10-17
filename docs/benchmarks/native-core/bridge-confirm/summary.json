@@ -1,0 +1,29 @@
+[
+  {
+    "workload": "complex",
+    "stage": "pipeline",
+    "baseline": 880.6329549386176,
+    "candidate": 888.5803540391389,
+    "pairedRatio": 1.0107601527169343,
+    "p10": 1,
+    "p90": 1.0239251040168391
+  },
+  {
+    "workload": "churn",
+    "stage": "pipeline",
+    "baseline": 533.4444675990725,
+    "candidate": 540.7689057853639,
+    "pairedRatio": 1.0122105263095154,
+    "p10": 1.001671542006841,
+    "p90": 1.02252922423271
+  },
+  {
+    "workload": "showcase",
+    "stage": "pipeline",
+    "baseline": 1228.406909797651,
+    "candidate": 1267.3267326732673,
+    "pairedRatio": 1.0301532377545346,
+    "p10": 1.0198019801980198,
+    "p90": 1.0446428571618307
+  }
+]

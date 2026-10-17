@@ -3,7 +3,7 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, basename } from 'node:path';
 import { pixels } from './png.mjs';
 const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/retained-rows');
 const harness = await readFile(resolve('demo/compare.js'), 'utf8');
@@ -34,6 +34,22 @@ try {
         const page = await context.newPage();
         pages.push(page);
         page.on('pageerror', (e) => errors.push(e.message));
+        const servedBaseline = new Set();
+        // Compare an immutable native artifact while using identical current
+        // SDK/harness code on both pages. Useful for libghostty-only changes.
+        if (pages.length === 1 && process.env.WRAITH_BEFORE_WASM) {
+          const directory = resolve(process.env.WRAITH_BEFORE_WASM);
+          await page.route('**/wasm/wraith_engine*', async (route) => {
+            const file = basename(new URL(route.request().url()).pathname);
+            assert(['wraith_engine.js', 'wraith_engine_bg.wasm'].includes(file));
+            servedBaseline.add(file);
+            await route.fulfill({
+              body: await readFile(resolve(directory, file)),
+              contentType: file.endsWith('.wasm') ? 'application/wasm' : 'text/javascript',
+            });
+          });
+        }
+
         // Old Git archives do not expose the incremental test helper. Inject
         // only that untimed helper, preserving their renderer and engine.
         await page.route('**/compare.js*', async (route) => {
@@ -52,6 +68,12 @@ try {
           (type) => window.comparison.setup({ type, workload: 'complex', cols: 96, rows: 12 }),
           type,
         );
+        if (pages.length === 1 && process.env.WRAITH_BEFORE_WASM)
+          assert.deepEqual(
+            [...servedBaseline].sort(),
+            ['wraith_engine.js', 'wraith_engine_bg.wasm'],
+            'Baseline artifact routing must actually be exercised',
+          );
         await page.addStyleTag({
           content: '.xterm-scrollable-element > .scrollbar { visibility: hidden !important; }',
         });
