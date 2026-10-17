@@ -109,7 +109,7 @@ try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1250 } });
     page.on('pageerror', (error) => errors.push(error.message));
     await page.clock.install();
-    await page.goto(`${base}/pipes.html?renderer=${renderer}&pipes=1`);
+    await page.goto(`${base}/pipes.html?renderer=${renderer}&pipes=1&speed=4`);
     let state = await ready(page);
     assert.equal(state.source, 'growth');
     assert.equal(state.frames, 0);
@@ -119,14 +119,23 @@ try {
     await page.clock.fastForward(8000);
     await page.waitForFunction(() => window.pipesLab.state.stats.growth.progress >= 0.45);
     state = await page.evaluate(() => window.pipesLab.state);
-    assert(state.scene.triangles > firstTriangles, 'Single tube must extend');
+    assert(state.scene.triangles > firstTriangles, 'Pipes must keep accumulating');
+    assert.equal(state.stats.growth.activePipes, 1);
+    assert(state.stats.growth.completedPipes > 0, 'Finished pipes must remain visible');
+    assert(state.scene.pipes > 1, 'The growing head must spawn new colors');
     await page.locator('#pause').click();
     await page.waitForFunction(
       () => !window.pipesLab.state.inFlight && !window.pipesLab.state.workerPending,
     );
     const paused = await page.evaluate(() => window.pipesLab.state.stats.growth);
+    const pausedPixels = await page.locator('#viewport').screenshot();
     await page.clock.fastForward(30000);
     assert.deepEqual(await page.evaluate(() => window.pipesLab.state.stats.growth), paused);
+    assert.deepEqual(
+      await page.locator('#viewport').screenshot(),
+      pausedPixels,
+      'Pause freezes rotation as well as growth',
+    );
     await page.screenshot({ path: join(output, `xp-single-${renderer}.png`), fullPage: true });
     await page.locator('#pause').click();
     await page.clock.fastForward(10000);
@@ -151,7 +160,8 @@ try {
       renderer,
       checks: [
         'XP default with one pipe',
-        'continuous tube growth',
+        'continuous growth with retained trails and replacement colors',
+        '3D orbit while growing',
         'pause freezes growth clock',
         'automatic cycle reset',
         'six simultaneous growing pipes',

@@ -149,7 +149,7 @@ async function present(frame, version) {
       sceneStats = frame.scene;
       $('triangles').textContent = frame.scene.triangles.toLocaleString();
       $('geometry').textContent =
-        `${frame.scene.pipes} growing ${frame.scene.pipes === 1 ? 'pipe' : 'pipes'} · cycle ${frame.growth.cycle + 1}`;
+        `${frame.growth.activePipes} growing · ${frame.growth.completedPipes} finished · cycle ${frame.growth.cycle + 1}`;
       if (running)
         setStatus(
           `XP · ${frame.growth.stage.toUpperCase()} · cycle ${frame.growth.cycle + 1} · ${Math.round(frame.growth.progress * 100)}%`,

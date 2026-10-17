@@ -123,15 +123,24 @@ function appendTube(mesh, rings, sides, radius) {
   return { offset, end: indices.length };
 }
 
-/** Grow a sealed tube continuously along the prepared curved centerline. */
-export function growingPipeMesh(config, paths, distance) {
-  if (!Number.isFinite(distance) || distance < 0) throw new RangeError('Invalid growth distance');
-  const mesh = { positions: [], normals: [], indices: [] },
-    groups = [];
+/** Grow sealed tubes; callers may retain completed meshes for this config/cycle. */
+export function growingPipeMesh(config, paths, distances, completedMeshes) {
+  const perPath = Array.isArray(distances);
+  if (perPath && distances.length !== paths.length)
+    throw new RangeError('Missing growth distances');
+  for (const distance of perPath ? distances : [distances])
+    if (!Number.isFinite(distance) || distance < 0) throw new RangeError('Invalid growth distance');
+  const tubes = [];
   let segments = 0,
-    elbows = 0;
-  if (distance > 0)
-    for (const [index, path] of paths.entries()) {
+    elbows = 0,
+    vertexFloats = 0,
+    indexCount = 0;
+  for (const [index, path] of paths.entries()) {
+    const distance = perPath ? distances[index] : distances;
+    if (distance === 0) continue;
+    const complete = distance >= path.distance;
+    let tube = complete ? completedMeshes?.get(path) : undefined;
+    if (!tube) {
       const visible = [path.rings[0]];
       for (let r = 1; r < path.rings.length; r++) {
         const ring = path.rings[r],
@@ -150,26 +159,54 @@ export function growingPipeMesh(config, paths, distance) {
         break;
       }
       if (visible.length < 2) continue;
-      const group = appendTube(mesh, visible, config.sides, 0.19);
-      groups.push({
-        ...group,
-        color: palette[(index + (config.seed & 7)) % palette.length],
-        phase: index,
-      });
-      segments += Math.min(path.segments, Math.ceil(distance));
-      elbows += visible.filter((ring, i) => i && dot(ring.t, visible[i - 1].t) < 0.99).length / 5;
+      const mesh = { positions: [], normals: [], indices: [] };
+      appendTube(mesh, visible, config.sides, 0.24);
+      tube = {
+        positions: new Float32Array(mesh.positions),
+        normals: new Float32Array(mesh.normals),
+        indices: new Uint32Array(mesh.indices),
+        segments: Math.ceil(path.segments * Math.min(1, distance / path.distance)),
+        elbows: visible.filter((ring, i) => i && dot(ring.t, visible[i - 1].t) < 0.99).length / 5,
+      };
+      if (complete) completedMeshes?.set(path, tube);
     }
+    tubes.push({ tube, index });
+    vertexFloats += tube.positions.length;
+    indexCount += tube.indices.length;
+    segments += tube.segments;
+    elbows += tube.elbows;
+  }
+  const positions = new Float32Array(vertexFloats),
+    normals = new Float32Array(vertexFloats),
+    indices = new Uint32Array(indexCount),
+    groups = [];
+  let vertexOffset = 0,
+    indexOffset = 0;
+  for (const { tube, index } of tubes) {
+    positions.set(tube.positions, vertexOffset);
+    normals.set(tube.normals, vertexOffset);
+    for (let i = 0; i < tube.indices.length; i++)
+      indices[indexOffset + i] = tube.indices[i] + vertexOffset / 3;
+    groups.push({
+      offset: indexOffset,
+      end: indexOffset + tube.indices.length,
+      color: palette[(index + (config.seed & 7)) % palette.length],
+      phase: index,
+    });
+    vertexOffset += tube.positions.length;
+    indexOffset += tube.indices.length;
+  }
   return {
     config,
-    positions: new Float32Array(mesh.positions),
-    normals: new Float32Array(mesh.normals),
-    indices: new Uint32Array(mesh.indices),
+    positions,
+    normals,
+    indices,
     groups,
     stats: {
-      pipes: paths.length,
+      pipes: groups.length,
       segments,
       elbows: Math.round(elbows),
-      triangles: mesh.indices.length / 3,
+      triangles: indices.length / 3,
     },
   };
 }
@@ -288,15 +325,10 @@ export function rasterizePipes(
     pixels[y * width + x] = 0x443226;
   }
   if (framing === 'lattice') {
-    extentX = 0;
-    extentY = 0;
-    for (const xx of [-5.25, 5.25])
-      for (const yy of [-5.25, 5.25])
-        for (const zz of [-5.25, 5.25]) {
-          const [x, y, z] = rotate(xx, yy, zz);
-          extentX = Math.max(extentX, Math.abs(x / (z + 20)));
-          extentY = Math.max(extentY, Math.abs(y / (z + 20)));
-        }
+    // A sphere enclosing the lattice keeps the zoom constant through every
+    // camera angle, including while new pipes change the scene's bounds.
+    const radius = Math.sqrt(3) * 5.25;
+    extentX = extentY = radius / Math.sqrt(20 ** 2 - radius ** 2);
   }
   for (let i = 0; i < scene.positions.length; i += 3) {
     const [x, y, z] = rotate(scene.positions[i], scene.positions[i + 1], scene.positions[i + 2]);
@@ -325,7 +357,7 @@ export function rasterizePipes(
   };
   for (const group of scene.groups) {
     const [red, green, blue] = group.color;
-    const pulse = 0.95 + 0.05 * Math.sin(time * 1.7 + group.phase);
+    const pulse = camera === 'fixed' ? 1 : 0.95 + 0.05 * Math.sin(time * 1.7 + group.phase);
     for (let t = group.offset; t < group.end; t += 3) {
       const a = scene.indices[t] * 6,
         b = scene.indices[t + 1] * 6,

@@ -6,15 +6,24 @@ website's ember theme and the existing playground stylesheet.
 
 The default **XP · growing pipes** mode starts with one metallic pipe against a
 black background. Set **Growing pipes** to any count from 1 to 80, choose a speed,
-then select **Rebuild scene**. Each pipe continuously extends along its curved
-centerline with a closed moving tip. The camera stays fixed while the pipes grow.
-At 1× speed, growth takes 16 seconds, followed by a 1.2-second hold and a
-0.35-second clear before a new seeded layout starts. Shorter paths stop growing
-when they reach an occupied node or the lattice boundary.
+then select **Rebuild scene**. Each head continuously extends along a curved
+centerline with a closed moving tip. When it gets trapped or finishes its run
+(32–80 lattice steps), a new colored pipe takes over elsewhere. Completed tubes
+remain visible while the whole scene rotates in 3D. The camera distance and zoom
+stay constant as the geometry grows, so the view never recenters on a moving tip.
+
+A cycle fills roughly 70% of the 11×11×11 lattice before a 0.6-second hold and
+0.15-second clear. At 1× speed, one head fills over 60 seconds; multiple heads fill
+in `60 / sqrt(heads)` seconds. The speed control scales growth duration. This keeps
+large head counts visible instead of clearing immediately. The count controls
+concurrent growing heads, not the total number of finished pipes on screen.
+The next cycle uses a fresh deterministic seed.
 
 Pause and hidden tabs freeze the animation clock. XP mode generates one frame at
-a time and allocates no replay bank. The other source choices retain the original
-rotating stress scene.
+a time and allocates no replay bank. Completed tube meshes are cached for the
+current cycle; only growing tips need their geometry rebuilt. The cache is
+discarded on reset, so geometry and memory remain bounded. The other source
+choices retain the original rotating stress scene.
 
 The geometry uses seeded lattice walks, cylindrical sweeps, rounded torus elbows,
 end caps, perspective projection, a depth buffer and metallic lighting. A worker
@@ -28,8 +37,8 @@ renders ordinary glyph cells, not those triangles directly.
 | Control               | Behavior                                                                                                                    |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Renderer              | Wraith WebGPU, official xterm WebGL, or xterm DOM. All receive the same generator's ANSI.                                   |
-| XP · growing pipes    | Grow one or multiple sealed pipes, hold, clear and repeat with a new layout.                                                |
-| Growing pipes         | 1–80 simultaneous pipes in XP mode; the rotating stress modes use their preset counts.                                      |
+| XP · growing pipes    | Grow and accumulate colored pipes while rotating, then clear and repeat.                                                    |
+| Growing pipes         | 1–80 simultaneous growing heads; finished pipes stay until reset. Stress modes use preset counts.                           |
 | Growth speed          | ½×, 1×, 2× or 4×; the hold and clear intervals stay constant.                                                               |
 | Classic               | 120×42 cells, up to 12 pipes.                                                                                               |
 | Pressure              | 180×60 cells, up to 28 pipes.                                                                                               |
@@ -39,7 +48,7 @@ renders ordinary glyph cells, not those triangles directly.
 | SGR every cell        | Deliberately sends a complete foreground/background assignment for every cell, including the background.                    |
 | Elide repeated colors | Sends the same image while omitting redundant color changes.                                                                |
 | 12-bit metal          | Quantizes all pixel channels to 16 levels, reducing distinct color combinations.                                            |
-| Seed                  | Reproduces the same network. Occupancy can stop a pipe before its requested length or count.                                |
+| Seed                  | Reproduces the same network and replacement timing, independent of frame rate.                                              |
 
 Changes take effect with **Rebuild scene**. Rebuilding disposes the old terminal
 and worker. Playback awaits public `write` and `onRender` before sending another
@@ -88,9 +97,11 @@ npm run benchmark:pipes
 Unit tests check exact ANSI foreground/background round trips, no accidental
 scrolling, deterministic geometry, depth-order independence, color quantization
 and input bounds. Growth tests check cycle timing, reproducibility, closed tip caps,
-fixed framing and 80-pipe bounds. Browser checks exercise all three lab renderers,
-single/multiple growth, automatic reset, pause-clock behavior, replay/live
-switching, cancellation, pause/resume, downloads, desktop/mobile layouts and
+retained geometry, replacement colors, cache correctness during backward seeks,
+3D rotation at a constant zoom and bounded accumulation at up to 80 heads.
+Browser checks exercise all three lab renderers, single/multiple growth, retained
+trails, automatic reset, pause of growth and rotation, replay/live switching,
+cancellation, pause/resume, downloads, desktop/mobile layouts and
 reduced motion. Local screenshots are written under `.cache/pipes`.
 
 The comparison harness also includes **3D pipes** at `/compare.html?workload=pipes`.

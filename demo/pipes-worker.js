@@ -9,7 +9,7 @@ function frame(time) {
   const image = rasterizePipes(
     current,
     time,
-    growth ? { ...options, camera: 'fixed', framing: 'lattice', backdrop: 'black' } : options,
+    growth ? { ...options, camera: 'orbit', framing: 'lattice', backdrop: 'black' } : options,
   );
   const rasterMs = performance.now() - start;
   const encoded = encodePipeFrame(image, options);

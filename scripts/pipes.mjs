@@ -97,7 +97,7 @@ try {
     if (growth) scene = growth.frame(frame / fps).scene;
     const image = rasterizePipes(scene, frame / fps, {
       colors: values.colors ?? 'truecolor',
-      ...(growth ? { camera: 'fixed', framing: 'lattice', backdrop: 'black' } : {}),
+      ...(growth ? { camera: 'orbit', framing: 'lattice', backdrop: 'black' } : {}),
     });
     await write(encodePipeFrame(image, { traffic: values.traffic ?? 'stress' }).bytes);
     await delay(Math.max(0, 1000 / fps - (performance.now() - before)));
