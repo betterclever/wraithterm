@@ -74,7 +74,10 @@ async function present(t) {
     const frame = await generate(t);
     if (token !== version) return;
     await target.write(frame.bytes);
-    await target.flush();
+    // Live output follows the terminal's frame scheduler. Explicit seeks and
+    // captures still wait for GPU completion; the public flush contract stays
+    // unchanged. Only one scene/write is in flight, bounding input backlog.
+    if (!running) await target.flush();
     if (token !== version) return;
     current = frame;
     lab.frames++;
@@ -156,6 +159,8 @@ async function mount() {
     terminal.onStats((s) => {
       $('render').textContent = `${s.renderP50Ms.toFixed(2)} ms`;
       lab.adapter = s.adapter;
+      lab.renderedFrames = s.frames;
+      lab.renderRate = s.activeFps;
     });
     terminal.onError(fail);
     await terminal.write('\x1b[?1049h\x1b[?25l\x1b[?7l');

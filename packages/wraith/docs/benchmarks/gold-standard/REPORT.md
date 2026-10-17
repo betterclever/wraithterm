@@ -93,3 +93,36 @@ development/production alias consumers pass with GPU decorations enabled.
 Reproduce with `node scripts/overlay-browser-test.mjs` and
 `WRAITH_BASELINE_DIR=.cache/gold-baseline node scripts/overlay-benchmark.mjs`,
 serving the preserved baseline on port 5190 and the current build on port 5173.
+
+## Ghost Reactor producer and live scheduling
+
+The demo now writes UTF-8/ANSI directly into reusable scratch memory. Simultaneous
+foreground/background changes share an SGR sequence; no colors are quantized and
+no terminal content is omitted. Each returned frame owns its transfer buffer.
+Live writes use the native terminal's existing render scheduler instead of
+forcing a GPU fence per update. Paused seeks/capture still call `flush()` and the
+public SDK's completion guarantee is unchanged. The counter now explicitly says
+parsed updates/s, not GPU-completed updates/s.
+
+Node CPU observations in [ghost/runs.json](ghost/runs.json) compare 40 alternating
+pairs after eight warmups at 120×34, 192×54 and 240×68. This is scene-generation and
+parse-only evidence, not browser pipeline throughput. Nine complete native
+snapshots compare every cell and text: **92,304 cell comparisons** agree exactly.
+The live browser checks cover startup, grids, pause/resume, replay, pointer/pulse,
+ANSI download, and deterministic GPU captures. Native browser integration and
+packed native consumers pass. Sixty incremental DPR1/2 frames across both profiles
+remain byte-identical to the preserved build, alongside 22 packed-word fixtures.
+
+## Additional experiment rejected
+
+Inlining ordinary parameter insertion into the generated parser passed the same
+16,554-fragment differential corpus. Forty alternating pairs per condition found
+only about 0.6% dense, 1.1% RGB, 0.9% dashboard and 1.3% Pipes improvement, with
+most distributions spanning no gain. That small benefit does not justify an
+additional dependency on parameter-container internals. It is **not installed**.
+All samples, the generated candidate and the exact pilot harness are preserved
+under [inline-params](inline-params/runs.json). To rerun that harness, write the `source` field from `inline-params/harness.json`
+to `.cache/parameter-inline-pilot.mjs` from the repository root.
+
+The earlier SIMD packing and fused-staging experiments remain rejected on their
+existing evidence; this pass does not relabel them as optimizations.

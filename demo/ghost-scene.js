@@ -1,9 +1,9 @@
 // Every pixel and label below becomes ordinary ANSI terminal content.
 import sprite from './ghost-sprite.json' with { type: 'json' };
+import { AnsiFrameEncoder } from './ansi-frame.js';
 const BG = [12, 8, 6],
   AMBER = [255, 184, 107],
   LILAC = [217, 187, 255];
-const encoder = new TextEncoder();
 const hash = (i) => {
   let v = Math.imul(i + 917, 0x45d9f3b);
   v = Math.imul(v ^ (v >>> 16), 0x45d9f3b);
@@ -31,6 +31,7 @@ export class GhostScene {
       throw new Error('Unsupported ghost grid');
     this.cols = cols;
     this.rows = rows;
+    this.encoder = new AnsiFrameEncoder(cols, rows);
     this.height = rows * 2;
     this.pixels = new Float32Array(cols * this.height * 3);
     this.chars = new Array(cols * rows).fill('');
@@ -282,36 +283,7 @@ export class GhostScene {
     this.text(cols - 39, 1, 'TRUECOLOR · HALF-BLOCKS · UNICODE', [180, 155, 136]);
     this.text(3, rows - 1, 'MOVE TO STEER · CLICK TO PULSE', [180, 155, 136]);
     this.text(cols - 26, rows - 1, `${cols}×${rows} / ${cols * rows * 2} PIXELS`, AMBER);
-    let fg = -1,
-      bg = -1,
-      sgrChanges = 0;
-    const chunks = ['\x1b[?25l\x1b[?7l'];
-    for (let y = 0; y < rows; y++) {
-      chunks.push(`\x1b[${y + 1};1H`);
-      for (let x = 0; x < cols; x++) {
-        const ix = (y * 2 * cols + x) * 3,
-          cell = y * cols + x;
-        const top = rgb([pixels[ix], pixels[ix + 1], pixels[ix + 2]]),
-          bix = ix + cols * 3;
-        const bottomColor = rgb([pixels[bix], pixels[bix + 1], pixels[bix + 2]]);
-        const char = this.chars[cell] || '▀',
-          f = this.chars[cell] ? this.ink[cell] : top,
-          b = bottomColor;
-        if (f !== fg) {
-          chunks.push(`\x1b[38;2;${f >>> 16};${(f >>> 8) & 255};${f & 255}m`);
-          fg = f;
-          sgrChanges++;
-        }
-        if (b !== bg) {
-          chunks.push(`\x1b[48;2;${b >>> 16};${(b >>> 8) & 255};${b & 255}m`);
-          bg = b;
-          sgrChanges++;
-        }
-        chunks.push(char);
-      }
-    }
-    chunks.push('\x1b[0m');
-    const bytes = encoder.encode(chunks.join(''));
+    const { bytes, sgrChanges } = this.encoder.encode(pixels, this.chars, this.ink);
     return {
       bytes,
       cols,
