@@ -1,12 +1,13 @@
 import { chromium } from '@playwright/test';
 import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 const output = resolve(process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/comparison');
 const sourceDirectory = resolve(process.env.WRAITH_SOURCE_DIR ?? '.');
 const sdkSources = {};
 for (const file of (await readdir(resolve(sourceDirectory, 'packages/wraith/src'))).sort()) {
-  if (file.endsWith('.ts') && !file.endsWith('.test.ts'))
+  if ((file.endsWith('.ts') || file.endsWith('.js')) && !file.endsWith('.test.ts'))
     sdkSources[file] = createHash('sha256')
       .update(await readFile(resolve(sourceDirectory, 'packages/wraith/src', file)))
       .digest('hex');
@@ -52,7 +53,10 @@ try {
         result = 'packing including callees';
         break;
       }
-      if (frame.url.includes('xterm-base') && frame.functionName === 'parse') {
+      if (
+        (frame.url.includes('xterm-base') && frame.functionName === 'parse') ||
+        (frame.url.includes('xterm-parser') && frame.functionName === 'fastParse')
+      ) {
         result = 'parser including callees';
         break;
       }
@@ -91,6 +95,12 @@ try {
         iterations,
         warmup: 32,
         sourceDirectory,
+        head: execFileSync('git', ['rev-parse', 'HEAD'], {
+          cwd: sourceDirectory,
+          encoding: 'utf8',
+        }).trim(),
+        url: page.url(),
+        userAgent: await page.evaluate(() => navigator.userAgent),
         sdkSources,
         wasmSha256: createHash('sha256')
           .update(

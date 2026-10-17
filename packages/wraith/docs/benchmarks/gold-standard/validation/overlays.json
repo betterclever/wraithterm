@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-17T08:38:30.851Z",
+  "checks": [
+    "DPR1: all 40 decoration/selection background samples equal upstream DOM",
+    "DPR1: callbacks, top/bottom ordering, wrapped hover and cleanup",
+    "DPR2: all 40 decoration/selection background samples equal upstream DOM",
+    "DPR2: callbacks, top/bottom ordering, wrapped hover and cleanup"
+  ],
+  "errors": []
+}

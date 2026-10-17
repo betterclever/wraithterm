@@ -7,7 +7,9 @@ shared by the website, the ANSI scene and the fframes video.
 The ghost flies through a perspective particle field and four rotating light
 rings. Signal, spectrum and event panels enter at 1, 2.2 and 3.4 seconds, then
 remain open. The panels contain synthetic scene data. The surrounding lab's
-measurements come from actual writes, GPU completion fences and Wraith stats.
+counter measures parsed terminal updates; Wraith's stats report rendering
+separately. Live playback lets the native render scheduler pace the GPU. Paused
+seeks and deterministic captures still wait for GPU completion.
 
 Move the pointer to steer; click to pulse. Controls provide pause, replay,
 speed, grid resolution, fullscreen and an ANSI-frame download. Reduced-motion

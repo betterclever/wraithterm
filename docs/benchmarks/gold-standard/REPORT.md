@@ -77,11 +77,11 @@ after includes the input changes above. DOM timings include forced layout;
 WebGPU runs fence every 32 and verify all 256 submissions. DOM updates are not
 GPU-completed frames, and these are not display presentation rates.
 
-| Dense condition | Before updates/s | After updates/s | Ratio |
-| --- | ---: | ---: | ---: |
-| Plain | 827 | 876 | 1.06× |
-| Twenty search-style highlights | 48 | 861 | 17.92× |
-| Link hover underline | 52 | 879 | 16.97× |
+| Dense condition                | Before updates/s | After updates/s |  Ratio |
+| ------------------------------ | ---------------: | --------------: | -----: |
+| Plain                          |              827 |             876 |  1.06× |
+| Twenty search-style highlights |               48 |             861 | 17.92× |
+| Link hover underline           |               52 |             879 | 16.97× |
 
 The decorated/hover benefit primarily comes from avoiding DOM fallback; it must
 not be described as a universal parser or renderer multiplier. Initial/final
@@ -106,7 +106,11 @@ parsed updates/s, not GPU-completed updates/s.
 
 Node CPU observations in [ghost/runs.json](ghost/runs.json) compare 40 alternating
 pairs after eight warmups at 120×34, 192×54 and 240×68. This is scene-generation and
-parse-only evidence, not browser pipeline throughput. Nine complete native
+parse-only evidence, not browser pipeline throughput. Median paired generation
+throughput improves **15%, 21% and 25%**, respectively; native parsing of the
+shorter equivalent ANSI stream improves about 2%. These percentages compare
+within-pair ratios rather than independently aggregated time medians.
+Nine complete native
 snapshots compare every cell and text: **92,304 cell comparisons** agree exactly.
 The live browser checks cover startup, grids, pause/resume, replay, pointer/pulse,
 ANSI download, and deterministic GPU captures. Native browser integration and
@@ -126,3 +130,75 @@ to `.cache/parameter-inline-pilot.mjs` from the repository root.
 
 The earlier SIMD packing and fused-staging experiments remain rejected on their
 existing evidence; this pass does not relabel them as optimizations.
+
+## Full browser matrix and regression follow-up
+
+The [90-run matrix](matrix/runs.json) compares `ea398b1` with `e9be65b` and official
+xterm 6.0.0 / WebGL addon 0.19.0. Each condition has three rotated repetitions of
+512 input updates. All updates render, GPU completion is fenced every 32 updates
+and at the end, and initial/final text hashes and canvas geometry agree across
+all five targets. SDK/Wasm fingerprints remain unchanged across the batch; all
+90 runs passed without browser errors. The [summary](matrix/summary.json) and
+[CSV](matrix/summary.csv) retain every target, including the unchanged native
+engine. These are headless hardware-accelerated Chrome observations on this
+M5 Max, not display FPS or hardware-independent guarantees.
+
+| DPR 1 workload | Wraith before | Wraith after | Change | Official xterm WebGL | Wraith / xterm |
+| -------------- | ------------: | -----------: | -----: | -------------------: | -------------: |
+| Dense          |           833 |          891 |  +7.0% |                  251 |          3.56× |
+| RGB churn      |           826 |          894 |  +8.2% |                  251 |          3.56× |
+| Dashboard      |         1,305 |        1,498 | +14.7% |                  597 |          2.51× |
+| Pipes          |           446 |          465 |  +4.1% |                  229 |          2.03× |
+| Logs           |         6,139 |        5,733 |  −6.6% |                1,060 |          5.41× |
+
+Values are median completed updates/s. The initial log result is retained rather
+than silently discarded: it triggered a longer follow-up below. No log speedup
+is claimed. The separate native engine is essentially unchanged on dense, RGB,
+dashboard and Pipes (about 615, 433, 1,047 and 248 updates/s respectively); the
+compatible parser changes do not speed up libghostty itself.
+
+The DPR 2 matrix was unstable: Wraith before ranged from 401–530 and after from
+526–869 updates/s. Its apparent +38.8% median gain is **not a dependable speedup
+claim**. A separate [same-terminal diagnostic](regression-paired/runs.json)
+rotated original/current parser, print and renderer methods independently,
+with 512 warmup updates per mode and forty sets of 256 measured updates per
+mode, fencing every 32. This found about +6.4% combined DPR 2 throughput, with
+P10/P90 paired ratios 0.949–1.124. That is compatible with the earlier +8.0%
+input measurement; Retina stability needs dedicated-machine investigation.
+
+The same diagnostic found essentially equal log throughput: input-only 1.000×,
+renderer-only 0.996×, combined 0.997× median paired ratios. Combined P10/P90 was
+0.947–1.037. Switching implementations changes JIT behavior, so these diagnostic
+absolute rates must not be pooled with the full-build matrix. The exact
+[harness](regression-paired/harness.json) is archived as source text; it uses the
+local baseline paths and ports above.
+
+The [longer full-build log check](logs-confirmation/runs.json) ran seven rotated
+repetitions per target with 2,048 updates each (35 runs, no browser errors or
+submission/text mismatches). It did not establish a dependable effect: Wraith
+before ranged from 1,186–5,904 and after from 2,285–5,756 updates/s; the unchanged
+native engine ranged from 1,281–3,309 across its before/after targets. Its apparent
++72.9% Wraith median gain is also **not a valid speedup claim**. Other applications
+were active during this shared-machine follow-up. The cause of the variation is
+not isolated. Retain the possible initial −6.6% log regression as an open
+performance concern until repeated on a quiet machine; the diagnostic gives no
+basis for attributing it specifically to input acceleration or overlay packing.
+
+## Next bottleneck
+
+A separate 4,096-update dense CPU sample attributes about **70% of active
+sampled CPU time to parsing, 18% to packing and 10% to other renderer work**.
+The dispatcher alone accounts for 35.6% self time and UTF-8 decoding 9.8%.
+These are sampled CPU shares, not process/device utilization or GPU execution
+shares. No timing benchmark ran concurrently. The [profile summary](profile-summary.json)
+records the build, all SDK source hashes (including the generated JS parser),
+Wasm hash, browser and adapter; the full CPU trace remains ignored locally.
+Reproduce with `WRAITH_PROFILE_ITERATIONS=4096 node scripts/profile-renderer.mjs`.
+
+The next high-value experiments are parser dispatch/UTF-8 batching that preserve
+all hooks and fragmented input, followed by fewer native libghostty cell-access
+calls at the snapshot boundary. The latter needs its own native profile before
+choosing an implementation. More shader arithmetic tuning alone cannot remove
+the dominant compatible-parser cost. None of these proposed changes are counted
+as shipped gains. A stable dense 1,000-update/s result and cross-device/long-run
+validation remain open.
