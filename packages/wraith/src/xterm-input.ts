@@ -5,6 +5,7 @@ import { installBulkPrint } from './xterm-print.js';
 interface Params {
   params: Int32Array;
   length: number;
+  _subParamsLength?: number;
   hasSubParams(index: number): boolean;
 }
 interface Attributes {
@@ -79,6 +80,9 @@ export function accelerateInput(terminal: Terminal): void {
     return;
   const attributes = input.charAttributes;
   input.charAttributes = function (params) {
+    // A single count check covers all parameters in an ordinary semicolon SGR.
+    // Unknown containers and any colon form retain the original action.
+    if (params._subParamsLength !== 0) return attributes.call(this, params);
     const values = params.params;
     const attr = this._curAttrData;
     let fg = attr.fg,
@@ -88,7 +92,6 @@ export function accelerateInput(terminal: Terminal): void {
     // Any colon or unsupported attribute replays the original action from its
     // original state, preserving extended attributes and upstream diagnostics.
     for (let i = 0; i < params.length; i++) {
-      if (params.hasSubParams(i)) return attributes.call(this, params);
       const code = values[i];
       switch (code) {
         case 0:
@@ -118,8 +121,6 @@ export function accelerateInput(terminal: Terminal): void {
           const mode = values[i + 1];
           const advance = mode === 2 ? 4 : mode === 5 ? 2 : 0;
           if (!advance || i + advance >= params.length) return attributes.call(this, params);
-          for (let j = i + 1; j <= i + advance; j++)
-            if (params.hasSubParams(j)) return attributes.call(this, params);
           const old = code === 38 ? fg : bg;
           const color =
             mode === 2

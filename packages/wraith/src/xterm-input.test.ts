@@ -3,6 +3,7 @@ import { Terminal } from './xterm.js';
 import { Terminal as OriginalTerminal, type Terminal as TerminalApi } from '@xterm/xterm';
 import { Terminal as RuntimeTerminal } from '@wraith-terminal/xterm-base/lib/xterm.mjs';
 import { accelerateInput } from './xterm-input.js';
+import { installParameterBatching } from './xterm-parser.js';
 
 const options = { cols: 64, rows: 6, scrollback: 0, allowProposedApi: true };
 const write = (term: TerminalApi, data: string | Uint8Array) =>
@@ -56,6 +57,60 @@ function pair() {
 }
 
 describe('xterm input acceleration against the unmodified upstream runtime', () => {
+  it('preserves interrupted CSI introducers, control bytes and parameter resets', () => {
+    const p = pair();
+    const sequences = [
+      '\x1b[38;2;10;20;30mA',
+      '\x1b[\x00;4H',
+      '\x1b[?7lABC\x1b[?7h',
+      '\x1b[4:3;58:2::1:2:3mB\x1b[0;38;5;9mC',
+      '\x1b[1;2\x18D',
+      '\x1b[1;2\x1b[31mE',
+      '\x1b\x1b[32mF',
+      '\x1b]2;title\x1b[33mG',
+      '\x1bP$qm\x1b[34mH',
+    ];
+    try {
+      for (const sequence of sequences) {
+        // Splits before/after each introducer byte exercise both the fused and
+        // ordinary transitions, then check cell and extended-attribute state.
+        for (let split = 0; split <= sequence.length; split++) {
+          p.terminals.forEach((term) => term.reset());
+          p.parse(sequence.slice(0, split));
+          p.equal();
+          p.parse(sequence.slice(split));
+          p.equal();
+        }
+      }
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it('does not install the fused parser over unfamiliar CSI transitions', () => {
+    const Base: typeof TerminalApi = RuntimeTerminal;
+    const term = new Base(options);
+    const parser = (
+      term as unknown as {
+        _core: {
+          _inputHandler: { _parser: { parse: unknown; _transitions: { table: Uint8Array } } };
+        };
+      }
+    )._core._inputHandler._parser;
+    const table = parser._transitions;
+    const parse = parser.parse;
+    try {
+      // Replace only this instance's table; upstream owns the shared original.
+      parser._transitions = { table: table.table.slice() };
+      parser._transitions.table[0x15b] = 0;
+      expect(installParameterBatching(term)).toBe(false);
+      expect(parser.parse).toBe(parse);
+    } finally {
+      parser._transitions = table;
+      term.dispose();
+    }
+  });
+
   it('preserves every box/block scalar, combining suffixes, wide-cell repair and row edges', () => {
     const p = pair();
     try {

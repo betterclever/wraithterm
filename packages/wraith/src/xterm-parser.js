@@ -1,44 +1,5 @@
 /** Copyright (c) 2018 The xterm.js authors. All rights reserved. @license MIT
  * Generated derivative of EscapeSequenceParser.ts (c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef). */
-var TableAccess;
-(function (TableAccess) {
-    TableAccess[TableAccess["TRANSITION_ACTION_SHIFT"] = 4] = "TRANSITION_ACTION_SHIFT";
-    TableAccess[TableAccess["TRANSITION_STATE_MASK"] = 15] = "TRANSITION_STATE_MASK";
-    TableAccess[TableAccess["INDEX_STATE_SHIFT"] = 8] = "INDEX_STATE_SHIFT";
-})(TableAccess || (TableAccess = {}));
-var ParserState;
-(function (ParserState) {
-    ParserState[ParserState["GROUND"] = 0] = "GROUND";
-    ParserState[ParserState["ESCAPE"] = 1] = "ESCAPE";
-})(ParserState || (ParserState = {}));
-var ParserStackType;
-(function (ParserStackType) {
-    ParserStackType[ParserStackType["NONE"] = 0] = "NONE";
-    ParserStackType[ParserStackType["FAIL"] = 1] = "FAIL";
-    ParserStackType[ParserStackType["RESET"] = 2] = "RESET";
-    ParserStackType[ParserStackType["CSI"] = 3] = "CSI";
-    ParserStackType[ParserStackType["ESC"] = 4] = "ESC";
-    ParserStackType[ParserStackType["OSC"] = 5] = "OSC";
-    ParserStackType[ParserStackType["DCS"] = 6] = "DCS";
-})(ParserStackType || (ParserStackType = {}));
-var ParserAction;
-(function (ParserAction) {
-    ParserAction[ParserAction["IGNORE"] = 0] = "IGNORE";
-    ParserAction[ParserAction["ERROR"] = 1] = "ERROR";
-    ParserAction[ParserAction["PRINT"] = 2] = "PRINT";
-    ParserAction[ParserAction["EXECUTE"] = 3] = "EXECUTE";
-    ParserAction[ParserAction["OSC_START"] = 4] = "OSC_START";
-    ParserAction[ParserAction["OSC_PUT"] = 5] = "OSC_PUT";
-    ParserAction[ParserAction["OSC_END"] = 6] = "OSC_END";
-    ParserAction[ParserAction["CSI_DISPATCH"] = 7] = "CSI_DISPATCH";
-    ParserAction[ParserAction["PARAM"] = 8] = "PARAM";
-    ParserAction[ParserAction["COLLECT"] = 9] = "COLLECT";
-    ParserAction[ParserAction["ESC_DISPATCH"] = 10] = "ESC_DISPATCH";
-    ParserAction[ParserAction["CLEAR"] = 11] = "CLEAR";
-    ParserAction[ParserAction["DCS_HOOK"] = 12] = "DCS_HOOK";
-    ParserAction[ParserAction["DCS_PUT"] = 13] = "DCS_PUT";
-    ParserAction[ParserAction["DCS_UNHOOK"] = 14] = "DCS_UNHOOK";
-})(ParserAction || (ParserAction = {}));
 const NON_ASCII_PRINTABLE = 0xa0;
 export function installParameterBatching(terminal) {
     const parser = terminal?._core?._inputHandler?._parser;
@@ -47,7 +8,9 @@ export function installParameterBatching(terminal) {
         typeof p.addParam !== 'function' || typeof p.addSubParam !== 'function' ||
         typeof p.addDigit !== 'function' || typeof p._digitIsSub !== 'boolean' ||
         typeof p._rejectDigits !== 'boolean' || !parser._parseStack ||
-        !(parser._transitions?.table instanceof Uint8Array))
+        !(parser._transitions?.table instanceof Uint8Array) ||
+        parser._transitions.table[0x1b] !== 0xb1 ||
+        parser._transitions.table[0x15b] !== 0xb3)
         return false;
     parser.parse = fastParse;
     return true;
@@ -61,12 +24,12 @@ function fastParse(data, length, promiseResult) {
     if (this._parseStack.state) {
         // allow sync parser reset even in continuation mode
         // Note: can be used to recover parser from improper continuation error below
-        if (this._parseStack.state === ParserStackType.RESET) {
-            this._parseStack.state = ParserStackType.NONE;
+        if (this._parseStack.state === 2 /* ParserStackType.RESET */) {
+            this._parseStack.state = 0 /* ParserStackType.NONE */;
             start = this._parseStack.chunkPos + 1; // continue with next codepoint in GROUND
         }
         else {
-            if (promiseResult === undefined || this._parseStack.state === ParserStackType.FAIL) {
+            if (promiseResult === undefined || this._parseStack.state === 1 /* ParserStackType.FAIL */) {
                 /**
                  * Reject further parsing on improper continuation after pausing. This is a really bad
                  * condition with screwed up execution order and prolly messed up terminal state,
@@ -82,7 +45,7 @@ function fastParse(data, length, promiseResult) {
                  * the pending async handler still might mess up the terminal later. Instead fix the
                  * faulty async handling, so this error will not be thrown anymore.
                  */
-                this._parseStack.state = ParserStackType.FAIL;
+                this._parseStack.state = 1 /* ParserStackType.FAIL */;
                 throw new Error('improper continuation due to previous async handler, giving up parsing');
             }
             // we have to resume the old handler loop if:
@@ -91,7 +54,7 @@ function fastParse(data, length, promiseResult) {
             const handlers = this._parseStack.handlers;
             let handlerPos = this._parseStack.handlerPos - 1;
             switch (this._parseStack.state) {
-                case ParserStackType.CSI:
+                case 3 /* ParserStackType.CSI */:
                     if (promiseResult === false && handlerPos > -1) {
                         for (; handlerPos >= 0; handlerPos--) {
                             handlerResult = handlers[handlerPos](this._params);
@@ -106,7 +69,7 @@ function fastParse(data, length, promiseResult) {
                     }
                     this._parseStack.handlers = [];
                     break;
-                case ParserStackType.ESC:
+                case 4 /* ParserStackType.ESC */:
                     if (promiseResult === false && handlerPos > -1) {
                         for (; handlerPos >= 0; handlerPos--) {
                             handlerResult = handlers[handlerPos]();
@@ -121,46 +84,59 @@ function fastParse(data, length, promiseResult) {
                     }
                     this._parseStack.handlers = [];
                     break;
-                case ParserStackType.DCS:
+                case 6 /* ParserStackType.DCS */:
                     code = data[this._parseStack.chunkPos];
                     handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a, promiseResult);
                     if (handlerResult) {
                         return handlerResult;
                     }
                     if (code === 0x1b)
-                        this._parseStack.transition |= ParserState.ESCAPE;
+                        this._parseStack.transition |= 1 /* ParserState.ESCAPE */;
                     this._params.reset();
                     this._params.addParam(0); // ZDM
                     this._collect = 0;
                     break;
-                case ParserStackType.OSC:
+                case 5 /* ParserStackType.OSC */:
                     code = data[this._parseStack.chunkPos];
                     handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a, promiseResult);
                     if (handlerResult) {
                         return handlerResult;
                     }
                     if (code === 0x1b)
-                        this._parseStack.transition |= ParserState.ESCAPE;
+                        this._parseStack.transition |= 1 /* ParserState.ESCAPE */;
                     this._params.reset();
                     this._params.addParam(0); // ZDM
                     this._collect = 0;
                     break;
             }
             // cleanup before continuing with the main sync loop
-            this._parseStack.state = ParserStackType.NONE;
+            this._parseStack.state = 0 /* ParserStackType.NONE */;
             start = this._parseStack.chunkPos + 1;
             this.precedingJoinState = 0;
-            this.currentState = this._parseStack.transition & TableAccess.TRANSITION_STATE_MASK;
+            this.currentState = this._parseStack.transition & 15 /* TableAccess.TRANSITION_STATE_MASK */;
         }
     }
     // continue with main sync loop
     // process input string
     for (let i = start; i < length; ++i) {
         code = data[i];
+        // ESC [ has two consecutive CLEAR actions in the pinned table. With
+        // both introducer bytes present in GROUND, one reset is equivalent. Keep
+        // the actual CSI parameter parsing and dispatch (including async hooks)
+        // in the original loop. Incomplete introducers use upstream transitions.
+        if (code === 0x1b && this.currentState === 0 /* ParserState.GROUND */ &&
+            i + 2 < length && data[i + 1] === 0x5b) {
+            this._params.reset();
+            this._params.addParam(0);
+            this._collect = 0;
+            this.currentState = 3 /* ParserState.CSI_ENTRY */;
+            i += 2;
+            code = data[i];
+        }
         // normal transition & action lookup
-        transition = this._transitions.table[this.currentState << TableAccess.INDEX_STATE_SHIFT | (code < 0xa0 ? code : NON_ASCII_PRINTABLE)];
-        switch (transition >> TableAccess.TRANSITION_ACTION_SHIFT) {
-            case ParserAction.PRINT:
+        transition = this._transitions.table[this.currentState << 8 /* TableAccess.INDEX_STATE_SHIFT */ | (code < 0xa0 ? code : NON_ASCII_PRINTABLE)];
+        switch (transition >> 4 /* TableAccess.TRANSITION_ACTION_SHIFT */) {
+            case 2 /* ParserAction.PRINT */:
                 // read ahead with loop unrolling
                 // Note: 0x20 (SP) is included, 0x7F (DEL) is excluded
                 for (let j = i + 1;; ++j) {
@@ -186,16 +162,16 @@ function fastParse(data, length, promiseResult) {
                     }
                 }
                 break;
-            case ParserAction.EXECUTE:
+            case 3 /* ParserAction.EXECUTE */:
                 if (this._executeHandlers[code])
                     this._executeHandlers[code]();
                 else
                     this._executeHandlerFb(code);
                 this.precedingJoinState = 0;
                 break;
-            case ParserAction.IGNORE:
+            case 0 /* ParserAction.IGNORE */:
                 break;
-            case ParserAction.ERROR:
+            case 1 /* ParserAction.ERROR */:
                 const inject = this._errorHandler({
                     position: i,
                     code,
@@ -208,7 +184,7 @@ function fastParse(data, length, promiseResult) {
                     return;
                 // inject values: currently not implemented
                 break;
-            case ParserAction.CSI_DISPATCH:
+            case 7 /* ParserAction.CSI_DISPATCH */:
                 // Trigger CSI Handler
                 const handlers = this._csiHandlers[this._collect << 8 | code];
                 let j = handlers ? handlers.length - 1 : -1;
@@ -220,7 +196,7 @@ function fastParse(data, length, promiseResult) {
                         break;
                     }
                     else if (handlerResult instanceof Promise) {
-                        this._preserveStack(ParserStackType.CSI, handlers, j, transition, i);
+                        this._preserveStack(3 /* ParserStackType.CSI */, handlers, j, transition, i);
                         return handlerResult;
                     }
                 }
@@ -229,7 +205,7 @@ function fastParse(data, length, promiseResult) {
                 }
                 this.precedingJoinState = 0;
                 break;
-            case ParserAction.PARAM: {
+            case 8 /* ParserAction.PARAM */: {
                 const p = this._params;
                 // A colon at the first position must enter the upstream subparam path.
                 if (code !== 0x3a && !p._digitIsSub && !p._rejectDigits && p.length) {
@@ -271,11 +247,11 @@ function fastParse(data, length, promiseResult) {
                 i--;
                 break;
             }
-            case ParserAction.COLLECT:
+            case 9 /* ParserAction.COLLECT */:
                 this._collect <<= 8;
                 this._collect |= code;
                 break;
-            case ParserAction.ESC_DISPATCH:
+            case 10 /* ParserAction.ESC_DISPATCH */:
                 const handlersEsc = this._escHandlers[this._collect << 8 | code];
                 let jj = handlersEsc ? handlersEsc.length - 1 : -1;
                 for (; jj >= 0; jj--) {
@@ -286,7 +262,7 @@ function fastParse(data, length, promiseResult) {
                         break;
                     }
                     else if (handlerResult instanceof Promise) {
-                        this._preserveStack(ParserStackType.ESC, handlersEsc, jj, transition, i);
+                        this._preserveStack(4 /* ParserStackType.ESC */, handlersEsc, jj, transition, i);
                         return handlerResult;
                     }
                 }
@@ -295,15 +271,15 @@ function fastParse(data, length, promiseResult) {
                 }
                 this.precedingJoinState = 0;
                 break;
-            case ParserAction.CLEAR:
+            case 11 /* ParserAction.CLEAR */:
                 this._params.reset();
                 this._params.addParam(0); // ZDM
                 this._collect = 0;
                 break;
-            case ParserAction.DCS_HOOK:
+            case 12 /* ParserAction.DCS_HOOK */:
                 this._dcsParser.hook(this._collect << 8 | code, this._params);
                 break;
-            case ParserAction.DCS_PUT:
+            case 13 /* ParserAction.DCS_PUT */:
                 // inner loop - exit DCS_PUT: 0x18, 0x1a, 0x1b, 0x7f, 0x80 - 0x9f
                 // unhook triggered by: 0x1b, 0x9c (success) and 0x18, 0x1a (abort)
                 for (let j = i + 1;; ++j) {
@@ -314,23 +290,23 @@ function fastParse(data, length, promiseResult) {
                     }
                 }
                 break;
-            case ParserAction.DCS_UNHOOK:
+            case 14 /* ParserAction.DCS_UNHOOK */:
                 handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a);
                 if (handlerResult) {
-                    this._preserveStack(ParserStackType.DCS, [], 0, transition, i);
+                    this._preserveStack(6 /* ParserStackType.DCS */, [], 0, transition, i);
                     return handlerResult;
                 }
                 if (code === 0x1b)
-                    transition |= ParserState.ESCAPE;
+                    transition |= 1 /* ParserState.ESCAPE */;
                 this._params.reset();
                 this._params.addParam(0); // ZDM
                 this._collect = 0;
                 this.precedingJoinState = 0;
                 break;
-            case ParserAction.OSC_START:
+            case 4 /* ParserAction.OSC_START */:
                 this._oscParser.start();
                 break;
-            case ParserAction.OSC_PUT:
+            case 5 /* ParserAction.OSC_PUT */:
                 // inner loop: 0x20 (SP) included, 0x7F (DEL) included
                 for (let j = i + 1;; j++) {
                     if (j >= length || (code = data[j]) < 0x20 || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {
@@ -340,20 +316,20 @@ function fastParse(data, length, promiseResult) {
                     }
                 }
                 break;
-            case ParserAction.OSC_END:
+            case 6 /* ParserAction.OSC_END */:
                 handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a);
                 if (handlerResult) {
-                    this._preserveStack(ParserStackType.OSC, [], 0, transition, i);
+                    this._preserveStack(5 /* ParserStackType.OSC */, [], 0, transition, i);
                     return handlerResult;
                 }
                 if (code === 0x1b)
-                    transition |= ParserState.ESCAPE;
+                    transition |= 1 /* ParserState.ESCAPE */;
                 this._params.reset();
                 this._params.addParam(0); // ZDM
                 this._collect = 0;
                 this.precedingJoinState = 0;
                 break;
         }
-        this.currentState = transition & TableAccess.TRANSITION_STATE_MASK;
+        this.currentState = transition & 15 /* TableAccess.TRANSITION_STATE_MASK */;
     }
 }
