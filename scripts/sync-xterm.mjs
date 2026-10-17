@@ -2,6 +2,7 @@
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateParser } from './generate-xterm-parser.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const upstream = resolve(root, 'node_modules/@wraith-terminal/xterm-base');
 const typings = (await readFile(resolve(upstream, 'typings/xterm.d.ts'), 'utf8'))
@@ -14,3 +15,8 @@ await writeFile(resolve(root, 'packages/wraith/dist/xterm-api.d.ts'), typings);
 await mkdir(resolve(root, 'packages/wraith/css'), { recursive: true });
 await copyFile(resolve(upstream, 'css/xterm.css'), resolve(root, 'packages/wraith/css/xterm.css'));
 await copyFile(resolve(upstream, 'LICENSE'), resolve(root, 'licenses/xterm-MIT.txt'));
+
+// Generated at build time from hash-checked upstream source; no runtime eval.
+const { code } = await generateParser(root);
+await writeFile(resolve(root, 'packages/wraith/src/xterm-parser.js'), code);
+await writeFile(resolve(root, 'packages/wraith/dist/xterm-parser.js'), code);

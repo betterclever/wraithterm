@@ -33,7 +33,8 @@
     "test:pipes": "node scripts/pipes-browser-test.mjs",
     "benchmark:pipes": "node scripts/pipes-benchmark.mjs",
     "test:retained": "node scripts/retained-rows-test.mjs",
-    "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy"
+    "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy",
+    "test:input": "node scripts/test-production-input.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

@@ -1,4 +1,6 @@
 import type { Terminal } from './xterm-api.js';
+import { installParameterBatching } from './xterm-parser.js';
+import { installBulkPrint } from './xterm-print.js';
 
 interface Params {
   params: Int32Array;
@@ -26,6 +28,8 @@ interface InputHandler {
  * parameters and underline color.
  * Installation is per terminal; upstream prototypes are never modified. */
 export function accelerateInput(terminal: Terminal): void {
+  installParameterBatching(terminal);
+  installBulkPrint(terminal);
   const input = (terminal as unknown as { _core?: { _inputHandler?: InputHandler } })._core
     ?._inputHandler;
   if (typeof input?._extractColor !== 'function') return;

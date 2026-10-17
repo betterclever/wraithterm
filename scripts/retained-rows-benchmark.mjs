@@ -19,7 +19,7 @@ async function sourceHashes(directory) {
   const source = join(directory, 'packages/wraith/src');
   const hashes = {};
   for (const file of (await readdir(source)).sort()) {
-    if (file.endsWith('.ts') && !file.endsWith('.test.ts'))
+    if ((file.endsWith('.ts') || file.endsWith('.js')) && !file.endsWith('.test.ts'))
       hashes[file] = sha(await readFile(join(source, file)));
   }
   return hashes;

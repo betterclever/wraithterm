@@ -56,6 +56,20 @@ function pair() {
 }
 
 describe('xterm input acceleration against the unmodified upstream runtime', () => {
+  it('preserves every box/block scalar, combining suffixes, wide-cell repair and row edges', () => {
+    const p = pair();
+    try {
+      for (let code = 0x2500; code <= 0x259f; code++) {
+        p.parse('\x1b[0m\x1b[2J\x1b[H界界界\x1b[1;2H');
+        p.parse(String.fromCodePoint(code));
+        p.parse('e\u0301');
+        p.parse(`\x1b[1;64H${String.fromCodePoint(code)}\u0301X`);
+        p.equal();
+      }
+    } finally {
+      p.dispose();
+    }
+  });
   it('matches 2400 common style/color combinations and atomic fallback after a supported prefix', () => {
     const p = pair();
     const styles = [0, 1, 2, 3, 7, 8, 9];
