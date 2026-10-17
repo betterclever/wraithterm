@@ -130,9 +130,13 @@ keep their physical slots; only new content and a small row map are uploaded.
 Font options and
 DPR changes update geometry and the atlas. There is no ANSI replay into Ghostty.
 
-Transparency, minimum contrast adjustment, custom character joiners, buffer
-color decorations, and link hover decoration currently use the retained xterm
-DOM renderer. GPU rendering resumes when the feature is removed. Unsupported
+Buffer color decorations (including Search addon matches) and link hover
+underlines stay on WebGPU. Top/bottom decoration precedence and selection colors
+are resolved while packing affected rows; upstream retains decoration DOM
+elements, onRender callbacks and overview rulers.
+
+Transparency, minimum contrast adjustment and custom character joiners currently
+use the retained xterm DOM renderer. GPU rendering resumes when the feature is removed. Unsupported
 WebGPU environments, device errors and atlas capacity errors also use DOM, with
 a diagnostic reason. This preserves behavior while GPU coverage expands; it
 means some options and decorated addons do not currently receive GPU acceleration.

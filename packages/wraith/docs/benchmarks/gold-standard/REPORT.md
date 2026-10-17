@@ -20,14 +20,14 @@ rotated baseline/params/combined triplets per condition; 32 updates per block,
 GPU completion. These are completed updates, not physical display FPS. Sources,
 Wasm hash and raw samples are recorded in [input/runs.json](input/runs.json).
 
-| Workload | Baseline updates/s | Combined updates/s | Median paired gain |
-| --- | ---: | ---: | ---: |
-| Dense / DPR 1 | 842 | 891 | 5.9% |
-| RGB churn / DPR 1 | 833 | 877 | 5.3% |
-| Logs / DPR 1 | 6,531 | 6,809 | inconclusive |
-| Dashboard / DPR 1 | 1,306 | 1,488 | 13.9% |
-| Pipes / DPR 1 | 435 | 455 | 4.2% |
-| Dense / DPR 2 | 714 | 777 | 8.0% |
+| Workload          | Baseline updates/s | Combined updates/s | Median paired gain |
+| ----------------- | -----------------: | -----------------: | -----------------: |
+| Dense / DPR 1     |                842 |                891 |               5.9% |
+| RGB churn / DPR 1 |                833 |                877 |               5.3% |
+| Logs / DPR 1      |              6,531 |              6,809 |       inconclusive |
+| Dashboard / DPR 1 |              1,306 |              1,488 |              13.9% |
+| Pipes / DPR 1     |                435 |                455 |               4.2% |
+| Dense / DPR 2     |                714 |                777 |               8.0% |
 
 Rates are medians of individual blocks. Gains are medians of within-triplet
 ratios, so they need not equal the ratio of rate medians. Logs have wide paired
@@ -60,3 +60,36 @@ No CPU/GPU utilization measurement ran alongside throughput.
 
 Run `npm run build:sdk`, `npm run test:input` and, with the demo server running,
 `node scripts/paired-production-input.mjs` to reproduce the production actions.
+
+## GPU decoration coverage
+
+Search-style cell colors and link hover underlines now stay on WebGPU. Previously
+either feature switched the entire viewport to the retained DOM renderer.
+Decorations retain upstream callbacks, DOM elements and overview rulers. Top
+decorations override selection; selection overrides bottom decorations. Rows
+with overlays cannot reuse stale packed cells. Clearing overlays restores normal
+row caching. Transparency, contrast adjustment and character joiners still fall
+back to DOM.
+
+Three alternating before/after runs, dense 240×80 DPR1, 64 warmup and 256 measured
+updates each, in [overlays/runs.json](overlays/runs.json). Before is `ea398b1`;
+after includes the input changes above. DOM timings include forced layout;
+WebGPU runs fence every 32 and verify all 256 submissions. DOM updates are not
+GPU-completed frames, and these are not display presentation rates.
+
+| Dense condition | Before updates/s | After updates/s | Ratio |
+| --- | ---: | ---: | ---: |
+| Plain | 827 | 876 | 1.06× |
+| Twenty search-style highlights | 48 | 861 | 17.92× |
+| Link hover underline | 52 | 879 | 16.97× |
+
+The decorated/hover benefit primarily comes from avoiding DOM fallback; it must
+not be described as a universal parser or renderer multiplier. Initial/final
+text is equal. Actual background pixel samples match upstream DOM for all 40
+cells in an overlapping decoration/selection row at DPR 1 and 2. Wrapped hover
+ranges, cleanup and callbacks pass. The full 20-check API suite and packed
+development/production alias consumers pass with GPU decorations enabled.
+
+Reproduce with `node scripts/overlay-browser-test.mjs` and
+`WRAITH_BASELINE_DIR=.cache/gold-baseline node scripts/overlay-benchmark.mjs`,
+serving the preserved baseline on port 5190 and the current build on port 5173.

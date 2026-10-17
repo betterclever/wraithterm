@@ -32,6 +32,19 @@ export interface Color {
   rgba: number;
   css: string;
 }
+export interface LinkUnderline {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  cols: number;
+}
+export interface Decoration {
+  marker: { line: number };
+  options: { x?: number; width?: number; layer?: 'bottom' | 'top' };
+  backgroundColorRGB?: Color;
+  foregroundColorRGB?: Color;
+}
 export interface Colors {
   foreground: Color;
   background: Color;
@@ -84,10 +97,10 @@ export interface Core {
     isCursorInitialized: boolean;
     decPrivateModes: { cursorStyle?: string; cursorBlink?: boolean };
   };
-  _decorationService: { decorations: IterableIterator<unknown> };
+  _decorationService: { decorations: IterableIterator<Decoration> };
   _characterJoinerService: { _characterJoiners: unknown[] };
   linkifier: {
-    onShowLinkUnderline: IEvent<unknown>;
+    onShowLinkUnderline: IEvent<LinkUnderline>;
     onHideLinkUnderline: IEvent<unknown>;
   };
 }

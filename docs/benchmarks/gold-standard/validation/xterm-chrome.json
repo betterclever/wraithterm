@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-17T08:33:17.202Z",
+  "date": "2026-10-17T08:37:21.110Z",
   "version": "0.2.0",
   "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
   "target": "@xterm/xterm 6.0.0",
@@ -23,7 +23,7 @@
     "staged frame bounds and uniform validation reject before submission",
     "Wasm views refresh before packing and cold mid-row growth preserves submitted cells",
     "retained GPU rows survive scrolling, sparse edits, selection, stamp wrap and invalid sources",
-    "original Search addon, decoration fallback and GPU resumption",
+    "original Search addon with GPU decorations and cleanup",
     "markers/decorations/joiners and visual option fallbacks",
     "original Attach addon and disposal",
     "link provider registration, clear/reset and resource disposal",

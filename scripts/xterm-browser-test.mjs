@@ -480,7 +480,7 @@ try {
     searchA.findNext('Wraith', { decorations });
     searchB.findNext('Wraith', { decorations });
     await frame();
-    expect(a.renderer === 'dom', 'Decorated search fallback');
+    expect(a.renderer === 'webgpu', 'Decorated search stays on GPU');
     searchA.clearDecorations();
     searchB.clearDecorations();
     a.clearSelection();
@@ -488,7 +488,7 @@ try {
     a.refresh(0, a.rows - 1);
     await frame();
     expect(a.renderer === 'webgpu', 'Resume after search decorations');
-    checks.push('original Search addon, decoration fallback and GPU resumption');
+    checks.push('original Search addon with GPU decorations and cleanup');
     const marker = a.registerMarker(0);
     let markerDisposed = false,
       decorationRendered = false;
@@ -499,7 +499,7 @@ try {
     });
     a.refresh(0, a.rows - 1);
     await frame();
-    expect(decorationRendered && a.renderer === 'dom', 'Decoration rendering');
+    expect(decorationRendered && a.renderer === 'webgpu', 'Decoration callback with GPU rendering');
     marker.dispose();
     a.refresh(0, a.rows - 1);
     await frame();
