@@ -208,15 +208,30 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
     GhosttyColorRgb style_fg = colors.foreground, style_bg = colors.background, style_ul = {0};
     bool inverse = false, ul_default = true;
     uint32_t x = 0;
-    while (ghostty_render_state_row_cells_next(b->cells)) {
+    while (x < b->cols) {
       GhosttyCell raw = 0;
-      ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW, &raw);
+      if (keyed) {
+        raw = raw_words[x];
+      } else {
+        if (!ghostty_render_state_row_cells_next(b->cells)) break;
+        ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW, &raw);
+      }
       GhosttyCellContentTag tag = 0;
       GhosttyCellWide wide = 0;
       uint32_t codepoint = 0;
       GhosttyStyleId id = 0;
       void* values[] = {&tag, &wide, &codepoint, &id};
       ghostty_cell_get_multi(raw, 4, keys, values, NULL);
+      /* The public raw-row view already contains ordinary cells. Position the
+       * iterator only when decoding out-of-line style/grapheme/background data.
+       * Keep the iterator fallback if row identity or the bulk view is absent. */
+      if (keyed && ((id && id != style_id) ||
+          tag == GHOSTTY_CELL_CONTENT_BG_COLOR_PALETTE ||
+          tag == GHOSTTY_CELL_CONTENT_BG_COLOR_RGB ||
+          tag == GHOSTTY_CELL_CONTENT_CODEPOINT_GRAPHEME)) {
+        result = ghostty_render_state_row_cells_select(b->cells, (uint16_t)x);
+        if (result) return result;
+      }
       if (id != style_id) {
         GhosttyStyle style = GHOSTTY_INIT_SIZED(GhosttyStyle);
         if (id) ghostty_render_state_row_cells_get(b->cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_STYLE, &style);
