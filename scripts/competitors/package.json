@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "ghostty-web": "0.4.0",
+    "restty": "0.3.0"
+  }
+}
