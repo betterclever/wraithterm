@@ -157,6 +157,14 @@ is claimed. The separate native engine is essentially unchanged on dense, RGB,
 dashboard and Pipes (about 615, 433, 1,047 and 248 updates/s respectively); the
 compatible parser changes do not speed up libghostty itself.
 
+A later [competitor benchmark control check](../competitors/REPORT.md#retina-control-correction)
+found that the emulated-DPR2 xterm WebGL resize observer can shrink its actual
+backing canvas while its renderer metadata still reports the expected size.
+This earlier matrix checked that metadata, so it does **not** establish equal
+DPR2 backing-canvas sizes for the xterm comparison. Its DPR2 cross-terminal
+ratios are provisional. This finding does not itself invalidate the Wraith-only
+paired DPR2 tests; their independent variation and stability caveats remain.
+
 The DPR 2 matrix was unstable: Wraith before ranged from 401–530 and after from
 526–869 updates/s. Its apparent +38.8% median gain is **not a dependable speedup
 claim**. A separate [same-terminal diagnostic](regression-paired/runs.json)

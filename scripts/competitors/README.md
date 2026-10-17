@@ -10,6 +10,7 @@ From the repository root:
 
 ```sh
 node scripts/competitors/prepare.mjs --install
+node scripts/competitors/audit.mjs
 node scripts/competitors/validate.mjs
 node scripts/competitors/run.mjs --probe
 WRAITH_REPORT_DIR=.cache/competitor-matrix node scripts/competitors/run.mjs
@@ -84,3 +85,9 @@ Raw output contains all repetitions and ranges. Do not pool different batches,
 mask correctness failures with aggregate averages or infer other machines'
 performance from these results. Runtime JS and Wasm are the pinned published
 competitor artifacts; no upstream repository instructions are executed.
+
+`audit.mjs` independently verifies the downloaded tarball against each locked
+SHA-512 integrity value, then compares every installed competitor and transitive
+text-shaper file byte-for-byte with that archive. Its `artifacts.json` preserves
+all file SHA-256 hashes, including nested runtime modules. Run it outside timed
+measurements; it accesses the public npm registry.
