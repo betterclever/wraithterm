@@ -263,6 +263,16 @@ async function handle(command: Command) {
       engine.key(command.key, command.mods, command.action, command.text, command.unshifted);
       drain();
       break;
+    case 'font':
+      result(
+        command.id,
+        Array.from(
+          engine.configure_font(command.font, command.fonts, command.size, command.lineHeight),
+        ),
+      );
+      cursor = '';
+      schedule();
+      break;
     case 'mouse':
       engine.mouse(
         command.action,

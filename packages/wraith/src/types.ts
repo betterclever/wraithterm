@@ -6,7 +6,7 @@ export interface WraithTheme {
 export interface WraithOptions {
   cols?: number;
   rows?: number;
-  /** CSS pixels. Rasterization follows devicePixelRatio captured at mount. */
+  /** CSS pixels. Rasterization follows changes to devicePixelRatio. */
   fontSize?: number;
   lineHeight?: number;
   font?: string | URL | Uint8Array;

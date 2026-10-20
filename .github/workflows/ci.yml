@@ -36,6 +36,7 @@ jobs:
       - run: npm run dev > /tmp/wraith-vite.log 2>&1 &
       - run: npm run test:browser
       - run: npm run test:native-interaction
+      - run: npm run test:native-display
       - run: npm run test:xterm
       - run: npm run test:xterm-consumer
       - uses: actions/upload-artifact@v4

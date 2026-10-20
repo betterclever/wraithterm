@@ -14,6 +14,14 @@ export type Command =
     }
   | { type: 'write'; bytes: Uint8Array; ids: number[] }
   | { type: 'resize'; cols: number; rows: number; id: number }
+  | {
+      type: 'font';
+      font: Uint8Array;
+      fonts: Uint8Array[];
+      size: number;
+      lineHeight: number;
+      id: number;
+    }
   | { type: 'key'; key: number; mods: number; action: number; text: string; unshifted: number }
   | {
       type: 'mouse';

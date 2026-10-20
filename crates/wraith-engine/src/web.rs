@@ -168,6 +168,38 @@ impl Engine {
         self.core.state.dirty.fill(true);
         Ok(())
     }
+    /// Construct and validate the entire new atlas before changing live state.
+    pub fn configure_font(
+        &mut self,
+        font: Vec<u8>,
+        fallbacks: js_sys::Array,
+        size: f32,
+        line_height: f32,
+    ) -> Result<Vec<u32>, JsValue> {
+        let mut atlas = crate::text::Atlas::new(font, size, line_height).map_err(error)?;
+        for bytes in fallbacks.iter() {
+            atlas
+                .add_font(js_sys::Uint8Array::new(&bytes).to_vec())
+                .map_err(error)?;
+        }
+        let cols = self.core.state.cols as u16;
+        let rows = self.core.state.rows as u16;
+        self.renderer
+            .validate_external(
+                cols,
+                rows,
+                cols as u32 * atlas.cell_width,
+                rows as u32 * atlas.cell_height,
+            )
+            .map_err(error)?;
+        self.core
+            .resize(cols, rows, atlas.cell_width, atlas.cell_height)
+            .map_err(error)?;
+        let dimensions = vec![atlas.cell_width, atlas.cell_height];
+        self.renderer.atlas = atlas;
+        self.renderer.resize(cols, rows);
+        Ok(dimensions)
+    }
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         self.core.theme(fg, bg, cursor);
     }
