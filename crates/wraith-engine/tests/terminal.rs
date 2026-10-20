@@ -148,6 +148,32 @@ fn scrollback_and_viewport() {
     assert_eq!(text(&mut c), "two\nthree");
 }
 #[test]
+fn configured_history_retains_several_pages_and_zero_disables_it() {
+    let mut c = Core::new(120, 40, 10_000).unwrap();
+    let mut input = String::from("\x1bc");
+    for n in 0..9000 {
+        input.push_str(&format!("line {n:05} needle-{n} build output\r\n"));
+    }
+    c.write(input.as_bytes());
+    c.search("needle-100 build", 0).unwrap();
+    for _ in 0..1000 {
+        if c.search("", 1).unwrap()[0] == 2 {
+            break;
+        }
+    }
+    assert_eq!(c.search("", 2).unwrap()[1], 1);
+    assert_eq!(c.selection_text().unwrap(), "needle-100 build");
+    c.select_mode(0, 0, 0, 0, 4).unwrap();
+    let history = c.selection_text().unwrap();
+    assert!(history.contains("line 00000 needle-0"));
+    assert!(history.contains("line 08999 needle-8999"));
+
+    let mut empty = Core::new(120, 3, 0).unwrap();
+    empty.write(b"\x1bcgone\r\none\r\ntwo\r\nthree\r\nfour");
+    empty.scroll(-10_000);
+    assert_eq!(text(&mut empty), "two\nthree\nfour");
+}
+#[test]
 fn scrolling_region_preserves_outside_rows() {
     let mut c = term(10, 4);
     c.write(b"top\r\na\r\nb\r\nbottom\x1b[2;3r\x1b[3;1H\nX");

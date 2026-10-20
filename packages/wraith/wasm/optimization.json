@@ -1,6 +1,6 @@
 {
   "optimizer": "wasm-opt version 133",
   "flags": "-O3 --strip-dwarf",
-  "beforeBytes": 3020489,
-  "afterBytes": 2459239
+  "beforeBytes": 3020543,
+  "afterBytes": 2459286
 }
