@@ -16,6 +16,55 @@ fn plain_text_and_cursor() {
     assert_eq!(c.frame().cursor_x, 5);
 }
 #[test]
+fn native_selection_supports_words_lines_blocks_and_all_history() {
+    let mut c = term(12, 3);
+    c.write("hello world\r\n界e\u{301} text\r\nlast".as_bytes());
+    c.select_mode(1, 0, 1, 0, 2).unwrap();
+    assert_eq!(c.selection_text().unwrap(), "hello");
+    c.select_mode(0, 1, 0, 1, 3).unwrap();
+    assert_eq!(c.selection_text().unwrap(), "界e\u{301} text");
+    c.select_mode(0, 0, 1, 2, 1).unwrap();
+    assert_eq!(c.selection_text().unwrap(), "he\n界\nla");
+    c.select_mode(0, 0, 0, 0, 4).unwrap();
+    assert_eq!(
+        c.selection_text().unwrap(),
+        "hello world\n界e\u{301} text\nlast"
+    );
+    c.select_mode(-1, 0, 0, 0, 0).unwrap();
+    assert_eq!(c.selection_text().unwrap(), "");
+    assert!(c.select_mode(12, 0, 12, 0, 0).is_err());
+}
+#[test]
+fn native_search_covers_scrollback_unicode_reflow_and_wraparound() {
+    let mut c = term(12, 3);
+    c.write("old MATCH\r\n界 match\r\nthird MATCH\r\nlatest".as_bytes());
+    c.search("match", 0).unwrap();
+    for _ in 0..100 {
+        if c.search("", 1).unwrap()[0] == 2 {
+            break;
+        }
+    }
+    let first = c.search("", 2).unwrap();
+    assert_eq!(first[1], 3);
+    assert_eq!(first[2], 0);
+    assert_eq!(c.selection_text().unwrap(), "MATCH");
+    assert_eq!(c.search("", 2).unwrap()[2], 1);
+    assert_eq!(c.selection_text().unwrap(), "match");
+    assert_eq!(c.search("", 2).unwrap()[2], 2);
+    assert_eq!(c.search("", 2).unwrap()[2], 0);
+    assert_eq!(c.search("", 3).unwrap()[2], 2);
+    c.resize(8, 4, 9, 18).unwrap();
+    c.search("界", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 1);
+    assert_eq!(c.selection_text().unwrap(), "界");
+    c.search("missing", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 0);
+    assert_eq!(c.selection_text().unwrap(), "");
+    assert_eq!(c.search("", 4).unwrap()[1], 0);
+}
+#[test]
 fn utf8_and_escape_sequences_survive_every_chunk_boundary() {
     let input = "a\x1b[31m界e\u{301}\x1b[0m\r\nnext".as_bytes();
     let mut whole = term(20, 3);

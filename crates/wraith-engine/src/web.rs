@@ -63,6 +63,12 @@ impl Headless {
     pub fn release_hold(&mut self) {
         self.core.release_hold();
     }
+    pub fn search(&mut self, needle: &str, action: u32) -> Result<Vec<u32>, JsValue> {
+        self.core
+            .search(needle, action)
+            .map(|v| v.to_vec())
+            .map_err(error)
+    }
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
     }
@@ -198,6 +204,22 @@ impl Engine {
     }
     pub fn select(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) -> Result<(), JsValue> {
         self.core.select(x1, y1, x2, y2).map_err(error)
+    }
+    pub fn select_mode(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        mode: u32,
+    ) -> Result<(), JsValue> {
+        self.core.select_mode(x1, y1, x2, y2, mode).map_err(error)
+    }
+    pub fn search(&mut self, needle: &str, action: u32) -> Result<Vec<u32>, JsValue> {
+        self.core
+            .search(needle, action)
+            .map(|v| v.to_vec())
+            .map_err(error)
     }
     pub fn text(&mut self, selected: bool) -> Result<String, JsValue> {
         if selected {

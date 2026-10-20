@@ -10,6 +10,21 @@ beforeAll(async () => {
   });
 });
 describe('the packaged Ghostty + Rust Wasm ABI', () => {
+  it('exposes incremental Unicode-aware history search through the packaged Wasm ABI', () => {
+    const core = new Headless(12, 3, 100);
+    try {
+      core.write(encode('old MATCH\r\n界 match\r\nnew MATCH\r\nend'));
+      core.search('match', 0);
+      for (let i = 0; i < 100; i++) {
+        if (core.search('', 1)[0] === 2) break;
+      }
+      expect(Array.from(core.search('', 2))).toEqual([2, 3, 0]);
+      expect(Array.from(core.search('', 2))).toEqual([2, 3, 1]);
+      expect(Array.from(core.search('', 4))).toEqual([2, 0, 0xffffffff]);
+    } finally {
+      core.free();
+    }
+  });
   it('preserves UTF-8 and CSI state across one-byte writes', () => {
     const core = new Headless(80, 24, 100);
     try {
