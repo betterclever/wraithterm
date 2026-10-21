@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 const root = resolve(import.meta.dirname, '..'),
   out = resolve(root, '.cache/hype/capture/dense');
 await mkdir(out, { recursive: true });
+await mkdir(resolve(root, 'footage'), { recursive: true });
 const browser = await chromium.launch({
   executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   headless: true,

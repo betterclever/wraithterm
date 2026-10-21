@@ -32,6 +32,7 @@ for (const file of [
   evidence.sources[file] = createHash('sha256')
     .update(await readFile(resolve(repo, file)))
     .digest('hex');
+await mkdir(resolve(root, 'footage'), { recursive: true });
 const browser = await chromium.launch({
   executablePath:
     process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',

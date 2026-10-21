@@ -44,3 +44,7 @@ path = "src/phantom_main.rs"
 [[bin]]
 name = "wraith-product"
 path = "src/product_main.rs"
+
+[[bin]]
+name = "wraith-hype"
+path = "src/hype_main.rs"

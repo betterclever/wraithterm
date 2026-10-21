@@ -1,0 +1,151 @@
+{
+  "date": "2026-10-21T17:02:41.027Z",
+  "sources": {
+    "video/src/hype.rs": "6e91bfb1cecbb520e9b10e0d0bd1c4af2813825f56fad2250ab748df90f27143",
+    "video/src/hype_main.rs": "14d7c74b0549f3285fb863968007037e01f9e7f8aa062507e6177a03f1e9eac2",
+    "video/src/shaders/hype-browser.sksl": "734e4375f7fdbe065490739aab53d2987d61fdf9c3874d7fdeb932e1837ce4b7",
+    "video/src/shaders/hype-ghost.sksl": "e29e106b529cd2171033e47465da4e1603c8bdcc80d895e038abca11f604152d",
+    "video/soundtrack/hype.mjs": "aa1cc3be300868e1c1a04dee0d9c9053050e1233228bd3b96e203d9d4a42b674",
+    "video/studio/hype-chrome.mjs": "9957a749fc2d68e52d205f18ef61c6da79c39fe6ee2686f068878e16c9b71be3",
+    "demo/ghost-sprite.json": "2ee7b1db220b1faba1df7dfeed9e7265dce35eb894c8e476f25bab445a86cffc"
+  },
+  "assets": {
+    "hype-home.mp4": "4dee1f7e884c25c6658149ed40eb5d8f90184d05292c242a376c8d94759d9fe9",
+    "hype-reactor.mp4": "5745919fd44d1358ca7c28e6afe68a0ee67ad858053197b6633d69f1ef7b4019",
+    "hype-pipes.mp4": "1c31de9ea28fccd52401fb50049d3cdb9f332c6f91e1372481ee2415640588a5",
+    "hype-compatible.mp4": "fcaef889fe7a7b181cda8b8108e1742176fb00aac866c741ee174d92cde428a2",
+    "hype-dense.mp4": "c8441832e9ac851598799df2aeecf19279f4520a1db4a54170b27c82a573d6f1",
+    "hype-chrome.png": "3cf9f5e771186a97c77e0afdf1f46a7d573bda8ec79a719b1bd14bc039ed8532",
+    "hype-score.wav": "1a3b3ce226c0abcf14c56cde7259a8d86e2fc6cc3ac8c38b125324ff700ab3a8"
+  },
+  "inspection": {
+    "checked_frames": 1429,
+    "findings": []
+  },
+  "audioMix": {
+    "missing_files": [],
+    "report": {
+      "clipped_samples": 0,
+      "duration_seconds": 23.816666666666666,
+      "integrated_lufs": -15.17,
+      "loudness_range_lu": 1.9,
+      "max_momentary_lufs": -10.95,
+      "max_short_term_lufs": -14.21,
+      "sample_peak_dbfs": -1.97,
+      "sample_rate": 44100,
+      "sections": [
+        {
+          "end_seconds": 1.8333333333333333,
+          "integrated_lufs": -25.71,
+          "name": "Summon",
+          "start_seconds": 0,
+          "true_peak_dbtp": -11.85
+        },
+        {
+          "end_seconds": 5.5,
+          "integrated_lufs": -14.36,
+          "name": "TheDrop",
+          "start_seconds": 1.8333333333333333,
+          "true_peak_dbtp": -1.99
+        },
+        {
+          "end_seconds": 9.166666666666666,
+          "integrated_lufs": -14.77,
+          "name": "Reactor",
+          "start_seconds": 5.5,
+          "true_peak_dbtp": -1.94
+        },
+        {
+          "end_seconds": 12.816666666666666,
+          "integrated_lufs": -15.07,
+          "name": "MeasuredSpeed",
+          "start_seconds": 9.166666666666666,
+          "true_peak_dbtp": -1.97
+        },
+        {
+          "end_seconds": 16.483333333333334,
+          "integrated_lufs": -15,
+          "name": "Pipes",
+          "start_seconds": 12.816666666666666,
+          "true_peak_dbtp": -1.97
+        },
+        {
+          "end_seconds": 20.15,
+          "integrated_lufs": -15,
+          "name": "DropIn",
+          "start_seconds": 16.483333333333334,
+          "true_peak_dbtp": -1.96
+        },
+        {
+          "end_seconds": 23.816666666666666,
+          "integrated_lufs": -15.54,
+          "name": "Wraith",
+          "start_seconds": 20.15,
+          "true_peak_dbtp": -2.03
+        }
+      ],
+      "silent_ranges": [],
+      "true_peak_dbtp": -1.94
+    },
+    "waveform": null
+  },
+  "encodedAudio": {
+    "integratedLufs": -15.39,
+    "truePeakDbtp": -1.88,
+    "loudnessRangeLu": 3.9
+  },
+  "export": {
+    "file": "wraith-hype-temp.mp4",
+    "sha256": "ab0d91a903f2951d8b7e798cbdf0eab056a3aff8b844ad16544183898195df42",
+    "bytes": 22664092,
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "60/1",
+          "duration": "23.816667",
+          "nb_frames": "1429",
+          "nb_read_frames": "1429"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "23.816667",
+          "nb_frames": "1027",
+          "nb_read_frames": "1026"
+        }
+      ],
+      "format": {
+        "duration": "23.816667",
+        "size": "22664092"
+      }
+    },
+    "fullDecode": "pass"
+  },
+  "review": {
+    "allSevenTwelveFrameStripsViewed": true,
+    "fullResolutionKeyFramesViewed": true,
+    "encodedInstallFrameViewed": true,
+    "nativePreviewOffered": true,
+    "listeningReview": false,
+    "generatedOutputDirectoriesCreatedByScripts": true,
+    "scoreReproductionHashMatches": true
+  },
+  "music": {
+    "temporary": true,
+    "biaRecordingIncluded": false,
+    "source": "original synthesized beat; no reference audio reused",
+    "replacement": "local authorized music file plus offset; beat phase requires review"
+  },
+  "engineChanges": false
+}

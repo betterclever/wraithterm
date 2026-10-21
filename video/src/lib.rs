@@ -857,3 +857,5 @@ pub mod velocity;
 pub mod phantom;
 
 pub mod product;
+
+pub mod hype;

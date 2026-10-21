@@ -1,0 +1,41 @@
+// Shared 16x16 website sprite, extruded into depth by independent planes.
+uniform float3 iResolution;
+uniform float uClock;
+uniform float uPulse;
+float2 turn(float2 p,float a){return float2(cos(a)*p.x-sin(a)*p.y,sin(a)*p.x+cos(a)*p.y);}
+float mask(float2 uv){
+ float x=floor(uv.x*16.),y=floor(uv.y*16.);if(x<0.||x>=16.||y<0.||y>=16.)return 0.;
+ float bits=0.;
+
+ // @GHOST_ROWS@
+ return mod(floor(bits/exp2(x)),2.);
+}
+half4 main(float2 coord){
+ float2 screen=(coord-.5*iResolution.xy)/iResolution.y;
+ float3 ro=float3(0,0,8),rd=normalize(float3(screen.x,-screen.y,-1.9));
+ float angle=.18+sin(uClock*.23)*.16;
+ float3 center=float3(-2.6+sin(uClock*.17)*.22,.16+sin(uClock*.7)*.10,-4.6);
+ ro-=center;ro.xz=turn(ro.xz,-angle);rd.xz=turn(rd.xz,-angle);
+ float3 col=float3(0);float alpha=0.;
+ for(int i=0;i<9;i++){
+  float z=-.30+float(i)*.075;
+  if(abs(rd.z)<.001)continue;
+  float hit=(z-ro.z)/rd.z;float3 p=ro+rd*hit;
+  float2 uv=float2(p.x/5.3+.5,.5-p.y/5.3);
+  float m=mask(uv);
+  float a=m*(i==8?.94:.24);
+  float3 ink=i==8?float3(.96,.84,.68):float3(.27,.12,.04);
+  col=col*(1.-a)+ink*a;alpha=alpha+(1.-alpha)*a;
+ }
+ col*=.18+.02*uPulse;alpha*=.18+.02*uPulse;
+ float halo=exp(-dot(screen-float2(-.26,-.05),screen-float2(-.26,-.05))*3.5);
+ float3 bg=float3(.023,.014,.009)+float3(.095,.032,.008)*halo*(.6+.15*uPulse);
+ float vignette=clamp(1.-dot(screen,screen)*.36,.25,1.);
+ col=(bg*(1.-alpha)+col)*vignette;
+ float grain=fract(sin(dot(coord,float2(12.9898,78.233))+uClock*.017)*43758.5453)-.5;
+ col+=grain*.004;
+ // A restrained vanishing-point floor, kept behind the product.
+ float horizon=.72*iResolution.y;
+ if(coord.y>horizon){float depth=(coord.y-horizon)/iResolution.y;float line=pow(max(0.,cos((coord.x-iResolution.x*.5)/max(depth,.001)*.012)),80.);col+=float3(.15,.055,.012)*line*depth*.09;}
+ return half4(half3(col),1);
+}
