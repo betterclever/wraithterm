@@ -1,0 +1,34 @@
+{
+  "upstream": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "patch": "search-pages.patch",
+  "files": {
+    "include/ghostty/vt/search.h": {
+      "before": "0a7ff9bd9079f351ff2d255f8d60d33638a5ebc79c1c8076b47b332b47e40c21",
+      "after": "7437ae0299f984738e186ed1d60f244fdf6b233236d39eaa8ccb52fef29f006a"
+    },
+    "src/terminal/c/search.zig": {
+      "before": "d5fa234fa55dee458ee3f32d77039db679bcda8685cc505e94c5f72d2ea9bd71",
+      "after": "316441aa34ba01ae07c3f929f01ac7df69da429ef137bc8df205d8da2982caaf"
+    },
+    "src/terminal/search/active.zig": {
+      "before": "c6c1c8187be9aa6a2617e09d6c7804e660589daf216ed8fb74633969218cb929",
+      "after": "cf09485aa891619eed43c1d847719ebb5898c4d169470283766f30273f45d669"
+    },
+    "src/terminal/search/pagelist.zig": {
+      "before": "ea103a18962b62e38b3a3e26df5e2fd80255a4fac694a9b30830d7d27fb4b581",
+      "after": "b10a02303591a8f19e0a0409b7600d1c807f6a6ed2c204926c549c53af32f227"
+    },
+    "src/terminal/search/screen.zig": {
+      "before": "629e28fcbb9a1b8e3a543a7635ca875385cb2f7279e4f79c5487281481936996",
+      "after": "ce108bdf50d3c6c4354ccbb01a31860c1caeeb8714e174366dbb503c7d495dd0"
+    },
+    "src/terminal/search/sliding_window.zig": {
+      "before": "afd4f23a51a1ecbea165f67a9b77746d37e0476a02408cd359f771a7e92086be",
+      "after": "b59e0cb88225bcd2838e3fe1ca324b4da2e8cdbb05bad937d4f0a652fa52a26e"
+    },
+    "src/terminal/search/terminal.zig": {
+      "before": "068c46b4af95a7e81552c3e95dccbc020cc256645f930fc5e36b2fdd380130c3",
+      "after": "d26821022545f19227429192ea0644e53f1a78fd4b36cba4c6fa4a5613dd3c38"
+    }
+  }
+}

@@ -146,9 +146,13 @@ void wraith_bridge_free(WraithBridge* b) {
   wraith_dealloc(b, sizeof(WraithBridge), 3);
 }
 void wraith_bridge_write(WraithBridge* b, const uint8_t* p, size_t n) {
+  /* The opt-in search cache stores text, never terminal-owned pointers.
+   * Invalidate before any content mutation, including resets and pruning. */
+  if (b->search && n) ghostty_search_set(b->search, GHOSTTY_SEARCH_OPT_CACHE_PAGES, NULL);
   ghostty_terminal_vt_write(b->terminal, p, n);
 }
 int wraith_bridge_resize(WraithBridge* b, uint16_t cols, uint16_t rows, uint32_t cw, uint32_t ch) {
+  if (b->search) ghostty_search_set(b->search, GHOSTTY_SEARCH_OPT_CACHE_PAGES, NULL);
   uint32_t old_cols = b->cols, old_rows = b->height, old_cw = b->cw, old_ch = b->ch;
   b->cols = cols; b->height = rows; b->cw = cw; b->ch = ch;
   int result = ghostty_terminal_resize(b->terminal, cols, rows, cw, ch);
@@ -400,6 +404,9 @@ int wraith_bridge_search(WraithBridge* b, const uint8_t* bytes, size_t len, uint
   if (action > 4 || len > 4096) return GHOSTTY_INVALID_VALUE;
   if (!b->search) {
     int r = ghostty_search_new(&allocator, &b->search, b->terminal);
+    if (r) return r;
+    bool cache = true;
+    r = ghostty_search_set(b->search, GHOSTTY_SEARCH_OPT_CACHE_PAGES, &cache);
     if (r) return r;
   }
   int r = GHOSTTY_SUCCESS;

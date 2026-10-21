@@ -7,7 +7,13 @@ import assert from 'node:assert/strict';
 // Keep native experiments reproducible: never silently modify an unfamiliar
 // dependency checkout or rely on an untracked edit in the toolchain cache.
 export async function applyGhosttyPatches(directory, revision, enabled = true) {
-  const manifestUrl = new URL('../native/patches/batch-sgr.json', import.meta.url);
+  // Keep the existing parser-experiment switch scoped to the batch-SGR patch.
+  // The bridge requires the search cache ABI even when that experiment is off.
+  await applyPatch(directory, revision, enabled, 'batch-sgr');
+  await applyPatch(directory, revision, true, 'search-pages');
+}
+async function applyPatch(directory, revision, enabled, name) {
+  const manifestUrl = new URL(`../native/patches/${name}.json`, import.meta.url);
   const manifest = JSON.parse(await readFile(manifestUrl));
   assert.equal(manifest.upstream, revision, 'Revalidate patches for this Ghostty revision');
   const hash = async (file) =>

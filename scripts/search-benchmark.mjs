@@ -21,16 +21,24 @@ const sourceFiles = [
   'packages/wraith/wasm/wraith_engine_bg.wasm',
   'demo/interaction-bench.js',
   'scripts/search-benchmark.mjs',
+  'native/patches/search-pages.patch',
 ];
 const sources = async () =>
   Object.fromEntries(
     await Promise.all(
-      sourceFiles.map(async (file) => [
-        file,
-        createHash('sha256')
-          .update(await readFile(`${root}/${file}`))
-          .digest('hex'),
-      ]),
+      sourceFiles.map(async (file) => {
+        try {
+          return [
+            file,
+            createHash('sha256')
+              .update(await readFile(`${root}/${file}`))
+              .digest('hex'),
+          ];
+        } catch (error) {
+          if (error.code === 'ENOENT') return [file, null];
+          throw error;
+        }
+      }),
     ),
   );
 const report = {
