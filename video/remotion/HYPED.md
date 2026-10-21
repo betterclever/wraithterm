@@ -8,7 +8,7 @@ follow the loud beats in the mix (per-beat RMS of `flex-music.wav`: beats 0, 3,
 
 | Beats | Scene     | Move                                                      |
 | ----- | --------- | --------------------------------------------------------- |
-| 0–7   | Question  | Words slam on 0/3/5; "STILL SLOW?" stutters on the rests  |
+| 0–7   | Hook      | NATIVE / TERMINAL SPEED. / IN A TAB. slam on 0/3/5        |
 | 8–12  | Wraith    | Flash, oversize WRAITH slam, echo punches on 9–11         |
 | 13–15 | Whips     | One whip-panned screen per beat                           |
 | 16–20 | SameBytes | Paired screens slide in; SAME BYTES / SAME GRID / WHO WINS |
@@ -17,13 +17,13 @@ follow the loud beats in the mix (per-beat RMS of `flex-music.wav`: beats 0, 3,
 | 28–31 | Native    | NATIVE. then 4,500+ odometer                              |
 | 32–39 | Dive      | Accelerating dolly through the pipes with speed lines     |
 | 40–43 | Install   | `npm i wraithterm` typed one token per hit                |
-| 44–47 | Site      | XTERM API. / WEBGPU SPEED. then website whip              |
+| 44–47 | Site      | BUILD NATIVE EXPERIENCES / ON THE WEB. / GPU FAST. + site |
 | 48–51 | End       | WRAITH, lit mascot, URL and install                       |
 
 Numbers come from the same `hype-comparison.json` and `hype-native.json`
 records, and each claim keeps a one-line method note on screen. The bars are
 drawn at the measured slowest-Wraith and fastest-xterm-WebGL rates. Footage is
-not sped up, slowed down or stuttered; only the type stutters. The barrage's
+not sped up, slowed down or stuttered. The barrage's
 scroll beat shows compatible-profile scrolling footage, not the benchmark fixture.
 Flashes are limited to seven drops, at least 1.3 seconds apart.
 

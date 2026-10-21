@@ -71,7 +71,7 @@ function panels(scene: string, frame: number, local: number, n: number, h: numbe
     case 'Question':
       return [
         p(
-          'complex-webgl',
+          'dense',
           [0.6, -0.2, -4.5 + 0.6 * t + 0.4 * h],
           [0.12 + 0.04 * Math.sin(local / 30), -0.35 + 0.25 * t, -0.08],
           7,
@@ -186,9 +186,9 @@ function panels(scene: string, frame: number, local: number, n: number, h: numbe
       return [
         p(
           'home',
-          [3.2 * (1 - a), 0, -1.2 + 0.35 * h],
-          [0.2 * (1 - a), 1.5 * (1 - a) - 0.1, -0.2 * (1 - a)],
-          6.2,
+          [2.0 + 3.2 * (1 - a), 0, -1.2 + 0.35 * h],
+          [0.12 * (1 - a), 1.5 * (1 - a) - 0.38, -0.2 * (1 - a)],
+          4.8,
         ),
       ];
     }
@@ -322,33 +322,46 @@ const Copy: React.FC<{ scene: string; frame: number }> = ({ scene, frame }) => {
   const since = (k: number) => frame - b(k),
     k = beatAt(frame);
   if (scene === 'Question') {
-    // On the quiet beats after the question lands, the word itself stutters.
-    const stutter = k >= 6 ? Math.floor(frame / 5) : -1,
-      jitter = stutter < 0 ? 0 : (rnd(stutter) - 0.5) * 46,
-      dropout = stutter >= 0 && rnd(stutter + 50) > 0.8;
+    const settle = k >= 6 ? 1 + 0.015 * ((frame - b(6)) / (b(8) - b(6))) : 1;
     return (
-      <div style={{ position: 'absolute', left: 140, top: 150 }}>
-        <Slam t={since(0)} size={150} style={{ transformOrigin: 'left center' }}>
-          WHY IS YOUR
+      <div
+        style={{
+          position: 'absolute',
+          left: 140,
+          top: 150,
+          transform: `scale(${settle})`,
+          transformOrigin: 'left top',
+        }}
+      >
+        <Slam t={since(0)} size={270} word from={2.6} style={{ transformOrigin: 'left center' }}>
+          NATIVE
         </Slam>
-        <Slam
-          t={since(3)}
-          size={232}
-          word
-          style={{ transformOrigin: 'left center', marginTop: 18 }}
-        >
-          WEB TERMINAL
+        <Slam t={since(3)} size={170} style={{ transformOrigin: 'left center', marginTop: 14 }}>
+          TERMINAL SPEED.
         </Slam>
-        <div style={{ transform: `translateX(${jitter}px)`, opacity: dropout ? 0.15 : 1 }}>
-          <Slam
-            t={since(5)}
-            size={232}
-            from={2.8}
-            style={{ transformOrigin: 'left center', marginTop: 18 }}
+        {since(5) >= 0 ? (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 44,
+              marginTop: 40,
+              padding: '18px 44px 22px 52px',
+              border: `3px solid ${amber}`,
+              borderBottom: 'none',
+              borderRadius: '34px 34px 0 0',
+              background: '#1a0f08e6',
+              boxShadow: `0 0 ${30 + 90 * Math.exp(-since(5) / 6)}px #ff9a3c66`,
+              transform: `scale(${2.8 - 1.8 * snap(since(5), 520, 16)})`,
+              transformOrigin: 'left center',
+            }}
           >
-            STILL SLOW<span style={{ color: amber }}>?</span>
-          </Slam>
-        </div>
+            <Slam t={since(5)} size={150} from={1} color={amber}>
+              IN A TAB.
+            </Slam>
+            <span style={{ ...mono, fontSize: 64, color: '#a88a72' }}>×</span>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -605,34 +618,45 @@ const Copy: React.FC<{ scene: string; frame: number }> = ({ scene, frame }) => {
   if (scene === 'Site') {
     if (k < 46)
       return (
-        <div style={{ position: 'absolute', left: 120, top: 300 }}>
-          <Slam t={since(44)} size={190}>
-            XTERM API.
+        <div style={{ position: 'absolute', left: 120, top: 210 }}>
+          <Slam t={since(44)} size={170} style={{ transformOrigin: 'left center' }}>
+            BUILD NATIVE
+            <br />
+            EXPERIENCES
           </Slam>
           {k >= 45 ? (
             <Slam
               t={since(45)}
-              size={190}
+              size={210}
               word
-              style={{ marginTop: 14, transformOrigin: 'left center' }}
+              style={{ marginTop: 18, transformOrigin: 'left center' }}
             >
-              WEBGPU SPEED.
+              ON THE WEB.
             </Slam>
           ) : null}
         </div>
       );
     return (
-      <Tag
-        style={{
-          position: 'absolute',
-          left: 120,
-          bottom: 90,
-          fontSize: 40,
-          letterSpacing: '.12em',
-        }}
-      >
-        wraithterm.com
-      </Tag>
+      <>
+        <div style={{ position: 'absolute', left: 120, top: 250 }}>
+          <Slam t={since(46)} size={280} word from={2.6} style={{ transformOrigin: 'left center' }}>
+            GPU
+            <br />
+            FAST.
+          </Slam>
+        </div>
+        <Tag
+          style={{
+            position: 'absolute',
+            left: 124,
+            bottom: 90,
+            fontSize: 36,
+            letterSpacing: '.12em',
+          }}
+        >
+          wraithterm.com
+        </Tag>
+      </>
     );
   }
   return (
