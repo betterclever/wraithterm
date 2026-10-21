@@ -60,6 +60,35 @@ for (const dpr of [1, 2]) {
         renderer.renderRows(0, term.rows - 1);
         await renderer.gpu.fence();
       };
+      const parity = async () => {
+        renderer.rowCached.fill(0);
+        renderer.pack(0, term.rows - 1);
+        const base = Uint32Array.from(renderer.staging);
+        renderer.visualFeatures();
+        const fast = Uint32Array.from(renderer.staging),
+          saved = [];
+        renderer.staging.set(base);
+        renderer.rowSources.fill(0xffffffff);
+        try {
+          // Make only the private direct-word layout unavailable. CellData's
+          // public getters still read the same numeric storage synchronously.
+          for (let y = 0; y < term.rows; y++) {
+            const line = term.buffer.active.getLine(term.buffer.active.viewportY + y)._line;
+            saved.push([line, line._data]);
+            line._data = Array.from(line._data);
+          }
+          renderer.visualFeatures();
+          const mismatch = fast.findIndex((v, i) => v !== renderer.staging[i]);
+          if (mismatch !== -1)
+            throw Error(
+              `Direct/getter visual mismatch word ${mismatch}: ${fast[mismatch]} != ${renderer.staging[mismatch]}`,
+            );
+        } finally {
+          for (const [line, data] of saved) line._data = data;
+          renderer.invalidate();
+        }
+        await draw();
+      };
       const cell = (x, y) =>
         Array.from(renderer.staging.slice((y * term.cols + x) * 5, (y * term.cols + x + 1) * 5));
       const geometry = () => {
@@ -71,9 +100,22 @@ for (const dpr of [1, 2]) {
           height: renderer.dimensions.css.cell.height,
         };
       };
-      await write('\x1b[?25l\x1b[H \x1b[48;2;12;34;56m \x1b[0;7m \x1b[0;41m \x1b[0m\r\n█');
+      await write(
+        '\x1b[?25l\x1b[H \x1b[48;2;12;34;56m \x1b[0;7m \x1b[0;41m \x1b[0m\r\n█\x1b[3;1H\x1b[1;31mA\x1b[7mB\x1b[0m',
+      );
       await draw();
-      window.visual = { term, renderer, host, write, draw, cell, geometry, OriginalTerminal };
+      await parity();
+      window.visual = {
+        term,
+        renderer,
+        host,
+        write,
+        draw,
+        cell,
+        geometry,
+        parity,
+        OriginalTerminal,
+      };
     });
     const initial = await page.evaluate(() => ({
       renderer: visual.term.renderer,
@@ -167,6 +209,7 @@ for (const dpr of [1, 2]) {
         '\x1bc\x1b[?25l\x1b[H\x1b[38;2;40;40;40;48;2;32;32;32mA\r\n\x1b[2mA\r\n\x1b[0;38;2;40;40;40;48;2;32;32;32m▀\r\n\x1b[4mA',
       );
       await draw();
+      await visual.parity();
       const normal = cell(0, 0),
         dim = cell(0, 1),
         block = cell(0, 2),
@@ -178,10 +221,16 @@ for (const dpr of [1, 2]) {
         (underline[0] & 0xffffff) === (underline[2] & 0xffffff),
         'Default underline follows adjusted text',
       );
+      // Combined cells intentionally repack each frame. Exercise them after
+      // the earlier zero-upload check of ordinary unchanged alpha rows.
+      await write('\x1b[6;1H\x1b[0m界é');
+      await draw();
+      await visual.parity();
       await write('\x1b[4;1H\x1b[4;58:5:1mA');
       renderer.hovering = { x1: 0, y1: 3, x2: 1, y2: 3, cols: term.cols };
       renderer.invalidate();
       await draw();
+      await visual.parity();
       expect(
         (cell(0, 3)[0] & 0xffffff) === (cell(0, 3)[2] & 0xffffff),
         'Hover underline follows contrast-adjusted foreground over explicit underline color',
@@ -275,6 +324,7 @@ for (const dpr of [1, 2]) {
       term.dispose();
       return [
         'idempotent retained alpha/contrast',
+        'direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells',
         'zero uploads for identical alpha rows',
         'retained scrolling with both options',
         'live transparency and theme changes',

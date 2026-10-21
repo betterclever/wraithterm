@@ -31,6 +31,15 @@ function wordColor(word: number, foreground: boolean, colors: Colors, brighten: 
   }
   return rgba((foreground ? colors.foreground : colors.background).rgba);
 }
+function wordAlpha(word: number, foreground: boolean, colors: Colors, brighten: boolean): number {
+  const mode = word & 0x3000000;
+  if (mode === 0x3000000) return 255;
+  if (mode) {
+    const index = word & 255;
+    return colors.ansi[index + (brighten && index < 8 ? 8 : 0)]!.rgba & 255;
+  }
+  return (foreground ? colors.foreground : colors.background).rgba & 255;
+}
 function resolveColor(
   data: Cell,
   foreground: boolean,
@@ -394,11 +403,26 @@ export class XtermRenderer implements Renderer {
       if (this.rowSources[y] !== 0xffffffff) continue;
       const row = b.viewportY + y,
         line = b.getLine(row);
+      const words = packedRow(line, cols);
+      const overlays = decorations?.get(y);
+      const selectable = !!(this.selectedStart && this.selectedEnd && this.rowSelected(row));
       const hover = this.hovering;
       const hovered = hover !== undefined && y >= hover.y1 && y <= hover.y2;
       for (let x = 0, i = y * cols * CELL_WORDS; x < cols; x++, i += CELL_WORDS) {
-        const data = line?.getCell(x, this.cell) as Cell | undefined;
-        if (!data) continue;
+        const p = x * 3,
+          content = words?.[p] ?? 0,
+          fgWord = words?.[p + 1] ?? 0,
+          bgWord = words?.[p + 2] ?? 0;
+        // Match the ordinary packer's pinned-layout checks. Extended or
+        // combined cells keep the public-getter path for all their attributes.
+        const direct =
+          words !== undefined &&
+          !(bgWord & CELL_HAS_EXTENDED) &&
+          !(content & CELL_IS_COMBINED) &&
+          content >>> 22 <= 2 &&
+          (content & CELL_CODEPOINT_MASK) <= 0x10ffff;
+        const data = direct ? undefined : (line?.getCell(x, this.cell) as Cell | undefined);
+        if (!direct && !data) continue;
         let fg = values[i]!,
           fgAlpha = 255,
           bgAlpha = 255,
@@ -407,41 +431,56 @@ export class XtermRenderer implements Renderer {
           flags = values[i + 3]!,
           dim = !!(flags & 4);
         if (alpha) {
-          const inverse = !!data.isInverse();
-          fgAlpha = this.colorAlpha(
-            data,
-            !inverse,
-            true,
-            colors,
-            !!options.drawBoldTextInBrightColors,
-          );
+          const inverse = direct ? !!(fgWord & 0x4000000) : !!data!.isInverse();
+          fgAlpha = direct
+            ? wordAlpha(
+                inverse ? bgWord : fgWord,
+                !inverse,
+                colors,
+                !!(fgWord & 0x8000000) && !!options.drawBoldTextInBrightColors,
+              )
+            : this.colorAlpha(data!, !inverse, true, colors, !!options.drawBoldTextInBrightColors);
           // Upstream's inverted default foreground uses an opaque background.
-          if (inverse && data.isBgDefault()) fgAlpha = 255;
-          if (this.transparency) bgAlpha = this.colorAlpha(data, inverse, false, colors, false);
+          if (inverse && (direct ? !(bgWord & 0x3000000) : data!.isBgDefault())) fgAlpha = 255;
+          if (this.transparency)
+            bgAlpha = direct
+              ? wordAlpha(inverse ? fgWord : bgWord, inverse, colors, false)
+              : this.colorAlpha(data!, inverse, false, colors, false);
           let top = false;
-          for (const d of decorations?.get(y) ?? []) {
-            const left = d.options.x ?? 0;
-            if (
-              x < left ||
-              x >= left + (d.options.width ?? 1) ||
-              (top && d.options.layer !== 'top')
-            )
-              continue;
-            if (d.foregroundColorRGB) fgAlpha = 255;
-            if (d.backgroundColorRGB) bgAlpha = 255;
-            top = d.options.layer === 'top';
-          }
-          if (!top && this.selectedStart && this.selectedEnd && this.selected(x, row)) {
+          if (overlays)
+            for (const d of overlays) {
+              const left = d.options.x ?? 0;
+              if (
+                x < left ||
+                x >= left + (d.options.width ?? 1) ||
+                (top && d.options.layer !== 'top')
+              )
+                continue;
+              if (d.foregroundColorRGB) fgAlpha = 255;
+              if (d.backgroundColorRGB) bgAlpha = 255;
+              top = d.options.layer === 'top';
+            }
+          if (!top && selectable && this.selected(x, row)) {
             bgAlpha = 255;
             if (colors.selectionForeground) fgAlpha = 255;
           }
-          ulAlpha = data.isUnderlineColorRGB()
-            ? 255
-            : data.isUnderlineColorPalette()
-              ? colors.ansi[data.getUnderlineColor()]!.rgba & 255
-              : fgAlpha;
+          ulAlpha = direct
+            ? (fgWord & 0x3000000) === 0x3000000
+              ? 255
+              : fgWord & 0x3000000
+                ? colors.ansi[fgWord & 255]!.rgba & 255
+                : fgAlpha
+            : data!.isUnderlineColorRGB()
+              ? 255
+              : data!.isUnderlineColorPalette()
+                ? colors.ansi[data!.getUnderlineColor()]!.rgba & 255
+                : fgAlpha;
         }
-        if (contrast && data.getWidth() && !backgroundGlyph(data.getCode())) {
+        if (
+          contrast &&
+          (direct ? content >>> 22 : data!.getWidth()) &&
+          !backgroundGlyph(direct ? content & CELL_CODEPOINT_MASK : data!.getCode())
+        ) {
           if (fg !== lastFg || bg !== lastBg || dim !== lastDim) {
             adjusted = this.contrast.resolve(fg, bg, dim);
             lastFg = fg;
@@ -451,7 +490,7 @@ export class XtermRenderer implements Renderer {
           if (adjusted !== undefined) {
             fg = adjusted;
             fgAlpha = 255;
-            if (data.isUnderlineColorDefault()) {
+            if (direct ? !(fgWord & 0x3000000) : data!.isUnderlineColorDefault()) {
               values[i + 2] = fg;
               ulAlpha = 255;
             }
