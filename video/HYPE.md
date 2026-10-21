@@ -1,8 +1,13 @@
 # Ghost Hype
 
-A separate 23.816667-second Wraith launch cut, 1920×1080 at 60 fps, rendered
-with fframes and Skia on Metal. Earlier films remain available. The local export
-is `wraith-hype-temp.mp4`; its soundtrack is explicitly temporary.
+The final edition now uses [Remotion, React and Three.js](remotion/README.md),
+with the user-supplied BIA recording and measured 131-BPM onset alignment.
+Its local export is `wraith-hype-remotion.mp4`, 23.816667 seconds at
+1920×1080/60 fps. The supplied music, captures and exports remain local.
+
+The earlier fframes/Skia Metal version remains available as
+`wraith-hype-temp.mp4`. The details and validation below describe that earlier
+cut; its original temporary instrumental is retained for reproduction.
 
 The creative direction is a fast 3D browser edit: perspective camera cuts,
 subtle RGB motion smears, thick rounded browser slabs, amber studio light and
@@ -51,17 +56,19 @@ display refresh nor a universal device/workload guarantee. Capturing and film
 rendering were stopped during measurement; unrelated desktop applications were
 left running. Runtime and common benchmark-runner fingerprints were verified.
 
-## Audio status
+## Earlier fframes soundtrack
 
-**BIA's recording is not included.** No YouTube music was ripped or downloaded.
+**The earlier `wraith-hype-temp.mp4` does not include BIA's recording.**
+The final Remotion edition uses the file supplied by the user on October 21.
+No YouTube download is performed by this workflow.
 The requested song can be located on [BIA's official channel](https://www.youtube.com/watch?v=Zc4r7GGXAvw).
-The current track is an original deterministic temporary score: sub bass, dry
+The earlier track is an original deterministic temporary score: sub bass, dry
 percussion, brass-like stabs and camera transition effects, with no sampled
 producer tag, vocals or borrowed melody. Its provisional tempo also agrees with
 [the label's Beatport listing](https://www.beatport.com/track/we-on-go/22219293).
 That metadata is not a listening analysis or verification of an audio beat phase.
 
-To replace it with a local file the user is authorized to use:
+The fframes version also supports a supplied local file:
 
 ```sh
 cd /Users/betterclever/projects/wraith/video

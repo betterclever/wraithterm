@@ -1,8 +1,10 @@
-// Original temporary 131-BPM trap/electronic score. No BIA audio or melody sampled.
-// Replace via --music=/authorized/local/file --offset=seconds; cut timing remains provisional.
+// Mix supplied local music, or generate the original temporary 131-BPM score.
+// --music=/local/file --offset=seconds trims the source without changing its tempo.
 import { writeFile, mkdir, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, basename } from 'node:path';
 const root = resolve(import.meta.dirname, '..'),
   cache = resolve(root, '.cache/hype/audio');
 await mkdir(cache, { recursive: true });
@@ -300,6 +302,16 @@ await writeFile(
       source: music
         ? 'user-supplied local audio'
         : 'original deterministic synthesized beat; no reference audio',
+      sourceFile: music ? basename(music) : null,
+      sourceSha256: music
+        ? await new Promise((resolve, reject) => {
+            const hash = createHash('sha256');
+            createReadStream(music)
+              .on('data', (chunk) => hash.update(chunk))
+              .on('end', () => resolve(hash.digest('hex')))
+              .on('error', reject);
+          })
+        : null,
       offset,
       loudness: JSON.parse(log.match(/\{\s*"input_i"[\s\S]*?\}/)[0]),
     },

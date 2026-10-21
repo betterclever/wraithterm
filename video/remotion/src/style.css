@@ -1,0 +1,40 @@
+* {
+  box-sizing: border-box;
+}
+.film {
+  background: #080604;
+  color: #f8ecde;
+  font-family: Manrope, sans-serif;
+  overflow: hidden;
+}
+.wordmark {
+  font-weight: 800;
+  letter-spacing: -0.075em;
+  line-height: 0.96;
+  margin: 0;
+  background: linear-gradient(140deg, #fff5e5 4%, #ffbd80 65%, #d89265);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.mono {
+  font-family: JetBrains, monospace;
+  font-weight: 400;
+  letter-spacing: 0.015em;
+}
+.eyebrow {
+  font-size: 25px;
+  color: #d0a685;
+  letter-spacing: 0.17em;
+}
+.progress {
+  position: absolute;
+  left: 112px;
+  right: 112px;
+  bottom: 52px;
+  height: 1px;
+  background: #91613e33;
+}
+.progress > div {
+  height: 1px;
+  background: #e5ac7e;
+}
