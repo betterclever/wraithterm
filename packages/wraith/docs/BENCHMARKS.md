@@ -118,3 +118,15 @@ npm run profile:bulk-text
 ```
 
 For a paired comparison, provide WRAITH_BEFORE_URL, WRAITH_BEFORE_SOURCE_ROOT and WRAITH_BEFORE_HASH for an immutable baseline. Run profiles separately from timing. See the report for complete fixture and validation details.
+
+## Native hidden panels
+
+The [native visibility report](benchmarks/native-visibility/REPORT.md) compares eight terminals at a fixed acknowledged log rate. Hidden, offscreen and fully clipped panels stop ordinary GPU submissions, with roughly 54–72% lower Chrome CPU time in five paired repetitions. Parsing, history and explicit flush continue. This is inactive-panel efficiency, not a visible-FPS gain. Short and longer visible CPU controls are retained: paired medians increase about 7%, with overlapping ranges on a busy host; do not claim a visible CPU improvement.
+
+```sh
+WRAITH_URL=http://127.0.0.1:5196 npm run test:native-visibility
+WRAITH_URL=http://127.0.0.1:5196 npm run benchmark:visibility
+node scripts/summarize-visibility.mjs
+```
+
+For before/after runs provide WRAITH_BEFORE_URL, WRAITH_BEFORE_SOURCE_ROOT and WRAITH_BEFORE_HASH. WRAITH_SETTLE_MS and WRAITH_STEPS configure a longer control; the recorded follow-up uses 5000 ms, 180 batches and visible-only mode. The summarizer expects both the retained matrix and that control. The report includes reproduction commands, source fingerprints, equal-state checks and observer limits.

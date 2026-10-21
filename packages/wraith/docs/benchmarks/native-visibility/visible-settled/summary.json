@@ -1,0 +1,56 @@
+{
+  "config": {
+    "repeats": 3,
+    "steps": 180,
+    "settleMs": 5000,
+    "hz": 12,
+    "terminals": 8,
+    "cols": 80,
+    "rows": 24,
+    "history": 1000,
+    "modes": [
+      "visible"
+    ]
+  },
+  "builds": [
+    {
+      "name": "before",
+      "url": "http://127.0.0.1:5198",
+      "root": ".cache/visibility-before",
+      "head": "92f85e35caf37a0cdbdf7aed52c4cd682dae01db",
+      "sources": {
+        "packages/wraith/src/index.ts": "70cfc69ade190263d4bb0e240605e378a0e0ac67ae3e3b8bf9383b0f7872629d",
+        "packages/wraith/src/worker.ts": "2d8565c9ab34953ad8e146618508d71027ac40799b9f6ba54607230733ddada7",
+        "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+      }
+    },
+    {
+      "name": "after",
+      "url": "http://127.0.0.1:5196",
+      "root": "/Users/betterclever/projects/wraith",
+      "head": "0efeedd5a825600c59a174eb5c2bb17950668d07",
+      "sources": {
+        "packages/wraith/src/index.ts": "030447e14e45b2d795d137c708b64ab033aa8114349a5a04516a94dc3d983846",
+        "packages/wraith/src/worker.ts": "a122ef8415659053e7c7d936aef5c5ab2fae7fa9abf096a07adcf3236d05ed4b",
+        "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+      }
+    }
+  ],
+  "beforeCpuMedian": 20.737620008335508,
+  "afterCpuMedian": 21.555913247894118,
+  "beforeCpuRange": "20.1–23.3",
+  "afterCpuRange": "18.4–30.1",
+  "pairedCpuReductionPercent": -6.9954299359386685,
+  "beforeBatchRate": 11.99952001918016,
+  "afterBatchRate": 11.998880104494972,
+  "beforeSubmissions": [
+    1435,
+    1430,
+    1440
+  ],
+  "afterSubmissions": [
+    1440,
+    1440,
+    1422
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "builds": [
+    {
+      "name": "before",
+      "url": "http://127.0.0.1:5198",
+      "root": ".cache/visibility-before",
+      "head": "92f85e3",
+      "sources": {
+        "packages/wraith/src/index.ts": "70cfc69ade190263d4bb0e240605e378a0e0ac67ae3e3b8bf9383b0f7872629d",
+        "packages/wraith/src/worker.ts": "2d8565c9ab34953ad8e146618508d71027ac40799b9f6ba54607230733ddada7",
+        "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+      }
+    },
+    {
+      "name": "after",
+      "url": "http://127.0.0.1:5196",
+      "root": "/Users/betterclever/projects/wraith",
+      "head": "2e747ea6bf24a780cacf359b1ca52724856c0f1c",
+      "sources": {
+        "packages/wraith/src/index.ts": "030447e14e45b2d795d137c708b64ab033aa8114349a5a04516a94dc3d983846",
+        "packages/wraith/src/worker.ts": "a122ef8415659053e7c7d936aef5c5ab2fae7fa9abf096a07adcf3236d05ed4b",
+        "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+      }
+    }
+  ],
+  "config": {
+    "repeats": 5,
+    "steps": 36,
+    "hz": 12,
+    "terminals": 8,
+    "cols": 80,
+    "rows": 24,
+    "history": 1000,
+    "modes": [
+      "visible",
+      "display-none",
+      "offscreen",
+      "clipped"
+    ]
+  },
+  "rows": [
+    {
+      "mode": "visible",
+      "repetitions": 5,
+      "stableCpuPairs": 5,
+      "beforeSubmissions": 288,
+      "afterSubmissions": 288,
+      "beforeBatchesPerSecond": 11.996800853058181,
+      "afterBatchesPerSecond": 11.996001332889037,
+      "beforeCpuPercent": 24.430393592531257,
+      "afterCpuPercent": 27.536487467991353,
+      "beforeCpuRange": "20.6–33.5",
+      "afterCpuRange": "23.9–37.1",
+      "pairedCpuReductionPercent": -7.462832022516452,
+      "beforeMachineCapacityPercent": 1.3572440884739587,
+      "afterMachineCapacityPercent": 1.529804859332853
+    },
+    {
+      "mode": "display-none",
+      "repetitions": 5,
+      "stableCpuPairs": 5,
+      "beforeSubmissions": 288,
+      "afterSubmissions": 0,
+      "beforeBatchesPerSecond": 11.996001332889037,
+      "afterBatchesPerSecond": 11.998800120178698,
+      "beforeCpuPercent": 26.488738893410865,
+      "afterCpuPercent": 10.263917695495927,
+      "beforeCpuRange": "21.0–39.6",
+      "afterCpuRange": "7.0–18.1",
+      "pairedCpuReductionPercent": 54.26870413071341,
+      "beforeMachineCapacityPercent": 1.4715966051894924,
+      "afterMachineCapacityPercent": 0.5702176497497737
+    },
+    {
+      "mode": "offscreen",
+      "repetitions": 5,
+      "stableCpuPairs": 5,
+      "beforeSubmissions": 288,
+      "afterSubmissions": 0,
+      "beforeBatchesPerSecond": 11.997600480047014,
+      "afterBatchesPerSecond": 11.998400213400235,
+      "beforeCpuPercent": 28.5745060153037,
+      "afterCpuPercent": 8.682039029750879,
+      "beforeCpuRange": "21.0–36.4",
+      "afterCpuRange": "4.5–13.5",
+      "pairedCpuReductionPercent": 71.86391682810797,
+      "beforeMachineCapacityPercent": 1.5874725564057612,
+      "afterMachineCapacityPercent": 0.48233550165282657
+    },
+    {
+      "mode": "clipped",
+      "repetitions": 5,
+      "stableCpuPairs": 5,
+      "beforeSubmissions": 288,
+      "afterSubmissions": 0,
+      "beforeBatchesPerSecond": 11.996401079771408,
+      "afterBatchesPerSecond": 11.998000333277787,
+      "beforeCpuPercent": 26.731125360795346,
+      "afterCpuPercent": 8.789038037219493,
+      "beforeCpuRange": "21.5–29.0",
+      "afterCpuRange": "7.3–19.4",
+      "pairedCpuReductionPercent": 62.82875540278934,
+      "beforeMachineCapacityPercent": 1.4850625200441858,
+      "afterMachineCapacityPercent": 0.4882798909566385
+    }
+  ]
+}

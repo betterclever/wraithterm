@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-21T14:09:01.609Z",
+  "implementationCommit": "2e747ea6bf24a780cacf359b1ca52724856c0f1c",
+  "baselineCommit": "92f85e35caf37a0cdbdf7aed52c4cd682dae01db",
+  "sourceAndRunnerHashesMatchCommits": true,
+  "wasmUnchanged": true,
+  "visibility": {
+    "head": "2e747ea6bf24a780cacf359b1ca52724856c0f1c",
+    "sources": {
+      "packages/wraith/src/index.ts": "030447e14e45b2d795d137c708b64ab033aa8114349a5a04516a94dc3d983846",
+      "packages/wraith/src/worker.ts": "a122ef8415659053e7c7d936aef5c5ab2fae7fa9abf096a07adcf3236d05ed4b"
+    },
+    "checks": [
+      "visible updates submit",
+      "display-none: no ordinary frames; parsing/search/resize/selection/mirror/flush; clean reveal repaints",
+      "offscreen: no ordinary frames; parsing/search/resize/selection/mirror/flush; clean reveal repaints",
+      "resumed actual canvas pixels",
+      "zero-area edge pauses; one-pixel partial intersection resumes",
+      "overflow-clipped terminal pauses and resumes",
+      "document and element visibility remain combined",
+      "visibility transitions serialize safely with writes and GPU fences",
+      "observers disconnected; late callbacks after disposal are harmless",
+      "visibility event during deferred font loading does not enter uninitialized worker",
+      "worker failure disconnects visibility observer and ignores late delivery",
+      "document-only fallback: missing observer",
+      "document-only fallback: throws observer"
+    ],
+    "errors": [],
+    "pixels": {
+      "width": 632,
+      "height": 437,
+      "colors": 228,
+      "bright": 7207
+    }
+  },
+  "checks": {
+    "sdkTests": 66,
+    "buildSdk": "pass",
+    "typecheck": "pass",
+    "buildDemo": "pass",
+    "nativeBrowser": "actual pixels, keyboard, resize, paste, six GPU-fenced smoke workloads, benchmark UI and disposal passed",
+    "nativeInteraction": "> wraith-workspace@0.2.0 test:native-interaction\n> node scripts/native-interaction-test.mjs\n\nNative interactions passed: history search, Unicode, reflow, cancellation, word/line/block gestures, keyboard interception and disposal.",
+    "nativeSearch": {
+      "passed": true,
+      "concurrency": {
+        "events": [
+          {
+            "type": "key",
+            "at": 601.4000000357628
+          },
+          {
+            "type": "search",
+            "at": 653.9000000357628
+          }
+        ],
+        "found": {
+          "total": 0,
+          "index": -1
+        }
+      },
+      "mutation": {
+        "found": {
+          "total": 1,
+          "index": 0
+        },
+        "selected": "UPDATED-needle",
+        "missing": {
+          "total": 0,
+          "index": -1
+        },
+        "cancelled": [
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "rejected",
+          "fulfilled"
+        ],
+        "old": {
+          "total": 0,
+          "index": -1
+        },
+        "fresh": {
+          "total": 1,
+          "index": 0
+        },
+        "disposed": [
+          "rejected"
+        ]
+      }
+    },
+    "nativeDisplay": "> wraith-workspace@0.2.0 test:native-display\n> node scripts/native-display-test.mjs\n\nLive display passed: zoom, atomic font rejection/replacement, DPR 1↔2, GPU pixels, worker/content/selection/history/mode preservation.",
+    "nativeInstalledConsumer": "> wraith-workspace@0.2.0 test:consumer\n> node scripts/consumer-test.mjs\n\nInstalled npm archive: Vite dev text and pixels verified.\nInstalled npm archive: production bundle text and pixels verified.",
+    "compatibleAliasedConsumer": "> wraith-workspace@0.2.0 test:xterm-consumer\n> node scripts/xterm-consumer-test.mjs\n\nUnchanged @xterm/xterm imports: Vite dev API, addons and GPU pixels passed.\nUnchanged @xterm/xterm imports: production API, addons and GPU pixels passed."
+  },
+  "matrix": {
+    "records": 40,
+    "stableCpuRecords": 40,
+    "allBytesMatch": true,
+    "allStateAndHistoryHashesMatch": true,
+    "allHiddenFinalOrdinarySubmissionsZero": true
+  },
+  "limits": [
+    "No engine source or artifact changes; no native Rust rerun needed.",
+    "CPU includes all isolated Chrome processes, not device GPU utilization.",
+    "Heavy unrelated host load remains; use raw ranges and settled control."
+  ],
+  "settledVisible": {
+    "records": 6,
+    "stableCpuRecords": 6,
+    "allStateAndHistoryHashesMatch": true,
+    "sourceAndRunnerHashesMatchCommits": true
+  }
+}
