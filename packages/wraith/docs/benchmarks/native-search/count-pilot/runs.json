@@ -1,0 +1,1017 @@
+{
+  "date": "2026-10-21T12:04:20.749Z",
+  "head": "cb3e7d5a0451417f4982fef67b41a8a138128625",
+  "sources": {
+    "packages/wraith/src/worker.ts": "2d8565c9ab34953ad8e146618508d71027ac40799b9f6ba54607230733ddada7",
+    "native/bridge.c": "c78c74d8aa31de3fecb3d21fe2790359c7e03d1ed37b5dd8c164b44ee30265de",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+    "demo/interaction-bench.js": "36df24b626dc5aafc8714dbaf1bf8140dd65df8de96773288d4ab5dbc1420504",
+    "scripts/search-benchmark.mjs": "4273c17469b6a00b685c77ea8033a4cbb6d1d7f9616b526d31212cd5a7e4c0b8",
+    "native/patches/search-pages.patch": "aee7a5a1b74cc63acecbe35dce64e955e12893d65957e7c7a6be4b0dbe327e16"
+  },
+  "cpu": "Apple M5 Max",
+  "logicalCpus": 18,
+  "os": "darwin 27.2.0",
+  "xterm": "6.0.0",
+  "searchAddon": "0.16.0",
+  "config": {
+    "url": "http://127.0.0.1:5196",
+    "types": [
+      "dom",
+      "webgl",
+      "wraith",
+      "ghostty"
+    ],
+    "repeats": 1,
+    "cases": [
+      {
+        "lines": 9000,
+        "wrapped": false
+      },
+      {
+        "lines": 9000,
+        "wrapped": true
+      },
+      {
+        "lines": 90000,
+        "wrapped": false
+      }
+    ]
+  },
+  "results": [
+    {
+      "type": "dom",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 6.600000023841858
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 1.399999976158142
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.40000003576278687
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.699999988079071
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.3999999761581421
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.800000011920929
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 0.3999999761581421
+        }
+      ],
+      "summary": {
+        "p50": 0.5,
+        "p95": 6.600000023841858,
+        "p99": 6.600000023841858,
+        "max": 6.600000023841858,
+        "mean": 1.2999999986754522
+      }
+    },
+    {
+      "type": "webgl",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 4.399999976158142
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5999999642372131
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5999999642372131
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.7000000476837158
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5999999642372131
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        }
+      ],
+      "summary": {
+        "p50": 0.6000000238418579,
+        "p95": 4.399999976158142,
+        "p99": 4.399999976158142,
+        "max": 4.399999976158142,
+        "mean": 1.0222222208976746
+      }
+    },
+    {
+      "type": "wraith",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 5.600000023841858
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.699999988079071
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.7000000476837158
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5999999642372131
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        }
+      ],
+      "summary": {
+        "p50": 0.5999999642372131,
+        "p95": 5.600000023841858,
+        "p99": 5.600000023841858,
+        "max": 5.600000023841858,
+        "mean": 1.133333338631524
+      }
+    },
+    {
+      "type": "ghostty",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 8.300000011920929
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 1
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.699999988079071
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.699999988079071
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.6000000238418579
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 0.5
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 0.5
+        }
+      ],
+      "summary": {
+        "p50": 0.6000000238418579,
+        "p95": 8.300000011920929,
+        "p99": 8.300000011920929,
+        "max": 8.300000011920929,
+        "mean": 1.5000000066227384
+      }
+    },
+    {
+      "type": "dom",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": true
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 29
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.199999988079071
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.5
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.300000011920929
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.299999952316284
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.400000035762787
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.599999964237213
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 13.200000047683716
+        }
+      ],
+      "summary": {
+        "p50": 13.400000035762787,
+        "p95": 29,
+        "p99": 29,
+        "max": 29,
+        "mean": 15.166666666666666
+      }
+    },
+    {
+      "type": "webgl",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": true
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 29
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.800000011920929
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.399999976158142
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.200000047683716
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.299999952316284
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.300000011920929
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.900000035762787
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 13.399999976158142
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 13.300000011920929
+        }
+      ],
+      "summary": {
+        "p50": 13.399999976158142,
+        "p95": 29,
+        "p99": 29,
+        "max": 29,
+        "mean": 15.177777780426872
+      }
+    },
+    {
+      "type": "wraith",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": true
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 28.799999952316284
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.700000047683716
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.299999952316284
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.5
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.300000011920929
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 14.199999988079071
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 14.100000023841858
+        }
+      ],
+      "summary": {
+        "p50": 14.299999952316284,
+        "p95": 28.799999952316284,
+        "p99": 28.799999952316284,
+        "max": 28.799999952316284,
+        "mean": 15.877777775128683
+      }
+    },
+    {
+      "type": "ghostty",
+      "fixture": {
+        "lines": 9000,
+        "wrapped": true
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 11,
+          "actual": 11,
+          "validCount": true,
+          "elapsedMs": 13.699999988079071
+        },
+        {
+          "needle": "needle-8800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2.699999988079071
+        },
+        {
+          "needle": "needle-4500",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2.100000023841858
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2
+        },
+        {
+          "needle": "needle-8700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2
+        },
+        {
+          "needle": "needle-8600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 2
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 2.199999988079071
+        }
+      ],
+      "summary": {
+        "p50": 2,
+        "p95": 13.699999988079071,
+        "p99": 13.699999988079071,
+        "max": 13.699999988079071,
+        "mean": 3.4111111097865634
+      }
+    },
+    {
+      "type": "dom",
+      "fixture": {
+        "lines": 90000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 111,
+          "actual": 111,
+          "validCount": true,
+          "elapsedMs": 37.39999997615814
+        },
+        {
+          "needle": "needle-89800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.199999988079071
+        },
+        {
+          "needle": "needle-45000",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.300000011920929
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.100000023841858
+        },
+        {
+          "needle": "needle-89700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.899999976158142
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.300000011920929
+        },
+        {
+          "needle": "needle-89600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.600000023841858
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.299999952316284
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 4.200000047683716
+        }
+      ],
+      "summary": {
+        "p50": 5.100000023841858,
+        "p95": 37.39999997615814,
+        "p99": 37.39999997615814,
+        "max": 37.39999997615814,
+        "mean": 8.477777779102325
+      }
+    },
+    {
+      "type": "webgl",
+      "fixture": {
+        "lines": 90000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 111,
+          "actual": 111,
+          "validCount": true,
+          "elapsedMs": 34.09999996423721
+        },
+        {
+          "needle": "needle-89800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 6.100000023841858
+        },
+        {
+          "needle": "needle-45000",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5
+        },
+        {
+          "needle": "needle-89700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.100000023841858
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.5
+        },
+        {
+          "needle": "needle-89600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.899999976158142
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.699999988079071
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 5.100000023841858
+        }
+      ],
+      "summary": {
+        "p50": 5.100000023841858,
+        "p95": 34.09999996423721,
+        "p99": 34.09999996423721,
+        "max": 34.09999996423721,
+        "mean": 8.38888888888889
+      }
+    },
+    {
+      "type": "wraith",
+      "fixture": {
+        "lines": 90000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 111,
+          "actual": 111,
+          "validCount": true,
+          "elapsedMs": 36.80000001192093
+        },
+        {
+          "needle": "needle-89800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.699999988079071
+        },
+        {
+          "needle": "needle-45000",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.399999976158142
+        },
+        {
+          "needle": "needle-89700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.200000047683716
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.399999976158142
+        },
+        {
+          "needle": "needle-89600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.600000023841858
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.399999976158142
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 3.800000011920929
+        }
+      ],
+      "summary": {
+        "p50": 4.399999976158142,
+        "p95": 36.80000001192093,
+        "p99": 36.80000001192093,
+        "max": 36.80000001192093,
+        "mean": 8.03333333465788
+      }
+    },
+    {
+      "type": "ghostty",
+      "fixture": {
+        "lines": 90000,
+        "wrapped": false
+      },
+      "repeat": 0,
+      "mode": "count-only",
+      "samples": [
+        {
+          "needle": "needle-100",
+          "expected": 111,
+          "actual": 111,
+          "validCount": true,
+          "elapsedMs": 38.5
+        },
+        {
+          "needle": "needle-89800 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 5.300000011920929
+        },
+        {
+          "needle": "needle-45000",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.599999964237213
+        },
+        {
+          "needle": "needle-200 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 3.899999976158142
+        },
+        {
+          "needle": "needle-89700",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 7.200000047683716
+        },
+        {
+          "needle": "needle-300 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 3.800000011920929
+        },
+        {
+          "needle": "needle-89600",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 4.300000011920929
+        },
+        {
+          "needle": "needle-400 build",
+          "expected": 1,
+          "actual": 1,
+          "validCount": true,
+          "elapsedMs": 3.899999976158142
+        },
+        {
+          "needle": "this-needle-is-absent",
+          "expected": 0,
+          "actual": 0,
+          "validCount": true,
+          "elapsedMs": 3.399999976158142
+        }
+      ],
+      "summary": {
+        "p50": 4.300000011920929,
+        "p95": 38.5,
+        "p99": 38.5,
+        "max": 38.5,
+        "mean": 8.322222219573128
+      }
+    }
+  ],
+  "methodology": "Production builds, public SDK. Rotated renderer order. New terminal per case/repetition; 9 different cold needles and 24 same-needle navigations. all-count validates exact totals on both paths; upstream xterm additionally creates offscreen/onscreen decorations while native selects one match. next-only is xterm without full count; native always returns all counts. Timing stops at API completion, not GPU/display completion. Text selection and counts validated outside timed region. Unicode/cell wrap fixture is not a glyph-conformance claim. Native worker round trip included. Browser timer resolution applies. No concurrent benchmark. Optional count-only mode enumerates pinned xterm private search-engine results without decorations, allocation of a results array or selection; native still uses its full public counted-and-selected API. This diagnostic is not a public xterm count API.",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+}

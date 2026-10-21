@@ -54,7 +54,7 @@ const report = {
   os: `${process.platform} ${release()}`,
   xterm: JSON.parse(await readFile('node_modules/@xterm/xterm/package.json')).version,
   searchAddon: JSON.parse(await readFile('node_modules/@xterm/addon-search/package.json')).version,
-  config: { url, types, repeats, cases },
+  config: { url, types, repeats, cases, modes, allowMismatch },
   results: [],
   methodology:
     'Production builds, public SDK. Rotated renderer order. New terminal per case/repetition; 9 different cold needles and 24 same-needle navigations. all-count validates exact totals on both paths; upstream xterm additionally creates offscreen/onscreen decorations while native selects one match. next-only is xterm without full count; native always returns all counts. Timing stops at API completion, not GPU/display completion. Text selection and counts validated outside timed region. Unicode/cell wrap fixture is not a glyph-conformance claim. Native worker round trip included. Browser timer resolution applies. No concurrent benchmark. Optional count-only mode enumerates pinned xterm private search-engine results without decorations, allocation of a results array or selection; native still uses its full public counted-and-selected API. This diagnostic is not a public xterm count API.',

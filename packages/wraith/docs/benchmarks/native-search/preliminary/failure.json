@@ -1,0 +1,8 @@
+{
+  "exitCode": 1,
+  "reason": "Known wrapped-history baseline count mismatch interrupted the initial probe",
+  "needle": "needle-8700",
+  "expected": 1,
+  "actual": 2,
+  "laterBaseline": "../before/runs.json retains mismatches with validCount=false"
+}
