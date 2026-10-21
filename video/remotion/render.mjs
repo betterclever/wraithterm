@@ -4,9 +4,10 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = import.meta.dirname;
-const flex = process.argv.includes('--flex');
+const hyped = process.argv.includes('--hyped');
+const flex = hyped || process.argv.includes('--flex');
 const edit = JSON.parse(await readFile(resolve(root, 'flex-edit.json'), 'utf8'));
-const cache = resolve(root, flex ? '.cache/flex' : '.cache');
+const cache = resolve(root, hyped ? '.cache/hyped' : flex ? '.cache/flex' : '.cache');
 await mkdir(cache, { recursive: true });
 const browserExecutable =
   process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -22,7 +23,7 @@ try {
   });
   const composition = await selectComposition({
     serveUrl,
-    id: flex ? 'WraithFlex' : 'WraithHype',
+    id: hyped ? 'WraithHyped' : flex ? 'WraithFlex' : 'WraithHype',
     puppeteerInstance: browser,
   });
   const errors = [];
@@ -72,7 +73,9 @@ try {
       console.log(`Reviewed frame ${frame}/${composition.durationInFrames}`);
     }
     const previous = selectedFrames
-      ? JSON.parse(await readFile(resolve(cache, 'still-review.json'), 'utf8'))
+      ? await readFile(resolve(cache, 'still-review.json'), 'utf8')
+          .then(JSON.parse)
+          .catch(() => null)
       : null;
     await writeFile(
       resolve(cache, 'still-review.json'),
@@ -92,7 +95,11 @@ try {
       ...common,
       outputLocation: resolve(
         root,
-        flex ? '../wraith-hype-flex.mp4' : '../wraith-hype-remotion.mp4',
+        hyped
+          ? '../wraith-hyped.mp4'
+          : flex
+            ? '../wraith-hype-flex.mp4'
+            : '../wraith-hype-remotion.mp4',
       ),
       codec: 'h264',
       crf: 17,

@@ -1,5 +1,8 @@
 # Ghost Hype
 
+Hyped: [the beat-slammed re-edit](remotion/HYPED.md) of the speed flex, same
+music and claims (`wraith-hyped.mp4`).
+
 Newest: [the question-first Remotion speed flex](remotion/FLEX.md), with 14 shots
 and matched xterm comparisons at the same duration (`wraith-hype-flex.mp4`).
 
