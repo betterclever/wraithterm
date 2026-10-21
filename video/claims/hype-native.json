@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-21T16:49:45.869Z",
+  "head": "e65f309904c23b0d3ac58efd2f2b615f893f3ce7",
+  "cpu": "Apple M5 Max",
+  "logicalCpus": 18,
+  "os": "darwin 27.2.0",
+  "sources": {
+    "packages/wraith/src/worker.ts": "a122ef8415659053e7c7d936aef5c5ab2fae7fa9abf096a07adcf3236d05ed4b",
+    "packages/wraith/src/index.ts": "030447e14e45b2d795d137c708b64ab033aa8114349a5a04516a94dc3d983846",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+  },
+  "runnerSha256": "4862140eb8c1c79f4ba71bbf5064f14b0459d98594582a29829f18236ed608d5",
+  "runs": [
+    {
+      "workload": "dense",
+      "frames": 10000,
+      "cols": 160,
+      "rows": 50,
+      "elapsedMs": 1993.5,
+      "fencedFramesPerSecond": 5016.302984700276,
+      "cpuP50Ms": 0.19999998807907104,
+      "cpuP95Ms": 0.30000001192092896,
+      "cpuP99Ms": 0.30000001192092896,
+      "inputMiBPerSecond": 42.360581818277566,
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "dense",
+      "frames": 10000,
+      "cols": 160,
+      "rows": 50,
+      "elapsedMs": 2213.300000011921,
+      "fencedFramesPerSecond": 4518.140333414422,
+      "cpuP50Ms": 0.19999998807907104,
+      "cpuP95Ms": 0.30000001192092896,
+      "cpuP99Ms": 0.30000001192092896,
+      "inputMiBPerSecond": 38.15380646739326,
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "workload": "dense",
+      "frames": 10000,
+      "cols": 160,
+      "rows": 50,
+      "elapsedMs": 2018.699999988079,
+      "fencedFramesPerSecond": 4953.683063386859,
+      "cpuP50Ms": 0.19999998807907104,
+      "cpuP95Ms": 0.30000001192092896,
+      "cpuP99Ms": 0.30000001192092896,
+      "inputMiBPerSecond": 41.831782758822506,
+      "adapter": "WebGPU adapter (BrowserWebGpu)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    }
+  ],
+  "methodology": "Three serial runs of public native benchmark: 10,000 dense 160x50 frames each, 256 warm frames, GPU fence every 32 frames and at end. Input generation excluded. Parser + snapshot + packing + submission and fences included. This is GPU-completed offscreen throughput, not display FPS or physical presentation. Headline rounds DOWN the slowest run to a 500-frame/s boundary. No capture/fframes render runs concurrently. Other desktop applications remain running; no cross-device claim.",
+  "errors": [],
+  "slowestFencedFramesPerSecond": 4518.140333414422,
+  "headlineValue": 4500,
+  "headline": "4,500+",
+  "label": "GPU-completed frames/s",
+  "caption": "Native · 160×50 dense · M5 Max · Chrome 155"
+}

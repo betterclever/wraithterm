@@ -1,0 +1,69 @@
+{
+  "sourceFile": "BIA - WE ON GO (Official Audio).mp4",
+  "sourceSha256": "8aab28c99f1f846152436b014d13051542c6de04c2674b146e2840d6d3027798",
+  "method": "Hann STFT; positive log spectral flux plus 30\u2013130 Hz bass flux; tempo/phase grid fit on seconds 8\u201370",
+  "sampleRate": 22050,
+  "hopSamples": 220,
+  "fftSamples": 2048,
+  "tempoSearchBpm": [
+    128,
+    134
+  ],
+  "tempoStepBpm": 0.02,
+  "bestTempoBpm": 131.0,
+  "bestBeatPhaseSeconds": 0.35,
+  "selectedSourceOffsetSeconds": 0.8,
+  "editBpm": 131,
+  "editFps": 60,
+  "cutOnsets": [
+    {
+      "editFrame": 0,
+      "sourceSeconds": 0.8,
+      "nearestOnsetSeconds": 0.794739,
+      "differenceMs": 5.261
+    },
+    {
+      "editFrame": 110,
+      "sourceSeconds": 2.6333333333333333,
+      "nearestOnsetSeconds": 2.630567,
+      "differenceMs": 2.766
+    },
+    {
+      "editFrame": 330,
+      "sourceSeconds": 6.3,
+      "nearestOnsetSeconds": 6.292245,
+      "differenceMs": 7.755
+    },
+    {
+      "editFrame": 550,
+      "sourceSeconds": 9.966666666666667,
+      "nearestOnsetSeconds": 9.953923,
+      "differenceMs": 12.744
+    },
+    {
+      "editFrame": 769,
+      "sourceSeconds": 13.616666666666667,
+      "nearestOnsetSeconds": 13.625578,
+      "differenceMs": -8.912
+    },
+    {
+      "editFrame": 989,
+      "sourceSeconds": 17.283333333333335,
+      "nearestOnsetSeconds": 17.287256,
+      "differenceMs": -3.923
+    },
+    {
+      "editFrame": 1209,
+      "sourceSeconds": 20.95,
+      "nearestOnsetSeconds": 20.948934,
+      "differenceMs": 1.066
+    },
+    {
+      "editFrame": 1429,
+      "sourceSeconds": 24.616666666666667,
+      "nearestOnsetSeconds": 24.62059,
+      "differenceMs": -3.923
+    }
+  ],
+  "limits": "Spectral onset agreement estimates beat phase; it does not identify musical bars, lyrics or guarantee perceptual sync. Native/Studio listening review is separate."
+}

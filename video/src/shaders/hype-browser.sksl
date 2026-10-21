@@ -1,0 +1,63 @@
+// Perspective ray/box intersection: a real thick browser slab, not SVG skew.
+uniform float3 iResolution;
+uniform shader uSource;
+uniform shader uChromeSource;
+uniform float2 uSourceSize;
+uniform float3 uCenter;
+uniform float2 uSize;
+uniform float3 uAngles;
+uniform float uOpacity;
+uniform float uClock;
+uniform float uSmear;
+float2 turn(float2 p,float a){return float2(cos(a)*p.x-sin(a)*p.y,sin(a)*p.x+cos(a)*p.y);}
+float3 rotate(float3 p){p.yz=turn(p.yz,uAngles.x);p.xz=turn(p.xz,uAngles.y);p.xy=turn(p.xy,uAngles.z);return p;}
+float3 inverse(float3 p){p.xy=turn(p.xy,-uAngles.z);p.xz=turn(p.xz,-uAngles.y);p.yz=turn(p.yz,-uAngles.x);return p;}
+half4 main(float2 coord){
+ float2 screen=(coord-.5*iResolution.xy)/iResolution.y;
+ float3 ro=inverse(float3(0,0,8)-uCenter),rd=inverse(normalize(float3(screen.x,-screen.y,-1.9)));
+ float3 box=float3(uSize*.5,.075);
+ float3 inv=sign(rd)/max(abs(rd),float3(.00001));
+ float3 t0=(-box-ro)*inv,t1=(box-ro)*inv;
+ float3 lo=min(t0,t1),hi=max(t0,t1);
+ float near=max(max(lo.x,lo.y),lo.z),far=min(min(hi.x,hi.y),hi.z);
+ if(near>far||far<0.)return half4(0);
+ float3 p=ro+rd*max(near,0.);
+ float2 q=abs(p.xy)-(box.xy-float2(.075));
+ float sd=length(max(q,0.))+min(max(q.x,q.y),0.)-.075;
+ float px=max(near,.1)/(1.9*iResolution.y);
+ float alpha=(1.-smoothstep(-px,px,sd))*uOpacity;
+ if(alpha<.001)return half4(0);
+ float3 axis=abs(p)/box;
+ float3 n=axis.z>max(axis.x,axis.y)-.015?float3(0,0,sign(p.z)):(axis.x>axis.y?float3(sign(p.x),0,0):float3(0,sign(p.y),0));
+ float3 worldNormal=rotate(n);
+ float2 uv=float2(p.x/uSize.x+.5,.5-p.y/uSize.y);
+ float3 col=float3(.055,.039,.029);
+ if(n.z>.5){
+  float bar=.078;
+  if(uv.y>bar){
+   float2 sourceUv=float2(uv.x,(uv.y-bar)/(1.-bar));
+   float panelAspect=uSize.x/(uSize.y*(1.-bar)),sourceAspect=uSourceSize.x/uSourceSize.y;
+   sourceUv=(sourceUv-.5)*float2(max(1.,panelAspect/sourceAspect),max(1.,sourceAspect/panelAspect))+.5;
+   float inside=step(0.,sourceUv.x)*step(sourceUv.x,1.)*step(0.,sourceUv.y)*step(sourceUv.y,1.);
+   float2 st=sourceUv*uSourceSize;
+   float2 fp=uSourceSize/uSize*px*.3;
+   col=(float3(uSource.eval(st-fp).rgb)+float3(uSource.eval(st+fp).rgb)+float3(uSource.eval(st+float2(fp.x,-fp.y)).rgb)+float3(uSource.eval(st+float2(-fp.x,fp.y)).rgb))*.25;
+   if(uSmear>.001){col.r=mix(col.r,float(uSource.eval(st+float2(uSmear*12.,0)).r),.5);col.b=mix(col.b,float(uSource.eval(st-float2(uSmear*12.,0)).b),.5);}
+   col*=inside;
+  }else{
+   col=float3(uChromeSource.eval(float2(uv.x*1920.,uv.y/bar*150.)).rgb);
+  }
+  float edge=1.-smoothstep(.01,.033,min(min(uv.x,1.-uv.x)*uSize.x,min(uv.y,1.-uv.y)*uSize.y));
+  col+=float3(.52,.26,.1)*edge;
+  float reflection=exp(-pow((uv.x+uv.y*.5-.2-uClock*.06)*5.,2.));
+  col+=float3(.10,.07,.045)*reflection*.16;
+ }else{
+  float light=max(0.,dot(worldNormal,normalize(float3(-.4,.8,1.))));
+  col=float3(.15,.105,.067)*(.22+.9*light);
+  col+=float3(.20,.13,.07)*pow(max(0.,dot(worldNormal,normalize(float3(.7,.2,1.)))),8.);
+  col+=float3(.025)*sin(p.y*840.+p.x*17.);
+ }
+ float rim=pow(1.-abs(dot(rotate(normalize(-rd)),worldNormal)),3.);
+ col+=float3(.8,.36,.12)*rim*.13;
+ return half4(half3(col*alpha),half(alpha));
+}

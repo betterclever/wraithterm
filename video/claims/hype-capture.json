@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-21T16:45:44.076Z",
+  "head": "e65f309904c23b0d3ac58efd2f2b615f893f3ce7",
+  "base": "http://127.0.0.1:5199",
+  "sources": {
+    "packages/wraith/src/index.ts": "030447e14e45b2d795d137c708b64ab033aa8114349a5a04516a94dc3d983846",
+    "packages/wraith/src/worker.ts": "a122ef8415659053e7c7d936aef5c5ab2fae7fa9abf096a07adcf3236d05ed4b",
+    "packages/wraith/src/xterm-print.ts": "caf51ec90b5afdb01953e4649cad44dc7a92a7664138a4f0d18679fb8f2061ec",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+    "demo/ghost-sprite.json": "2ee7b1db220b1faba1df7dfeed9e7265dce35eb894c8e476f25bab445a86cffc",
+    "demo/ghost-scene.js": "c21b5e90230696c917f7a2970d5b764f1a6ad0bfeb72f020b81df73c312fe1b8",
+    "demo/pipes-growth.js": "ab1fb2f885ab985e3d130cef35ef13e6e0813cd703b41380d0a0ee899da89d07"
+  },
+  "methodology": "Fresh local production SDK served through Vite. Deterministic 30-fps capture for a 60-fps camera edit; not a display-refresh or throughput benchmark. Terminal content is ordinary ANSI rendered by Wraith. The speed reveal is separately measured with the public native GPU-fenced benchmark.",
+  "captures": [
+    {
+      "kind": "home",
+      "profile": "current landing page",
+      "frames": 120,
+      "fps": 30,
+      "errors": [],
+      "sourceFrames": 1
+    },
+    {
+      "kind": "reactor",
+      "profile": "libghostty worker / WebGPU",
+      "cols": 192,
+      "rows": 54,
+      "frames": 120,
+      "fps": 30,
+      "textSha256": "f2b8c013a77d4e721b1dd9c65348afb246d5fdd3cab7f121056948f3f8f9743d",
+      "errors": []
+    },
+    {
+      "kind": "pipes",
+      "profile": "libghostty worker / WebGPU",
+      "cols": 192,
+      "rows": 54,
+      "frames": 120,
+      "fps": 30,
+      "textSha256": "822636d0e2e392d0a2300dcd4da16036f5887ed8a003c6a1982e8dfd3af7d277",
+      "errors": []
+    },
+    {
+      "kind": "compatible",
+      "profile": "xterm-compatible / WebGPU / Unicode 6",
+      "cols": 192,
+      "rows": 54,
+      "frames": 120,
+      "fps": 30,
+      "textSha256": "346a5c9347a444823be315fa1e6b03eab421e7ae312792d5cf2680b9f26668ef",
+      "errors": []
+    },
+    {
+      "frames": 120,
+      "fps": 30,
+      "cols": 160,
+      "rows": 50,
+      "profile": "native / libghostty / WebGPU",
+      "fixture": "same row-color / glyph cycle as worker dense benchmark",
+      "errors": []
+    }
+  ]
+}

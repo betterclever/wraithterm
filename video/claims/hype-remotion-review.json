@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-21T17:41:27.713Z",
+  "renderer": "Remotion 4.0.537 / React 19 / Three.js / Chrome ANGLE WebGL",
+  "sources": {
+    "video/remotion/package.json": "8823d66dd3a61150effbcc6bae303e5bfadb06ba3f6cdc004eebe1ead14d9952",
+    "video/remotion/package-lock.json": "380b342c09a054179a62a638e5af821c6cf3be18c9732f2434aa20914c5ef730",
+    "video/remotion/prepare.mjs": "ed46c257095958698185abb66d3174613855663b52be3581f79ec8c5edfe50db",
+    "video/remotion/render.mjs": "d6430dba9246446fbed976315010757173d13a2bda28c8d4d27bc4486b308600",
+    "video/remotion/review.mjs": "de3611d9a886da57b8e6adf71ea005ac77f5b9678df070555c3f019a3fac0079",
+    "video/remotion/analyze-beats.py": "2dc0e7d9d01b06300287489e44f2c8e96cdd5aa4086d53d7e4dbeb7f92c46877",
+    "video/remotion/src/Browser.tsx": "a4ee08d04d0124112311b75da716c0c6f596ec73f89071ff546299db8216122b",
+    "video/remotion/src/Ghost.tsx": "3f83aed9a65718c33ecc5e9bd9eab411ae92646ed69afc09cd29f81216a7a8ce",
+    "video/remotion/src/Hype.tsx": "246101aa6d91e77fb1e57347404e27fc633be31897cf9b8da2fb08401eee34b3",
+    "video/remotion/src/Root.tsx": "5ffd028d4fbe41961b2ccb6fcae93020038fa9ac73dc23eb88b2223acb2297d6",
+    "video/remotion/src/index.ts": "fd3fa57e85563849c51cec83381247aa21e098a3607891dba436eec91e29f148",
+    "video/remotion/src/style.css": "7d275b4202d57c76aa5e68e6f56c3924473f6eab12cd809cea844a76e7aa0131",
+    "video/remotion/src/timing.ts": "d60a5a4a7cb81a58a48dd5ba0ad8e38b490db17987a18de94066468d9e90edc5",
+    "video/soundtrack/hype.mjs": "84ba2f57eaa0f1be449ba916ea2f56599f3b78e44646ed7e767f0ee87570083a",
+    "demo/ghost-sprite.json": "2ee7b1db220b1faba1df7dfeed9e7265dce35eb894c8e476f25bab445a86cffc"
+  },
+  "assets": {
+    "JetBrainsMono.ttf": "e6fd0d7e91550b3ed2b735d4312474362c4716edc4fc0577a0f61ed782d5aed1",
+    "Manrope.ttf": "5313ca6e96269341da4b9b255662cba4fe31aecfe337288acaaf1db84f025599",
+    "chrome.png": "3cf9f5e771186a97c77e0afdf1f46a7d573bda8ec79a719b1bd14bc039ed8532",
+    "compatible.mp4": "fcaef889fe7a7b181cda8b8108e1742176fb00aac866c741ee174d92cde428a2",
+    "dense.mp4": "c8441832e9ac851598799df2aeecf19279f4520a1db4a54170b27c82a573d6f1",
+    "home.mp4": "4dee1f7e884c25c6658149ed40eb5d8f90184d05292c242a376c8d94759d9fe9",
+    "music.wav": "a82c1b383018f572490d12531112d3f589e1ff2a03c30f61de9c26e823cdcfc4",
+    "pipes.mp4": "1c31de9ea28fccd52401fb50049d3cdb9f332c6f91e1372481ee2415640588a5",
+    "reactor.mp4": "5745919fd44d1358ca7c28e6afe68a0ee67ad858053197b6633d69f1ef7b4019"
+  },
+  "performanceProofSha256": "34b476ba81cddde0128096efacb7806be7aaac2a1c292d37024940d4bdad3e01",
+  "music": {
+    "duration": 23.816666666666666,
+    "bpm": 131,
+    "temporary": false,
+    "source": "user-supplied local audio",
+    "sourceFile": "BIA - WE ON GO (Official Audio).mp4",
+    "sourceSha256": "8aab28c99f1f846152436b014d13051542c6de04c2674b146e2840d6d3027798",
+    "offset": 0.8,
+    "loudness": {
+      "input_i": "-9.36",
+      "input_tp": "-0.08",
+      "input_lra": "2.10",
+      "input_thresh": "-19.36",
+      "output_i": "-13.95",
+      "output_tp": "-4.67",
+      "output_lra": "2.10",
+      "output_thresh": "-23.95",
+      "normalization_type": "linear",
+      "target_offset": "-0.05"
+    },
+    "biaRecordingIncluded": true,
+    "recordingCommitted": false,
+    "maxSceneCutOnsetResidualMs": 12.744
+  },
+  "validation": {
+    "typecheck": "pass",
+    "browserErrors": [],
+    "completeDecode": "pass",
+    "unexpectedSilence": [],
+    "blackRanges": [],
+    "reviewedFrameNumbers": [
+      0,
+      40,
+      105,
+      110,
+      150,
+      219,
+      225,
+      315,
+      330,
+      395,
+      445,
+      455,
+      535,
+      550,
+      590,
+      660,
+      750,
+      769,
+      810,
+      878,
+      890,
+      975,
+      989,
+      1030,
+      1098,
+      1130,
+      1195,
+      1209,
+      1240,
+      1315,
+      1428
+    ],
+    "visualReviewConfirmed": true,
+    "listeningReview": false,
+    "studioAvailableAt": "http://localhost:5200/WraithHype"
+  },
+  "encodedAudio": {
+    "integratedLufs": -14.03,
+    "truePeakDbtp": -4.63,
+    "loudnessRangeLu": 2.1
+  },
+  "export": {
+    "file": "wraith-hype-remotion.mp4",
+    "sha256": "ff27edb5a8a34e36d286f829d8c0641fa5f38fcd139900abb3212d4c2b234311",
+    "bytes": 29519726,
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "60/1",
+          "duration": "23.816667",
+          "nb_frames": "1429",
+          "nb_read_frames": "1429",
+          "side_data_list": [
+            {}
+          ]
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "23.829000",
+          "nb_frames": "1119",
+          "nb_read_frames": "1117"
+        }
+      ],
+      "format": {
+        "duration": "23.829000",
+        "size": "29519726"
+      }
+    }
+  },
+  "engineChanges": false
+}

@@ -1,5 +1,10 @@
 # Wraith launch video: "The Arrival"
 
+Latest launch cut: [Ghost Hype in Remotion](remotion/README.md), a 23.8-second
+3D-browser edit with the shared ghost, real terminal footage, a measured
+GPU-completed speed proof and the user-supplied BIA soundtrack. The local export
+is `wraith-hype-remotion.mp4`. The [earlier fframes edition](HYPE.md) remains available.
+
 The latest revision adds the website ghost and an interactive terminal showcase:
 [Ghost Reactor](GHOST_REACTOR.md). The 40-second film tells the product story: real output, measured CPU
 advantage, and two integration paths. See [the product cut](PRODUCT.md). Earlier
