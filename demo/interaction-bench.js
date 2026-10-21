@@ -30,7 +30,7 @@ export async function interactionSetup(type, classes, font, host, config = {}) {
         font,
         fontSize: 15,
         lineHeight: 20 / 15,
-        scrollback: 10000,
+        scrollback: config.scrollback ?? 10000,
       });
     } else {
       const Constructor = type === 'wraith' ? classes.WraithTerminal : classes.XtermTerminal;
@@ -40,7 +40,7 @@ export async function interactionSetup(type, classes, font, host, config = {}) {
         fontFamily: 'WraithBench',
         fontSize: 15,
         lineHeight: 1,
-        scrollback: 10000,
+        scrollback: config.scrollback ?? 10000,
         allowProposedApi: true,
         cursorBlink: false,
         minimumContrastRatio: 1,
@@ -50,7 +50,7 @@ export async function interactionSetup(type, classes, font, host, config = {}) {
       if (type === 'wraith' && !(await terminal.webgpuReady)) throw new Error('WebGPU failed');
       terminal.loadAddon(new Unicode11Addon());
       terminal.unicode.activeVersion = '11';
-      search = new SearchAddon();
+      search = new SearchAddon({ highlightLimit: config.highlightLimit ?? 1000 });
       terminal.loadAddon(search);
     }
     const write = (data) =>
@@ -282,4 +282,92 @@ export async function interactionDispose() {
   }
   terms = [];
   armed = undefined;
+}
+
+// Public API search timings: new needles include a complete miss, exact tokens
+// and repeated prefixes. Xterm needs decorations to return a full result count.
+export async function searchFixture({ lines = 9000, wrapped = false } = {}) {
+  const a = terms[0];
+  const history = Array.from(
+    { length: lines },
+    (_, n) =>
+      `line ${String(n).padStart(6, '0')} needle-${n} build output${wrapped ? ' 界 é ' + 'wrapped contents '.repeat(8) : ''}\r\n`,
+  ).join('');
+  await a.write('\x1bc\x1b[?25l' + history);
+  await a.settle();
+  const ids = [100, lines - 200, Math.floor(lines / 2), 200, lines - 300, 300, lines - 400, 400];
+  return [
+    ...ids.map((n, i) => ({
+      needle: i % 2 ? `needle-${n} build` : `needle-${n}`,
+      total: Array.from({ length: lines }, (_, row) => `needle-${row} build`).filter((row) =>
+        row.includes(i % 2 ? `needle-${n} build` : `needle-${n}`),
+      ).length,
+    })),
+    { needle: 'this-needle-is-absent', total: 0 },
+  ];
+}
+export async function searchTimings({
+  queries,
+  count = true,
+  navigation = false,
+  allowMismatch = false,
+}) {
+  const a = terms[0],
+    samples = [];
+  const options = {
+    caseSensitive: false,
+    ...(count
+      ? {
+          decorations: {
+            matchBackground: '#4c3f19',
+            activeMatchBackground: '#a07920',
+          },
+        }
+      : {}),
+  };
+  let changed;
+  const subscription = a.search?.onDidChangeResults((event) => {
+    changed = event;
+  });
+  try {
+    if (a.type === 'ghostty') await a.terminal.clearSearch();
+    else a.search.clearDecorations();
+    if (navigation) {
+      if (a.type === 'ghostty') await a.terminal.findNext(queries[0].needle);
+      else a.search.findNext(queries[0].needle, options);
+    }
+    for (const { needle, total } of queries) {
+      changed = undefined;
+      const start = performance.now();
+      const found =
+        a.type === 'ghostty'
+          ? await a.terminal.findNext(needle)
+          : a.search.findNext(needle, options);
+      const elapsedMs = performance.now() - start;
+      const actual = a.type === 'ghostty' ? found.total : count ? changed?.resultCount : undefined;
+      if (a.type === 'ghostty' || count) {
+        if (actual !== total && !allowMismatch)
+          throw Error(`Count mismatch for ${needle}: ${actual} != ${total}`);
+      } else if (Boolean(found) !== Boolean(total)) throw Error(`Missing needle ${needle}`);
+      if (
+        total &&
+        !(a.type === 'ghostty' ? await a.terminal.getText(true) : a.terminal.getSelection())
+          .toLowerCase()
+          .includes(needle.toLowerCase())
+      )
+        throw Error('Wrong search selection');
+      samples.push({
+        needle,
+        expected: total,
+        actual,
+        validCount: actual === undefined || actual === total,
+        elapsedMs,
+      });
+    }
+  } finally {
+    subscription?.dispose();
+    if (a.type === 'ghostty') await a.terminal.clearSearch();
+    else a.search.clearDecorations();
+  }
+  return { samples, summary: percentiles(samples.map((s) => s.elapsedMs)) };
 }
