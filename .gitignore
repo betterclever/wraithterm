@@ -14,4 +14,5 @@ packages/wraith/dist/
 # Full-resolution benchmark captures are retained locally; commit summaries
 # and validation records instead of hundreds of megabytes of generated images.
 **/benchmarks/comparison/*.png
+**/benchmarks/workflows/**/*.png
 .wrangler/

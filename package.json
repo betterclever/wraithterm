@@ -36,7 +36,8 @@
     "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy",
     "test:input": "node scripts/test-production-input.mjs",
     "test:native-interaction": "node scripts/native-interaction-test.mjs",
-    "test:native-display": "node scripts/native-display-test.mjs"
+    "test:native-display": "node scripts/native-display-test.mjs",
+    "benchmark:workflows": "node scripts/workflow-benchmark.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
