@@ -18,3 +18,5 @@ packages/wraith/dist/
 docs/compatibility/gpu-visual-options-dpr*.png
 docs/compatibility/xterm-preview.png
 .wrangler/
+
+**/benchmarks/native-visibility/**/*.png

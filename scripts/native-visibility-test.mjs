@@ -8,7 +8,10 @@ const base = process.env.WRAITH_URL ?? 'http://127.0.0.1:5196';
 const reportDir = process.env.WRAITH_REPORT_DIR ?? '.cache/native-visibility';
 const browser = await chromium.launch({
   executablePath:
-    process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    process.env.CHROME_PATH ??
+    (process.platform === 'darwin'
+      ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+      : undefined),
   headless: true,
 });
 const checks = [],

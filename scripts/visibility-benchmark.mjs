@@ -9,6 +9,8 @@ const output = process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/native-visibili
 const repeats = Number(process.env.WRAITH_REPETITIONS ?? 5);
 const steps = Number(process.env.WRAITH_STEPS ?? 36),
   hz = 12;
+const settleMs = Number(process.env.WRAITH_SETTLE_MS ?? 300);
+assert(Number.isFinite(settleMs) && settleMs >= 0 && settleMs <= 30000);
 const modes = (
   process.env.WRAITH_VISIBILITY_MODES ?? 'visible,display-none,offscreen,clipped'
 ).split(',');
@@ -50,7 +52,7 @@ const report = {
   cpu: cpus()[0].model,
   logicalCpus: cpus().length,
   os: `${process.platform} ${release()}`,
-  config: { repeats, steps, hz, terminals: 8, cols: 80, rows: 24, history: 1000, modes },
+  config: { repeats, steps, settleMs, hz, terminals: 8, cols: 80, rows: 24, history: 1000, modes },
   methodology:
     'Production SDK. Isolated Chrome per record; alternate before/after order per repetition. Eight worker/GPU terminals, 64 fixed-width log lines per batch, fixed-count offered 12 batches/s; acknowledged bytes and achieved rate retained. No flush during load. onRender counts submissions, not GPU completion or display frames. CPU: cumulative isolated Chrome process CPU-time / wall seconds; 100% is one logical core. Process-set changes invalidate that CPU estimate. State hashes and reveal screenshot checks run outside measurement. Unrelated host applications remain running; no GPU-utilization percentage is inferred.',
   results: [],
@@ -76,7 +78,10 @@ for (let repeat = 0; repeat < repeats; repeat++)
     for (const build of repeat % 2 ? [...builds].reverse() : builds) {
       const browser = await chromium.launch({
         executablePath:
-          process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          process.env.CHROME_PATH ??
+          (process.platform === 'darwin'
+            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            : undefined),
         headless: true,
       });
       try {
@@ -89,84 +94,87 @@ for (let repeat = 0; repeat < repeats; repeat++)
         await page.goto(build.url + '/playground.html');
         await page.waitForFunction(() => window.wraith);
         report.userAgent ??= await page.evaluate(() => navigator.userAgent);
-        const geometry = await page.evaluate(async (mode) => {
-          const C = window.wraith.constructor;
-          await window.wraith.dispose();
-          document.body.replaceChildren();
-          const clip = document.createElement('div');
-          clip.id = 'clip';
-          clip.style.cssText =
-            'position:fixed;left:0;top:0;width:2200px;height:900px;overflow:hidden';
-          document.body.append(clip);
-          window.terms = [];
-          window.counts = [];
-          window.hosts = [];
-          window.metrics = [];
-          for (let i = 0; i < 8; i++) {
-            const host = document.createElement('div');
-            host.style.cssText = `position:absolute;left:${(i % 4) * 540}px;top:${Math.floor(i / 4) * 400}px;width:530px;height:390px`;
-            clip.append(host);
-            window.hosts.push(host);
-            const term = await C.mount(host, {
-              cols: 80,
-              rows: 24,
-              fontSize: 10,
-              scrollback: 1000,
-              fit: false,
-            });
-            window.terms.push(term);
-            window.counts[i] = 0;
-            term.onRender(() => window.counts[i]++);
-            term.onStats((s) => (window.metrics[i] = s));
-            term.onError((e) => {
-              throw e;
-            });
-            await term.write('\x1b[?25lready');
-            await term.flush();
-          }
-          const geometry = window.terms.map((t) => {
-            const r = t.canvas.getBoundingClientRect();
-            return { x: r.x, y: r.y, width: r.width, height: r.height };
-          });
-          if (mode === 'display-none') clip.style.display = 'none';
-          if (mode === 'offscreen') clip.style.top = '20000px';
-          if (mode === 'clipped') {
-            clip.style.height = '1px';
-            for (const h of window.hosts) h.style.top = '10px';
-          }
-          await new Promise((r) => setTimeout(r, 300));
-          window.load = async (steps, hz) => {
-            const counts = [...window.counts],
-              start = performance.now();
-            let bytes = 0;
-            const durations = [];
-            for (let step = 0; step < steps; step++) {
-              const target = start + (step * 1000) / hz;
-              if (target > performance.now())
-                await new Promise((r) => setTimeout(r, target - performance.now()));
-              const payload = Array.from(
-                { length: 64 },
-                (_, line) =>
-                  `\r\n${String(step).padStart(3, '0')}:${String(line).padStart(2, '0')} ${'log data '.repeat(7)}`,
-              ).join('');
-              const at = performance.now();
-              await Promise.all(window.terms.map((t) => t.write(payload)));
-              durations.push(performance.now() - at);
-              bytes += new TextEncoder().encode(payload).length * window.terms.length;
+        const geometry = await page.evaluate(
+          async ({ mode, settleMs }) => {
+            const C = window.wraith.constructor;
+            await window.wraith.dispose();
+            document.body.replaceChildren();
+            const clip = document.createElement('div');
+            clip.id = 'clip';
+            clip.style.cssText =
+              'position:fixed;left:0;top:0;width:2200px;height:900px;overflow:hidden';
+            document.body.append(clip);
+            window.terms = [];
+            window.counts = [];
+            window.hosts = [];
+            window.metrics = [];
+            for (let i = 0; i < 8; i++) {
+              const host = document.createElement('div');
+              host.style.cssText = `position:absolute;left:${(i % 4) * 540}px;top:${Math.floor(i / 4) * 400}px;width:530px;height:390px`;
+              clip.append(host);
+              window.hosts.push(host);
+              const term = await C.mount(host, {
+                cols: 80,
+                rows: 24,
+                fontSize: 10,
+                scrollback: 1000,
+                fit: false,
+              });
+              window.terms.push(term);
+              window.counts[i] = 0;
+              term.onRender(() => window.counts[i]++);
+              term.onStats((s) => (window.metrics[i] = s));
+              term.onError((e) => {
+                throw e;
+              });
+              await term.write('\x1b[?25lready');
+              await term.flush();
             }
-            const end = start + (steps * 1000) / hz;
-            if (end > performance.now())
-              await new Promise((r) => setTimeout(r, end - performance.now()));
-            return {
-              elapsedMs: performance.now() - start,
-              batches: steps,
-              acknowledgedBytes: bytes,
-              frames: window.counts.map((n, i) => n - counts[i]),
-              acknowledgementMs: durations,
+            const geometry = window.terms.map((t) => {
+              const r = t.canvas.getBoundingClientRect();
+              return { x: r.x, y: r.y, width: r.width, height: r.height };
+            });
+            if (mode === 'display-none') clip.style.display = 'none';
+            if (mode === 'offscreen') clip.style.top = '20000px';
+            if (mode === 'clipped') {
+              clip.style.height = '1px';
+              for (const h of window.hosts) h.style.top = '10px';
+            }
+            await new Promise((r) => setTimeout(r, settleMs));
+            window.load = async (steps, hz) => {
+              const counts = [...window.counts],
+                start = performance.now();
+              let bytes = 0;
+              const durations = [];
+              for (let step = 0; step < steps; step++) {
+                const target = start + (step * 1000) / hz;
+                if (target > performance.now())
+                  await new Promise((r) => setTimeout(r, target - performance.now()));
+                const payload = Array.from(
+                  { length: 64 },
+                  (_, line) =>
+                    `\r\n${String(step).padStart(3, '0')}:${String(line).padStart(2, '0')} ${'log data '.repeat(7)}`,
+                ).join('');
+                const at = performance.now();
+                await Promise.all(window.terms.map((t) => t.write(payload)));
+                durations.push(performance.now() - at);
+                bytes += new TextEncoder().encode(payload).length * window.terms.length;
+              }
+              const end = start + (steps * 1000) / hz;
+              if (end > performance.now())
+                await new Promise((r) => setTimeout(r, end - performance.now()));
+              return {
+                elapsedMs: performance.now() - start,
+                batches: steps,
+                acknowledgedBytes: bytes,
+                frames: window.counts.map((n, i) => n - counts[i]),
+                acknowledgementMs: durations,
+              };
             };
-          };
-          return geometry;
-        }, mode);
+            return geometry;
+          },
+          { mode, settleMs },
+        );
         assert(
           geometry.every(
             (r) => r.x >= 0 && r.y >= 0 && r.x + r.width <= 2200 && r.y + r.height <= 900,
@@ -260,6 +268,7 @@ for (let repeat = 0; repeat < repeats; repeat++)
           textHash: sha(JSON.stringify(state.visible)),
           historyHash: sha(JSON.stringify(state.history)),
           revealFrames: state.revealFrames,
+          adapters: [...new Set(state.stats.filter(Boolean).map((s) => s.adapter))],
           pixels,
           errors,
         };
