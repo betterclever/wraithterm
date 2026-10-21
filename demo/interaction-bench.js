@@ -310,6 +310,7 @@ export async function searchTimings({
   queries,
   count = true,
   navigation = false,
+  countOnly = false,
   allowMismatch = false,
 }) {
   const a = terms[0],
@@ -339,18 +340,44 @@ export async function searchTimings({
     for (const { needle, total } of queries) {
       changed = undefined;
       const start = performance.now();
-      const found =
-        a.type === 'ghostty'
-          ? await a.terminal.findNext(needle)
-          : a.search.findNext(needle, options);
+      let found, enumerated;
+      if (a.type === 'ghostty') found = await a.terminal.findNext(needle);
+      else if (countOnly) {
+        // Diagnostic against pinned SearchAddon 0.16's engine: enumerate all
+        // matches without marker/decoration creation or selection. This uses
+        // private internals only for measurement, never product integration.
+        const engine = a.search._engine;
+        if (!engine?.find) throw Error('Pinned xterm search engine is unavailable');
+        let match = engine.find(needle, 0, 0, { caseSensitive: false });
+        enumerated = 0;
+        let prior;
+        while (match && (match.row !== prior?.row || match.col !== prior?.col)) {
+          if (++enumerated > 1000000) throw Error('Search enumeration did not terminate');
+          prior = match;
+          const nextCol = match.col + 1;
+          const nextRow = match.col + match.term.length >= a.terminal.cols;
+          match = engine.find(needle, match.row + Number(nextRow), nextRow ? 0 : nextCol, {
+            caseSensitive: false,
+          });
+        }
+        found = enumerated > 0;
+      } else found = a.search.findNext(needle, options);
       const elapsedMs = performance.now() - start;
-      const actual = a.type === 'ghostty' ? found.total : count ? changed?.resultCount : undefined;
+      const actual =
+        a.type === 'ghostty'
+          ? found.total
+          : countOnly
+            ? enumerated
+            : count
+              ? changed?.resultCount
+              : undefined;
       if (a.type === 'ghostty' || count) {
         if (actual !== total && !allowMismatch)
           throw Error(`Count mismatch for ${needle}: ${actual} != ${total}`);
       } else if (Boolean(found) !== Boolean(total)) throw Error(`Missing needle ${needle}`);
       if (
         total &&
+        (!countOnly || a.type === 'ghostty') &&
         !(a.type === 'ghostty' ? await a.terminal.getText(true) : a.terminal.getSelection())
           .toLowerCase()
           .includes(needle.toLowerCase())

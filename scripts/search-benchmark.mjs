@@ -9,6 +9,8 @@ const url = process.env.WRAITH_URL ?? 'http://127.0.0.1:5196';
 const output = process.env.WRAITH_REPORT_DIR ?? 'docs/benchmarks/native-search/after';
 const types = (process.env.WRAITH_TYPES ?? 'dom,webgl,wraith,ghostty').split(',');
 const allowMismatch = process.env.WRAITH_ALLOW_MISMATCH === '1';
+const modes = (process.env.WRAITH_SEARCH_MODES ?? 'all-count,next-only,navigation').split(',');
+assert(modes.every((m) => ['all-count', 'next-only', 'navigation', 'count-only'].includes(m)));
 const repeats = Number(process.env.WRAITH_REPETITIONS ?? 5);
 const cases = [
   { lines: 9000, wrapped: false },
@@ -55,7 +57,7 @@ const report = {
   config: { url, types, repeats, cases },
   results: [],
   methodology:
-    'Production builds, public SDK. Rotated renderer order. New terminal per case/repetition; 9 different cold needles and 24 same-needle navigations. all-count validates exact totals on both paths; upstream xterm additionally creates offscreen/onscreen decorations while native selects one match. next-only is xterm without full count; native always returns all counts. Timing stops at API completion, not GPU/display completion. Text selection and counts validated outside timed region. Unicode/cell wrap fixture is not a glyph-conformance claim. Native worker round trip included. Browser timer resolution applies. No concurrent benchmark.',
+    'Production builds, public SDK. Rotated renderer order. New terminal per case/repetition; 9 different cold needles and 24 same-needle navigations. all-count validates exact totals on both paths; upstream xterm additionally creates offscreen/onscreen decorations while native selects one match. next-only is xterm without full count; native always returns all counts. Timing stops at API completion, not GPU/display completion. Text selection and counts validated outside timed region. Unicode/cell wrap fixture is not a glyph-conformance claim. Native worker round trip included. Browser timer resolution applies. No concurrent benchmark. Optional count-only mode enumerates pinned xterm private search-engine results without decorations, allocation of a results array or selection; native still uses its full public counted-and-selected API. This diagnostic is not a public xterm count API.',
 };
 await mkdir(output, { recursive: true });
 const save = () => writeFile(`${output}/runs.json`, JSON.stringify(report, null, 2) + '\n');
@@ -94,7 +96,7 @@ try {
           },
           { type, fixture },
         );
-        for (const mode of ['all-count', 'next-only', 'navigation']) {
+        for (const mode of modes) {
           const result = await page.evaluate(
             async ({ mode, allowMismatch }) =>
               window.comparison.interactions.searchTimings({
@@ -103,6 +105,7 @@ try {
                     ? Array.from({ length: 24 }, () => window.searchQueries[0])
                     : window.searchQueries,
                 count: mode !== 'next-only',
+                countOnly: mode === 'count-only',
                 navigation: mode === 'navigation',
                 allowMismatch,
               }),
