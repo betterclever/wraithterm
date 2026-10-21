@@ -39,13 +39,16 @@ it does not prove GPU completion or display scanout. Native worker render
 notifications are opt-in and are disabled after the final listener is removed.
 Paste parse acknowledgement and forced completion are also reported separately.
 
-The sustained phase drives eight 80x24 terminals toward 30 batches/s, with
+The sustained phase drives eight 80x24 terminals toward 12 batches/s, with
 64 log lines per terminal per batch and equal configured retention. It records
 achieved rate, isolated Chrome CPU time, main-page JS heap and process RSS before
 load, during load and after disposal. JS heap excludes native worker heaps and
 most Wasm/GPU allocations. Summed RSS can double-count shared mappings. macOS
 GPU-driver utilization is device-wide, includes other applications and has an
 undocumented averaging window. These bounded runs do not certify leak absence.
+Set `WRAITH_STEPS_PER_SECOND` to change the offered batch rate. Only compare CPU
+efficiency when the achieved byte rates match; a renderer doing more work can
+legitimately consume more CPU.
 
 Fixed-count replay hashes compare visible contents with upstream DOM. Pipes
 checks both halves of every terminal cell against actual screenshot pixels.
@@ -61,7 +64,13 @@ Keep its report and source commit together when sharing conclusions.
 Configuration uses `WRAITH_DPRS`, `WRAITH_TYPES`, `WRAITH_CASES`,
 `WRAITH_PHASES`, `WRAITH_COLS`, `WRAITH_ROWS`, `WRAITH_FRAMES`,
 `WRAITH_MIN_MS`, `WRAITH_KEYS`, `WRAITH_REPETITIONS`,
-`WRAITH_SUSTAINED_MS` and `WRAITH_REPORT_DIR`. An immutable archived build can
+`WRAITH_SUSTAINED_MS`, `WRAITH_STEPS_PER_SECOND` and `WRAITH_REPORT_DIR`. An immutable archived build can
 set `WRAITH_SOURCE_ROOT` and `WRAITH_BUILD_HASH` while serving that archive's
 production output. Do not change measured sources or rebuild the served output
 while a run is active.
+
+Generate the reviewed tables and per-study CSV files with:
+
+```sh
+node scripts/summarize-workflows.mjs docs/benchmarks/workflows/baseline/runs.json docs/benchmarks/workflows/stress/runs.json
+```

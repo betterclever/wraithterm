@@ -26,6 +26,7 @@ const minMs = Number(process.env.WRAITH_MIN_MS ?? 1000),
   frames = Number(process.env.WRAITH_FRAMES ?? 512);
 const keys = Number(process.env.WRAITH_KEYS ?? 40),
   sustainedMs = Number(process.env.WRAITH_SUSTAINED_MS ?? 30000);
+const targetStepsPerSecond = Number(process.env.WRAITH_STEPS_PER_SECOND ?? 12);
 assert(Number.isInteger(repetitions) && repetitions >= 1 && repetitions <= 10);
 assert(
   Number.isInteger(cols) &&
@@ -53,7 +54,9 @@ assert(
     Number.isInteger(keys) &&
     keys >= 1 &&
     Number.isFinite(sustainedMs) &&
-    sustainedMs >= 1000,
+    sustainedMs >= 1000 &&
+    targetStepsPerSecond > 0 &&
+    targetStepsPerSecond <= 120,
 );
 await mkdir(output, { recursive: true });
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -91,7 +94,20 @@ const metadata = {
   xterm: JSON.parse(await readFile('node_modules/@xterm/xterm/package.json')).version,
   webglAddon: JSON.parse(await readFile('node_modules/@xterm/addon-webgl/package.json')).version,
   ghostty: JSON.parse(await readFile('upstream.json')).ghostty,
-  config: { repetitions, dprs, types, cases, phases, minMs, frames, keys, sustainedMs, cols, rows },
+  config: {
+    repetitions,
+    dprs,
+    types,
+    cases,
+    phases,
+    minMs,
+    frames,
+    keys,
+    sustainedMs,
+    targetStepsPerSecond,
+    cols,
+    rows,
+  },
   methodology: {
     throughput:
       'Precomputed deterministic ANSI, warmed 32 updates; repeated blocks of 32, GPU-fenced every block. DOM forces layout and has no GPU-completion fence. Grid recorded in config. Legacy complex/churn/append/showcase/pipes use the existing fixed-frame comparison harness. Synchronous core throughput is distinct from worker SDK latency.',
@@ -258,7 +274,8 @@ for (const dpr of dprs) {
                 !run.geometry ||
                 (run.geometry.viewport[2] === run.geometry.drawingBuffer[0] &&
                   run.geometry.viewport[3] === run.geometry.drawingBuffer[1]);
-              run.nativeUnicodeGlyphsUnverified = type === 'ghostty' && name === 'unicode';
+              run.nativeUnicodeGlyphsUnverified =
+                type === 'ghostty' && ['unicode', 'bytewise'].includes(name);
               if (name === 'pipes') {
                 const expected = await page.evaluate(() => window.comparison.pipesPixelProbe());
                 const png = await page.locator('#scene').screenshot();
@@ -390,7 +407,9 @@ for (const dpr of dprs) {
               iterations++,
             );
             bytes += step.bytes;
-            await delay(Math.max(0, start + iterations * (1000 / 30) - performance.now()));
+            await delay(
+              Math.max(0, start + iterations * (1000 / targetStepsPerSecond) - performance.now()),
+            );
             if (performance.now() - lastSample > 2000) {
               samples.push(await memory(opened.cdp, browserCdp));
               gpuSamples.push(await gpuSnapshot());
@@ -410,7 +429,7 @@ for (const dpr of dprs) {
             type,
             dpr,
             terminals: 8,
-            targetStepsPerSecond: 30,
+            targetStepsPerSecond,
             iterations,
             bytes,
             elapsedMs,
