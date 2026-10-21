@@ -76,6 +76,18 @@ only newly packed content. Each physical slot has one visible owner, so editing
 duplicate rows cannot overwrite each other. Identity maps bypass the shader's
 row lookup. Resizing replaces the slots and initializes every visible row.
 
+Native presentation also requires a visible document and a nonzero intersection
+between the canvas and its viewport/clipping ancestors. IntersectionObserver
+pauses normal GPU draws for offscreen, fully clipped and display:none panels;
+visible portions continue to render. Parsing, retained history, search, selection,
+accessibility mirrors and stats heartbeats continue. Explicit flush still attempts
+a render and waits for its GPU fence. Reveal requests a fresh presentation even
+when state is already clean. Observers attach after engine initialization and
+are disconnected on failure/disposal. Hosts without a working observer keep
+whole-document visibility handling. Intersection delivery is asynchronous, so an
+initial frame or in-flight frame can precede suspension. This is geometry-based;
+it does not detect opacity, visibility:hidden or another window covering a panel.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This

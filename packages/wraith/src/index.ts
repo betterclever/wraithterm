@@ -98,6 +98,10 @@ export class Wraith {
   private batchIds: number[] = [];
   private flushScheduled = false;
   private observer?: ResizeObserver;
+  private visibilityObserver?: IntersectionObserver;
+  private visibilityReady = false;
+  private intersectsViewport = true;
+  private workerVisible = true;
   private abort = new AbortController();
   private disposed = false;
   private failed = false;
@@ -232,6 +236,7 @@ export class Wraith {
       );
       await terminal.ready;
       terminal.dimensions();
+      terminal.watchVisibility();
       if (options.fit !== false) {
         terminal.observer = new ResizeObserver(() => terminal.fit());
         terminal.observer.observe(host);
@@ -354,6 +359,7 @@ export class Wraith {
     this.batchIds = [];
     this.batchLength = 0;
     this.observer?.disconnect();
+    this.visibilityObserver?.disconnect();
     clearInterval(this.mirrorTimer);
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
@@ -981,11 +987,42 @@ export class Wraith {
       },
       options,
     );
-    document.addEventListener(
-      'visibilitychange',
-      () => this.send({ type: 'visibility', visible: !document.hidden }),
-      options,
-    );
+    document.addEventListener('visibilitychange', () => this.updateVisibility(), options);
+  }
+  private watchVisibility() {
+    // Font loading and engine creation are asynchronous. Never send a visibility
+    // command before init: the worker serial queue requires a live engine.
+    this.visibilityReady = true;
+    if (typeof IntersectionObserver !== 'undefined') {
+      try {
+        this.visibilityObserver = new IntersectionObserver(
+          (entries) => {
+            const entry = entries[entries.length - 1];
+            if (!entry) return;
+            this.intersectsViewport =
+              entry.isIntersecting &&
+              entry.intersectionRect.width > 0 &&
+              entry.intersectionRect.height > 0;
+            this.updateVisibility();
+          },
+          { threshold: [0, Number.EPSILON] },
+        );
+        this.visibilityObserver.observe(this.canvas);
+      } catch {
+        // Visibility is an optimization; document visibility remains available
+        // in hosts without a working intersection observer.
+        this.visibilityObserver?.disconnect();
+        this.visibilityObserver = undefined;
+      }
+    }
+    this.updateVisibility();
+  }
+  private updateVisibility() {
+    if (!this.visibilityReady || this.disposed || this.failed) return;
+    const visible = !document.hidden && this.intersectsViewport;
+    if (visible === this.workerVisible) return;
+    this.workerVisible = visible;
+    this.send({ type: 'visibility', visible });
   }
   private enableMirror() {
     this.mirror = document.createElement('pre');
@@ -1012,6 +1049,7 @@ export class Wraith {
     this.disposed = true;
     this.abort.abort();
     this.observer?.disconnect();
+    this.visibilityObserver?.disconnect();
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];

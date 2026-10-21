@@ -10,6 +10,7 @@ let scheduled = false,
   visible = true,
   busy = false,
   disposed = false;
+let forceNextFrame = false;
 let raf = 0,
   holdTimer: ReturnType<typeof setTimeout> | undefined;
 let samples: number[] = [],
@@ -112,8 +113,12 @@ function drain() {
   }
 }
 function draw(time: number, force = false) {
+  // A restored canvas may need presentation even when terminal state is clean.
+  // Consume this only inside the guarded draw path, including explicit flush.
+  force ||= forceNextFrame;
   const start = performance.now();
   if (engine!.render(time, force)) {
+    forceNextFrame = false;
     renderedFrames++;
     if (observeRender) post({ type: 'render', frame: renderedFrames });
     samples.push(performance.now() - start);
@@ -130,7 +135,8 @@ function draw(time: number, force = false) {
   }
   if (engine!.needs_present) schedule();
 }
-function schedule() {
+function schedule(force = false) {
+  forceNextFrame ||= force;
   if (!engine || scheduled || disposed || !visible || busy) return;
   scheduled = true;
   raf = scope.requestAnimationFrame((time) => {
@@ -365,8 +371,13 @@ async function handle(command: Command) {
       result(command.id, await benchmark(command.options));
       break;
     case 'visibility':
+      if (visible === command.visible) break;
       visible = command.visible;
-      if (visible) schedule();
+      if (visible) schedule(true);
+      else if (scheduled) {
+        scope.cancelAnimationFrame(raf);
+        scheduled = false;
+      }
       break;
     case 'observe-render':
       observeRender = command.enabled;
