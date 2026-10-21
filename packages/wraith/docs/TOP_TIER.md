@@ -25,7 +25,12 @@ The renderer should consume stable row identities, revisions, glyph IDs and pack
 
 - The SGR action pass removes temporary RGB/palette normalization arrays and applies supported style/color combinations atomically, preserving upstream parser hooks and extended-state handling. The compatible dense pipeline improves 14.5%, the dashboard 17.8%, and a longer dense batch 13.3%. Native code is unchanged. See [the SGR report](benchmarks/sgr-actions/REPORT.md).
 
-Current results and limitations are in [the SGR report](benchmarks/sgr-actions/REPORT.md); the [retained-row report](benchmarks/retained-rows/REPORT.md) records the previous GPU milestone. Earlier measurements remain in [the efficiency report](benchmarks/efficiency/REPORT.md) and [the optimization report](benchmarks/optimization/REPORT.md), attached to their original binaries.
+The latest measurements are in [the broader workflow study](benchmarks/workflows/REPORT.md),
+[the GPU visual-option study](benchmarks/gpu-visual-options/REPORT.md), and
+[the public scrolling validation](benchmarks/selection-retention/REPORT.md).
+Each retains its own source hashes and limits. The [SGR report](benchmarks/sgr-actions/REPORT.md),
+[retained-row report](benchmarks/retained-rows/REPORT.md), [efficiency report](benchmarks/efficiency/REPORT.md),
+and [optimization report](benchmarks/optimization/REPORT.md) preserve the earlier binaries' measurements.
 
 ## Prioritized implementation backlog
 

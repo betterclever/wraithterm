@@ -246,6 +246,8 @@ for (const dpr of [1, 2]) {
         fontSize: 16,
         minimumContrastRatio: 7,
         allowProposedApi: true,
+        allowTransparency: true,
+        theme: term.options.theme,
       });
       original.open(compareHost);
       await new Promise((r) => original.write('\x1b[?25l\x1b[38;2;40;40;40;48;2;32;32;32mA', r));
@@ -257,8 +259,6 @@ for (const dpr of [1, 2]) {
         (normal[0] & 0xffffff) === (color[0] | (color[1] << 8) | (color[2] << 16)),
         'Contrast matches upstream DOM resolved foreground',
       );
-      original.dispose();
-      compareHost.remove();
       const stable = snapshot();
       await draw();
       expect(
@@ -301,6 +301,15 @@ for (const dpr of [1, 2]) {
       await draw();
       expect(term.renderer === 'dom', 'Joiner fallback');
       const viewport = term.element.querySelector('.xterm-viewport');
+      for (const selector of ['.xterm-viewport', '.xterm-scrollable-element']) {
+        const a = term.element.querySelector(selector),
+          b = original.element.querySelector(selector);
+        if (a && b)
+          expect(
+            getComputedStyle(a).backgroundColor === getComputedStyle(b).backgroundColor,
+            'Fallback restores current theme background: ' + selector,
+          );
+      }
       expect(
         viewport.style.getPropertyPriority('background-color') !== 'important',
         'Fallback restores viewport background',
@@ -322,6 +331,8 @@ for (const dpr of [1, 2]) {
         'Fatal renderer failure restores viewport',
       );
       term.dispose();
+      original.dispose();
+      compareHost.remove();
       return [
         'idempotent retained alpha/contrast',
         'direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells',
