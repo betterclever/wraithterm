@@ -253,6 +253,11 @@ The default maximum unacknowledged input is **8 MiB**. `write()` rejects with
 `write()` resolves before presentation; `flush()` provides the stronger completion
 contract.
 
+`onRender(listener)` optionally observes native render submissions and returns a
+disposable subscription. Its `{ frame }` sequence is monotonic; the event is not
+a GPU fence or proof of display presentation. Worker notifications are disabled
+when the final listener is removed, so unobserved rendering adds no messages.
+
 Native `scrollback` is a physical line limit. Ghostty prunes complete internal
 pages, so retention can exceed the configured count by a page; `scrollback: 0`
 disables history. The independent upstream default byte cap is removed when a

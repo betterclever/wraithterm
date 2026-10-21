@@ -16,6 +16,8 @@ let samples: number[] = [],
   frameTimes: number[] = [];
 let cursor = '';
 let mouseTracking = false;
+let observeRender = false,
+  renderedFrames = 0;
 let serial = Promise.resolve();
 let searchGeneration = 0;
 let searchRequest: number | undefined;
@@ -92,6 +94,8 @@ function drain() {
 function draw(time: number, force = false) {
   const start = performance.now();
   if (engine!.render(time, force)) {
+    renderedFrames++;
+    if (observeRender) post({ type: 'render', frame: renderedFrames });
     samples.push(performance.now() - start);
     frameTimes.push(time);
     if (samples.length > 512) samples.shift();
@@ -343,6 +347,9 @@ async function handle(command: Command) {
     case 'visibility':
       visible = command.visible;
       if (visible) schedule();
+      break;
+    case 'observe-render':
+      observeRender = command.enabled;
       break;
     case 'dispose':
       disposed = true;

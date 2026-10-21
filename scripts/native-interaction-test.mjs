@@ -121,6 +121,69 @@ try {
   await page.keyboard.press('q');
   await page.waitForFunction(() => window.inputBytes.length > 0);
   assert.equal(await page.evaluate(() => String.fromCharCode(...window.inputBytes)), 'q');
+  const renderObservation = await page.evaluate(async () => {
+    const term = window.featureTerm;
+    let messages = 0;
+    const observe = (event) => {
+      if (event.data.type === 'render') messages++;
+    };
+    term.worker.addEventListener('message', observe);
+    await term.write('unobserved');
+    await term.flush();
+    const defaultMessages = messages;
+    const frames = [],
+      other = [];
+    const first = term.onRender((event) => frames.push(event.frame));
+    const second = term.onRender((event) => other.push(event.frame));
+    await term.write('observed');
+    await term.flush();
+    first.dispose();
+    const firstCount = frames.length;
+    await term.write('second observer');
+    await term.flush();
+    const firstStopped = firstCount === frames.length;
+    second.dispose();
+    second.dispose();
+    let duplicateCalls = 0;
+    const duplicate = () => duplicateCalls++;
+    const duplicateA = term.onRender(duplicate),
+      duplicateB = term.onRender(duplicate);
+    messages = 0;
+    await term.write('duplicate observers');
+    await term.flush();
+    const duplicatesIndependent = duplicateCalls === messages * 2 && messages > 0;
+    duplicateA.dispose();
+    duplicateCalls = messages = 0;
+    await term.write('one duplicate remains');
+    await term.flush();
+    const duplicateRemains = duplicateCalls === messages && messages > 0;
+    duplicateB.dispose();
+    messages = 0;
+    await term.write('unobserved again');
+    await term.flush();
+    term.worker.removeEventListener('message', observe);
+    return {
+      defaultMessages,
+      frames,
+      other,
+      firstStopped,
+      duplicatesIndependent,
+      duplicateRemains,
+      finalMessages: messages,
+    };
+  });
+  assert.equal(renderObservation.defaultMessages, 0);
+  assert(renderObservation.frames.length > 0);
+  assert(renderObservation.other.length > renderObservation.frames.length);
+  assert(
+    renderObservation.other.every(
+      (frame, i, all) => Number.isInteger(frame) && (!i || frame > all[i - 1]),
+    ),
+  );
+  assert.equal(renderObservation.firstStopped, true);
+  assert.equal(renderObservation.duplicatesIndependent, true);
+  assert.equal(renderObservation.duplicateRemains, true);
+  assert.equal(renderObservation.finalMessages, 0);
   await page.evaluate(async () => {
     window.inputSubscription.dispose();
     await window.featureTerm.dispose();
