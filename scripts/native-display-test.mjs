@@ -1,6 +1,9 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { pixelSummary } from './png.mjs';
+import { readFile } from 'node:fs/promises';
+
+const font = await readFile(new URL('../demo/fonts/JetBrainsMono-Regular.ttf', import.meta.url));
 
 const browser = await chromium.launch({
   executablePath:
@@ -16,6 +19,11 @@ try {
     deviceScaleFactor: 1,
   });
   const errors = [];
+  // A production build hashes font filenames. Serve a controlled real fixture
+  // so this URL-loading check works against both dev and preview servers.
+  await page.route('**/__wraith-test-font.ttf', (route) =>
+    route.fulfill({ body: font, contentType: 'font/ttf' }),
+  );
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(process.env.WRAITH_URL ?? 'http://127.0.0.1:5173/playground.html');
   await page.waitForFunction(() => window.wraith);
@@ -51,7 +59,7 @@ try {
     const selected = await term.getText(true);
     const invalidSize = await Promise.allSettled([term.setFontSize(Infinity)]);
     const invalidFont = await Promise.allSettled([term.setFont(new Uint8Array([1, 2, 3]))]);
-    await term.setFont(new URL('/fonts/JetBrainsMono-Regular.ttf', location.href), {
+    await term.setFont(new URL('/__wraith-test-font.ttf', location.href), {
       fontSize: 16,
       lineHeight: 1.5,
     });

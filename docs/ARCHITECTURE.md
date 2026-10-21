@@ -191,9 +191,13 @@ render pass and submission code with the native Ghostty renderer. xterm's
 callbacks, events and buffer reads keep their original timing; write callbacks
 indicate parsed state, rather than GPU completion.
 
-Transparency, minimum contrast, character joiners, buffer decorations and link
-hover currently delegate rendering to the retained DOM renderer. This is a
-behavior-preserving fallback; the GPU profile resumes when those conditions end.
+Buffer decorations, link hover, transparency and minimum contrast stay on GPU.
+The optional visual pass touches only newly packed rows, with bounded contrast
+caches and alpha packed into the existing color words. Enabling transparency
+switches the canvas to premultiplied composition and suppresses the duplicate
+viewport background; fallback and disposal restore the original inline styles.
+Character joiners delegate rendering to the retained DOM renderer, and the GPU
+profile resumes when the joiner is removed.
 Selection, modes and input remain xterm-owned throughout. Browser rendering and
 parser costs differ from the libghostty worker profile, so its benchmark numbers
 cannot be assigned to the compatibility profile.

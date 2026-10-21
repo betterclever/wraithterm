@@ -135,11 +135,14 @@ underlines stay on WebGPU. Top/bottom decoration precedence and selection colors
 are resolved while packing affected rows; upstream retains decoration DOM
 elements, onRender callbacks and overview rulers.
 
-Transparency, minimum contrast adjustment and custom character joiners currently
-use the retained xterm DOM renderer. GPU rendering resumes when the feature is removed. Unsupported
-WebGPU environments, device errors and atlas capacity errors also use DOM, with
-a diagnostic reason. This preserves behavior while GPU coverage expands; it
-means some options and decorated addons do not currently receive GPU acceleration.
+Transparency and minimum contrast adjustment stay on WebGPU. Per-cell alpha is
+packed only when needed; contrast uses a bounded RGB-pair cache and applies only
+to newly packed rows. Box/block and Powerline glyphs retain their background
+colors, and dim text uses half the requested contrast, matching xterm's policy.
+The canvas uses premultiplied composition when transparency is enabled.
+Custom character joiners use the retained xterm DOM renderer. GPU rendering
+resumes when the joiner is removed. Unsupported WebGPU environments, device
+errors and atlas capacity errors also use DOM, with a diagnostic reason.
 Other renderer addons can replace Wraith through xterm's normal render service.
 
 Full API compatibility is distinct from claiming pixel-identical rendering,

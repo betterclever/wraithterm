@@ -325,6 +325,9 @@ pub struct Compositor {
 }
 #[wasm_bindgen]
 impl Compositor {
+    pub fn set_transparency(&mut self, enabled: bool) {
+        self.renderer.set_transparency(enabled);
+    }
     pub async fn create(canvas: web_sys::OffscreenCanvas) -> Result<Compositor, JsValue> {
         Ok(Self {
             renderer: Renderer::external(canvas).await.map_err(error)?,

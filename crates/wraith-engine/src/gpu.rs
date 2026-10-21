@@ -350,6 +350,18 @@ impl Renderer {
         }
         Ok(())
     }
+    pub fn set_transparency(&mut self, enabled: bool) {
+        let mode = if enabled {
+            wgpu::CompositeAlphaMode::PreMultiplied
+        } else {
+            wgpu::CompositeAlphaMode::Opaque
+        };
+        if self.config.alpha_mode != mode {
+            self.config.alpha_mode = mode;
+            self.surface.configure(&self.device, &self.config);
+            self.pending_present = true;
+        }
+    }
     pub fn render(&mut self, core: &mut Core, time: f64, force: bool) -> Result<bool, String> {
         if let Some(error) = &*self.lost.lock().unwrap() {
             return Err(error.clone());
@@ -557,7 +569,13 @@ impl Renderer {
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load: wgpu::LoadOp::Clear(
+                            if self.config.alpha_mode == wgpu::CompositeAlphaMode::PreMultiplied {
+                                wgpu::Color::TRANSPARENT
+                            } else {
+                                wgpu::Color::BLACK
+                            },
+                        ),
                         store: wgpu::StoreOp::Store,
                     },
                 })],

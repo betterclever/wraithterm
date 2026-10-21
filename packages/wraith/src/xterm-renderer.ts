@@ -1,6 +1,7 @@
 import type { Terminal, IDisposable, ITerminalOptions } from './xterm-api.js';
 import init, { Compositor, type InitOutput } from '../wasm/wraith_engine.js';
 import { BrowserAtlas, AtlasFull } from './xterm-atlas.js';
+import { ContrastCache, backgroundGlyph } from './xterm-contrast.js';
 import {
   internals,
   CELL_HAS_EXTENDED,
@@ -17,6 +18,8 @@ import {
 export type RendererState = 'initializing' | 'webgpu' | 'dom' | 'external';
 /** u32 words per packed GPU cell: fg, bg, underline, flags, glyph. */
 export const CELL_WORDS = 5;
+/** Packed per-cell alpha is opt-in; legacy/native 24-bit cells stay opaque. */
+const COLOR_ALPHA = 1 << 21;
 const rgb = (value: number) => ((value & 255) << 16) | (value & 0xff00) | ((value >>> 16) & 255);
 const rgba = (value: number) => rgb(value >>> 8);
 function wordColor(word: number, foreground: boolean, colors: Colors, brighten: boolean): number {
@@ -75,6 +78,10 @@ export class XtermRenderer implements Renderer {
   private shift = 1;
   private lastViewportY = 0;
   private readonly cell: Cell;
+  private readonly contrast = new ContrastCache();
+  private transparency = false;
+  private themeAlpha = false;
+  private readonly backgroundStyles = new Map<HTMLElement, { value: string; priority: string }>();
   private view = new Float32Array(4);
   private frame = new Uint32Array(8);
   /** Previous logical row backing each visible row, or 0xffffffff for new
@@ -104,6 +111,7 @@ export class XtermRenderer implements Renderer {
     private readonly fallback: Renderer,
   ) {
     const document = terminal.element!.ownerDocument;
+    this.updateThemeAlpha();
     this.cell = terminal.buffer.active.getNullCell() as Cell;
     this.rows = core.screenElement.querySelector('.xterm-rows');
     this.canvas = document.createElement('canvas');
@@ -119,7 +127,10 @@ export class XtermRenderer implements Renderer {
     core.screenElement.prepend(this.canvas);
     this.subscriptions.push(
       core.optionsService.onOptionChange(() => this.invalidate()),
-      core._themeService.onChangeColors(() => this.invalidate()),
+      core._themeService.onChangeColors(() => {
+        this.updateThemeAlpha();
+        this.invalidate();
+      }),
       core.linkifier.onShowLinkUnderline((range) => {
         this.hovering = { ...range };
         this.invalidate();
@@ -193,12 +204,41 @@ export class XtermRenderer implements Renderer {
     // selection tint twice. Accessibility lives outside this visual layer.
     const selection = this.core.screenElement.querySelector<HTMLElement>('.xterm-selection');
     if (selection) selection.style.visibility = gpu ? 'hidden' : '';
+    if (gpu && this.transparency) {
+      // The viewport normally paints the theme behind the renderer. Painting
+      // it again underneath an alpha canvas would apply the background twice.
+      for (const selector of ['.xterm-scrollable-element', '.xterm-viewport']) {
+        const element = this.terminal.element?.querySelector<HTMLElement>(selector);
+        if (!element) continue;
+        const value = element.style.getPropertyValue('background-color');
+        const priority = element.style.getPropertyPriority('background-color');
+        if (
+          !this.backgroundStyles.has(element) ||
+          value !== 'transparent' ||
+          priority !== 'important'
+        ) {
+          this.backgroundStyles.set(element, { value, priority });
+          element.style.setProperty('background-color', 'transparent', 'important');
+        }
+      }
+    } else this.restoreBackgrounds();
+  }
+  private restoreBackgrounds(): void {
+    if (!this.backgroundStyles.size) return;
+    for (const [element, style] of this.backgroundStyles)
+      if (style.value) element.style.setProperty('background-color', style.value, style.priority);
+      else element.style.removeProperty('background-color');
+    this.backgroundStyles.clear();
+  }
+  private updateThemeAlpha(): void {
+    const colors = this.core._themeService.colors;
+    this.themeAlpha =
+      (colors.foreground.rgba & 255) !== 255 ||
+      colors.ansi.some((color) => (color.rgba & 255) !== 255);
   }
   private fallbackReason(): string | undefined {
     if (this.fatal) return this.reason;
     if (!this.gpu) return 'GPU initialization';
-    if (this.terminal.options.allowTransparency) return 'Transparency';
-    if (this.terminal.options.minimumContrastRatio !== 1) return 'Minimum contrast adjustment';
     if (this.core._characterJoinerService._characterJoiners.length) return 'Character joiners';
     return undefined;
   }
@@ -219,6 +259,11 @@ export class XtermRenderer implements Renderer {
     try {
       const d = this.dimensions,
         o = this.terminal.options as Required<ITerminalOptions>;
+      if (this.transparency !== !!o.allowTransparency) {
+        this.gpu!.set_transparency(!!o.allowTransparency);
+        this.transparency = !!o.allowTransparency;
+        this.full = true;
+      }
       const geometry = `${this.terminal.cols},${this.terminal.rows},${d.device.canvas.width},${d.device.canvas.height}`;
       if (!d.device.cell.width || !d.device.cell.height) return;
       if (geometry !== this.geometry) {
@@ -263,6 +308,7 @@ export class XtermRenderer implements Renderer {
         this.rowCached.fill(0);
         this.pack(0, this.terminal.rows - 1);
       }
+      this.visualFeatures();
       const b = this.terminal.buffer.active,
         colors = this.core._themeService.colors;
       const cs = this.core.coreService;
@@ -317,6 +363,132 @@ export class XtermRenderer implements Renderer {
       this.frame = new Uint32Array(buffer, pointer + (words + 4) * 4, 8);
       this.rowSources = new Uint32Array(buffer, pointer + (words + 12) * 4, this.terminal.rows);
     }
+  }
+  /** Apply optional visual work only to newly packed rows. Reused GPU rows
+   * already contain it, preserving retention and the ordinary packing path. */
+  private visualFeatures(): void {
+    const colors = this.core._themeService.colors;
+    const ratio = this.terminal.options.minimumContrastRatio ?? 1;
+    const contrast = ratio !== 1;
+    const alpha = this.themeAlpha || (this.transparency && (colors.background.rgba & 255) !== 255);
+    if (!contrast && !alpha) return;
+    this.contrast.configure(ratio);
+    const { cols, rows, buffer, options } = this.terminal;
+    const b = buffer.active,
+      values = this.staging;
+    let decorations: Map<number, Decoration[]> | undefined;
+    if (alpha && b.type === 'normal')
+      for (const decoration of this.core._decorationService.decorations) {
+        const y = decoration.marker.line - b.viewportY;
+        if (y < 0 || y >= rows) continue;
+        decorations ??= new Map();
+        const list = decorations.get(y);
+        if (list) list.push(decoration);
+        else decorations.set(y, [decoration]);
+      }
+    let lastFg = -1,
+      lastBg = -1,
+      lastDim = false,
+      adjusted: number | undefined;
+    for (let y = 0; y < rows; y++) {
+      if (this.rowSources[y] !== 0xffffffff) continue;
+      const row = b.viewportY + y,
+        line = b.getLine(row);
+      const hover = this.hovering;
+      const hovered = hover !== undefined && y >= hover.y1 && y <= hover.y2;
+      for (let x = 0, i = y * cols * CELL_WORDS; x < cols; x++, i += CELL_WORDS) {
+        const data = line?.getCell(x, this.cell) as Cell | undefined;
+        if (!data) continue;
+        let fg = values[i]!,
+          fgAlpha = 255,
+          bgAlpha = 255,
+          ulAlpha = 255;
+        const bg = values[i + 1]!,
+          flags = values[i + 3]!,
+          dim = !!(flags & 4);
+        if (alpha) {
+          const inverse = !!data.isInverse();
+          fgAlpha = this.colorAlpha(
+            data,
+            !inverse,
+            true,
+            colors,
+            !!options.drawBoldTextInBrightColors,
+          );
+          // Upstream's inverted default foreground uses an opaque background.
+          if (inverse && data.isBgDefault()) fgAlpha = 255;
+          if (this.transparency) bgAlpha = this.colorAlpha(data, inverse, false, colors, false);
+          let top = false;
+          for (const d of decorations?.get(y) ?? []) {
+            const left = d.options.x ?? 0;
+            if (
+              x < left ||
+              x >= left + (d.options.width ?? 1) ||
+              (top && d.options.layer !== 'top')
+            )
+              continue;
+            if (d.foregroundColorRGB) fgAlpha = 255;
+            if (d.backgroundColorRGB) bgAlpha = 255;
+            top = d.options.layer === 'top';
+          }
+          if (!top && this.selectedStart && this.selectedEnd && this.selected(x, row)) {
+            bgAlpha = 255;
+            if (colors.selectionForeground) fgAlpha = 255;
+          }
+          ulAlpha = data.isUnderlineColorRGB()
+            ? 255
+            : data.isUnderlineColorPalette()
+              ? colors.ansi[data.getUnderlineColor()]!.rgba & 255
+              : fgAlpha;
+        }
+        if (contrast && data.getWidth() && !backgroundGlyph(data.getCode())) {
+          if (fg !== lastFg || bg !== lastBg || dim !== lastDim) {
+            adjusted = this.contrast.resolve(fg, bg, dim);
+            lastFg = fg;
+            lastBg = bg;
+            lastDim = dim;
+          }
+          if (adjusted !== undefined) {
+            fg = adjusted;
+            fgAlpha = 255;
+            if (data.isUnderlineColorDefault()) {
+              values[i + 2] = fg;
+              ulAlpha = 255;
+            }
+          }
+        }
+        values[i] = fg;
+        if (
+          hovered &&
+          x >= (y === hover.y1 ? hover.x1 : 0) &&
+          x < (y === hover.y2 ? hover.x2 : Math.min(hover.cols, cols))
+        ) {
+          values[i + 2] = fg;
+          ulAlpha = fgAlpha;
+        }
+        if (fgAlpha !== 255 || bgAlpha !== 255 || ulAlpha !== 255) {
+          values[i] = fg | (fgAlpha << 24);
+          values[i + 1] = bg | (bgAlpha << 24);
+          values[i + 2] = values[i + 2]! | (ulAlpha << 24);
+          values[i + 3] = flags | COLOR_ALPHA;
+        }
+      }
+    }
+  }
+  private colorAlpha(
+    data: Cell,
+    foreground: boolean,
+    bright: boolean,
+    colors: Colors,
+    boldBright: boolean,
+  ): number {
+    if (foreground ? data.isFgRGB() : data.isBgRGB()) return 255;
+    if (foreground ? data.isFgPalette() : data.isBgPalette()) {
+      const color = foreground ? data.getFgColor() : data.getBgColor();
+      const index = color + (bright && data.isBold() && boldBright && color < 8 ? 8 : 0);
+      return colors.ansi[index]!.rgba & 255;
+    }
+    return (foreground ? colors.foreground : colors.background).rgba & 255;
   }
   private selected(x: number, y: number): boolean {
     const a = this.selectedStart,
@@ -634,6 +806,7 @@ export class XtermRenderer implements Renderer {
     this.disposed = true;
     clearInterval(this.timer);
     for (const subscription of this.subscriptions) subscription.dispose();
+    this.restoreBackgrounds();
     this.gpu?.free();
     this.canvas.remove();
     this.fallback.dispose();
