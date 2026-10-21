@@ -160,6 +160,15 @@ original actions; tentative fast-path changes stay local until the whole sequenc
 is validated. Extended-attribute resets and hyperlink retention use upstream's
 action. Guards reject unfamiliar private layouts, and no upstream prototype is
 modified. This additional private boundary must be retested on xterm upgrades.
+`xterm-print.ts` bulk-writes ordinary ASCII and box/block glyph runs for the
+unchanged builtin Unicode 6 provider, including runs spanning rows. It delegates
+one character at each delayed-wrap boundary to upstream so scroll margins,
+scrollback, events and wrapped-row flags retain upstream behavior. It checks the
+provider/options again after each boundary and delegates the remaining run if
+callbacks change them. Unicode11/custom providers, accessibility, insert mode,
+charset translation, extended attributes/hyperlinks and overflowing no-wrap
+runs retain the generic print action. No render or parser callback is bypassed.
+
 `xterm-api.d.ts` and the CSS are generated from that pinned package, with the MIT
 notice preserved. An internal npm dependency alias prevents recursion when users
 install Wraith as `@xterm/xterm`.

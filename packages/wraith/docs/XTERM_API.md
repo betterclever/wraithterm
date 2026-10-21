@@ -11,6 +11,11 @@ interception and fallthrough. Mixed/colon parameters, underline attributes and
 unsupported combinations use upstream actions, with differential tests against
 the unmodified runtime.
 
+Long ASCII and box/block runs use a row-sized bulk print path with the unchanged
+builtin Unicode 6 provider. Upstream performs delayed wrapping and scrolling.
+Unicode11/custom providers, accessibility, insert mode, character sets and
+extended attributes keep the original print action.
+
 This profile deliberately uses xterm's semantic core. `Wraith.mount()` remains the
 separate libghostty worker profile. A full xterm API cannot be obtained by renaming
 Ghostty methods: asynchronous parser interception and private addon services have
