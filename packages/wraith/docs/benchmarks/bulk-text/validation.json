@@ -1,0 +1,231 @@
+{
+  "date": "2026-10-21T13:54:57.554Z",
+  "head": "efc95749aa4141b10b38fa081c41e180b969ff29",
+  "sourcesVerifiedAgainstCommits": true,
+  "commonRunnerSha256": "1be71d7cf05a147de33bfdb976bf1afceb35b682f3f87087cf05a77a652e4682",
+  "engineUnchangedFromBaseline": true,
+  "checks": {
+    "sdkTests": 66,
+    "buildSdk": "pass",
+    "typecheck": "pass",
+    "buildDemo": "pass",
+    "inputDifferential": {
+      "date": "2026-10-21T13:45:38.675Z",
+      "sources": {
+        "xterm-input.js": "02b24006890bf49dfee6931d22ccb1957b6f1d67e04740d5b913587a5670da9f",
+        "xterm-print.js": "7bf137bc5da12772b0b549f3829f0278821c32296b4cee80d117e764aaf6fbb7",
+        "xterm-parser.js": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42"
+      },
+      "generation": {
+        "sourceSha256": "c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef",
+        "generatedSha256": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42",
+        "deterministic": true,
+        "residualEnumIdentifiers": 0,
+        "numericCases": 21
+      },
+      "comparisons": 336,
+      "fragments": 16554,
+      "randomAtoms": 2500,
+      "asyncEvents": 9,
+      "checks": [
+        "full buffer/attributes/parser state",
+        "random malformed CSI",
+        "overflow/subparameters",
+        "UTF-8 fragmentation",
+        "wrapping and wide-cell repair",
+        "margins/insert/delete/alternate screen",
+        "charset/hyperlinks",
+        "accessibility events",
+        "custom Unicode provider",
+        "CSI/OSC/DCS/ESC async continuation"
+      ]
+    },
+    "xtermBrowser": {
+      "date": "2026-10-21T13:45:49.202Z",
+      "version": "0.2.0",
+      "wasmSha256": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+      "target": "@xterm/xterm 6.0.0",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "pixels": {
+        "width": 810,
+        "height": 681,
+        "colors": 490,
+        "bright": 7160
+      },
+      "checks": [
+        "Rust/Wasm/WebGPU pixels",
+        "buffers, styles, wide/combining cells, history and fragmented UTF-8",
+        "resize/reflow, all scroll and selection methods",
+        "original Serialize and Unicode11 addons",
+        "async CSI, OSC, DCS and ESC parser hooks",
+        "accelerated SGR colors preserve async interception, fallthrough and malformed parameters",
+        "title/bell, DSR replies, paste, input, modes and alternate screen",
+        "original Fit addon, mutable fonts/geometry and atlas reset",
+        "transient presentation retries without discarding the pending frame",
+        "staged frame bounds and uniform validation reject before submission",
+        "Wasm views refresh before packing and cold mid-row growth preserves submitted cells",
+        "retained GPU rows survive scrolling, sparse edits, selection, stamp wrap and invalid sources",
+        "original Search addon with GPU decorations and cleanup",
+        "GPU markers/decorations/contrast/transparency and character joiner fallback",
+        "original Attach addon and disposal",
+        "link provider registration, clear/reset and resource disposal",
+        "real keyboard events, custom key handler, focus/blur",
+        "missing WebGPU preserves a working DOM terminal",
+        "renderer failure releases GPU resources and restores DOM",
+        "disposal during asynchronous GPU initialization"
+      ],
+      "errors": []
+    },
+    "visualOptions": {
+      "checks": [
+        {
+          "dpr": 1,
+          "check": "actual transparent pixels over colored parent, palette alpha, opaque truecolor and foreground alpha"
+        },
+        {
+          "dpr": 1,
+          "check": "actual opaque block cursor over translucent background"
+        },
+        {
+          "dpr": 1,
+          "check": "idempotent retained alpha/contrast"
+        },
+        {
+          "dpr": 1,
+          "check": "direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells"
+        },
+        {
+          "dpr": 1,
+          "check": "zero uploads for identical alpha rows"
+        },
+        {
+          "dpr": 1,
+          "check": "retained scrolling with both options"
+        },
+        {
+          "dpr": 1,
+          "check": "live transparency and theme changes"
+        },
+        {
+          "dpr": 1,
+          "check": "contrast matches upstream DOM"
+        },
+        {
+          "dpr": 1,
+          "check": "dim and block exclusions"
+        },
+        {
+          "dpr": 1,
+          "check": "underline color"
+        },
+        {
+          "dpr": 1,
+          "check": "atlas rebuild"
+        },
+        {
+          "dpr": 1,
+          "check": "selection and decoration precedence"
+        },
+        {
+          "dpr": 1,
+          "check": "joiner fallback and resumption"
+        },
+        {
+          "dpr": 1,
+          "check": "resize"
+        },
+        {
+          "dpr": 1,
+          "check": "forced renderer failure restoration"
+        },
+        {
+          "dpr": 1,
+          "check": "disposal"
+        },
+        {
+          "dpr": 2,
+          "check": "actual transparent pixels over colored parent, palette alpha, opaque truecolor and foreground alpha"
+        },
+        {
+          "dpr": 2,
+          "check": "actual opaque block cursor over translucent background"
+        },
+        {
+          "dpr": 2,
+          "check": "idempotent retained alpha/contrast"
+        },
+        {
+          "dpr": 2,
+          "check": "direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells"
+        },
+        {
+          "dpr": 2,
+          "check": "zero uploads for identical alpha rows"
+        },
+        {
+          "dpr": 2,
+          "check": "retained scrolling with both options"
+        },
+        {
+          "dpr": 2,
+          "check": "live transparency and theme changes"
+        },
+        {
+          "dpr": 2,
+          "check": "contrast matches upstream DOM"
+        },
+        {
+          "dpr": 2,
+          "check": "dim and block exclusions"
+        },
+        {
+          "dpr": 2,
+          "check": "underline color"
+        },
+        {
+          "dpr": 2,
+          "check": "atlas rebuild"
+        },
+        {
+          "dpr": 2,
+          "check": "selection and decoration precedence"
+        },
+        {
+          "dpr": 2,
+          "check": "joiner fallback and resumption"
+        },
+        {
+          "dpr": 2,
+          "check": "resize"
+        },
+        {
+          "dpr": 2,
+          "check": "forced renderer failure restoration"
+        },
+        {
+          "dpr": 2,
+          "check": "disposal"
+        }
+      ]
+    },
+    "nativeInstalledConsumer": {
+      "dev": "pass",
+      "production": "pass"
+    },
+    "compatibleAliasedConsumer": {
+      "dev": "pass",
+      "production": "pass"
+    }
+  },
+  "benchmarks": {
+    "pairedRecords": 400,
+    "baselineRecords": 120,
+    "initialCandidateRecords": 200,
+    "allFinalReplayAndDomHashesMatch": true
+  },
+  "limitations": [
+    "Other applications were busy; see paired raw host CPU snapshot.",
+    "No engine changes or native test rerun in this SDK-only milestone.",
+    "Public callback and synchronous parser measurements are not GPU/display FPS."
+  ]
+}

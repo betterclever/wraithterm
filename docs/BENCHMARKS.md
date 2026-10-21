@@ -106,3 +106,15 @@ Native still returns its public count and selected match across the worker.
 Treat this as a separate diagnostic; those internals are not a supported API.
 `WRAITH_SEARCH_MODES` records the selected phases, and `allowMismatch` is preserved
 in configuration for future baseline runs.
+
+## Wrapped bulk text
+
+The [wrapped bulk-text report](benchmarks/bulk-text/REPORT.md) retains 400 alternating production records, stock DOM controls, Unicode 11 fallback controls and complete buffer hashes. Default-provider wrapped parser throughput improves about 1.6–1.9× on the recorded M5 Max run; short colored logs, no-wrap and alternate providers remain controls. Public parse callbacks and parser-only throughput are separate from GPU FPS. The host was busy; use the paired ratios and retained ranges.
+
+```sh
+WRAITH_URL=http://127.0.0.1:5196 npm run benchmark:bulk-text
+node scripts/summarize-bulk-text.mjs
+npm run profile:bulk-text
+```
+
+For a paired comparison, provide WRAITH_BEFORE_URL, WRAITH_BEFORE_SOURCE_ROOT and WRAITH_BEFORE_HASH for an immutable baseline. Run profiles separately from timing. See the report for complete fixture and validation details.
