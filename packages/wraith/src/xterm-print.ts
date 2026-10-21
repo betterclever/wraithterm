@@ -74,6 +74,35 @@ export function installBulkPrint(terminal: Terminal): boolean {
       if (!((code >= 32 && code <= 126) || (code >= 0x2500 && code <= 0x259f)))
         return original.call(this, data, start, end);
     }
+    // Keep the common non-wrapping path small: no row-loop bookkeeping or
+    // second line lookup when the complete run already fits in this row.
+    if (b.x + end - start <= cols) {
+      const words = b.lines.get(b.ybase + b.y)?._data;
+      if (!(words instanceof Uint32Array) || words.length !== cols * 3)
+        return original.call(this, data, start, end);
+      this._dirtyRowTracker.markDirty(b.y);
+      if (b.x && words[(b.x - 1) * 3]! >>> 22 === 2) {
+        const at = (b.x - 1) * 3;
+        words[at] = 1 << 22;
+        words[at + 1] = attr.fg;
+        words[at + 2] = attr.bg;
+      }
+      for (let i = start, at = b.x * 3; i < end; i++, at += 3) {
+        words[at] = data[i]! | (1 << 22);
+        words[at + 1] = attr.fg;
+        words[at + 2] = attr.bg;
+      }
+      b.x += end - start;
+      this._parser.precedingJoinState = 2;
+      if (b.x < cols && words[b.x * 3] === 0) {
+        const at = b.x * 3;
+        words[at] = 1 << 22;
+        words[at + 1] = attr.fg;
+        words[at + 2] = attr.bg;
+      }
+      this._dirtyRowTracker.markDirty(b.y);
+      return;
+    }
     this._dirtyRowTracker.markDirty(b.y);
     let position = start;
     let words: Uint32Array | undefined;
