@@ -15,4 +15,9 @@ for (const [from, to] of [
   ['media/JetBrainsMono-Regular.ttf', 'JetBrainsMono.ttf'],
 ])
   await copyFile(resolve(video, from), resolve(output, to));
+if (process.argv.includes('--flex')) {
+  for (const name of ['complex-webgl', 'complex-wraith', 'showcase-webgl', 'showcase-wraith'])
+    await copyFile(resolve(video, `footage/hype-${name}.mp4`), resolve(output, `${name}.mp4`));
+  await copyFile(resolve(video, 'footage/hype-flex-score.wav'), resolve(output, 'flex-music.wav'));
+}
 console.log('Prepared local footage, stereo mix and fonts. No media is committed.');

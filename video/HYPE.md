@@ -1,5 +1,8 @@
 # Ghost Hype
 
+Newest: [the question-first Remotion speed flex](remotion/FLEX.md), with 14 shots
+and matched xterm comparisons at the same duration (`wraith-hype-flex.mp4`).
+
 The final edition now uses [Remotion, React and Three.js](remotion/README.md),
 with the user-supplied BIA recording and measured 131-BPM onset alignment.
 Its local export is `wraith-hype-remotion.mp4`, 23.816667 seconds at

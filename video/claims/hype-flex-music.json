@@ -1,0 +1,111 @@
+{
+  "sourceFile": "BIA - WE ON GO (Official Audio).mp4",
+  "sourceSha256": "8aab28c99f1f846152436b014d13051542c6de04c2674b146e2840d6d3027798",
+  "method": "Hann STFT; positive log spectral flux plus 30\u2013130 Hz bass flux; tempo/phase grid fit on seconds 8\u201370",
+  "sampleRate": 22050,
+  "hopSamples": 220,
+  "fftSamples": 2048,
+  "tempoSearchBpm": [
+    128,
+    134
+  ],
+  "tempoStepBpm": 0.02,
+  "bestTempoBpm": 131.0,
+  "bestBeatPhaseSeconds": 0.35,
+  "selectedSourceOffsetSeconds": 0.795,
+  "editBpm": 131,
+  "editFps": 60,
+  "cutOnsets": [
+    {
+      "editFrame": 0,
+      "sourceSeconds": 0.795,
+      "nearestOnsetSeconds": 0.794739,
+      "differenceMs": 0.261
+    },
+    {
+      "editFrame": 110,
+      "sourceSeconds": 2.6283333333333334,
+      "nearestOnsetSeconds": 2.630567,
+      "differenceMs": -2.234
+    },
+    {
+      "editFrame": 164,
+      "sourceSeconds": 3.5283333333333333,
+      "nearestOnsetSeconds": 3.528526,
+      "differenceMs": -0.193
+    },
+    {
+      "editFrame": 221,
+      "sourceSeconds": 4.4783333333333335,
+      "nearestOnsetSeconds": 4.476372,
+      "differenceMs": 1.961
+    },
+    {
+      "editFrame": 330,
+      "sourceSeconds": 6.295,
+      "nearestOnsetSeconds": 6.292245,
+      "differenceMs": 2.755
+    },
+    {
+      "editFrame": 441,
+      "sourceSeconds": 8.145,
+      "nearestOnsetSeconds": 8.13805,
+      "differenceMs": 6.95
+    },
+    {
+      "editFrame": 550,
+      "sourceSeconds": 9.961666666666666,
+      "nearestOnsetSeconds": 9.953923,
+      "differenceMs": 7.744
+    },
+    {
+      "editFrame": 661,
+      "sourceSeconds": 11.811666666666667,
+      "nearestOnsetSeconds": 11.809705,
+      "differenceMs": 1.961
+    },
+    {
+      "editFrame": 770,
+      "sourceSeconds": 13.628333333333334,
+      "nearestOnsetSeconds": 13.625578,
+      "differenceMs": 2.755
+    },
+    {
+      "editFrame": 881,
+      "sourceSeconds": 15.478333333333333,
+      "nearestOnsetSeconds": 15.471383,
+      "differenceMs": 6.95
+    },
+    {
+      "editFrame": 990,
+      "sourceSeconds": 17.295,
+      "nearestOnsetSeconds": 17.287256,
+      "differenceMs": 7.744
+    },
+    {
+      "editFrame": 1100,
+      "sourceSeconds": 19.128333333333334,
+      "nearestOnsetSeconds": 19.133061,
+      "differenceMs": -4.728
+    },
+    {
+      "editFrame": 1209,
+      "sourceSeconds": 20.945,
+      "nearestOnsetSeconds": 20.948934,
+      "differenceMs": -3.934
+    },
+    {
+      "editFrame": 1320,
+      "sourceSeconds": 22.795,
+      "nearestOnsetSeconds": 22.794739,
+      "differenceMs": 0.261
+    },
+    {
+      "editFrame": 1429,
+      "sourceSeconds": 24.611666666666668,
+      "nearestOnsetSeconds": 24.62059,
+      "differenceMs": -8.923
+    }
+  ],
+  "limits": "Spectral onset agreement estimates beat phase; it does not identify musical bars, lyrics or guarantee perceptual sync. Native/Studio listening review is separate."
+}

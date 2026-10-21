@@ -1,5 +1,9 @@
 # Ghost Hype — Remotion edition
 
+Newest edit: [the question-first speed flex](FLEX.md), with 14 faster shots,
+measured xterm comparisons and the same 23.8-second duration. The earlier cut
+described below remains available as a separate composition and export.
+
 The final launch edit uses Remotion 4.0.537, React 19 and Three.js via
 `@remotion/three`. It preserves the Wraith website's warm palette, mascot and
 real terminal footage. All movement depends on the current frame, so scrubbing

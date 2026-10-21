@@ -14,6 +14,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("source", type=Path)
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--edit", type=Path)
 args = parser.parse_args()
 sample_rate, hop, window = 22050, 220, 2048
 pcm = subprocess.run([
@@ -40,8 +41,9 @@ for bpm in np.arange(128, 134, .02):
         best = max(best, (score, float(bpm), float(phase)))
 peaks = [i for i in range(2, len(onsets) - 2)
          if onsets[i] == max(onsets[i - 2:i + 3]) and onsets[i] > 2]
-cues = [0, 110, 330, 550, 769, 989, 1209, 1429]
-offset = .8
+edit = json.loads(args.edit.read_text()) if args.edit else None
+cues = edit['cues'] if edit else [0, 110, 330, 550, 769, 989, 1209, 1429]
+offset = edit['sourceOffsetSeconds'] if edit else .8
 matches = []
 for frame in cues:
     source_time = offset + frame / 60
