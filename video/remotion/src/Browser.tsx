@@ -10,6 +10,8 @@ export type BrowserPose = {
   rotation: [number, number, number];
   width?: number;
   opacity?: number;
+  // Omit the wraithterm.com chrome, e.g. around another product's footage.
+  bare?: boolean;
 };
 
 const makeShape = (w: number, h: number, r: number) => {
@@ -34,6 +36,7 @@ export const Browser: React.FC<BrowserPose> = ({
   rotation,
   width = 6.5,
   opacity = 1,
+  bare = false,
 }) => {
   const height = (width * 1230) / 1920;
   const [surface] = useState(() => {
@@ -86,7 +89,7 @@ export const Browser: React.FC<BrowserPose> = ({
       const c = surface.context;
       c.fillStyle = '#08090b';
       c.fillRect(0, 0, 1920, 1230);
-      if (chrome) c.drawImage(chrome, 0, 0, 1920, 150);
+      if (chrome && !bare) c.drawImage(chrome, 0, 0, 1920, 150);
       const image = source as {
         displayWidth?: number;
         displayHeight?: number;
@@ -109,7 +112,7 @@ export const Browser: React.FC<BrowserPose> = ({
       if (isRendering) advance(performance.now());
       else invalidate();
     },
-    [surface, chrome, advance, invalidate, isRendering],
+    [surface, chrome, bare, advance, invalidate, isRendering],
   );
   return (
     <group position={position} rotation={rotation}>

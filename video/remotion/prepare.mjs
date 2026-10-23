@@ -19,5 +19,6 @@ if (process.argv.includes('--flex')) {
   for (const name of ['complex-webgl', 'complex-wraith', 'showcase-webgl', 'showcase-wraith'])
     await copyFile(resolve(video, `footage/hype-${name}.mp4`), resolve(output, `${name}.mp4`));
   await copyFile(resolve(video, 'footage/hype-flex-score.wav'), resolve(output, 'flex-music.wav'));
+  await copyFile(resolve(video, 'footage/dom.mp4'), resolve(output, 'xterm-dom.mp4'));
 }
 console.log('Prepared local footage, stereo mix and fonts. No media is committed.');

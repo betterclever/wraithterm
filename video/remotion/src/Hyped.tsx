@@ -17,7 +17,7 @@ const HITS = [
   0, 3, 5, 8, 9, 10, 11, 13, 14, 15, 16, 19, 21, 24, 25, 26, 27, 29, 30, 31, 32, 35, 37, 40, 41, 42,
   43, 45, 46, 47, 48,
 ];
-const SLAMS = new Set([5, 8, 21, 29, 32, 40, 48]);
+const SLAMS = new Set([5, 8, 10, 21, 29, 32, 40, 48]);
 const FLASHES = [8, 16, 21, 29, 32, 40, 48];
 const SCENES = [
   { from: 0, to: 8, name: 'Question' },
@@ -68,18 +68,23 @@ function panels(scene: string, frame: number, local: number, n: number, h: numbe
     t = local / n,
     k = beatAt(frame);
   switch (scene) {
-    case 'Question':
+    // Real-time capture of xterm.js on its default DOM renderer: close on the
+    // log stream, then pull back to the whole tab.
+    case 'Question': {
+      const back = snap(since(3), 260, 20);
       return [
         p(
-          'dense',
-          [0.6, -0.2, -4.5 + 0.6 * t + 0.4 * h],
-          [0.12 + 0.04 * Math.sin(local / 30), -0.35 + 0.25 * t, -0.08],
-          7,
-          0.22,
+          'xterm-dom',
+          [0.9 - 0.9 * back, -0.35 + 0.35 * back, 1.7 - 3.6 * back + (0.08 * local) / 60 + 0.3 * h],
+          [0.14 - 0.08 * back, -0.42 + 0.26 * back, -0.06 + 0.04 * back],
+          6.6,
+          k >= 5 ? 0.4 : 0.6,
         ),
-      ];
+      ].map((pose) => ({ ...pose, bare: true }));
+    }
     case 'Wraith': {
-      const w = snap(since(8), 300, 18);
+      if (k < 10) return [];
+      const w = snap(since(10), 300, 18);
       return [
         p('reactor', [2.3, 0, -2.6 + 0.7 * h], [0.05, -1.5 * (1 - w) - 0.35, 0.04], 5.2, 0.55),
       ];
@@ -322,58 +327,76 @@ const Copy: React.FC<{ scene: string; frame: number }> = ({ scene, frame }) => {
   const since = (k: number) => frame - b(k),
     k = beatAt(frame);
   if (scene === 'Question') {
-    const settle = k >= 6 ? 1 + 0.015 * ((frame - b(6)) / (b(8) - b(6))) : 1;
+    const line = k >= 5 ? 2 : k >= 3 ? 1 : 0;
     return (
-      <div
-        style={{
-          position: 'absolute',
-          left: 140,
-          top: 150,
-          transform: `scale(${settle})`,
-          transformOrigin: 'left top',
-        }}
-      >
-        <Slam t={since(0)} size={270} word from={2.6} style={{ transformOrigin: 'left center' }}>
-          NATIVE
-        </Slam>
-        <Slam t={since(3)} size={170} style={{ transformOrigin: 'left center', marginTop: 14 }}>
-          TERMINAL SPEED.
-        </Slam>
-        {since(5) >= 0 ? (
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 44,
-              marginTop: 40,
-              padding: '18px 44px 22px 52px',
-              border: `3px solid ${amber}`,
-              borderBottom: 'none',
-              borderRadius: '34px 34px 0 0',
-              background: '#1a0f08e6',
-              boxShadow: `0 0 ${30 + 90 * Math.exp(-since(5) / 6)}px #ff9a3c66`,
-              transform: `scale(${2.8 - 1.8 * snap(since(5), 520, 16)})`,
-              transformOrigin: 'left center',
-            }}
-          >
-            <Slam t={since(5)} size={150} from={1} color={amber}>
-              IN A TAB.
+      <>
+        <div style={{ position: 'absolute', left: 130, top: 300 }}>
+          {line === 0 ? (
+            <Slam t={since(0)} size={160} style={{ transformOrigin: 'left center' }}>
+              THE FASTEST MODELS
+              <br />
+              EVER BUILT.
             </Slam>
-            <span style={{ ...mono, fontSize: 64, color: '#a88a72' }}>×</span>
-          </div>
-        ) : null}
-      </div>
+          ) : line === 1 ? (
+            <>
+              <Slam t={since(3)} size={150} style={{ transformOrigin: 'left center' }}>
+                STREAMING INTO A
+              </Slam>
+              <div style={{ ...mono, marginTop: 20 }}>
+                <Slam
+                  t={since(3) - 3}
+                  size={240}
+                  color={amber}
+                  from={2.4}
+                  style={{ transformOrigin: 'left center' }}
+                >
+                  <span style={{ ...mono, letterSpacing: '-.04em' }}>&lt;div&gt;.</span>
+                </Slam>
+              </div>
+            </>
+          ) : (
+            <Slam
+              t={since(5)}
+              size={200}
+              word
+              from={2.8}
+              style={{ transformOrigin: 'left center' }}
+            >
+              YOUR GPU
+              <br />
+              IS ASLEEP.
+            </Slam>
+          )}
+        </div>
+        <Tag
+          style={{
+            position: 'absolute',
+            left: 134,
+            top: 210,
+            fontSize: 28,
+            letterSpacing: '.14em',
+          }}
+        >
+          xterm.js · DOM RENDERER
+        </Tag>
+        <Fine>xterm.js 6 default DOM renderer · real-time capture</Fine>
+      </>
     );
   }
   if (scene === 'Wraith') {
+    if (k < 10)
+      return (
+        <div style={{ ...centered, top: 360 }}>
+          <Slam t={since(8)} size={300} word from={3.4}>
+            WAKE IT UP.
+          </Slam>
+        </div>
+      );
     const echo = Math.exp(-(frame - b(lastHit(frame))) / 6);
     return (
-      <div style={{ ...centered, top: 300 }}>
-        <Tag style={{ opacity: Math.min(1, since(8) / 4), fontSize: 36, letterSpacing: '.5em' }}>
-          MEET
-        </Tag>
-        <div style={{ position: 'relative', marginTop: 18 }}>
-          {k >= 9
+      <div style={{ ...centered, top: 330 }}>
+        <div style={{ position: 'relative' }}>
+          {k >= 11
             ? [1.18, 1.36].map((s, i) => (
                 <div
                   key={s}
@@ -393,7 +416,7 @@ const Copy: React.FC<{ scene: string; frame: number }> = ({ scene, frame }) => {
                 </div>
               ))
             : null}
-          <Slam t={since(8)} size={420} word from={3.2}>
+          <Slam t={since(10)} size={420} word from={3.2}>
             WRAITH
           </Slam>
         </div>
@@ -402,12 +425,12 @@ const Copy: React.FC<{ scene: string; frame: number }> = ({ scene, frame }) => {
             style={{
               marginTop: 30,
               fontSize: 38,
-              letterSpacing: '.3em',
+              letterSpacing: '.24em',
               opacity: Math.min(1, since(12) / 6),
               transform: `translateY(${30 * (1 - snap(since(12)))}px)`,
             }}
           >
-            THE WEBGPU TERMINAL
+            NATIVE TERMINAL SPEED. IN A TAB.
           </Tag>
         ) : null}
       </div>
@@ -742,7 +765,7 @@ export const Hyped: React.FC = () => {
       : scene.name === 'Wraith'
         ? {
             position: [-3.4, 0.3, -4 + 0.6 * h] as [number, number, number],
-            rotation: [0.05, 0.4 + Math.PI * 2 * (1 - snap(frame - b(8), 160, 20)), 0] as [
+            rotation: [0.05, 0.4 + Math.PI * 2 * (1 - snap(frame - b(10), 160, 20)), 0] as [
               number,
               number,
               number,
@@ -760,7 +783,17 @@ export const Hyped: React.FC = () => {
             background: `radial-gradient(ellipse at 50% 55%, rgba(150,64,18,${0.28 + 0.18 * h}), transparent 72%)`,
           }}
         />
-        <AbsoluteFill style={{ filter: whip ? `blur(${whip}px)` : undefined }}>
+        <AbsoluteFill
+          style={{
+            filter:
+              [
+                whip ? `blur(${whip}px)` : '',
+                scene.name === 'Question' && k >= 5 ? 'grayscale(1) brightness(.55)' : '',
+              ]
+                .join(' ')
+                .trim() || undefined,
+          }}
+        >
           <ThreeCanvas
             width={1920}
             height={1080}

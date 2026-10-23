@@ -8,8 +8,8 @@ follow the loud beats in the mix (per-beat RMS of `flex-music.wav`: beats 0, 3,
 
 | Beats | Scene     | Move                                                      |
 | ----- | --------- | --------------------------------------------------------- |
-| 0–7   | Hook      | NATIVE / TERMINAL SPEED. / IN A TAB. slam on 0/3/5        |
-| 8–12  | Wraith    | Flash, oversize WRAITH slam, echo punches on 9–11         |
+| 0–7   | Hook      | THE FASTEST MODELS EVER BUILT. / STREAMING INTO A <div>. / YOUR GPU IS ASLEEP. |
+| 8–12  | Wraith    | Flash, WAKE IT UP., then WRAITH slam and echoes on 10–11  |
 | 13–15 | Whips     | One whip-panned screen per beat                           |
 | 16–20 | SameBytes | Paired screens slide in; SAME BYTES / SAME GRID / WHO WINS |
 | 21–23 | Ratio     | 4.4× counter slam with measured throughput bars           |
@@ -22,7 +22,9 @@ follow the loud beats in the mix (per-beat RMS of `flex-music.wav`: beats 0, 3,
 
 Numbers come from the same `hype-comparison.json` and `hype-native.json`
 records, and each claim keeps a one-line method note on screen. The bars are
-drawn at the measured slowest-Wraith and fastest-xterm-WebGL rates. Footage is
+drawn at the measured slowest-Wraith and fastest-xterm-WebGL rates. The hook uses the real-time capture of xterm.js 6 on its default DOM
+renderer (`footage/dom.mp4`), without the wraithterm.com chrome and labelled
+on screen. Footage is
 not sped up, slowed down or stuttered. The barrage's
 scroll beat shows compatible-profile scrolling footage, not the benchmark fixture.
 Flashes are limited to seven drops, at least 1.3 seconds apart.
