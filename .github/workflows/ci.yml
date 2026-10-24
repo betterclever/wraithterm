@@ -37,6 +37,7 @@ jobs:
       - run: npm run test:browser
       - run: npm run test:native-interaction
       - run: npm run test:native-display
+      - run: WRAITH_URL=http://127.0.0.1:5173 npm run test:native-visibility
       - run: npm run test:xterm
       - run: npm run test:xterm-consumer
       - uses: actions/upload-artifact@v4

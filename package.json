@@ -43,7 +43,9 @@
     "benchmark:search": "node scripts/search-benchmark.mjs",
     "test:native-search": "node scripts/native-search-test.mjs",
     "benchmark:bulk-text": "node scripts/bulk-text-benchmark.mjs",
-    "profile:bulk-text": "node scripts/profile-bulk-text.mjs"
+    "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
+    "test:native-visibility": "node scripts/native-visibility-test.mjs",
+    "benchmark:visibility": "node scripts/visibility-benchmark.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
