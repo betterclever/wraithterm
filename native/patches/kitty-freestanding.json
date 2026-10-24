@@ -1,0 +1,14 @@
+{
+  "upstream": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "patch": "kitty-freestanding.patch",
+  "files": {
+    "src/terminal/build_options.zig": {
+      "before": "c0956790a3fa6382d6ea81ae20c3201652cb0ce5d0b5b23454d25bde17ecafae",
+      "after": "a66fea3a695ed52cbad4aaa646610dd2a3e75bfc23596dd7144bc3a4c1a961c9"
+    },
+    "src/terminal/kitty/graphics_image.zig": {
+      "before": "3f7c1aeb6ead17488e9ce5ec1fde6a5c6c75d8bebeef13ddddcff66a18acd63c",
+      "after": "6302f1390a934b63085427a1337cedc442805d61e022201c51e3625672600756"
+    }
+  }
+}

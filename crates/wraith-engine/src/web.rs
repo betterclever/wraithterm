@@ -200,6 +200,19 @@ impl Engine {
         self.renderer.resize(cols, rows);
         Ok(dimensions)
     }
+    /// Decoded Kitty graphics bytes each screen may store; zero disables them.
+    pub fn set_image_limit(&mut self, bytes: f64) -> Result<(), JsValue> {
+        self.core
+            .set_image_limit(bytes.clamp(0., u64::MAX as f64) as u64)
+            .map_err(error)
+    }
+    /// Kitty graphics textures uploaded and their bytes, for diagnostics.
+    pub fn image_uploads(&self) -> f64 {
+        self.renderer.images.uploads as f64
+    }
+    pub fn image_upload_bytes(&self) -> f64 {
+        self.renderer.images.upload_bytes as f64
+    }
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         self.core.theme(fg, bg, cursor);
     }

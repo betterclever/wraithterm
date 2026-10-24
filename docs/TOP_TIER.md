@@ -84,7 +84,7 @@ GPU timestamps are the right optional probe for render-pass duration. Their avai
 | Input          | Keyboard modes, modifiers, AltGraph/dead keys, IME/composition, mobile keyboards, paste, focus reporting, mouse modes and browser shortcut handling                                                  |
 | Interaction    | Smooth trackpad scrolling, reliable selection across history/reflow, word/line selection, link hit testing, copy formatting, sticky-bottom behavior and resize transitions                           |
 | Accessibility  | Screen readers, keyboard-only navigation, focus, reduced-motion behavior, announcements that do not flood the user, and correct textarea/candidate-window positioning                                |
-| Images         | Explicitly scoped Kitty/iTerm/Sixel support, decoded resource budgets and asynchronous decode/upload; current Ghostty build disables Kitty graphics                                                  |
+| Images         | Explicitly scoped Kitty/iTerm/Sixel support, decoded resource budgets and asynchronous decode/upload; native Kitty graphics ship; placeholders, animation timing and Sixel remain                    |
 | Large history  | Bounded memory, fast search/indexing, stable line identifiers and efficient serialization; preserve synchronous original-addon contracts, and offer separate async native features where appropriate |
 
 Use the pinned core and protocol references as behavioral authorities. Ghostty's VT support does not automatically mean its desktop frontend features or every graphics protocol are exposed through this bridge. [Ghostty architecture](https://ghostty.org/docs/about), [VT protocol reference](https://ghostty.org/docs/vt)

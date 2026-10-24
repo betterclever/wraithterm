@@ -1,5 +1,6 @@
 use crate::{
     core::Core,
+    images::ImageLayer,
     retained::{RetainedRows, NEW_ROW},
     text::{Atlas, ATLAS_SIZE},
 };
@@ -26,6 +27,7 @@ struct Uniforms {
     grid: [u32; 4],
     theme: [u32; 4],
     text: [f32; 4],
+    images: [u32; 4],
 }
 pub struct Renderer {
     device: wgpu::Device,
@@ -57,6 +59,7 @@ pub struct Renderer {
     /// font change, say) invalidates every packed glyph reference.
     atlas_resets: u64,
     pub atlas: Atlas,
+    pub images: ImageLayer,
     pub frames: u64,
     pub upload_bytes: u64,
     pub cell_upload_bytes: u64,
@@ -223,6 +226,7 @@ impl Renderer {
             mapped_at_creation: false,
         });
         let row_buffer = Self::row_buffer(&device, rows as usize);
+        let images = ImageLayer::new(&device, config.format, &uniform);
         let bind = Self::bind(
             &device,
             &pipeline,
@@ -258,6 +262,7 @@ impl Renderer {
             pack_stamp: 0,
             atlas_resets: 0,
             atlas,
+            images,
             frames: 0,
             upload_bytes: 0,
             cell_upload_bytes: 0,
@@ -437,6 +442,8 @@ impl Renderer {
             self.cell_upload_bytes += bytes.len() as u64;
         }
         self.upload_row_map();
+        self.images
+            .prepare(&self.device, &self.queue, &self.uniform, core);
         let frame = core.frame;
         let cursor_visible = frame.cursor_visible != 0 && (frame.cursor_blink == 0 || blink);
         let uniforms = Uniforms {
@@ -458,6 +465,12 @@ impl Renderer {
                 self.atlas.tile_height as f32,
                 ATLAS_SIZE as f32,
                 blink as u8 as f32,
+            ],
+            images: [
+                self.images.below_background() as u32,
+                frame.background,
+                0,
+                0,
             ],
         };
         let rendered = self.present(uniforms)?;
@@ -572,6 +585,9 @@ impl Renderer {
                         load: wgpu::LoadOp::Clear(
                             if self.config.alpha_mode == wgpu::CompositeAlphaMode::PreMultiplied {
                                 wgpu::Color::TRANSPARENT
+                            } else if uniforms.images[0] & 1 != 0 {
+                                // Default-colored cells are skipped; the clear supplies them.
+                                self.clear_color(uniforms.images[1])
                             } else {
                                 wgpu::Color::BLACK
                             },
@@ -581,16 +597,43 @@ impl Renderer {
                 })],
                 ..Default::default()
             });
+            // Kitty z-order: below backgrounds, backgrounds, below text,
+            // glyphs and decorations, above text.
+            self.images.draw(&mut pass, 1);
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind, &[]);
             pass.draw(0..6, 0..self.cell_count as u32);
+            self.images.draw(&mut pass, 2);
+            pass.set_pipeline(&self.pipeline);
+            pass.set_bind_group(0, &self.bind, &[]);
             pass.draw(6..12, 0..self.cell_count as u32);
+            self.images.draw(&mut pass, 3);
         }
         self.queue.submit([encoder.finish()]);
         self.queue.present(texture);
         self.frames += 1;
         self.pending_present = false;
         Ok(true)
+    }
+    fn clear_color(&self, rgb: u32) -> wgpu::Color {
+        let channel = |shift: u32| {
+            let c = ((rgb >> shift) & 255) as f64 / 255.;
+            if self.config.format.is_srgb() {
+                if c <= 0.04045 {
+                    c / 12.92
+                } else {
+                    ((c + 0.055) / 1.055).powf(2.4)
+                }
+            } else {
+                c
+            }
+        };
+        wgpu::Color {
+            r: channel(0),
+            g: channel(8),
+            b: channel(16),
+            a: 1.,
+        }
     }
     /// External semantic cores submit the same packed GPU cell layout. No ANSI
     /// replay or duplicate parser state is involved in the compatibility path.
@@ -776,6 +819,7 @@ impl Renderer {
             grid: [frame[0], frame[1], frame[2], frame[3]],
             theme: [frame[4], frame[5], frame[6], frame[7]],
             text: [dimensions[2], dimensions[3], ATLAS_SIZE as f32, 1.],
+            images: [0; 4],
         })
     }
     pub async fn fence(&self) -> Result<(), String> {

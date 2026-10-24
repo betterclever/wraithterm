@@ -38,6 +38,8 @@ renderer, input path, effects, fonts, and browser integration.
 | Word, logical-line, block and select-all gestures/APIs                          | Ghostty selection rules, native tests and real Chrome double/triple-click and Alt-drag.             |
 | Custom keyboard event handlers                                                  | Disposable hooks; Chrome verifies intercepted keys emit no terminal bytes.                          |
 | Legacy / application arrows and Kitty keyboard disambiguation                   | Packaged Wasm byte-for-byte encoding tests.                                                         |
+| Kitty graphics (native profile): RGB/RGBA/PNG, zlib, chunked direct transfer    | Native protocol tests; Chrome WebGPU pixels for placement, scaling, z-layers and deletion.          |
+| Kitty graphics crop, offsets, layers, retransmission, scrolling, replies, limit | Native protocol tests (`tests/kitty.rs`), including first/last-row and sub-cell placements.         |
 | SGR mouse encoding, focus reports, bracketed paste                              | Native encoder path; browser paste test and sanitized frame contents.                               |
 | IME commits and preedit placement                                               | Browser composition test; cursor coordinates anchor the input element.                              |
 | Accessible viewport mirror                                                      | Optional role=log mirror, exercised in browser lifecycle test.                                      |
@@ -52,7 +54,7 @@ visual coverage independently of the terminal model's Unicode support.
 
 | Area                                            | Current status                                                                      |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Kitty graphics / Sixel                          | Kitty graphics compiled out; Sixel renderer absent.                                 |
+| Kitty graphics remainder / Sixel                | No Unicode placeholders, timed animation or xterm profile support; no Sixel.        |
 | OSC 52 / Kitty clipboard protocol               | No terminal-initiated browser clipboard read/write bridge. User paste/copy works.   |
 | Cross-cell ligatures and contextual script runs | Shaping is per Ghostty grapheme cell. Full row-run shaping remains.                 |
 | Bidi behavior                                   | No separate browser bidi layout pipeline.                                           |
@@ -65,5 +67,6 @@ visual coverage independently of the terminal model's Unicode support.
 | Complete terminal-spec certification            | Requires expanded upstream fixtures, vttest, and real PTY/TUI integration coverage. |
 
 The first release should keep this matrix current rather than advertise an
-unqualified “full support” badge. Image protocols, script-run shaping, and
-cross-browser/TUI certification are the next compatibility milestones.
+unqualified “full support” badge. Sixel, the remaining Kitty graphics features,
+script-run shaping, and cross-browser/TUI certification are the next compatibility
+milestones.

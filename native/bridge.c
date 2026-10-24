@@ -3,6 +3,8 @@
 #include "bridge.h"
 #include <ghostty/vt.h>
 #include "ghostty-cell-layout.h"
+/* Declarations only: libghostty-vt already links Wuffs' PNG decoder. */
+#include "wuffs-v0.4.c"
 
 extern void* wraith_alloc(size_t len, uint8_t alignment);
 extern void wraith_dealloc(void* ptr, size_t len, uint8_t alignment);
@@ -16,6 +18,7 @@ extern void wraith_row_store(void* user, uint32_t row, uint64_t id0, uint64_t id
                              const uint64_t* raw, size_t len, uint32_t selection, bool reusable);
 extern void wraith_cell(void* user, uint32_t x, uint32_t y, uint32_t scalar, const uint8_t* text,
                         size_t len, uint32_t fg, uint32_t bg, uint32_t ul, uint32_t flags);
+extern void wraith_placement(void* user, const WraithPlacement* placement);
 
 static void* alloc_fn(void* ctx, size_t n, uint8_t a, uintptr_t r) {
   (void)ctx; (void)r; return wraith_alloc(n, a);
@@ -43,6 +46,7 @@ struct WraithBridge {
   GhosttyMouseEncoder mouse_encoder;
   GhosttyMouseEvent mouse_event;
   GhosttySearch search;
+  GhosttyKittyGraphicsPlacementIterator placements;
   uint32_t cols, height, cw, ch;
   bool held;
   /* Colors the cached rows were resolved with; any change disables reuse. */
@@ -55,6 +59,47 @@ static GhosttyColorRgb resolve(GhosttyStyleColor c, const GhosttyRenderStateColo
   if (c.tag == GHOSTTY_STYLE_COLOR_RGB) return c.value.rgb;
   if (c.tag == GHOSTTY_STYLE_COLOR_PALETTE) return colors->palette[c.value.palette];
   return fallback;
+}
+/* Kitty PNG payloads decode with Wuffs, already linked by libghostty-vt,
+ * straight into the RGBA buffer Ghostty will own: pixels are written once.
+ * Larger images are rejected before any pixel allocation (16,384 px a side). */
+#define WRAITH_IMAGE_SIDE 16384u
+static bool decode_png(void* user, const GhosttyAllocator* a, const uint8_t* data, size_t len,
+                       GhosttySysImage* out) {
+  (void)user;
+  size_t decoder_len = sizeof__wuffs_png__decoder(), work_len = 0, bytes = 0;
+  wuffs_png__decoder* decoder = wraith_alloc(decoder_len, 3);
+  uint8_t *work = NULL, *pixels = NULL;
+  bool ok = false;
+  if (!decoder) return false;
+  wuffs_base__io_buffer source = wuffs_base__ptr_u8__reader((uint8_t*)data, len, true);
+  wuffs_base__image_config config;
+  wuffs_base__pixel_buffer buffer;
+  if (wuffs_png__decoder__initialize(decoder, decoder_len, WUFFS_VERSION, 0).repr ||
+      wuffs_png__decoder__decode_image_config(decoder, &config, &source).repr)
+    goto done;
+  uint32_t w = wuffs_base__pixel_config__width(&config.pixcfg);
+  uint32_t h = wuffs_base__pixel_config__height(&config.pixcfg);
+  uint64_t work_max = wuffs_png__decoder__workbuf_len(decoder).max_incl;
+  if (!w || !h || w > WRAITH_IMAGE_SIDE || h > WRAITH_IMAGE_SIDE || work_max > SIZE_MAX) goto done;
+  wuffs_base__pixel_config__set(&config.pixcfg, WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
+  bytes = (size_t)w * h * 4;
+  work_len = (size_t)work_max;
+  if (work_len && !(work = wraith_alloc(work_len, 3))) goto done;
+  if (!(pixels = ghostty_alloc(a, bytes))) goto done;
+  if (wuffs_base__pixel_buffer__set_from_slice(&buffer, &config.pixcfg,
+                                               wuffs_base__make_slice_u8(pixels, bytes)).repr ||
+      wuffs_png__decoder__decode_frame(decoder, &buffer, &source, WUFFS_BASE__PIXEL_BLEND__SRC,
+                                       wuffs_base__make_slice_u8(work, work_len), NULL).repr)
+    goto done;
+  *out = (GhosttySysImage){.width = w, .height = h, .data = pixels, .data_len = bytes};
+  ok = true;
+done:
+  if (!ok && pixels) ghostty_free(a, pixels, bytes);
+  if (work) wraith_dealloc(work, work_len, 3);
+  wraith_dealloc(decoder, decoder_len, 3);
+  return ok;
 }
 static void on_pty(GhosttyTerminal t, void* user, const uint8_t* p, size_t n) {
   (void)t; WraithBridge* b = user; wraith_emit(b->user, 0, p, n);
@@ -108,7 +153,14 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
       ghostty_key_encoder_new(&allocator, &b->key_encoder) ||
       ghostty_key_event_new(&allocator, &b->key_event) ||
       ghostty_mouse_encoder_new(&allocator, &b->mouse_encoder) ||
-      ghostty_mouse_event_new(&allocator, &b->mouse_event)) {
+      ghostty_mouse_event_new(&allocator, &b->mouse_event) ||
+      ghostty_kitty_graphics_placement_iterator_new(&allocator, &b->placements)) {
+    wraith_bridge_free(b); return NULL;
+  }
+  /* Give Ghostty the cell size the bridge reports from creation on: Kitty
+   * graphics derive image footprints from it, and a zero size makes every
+   * placement occupy no cells until the host's first resize. */
+  if (ghostty_terminal_resize(b->terminal, cols, rows, b->cw, b->ch)) {
     wraith_bridge_free(b); return NULL;
   }
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_USERDATA, b);
@@ -134,11 +186,14 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_FILE, &disabled);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_TEMP_FILE, &disabled);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_SHARED_MEM, &disabled);
+  /* Process-wide and idempotent: every terminal decodes PNG through Rust. */
+  ghostty_sys_set(GHOSTTY_SYS_OPT_DECODE_PNG, (const void*)decode_png);
   return b;
 }
 void wraith_bridge_free(WraithBridge* b) {
   if (!b) return;
   ghostty_search_free(b->search);
+  ghostty_kitty_graphics_placement_iterator_free(b->placements);
   ghostty_mouse_event_free(b->mouse_event); ghostty_mouse_encoder_free(b->mouse_encoder);
   ghostty_key_event_free(b->key_event); ghostty_key_encoder_free(b->key_encoder);
   ghostty_render_state_row_cells_free(b->cells); ghostty_render_state_row_iterator_free(b->rows);
@@ -463,4 +518,73 @@ int wraith_bridge_selection_text(WraithBridge* b) {
   if (r) return r;
   GhosttyWriter writer = {.userdata = b, .write = selection_write};
   r = ghostty_formatter_format(formatter, writer); ghostty_formatter_free(formatter); return r;
+}
+
+/* Kitty graphics. Storage is per screen; its generation is zero until an image
+ * is ever stored, so terminals without images return before any iteration. */
+int wraith_bridge_image_limit(WraithBridge* b, uint64_t bytes) {
+  return ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_STORAGE_LIMIT, &bytes);
+}
+int wraith_bridge_images(WraithBridge* b, uint64_t* generation) {
+  *generation = 0;
+  GhosttyKittyGraphics graphics = NULL;
+  if (ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_KITTY_GRAPHICS, &graphics) || !graphics)
+    return 0;
+  ghostty_kitty_graphics_get(graphics, GHOSTTY_KITTY_GRAPHICS_DATA_GENERATION, generation);
+  if (!*generation) return 0;
+  int r = ghostty_kitty_graphics_get(graphics, GHOSTTY_KITTY_GRAPHICS_DATA_PLACEMENT_ITERATOR, &b->placements);
+  if (r) return r;
+  int count = 0;
+  while (ghostty_kitty_graphics_placement_next(b->placements)) {
+    uint32_t image_id = 0, placement_id = 0, x_offset = 0, y_offset = 0;
+    bool is_virtual = false; int32_t z = 0;
+    ghostty_kitty_graphics_placement_get_multi(b->placements, 6,
+        (GhosttyKittyGraphicsPlacementData[]){
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_IMAGE_ID,
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_PLACEMENT_ID,
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_IS_VIRTUAL,
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_X_OFFSET,
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_Y_OFFSET,
+          GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_Z},
+        (void*[]){&image_id, &placement_id, &is_virtual, &x_offset, &y_offset, &z}, NULL);
+    /* Unicode-placeholder placements are drawn through cells; not supported yet. */
+    if (is_virtual) continue;
+    GhosttyKittyGraphicsImage image = ghostty_kitty_graphics_image(graphics, image_id);
+    if (!image) continue;
+    GhosttyKittyGraphicsPlacementRenderInfo info = GHOSTTY_INIT_SIZED(GhosttyKittyGraphicsPlacementRenderInfo);
+    if (ghostty_kitty_graphics_placement_render_info(b->placements, image, b->terminal, &info) ||
+        !info.viewport_visible || !info.pixel_width || !info.pixel_height ||
+        !info.source_width || !info.source_height)
+      continue;
+    uint64_t image_generation = 0;
+    ghostty_kitty_graphics_image_get(image, GHOSTTY_KITTY_IMAGE_DATA_GENERATION, &image_generation);
+    WraithPlacement p = {
+      .image_id = image_id, .placement_id = placement_id,
+      .x = info.viewport_col * (int32_t)b->cw + (int32_t)x_offset,
+      .y = info.viewport_row * (int32_t)b->ch + (int32_t)y_offset, .z = z,
+      .width = info.pixel_width, .height = info.pixel_height,
+      .source_x = info.source_x, .source_y = info.source_y,
+      .source_width = info.source_width, .source_height = info.source_height,
+      .layer = z < INT32_MIN / 2 ? 1 : z < 0 ? 2 : 3, .generation = image_generation,
+    };
+    wraith_placement(b->user, &p);
+    count++;
+  }
+  return count;
+}
+int wraith_bridge_image(WraithBridge* b, uint32_t id, WraithImage* out) {
+  GhosttyKittyGraphics graphics = NULL;
+  if (ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_KITTY_GRAPHICS, &graphics) || !graphics)
+    return GHOSTTY_NO_VALUE;
+  GhosttyKittyGraphicsImage image = ghostty_kitty_graphics_image(graphics, id);
+  if (!image) return GHOSTTY_NO_VALUE;
+  GhosttyKittyImageFormat format = 0;
+  *out = (WraithImage){0};
+  return ghostty_kitty_graphics_image_get_multi(image, 6,
+      (GhosttyKittyGraphicsImageData[]){
+        GHOSTTY_KITTY_IMAGE_DATA_WIDTH, GHOSTTY_KITTY_IMAGE_DATA_HEIGHT,
+        GHOSTTY_KITTY_IMAGE_DATA_FORMAT, GHOSTTY_KITTY_IMAGE_DATA_DATA_LEN,
+        GHOSTTY_KITTY_IMAGE_DATA_GENERATION, GHOSTTY_KITTY_IMAGE_DATA_DATA_PTR},
+      (void*[]){&out->width, &out->height, &format, &out->len, &out->generation, &out->data},
+      NULL) ? GHOSTTY_NO_VALUE : (out->format = format, GHOSTTY_SUCCESS);
 }

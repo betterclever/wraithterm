@@ -22,4 +22,6 @@ js-sys = "0.3"
 web-sys = { version = "0.3", features = ["OffscreenCanvas", "HtmlCanvasElement", "Performance", "Window", "DedicatedWorkerGlobalScope", "console"] }
 
 [dev-dependencies]
+png = "0.18"
+flate2 = "1.1.10"
 naga = { version = "30", features = ["wgsl-in"] }

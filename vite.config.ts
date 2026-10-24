@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: 'demo/index.html',
         playground: 'demo/playground.html',
+        kitty: 'demo/kitty.html',
         xterm: 'demo/xterm.html',
         compare: 'demo/compare.html',
         pipes: 'demo/pipes.html',

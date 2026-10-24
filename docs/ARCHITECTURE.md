@@ -88,6 +88,29 @@ whole-document visibility handling. Intersection delivery is asynchronous, so an
 initial frame or in-flight frame can precede suspension. This is geometry-based;
 it does not detect opacity, visibility:hidden or another window covering a panel.
 
+## Kitty graphics
+
+Ghostty parses, decodes and stores images; Wraith only draws them. The build
+enables Kitty graphics for both targets. A pinned patch (`kitty-freestanding`)
+lifts upstream's freestanding exclusion and returns `UnsupportedMedium` for
+path-based mediums there; the bridge also disables them on native builds.
+PNG payloads decode with Wuffs, which libghostty-vt already links, directly
+into the buffer Ghostty will own. Images larger than 16,384 px a side are
+rejected before pixels are allocated. Each screen's storage is capped by
+`imageStorageLimit`.
+
+After each update, the bridge iterates visible, non-virtual placements once and
+reports viewport pixel rectangles, resolved source crops, z-layers and image
+generations. Ghostty's storage generation is zero until an image is stored, so
+other terminals skip this entirely. The renderer rebuilds its quad buffer only
+when placements or that generation change. It uploads a texture only when an
+image's generation changes, reusing same-size textures, and draws one
+instanced quad per placement in the existing pass. Order: below backgrounds,
+backgrounds, below text, glyphs and decorations, above text. With images below
+backgrounds, cells whose background equals the default become transparent and
+the pass clears to that color. Textures unused for 600 presented frames, or
+beyond 256 MiB, are released.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This
@@ -153,6 +176,7 @@ wait.
 | Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`        |
 | GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`   |
 | Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl` |
+| Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`     |
 | Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`        |
 | Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`          |
 | Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`           |
