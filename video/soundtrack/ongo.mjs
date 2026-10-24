@@ -59,13 +59,20 @@ await writeFile(
       frames,
       bpm: BPM,
       beatPhaseSeconds: PHASE,
-      // Measured vocal/kick onsets in the source (spectral flux), cross-checked against
-      // lrclib's synced timings; lyrics themselves are not stored.
+      // Vocal onsets measured in the source: the ad-libs and doubles are panned wide, so
+      // syllables come from harmonic side-channel voice energy at 10 ms resolution, with
+      // centre-channel consonant bursts for the count. 13.17 s is the 808, not "one".
+      // Lyrics themselves are not stored.
       cues: {
-        countOne: 13.172,
-        countTwo: 13.451,
-        countThree: 13.641,
-        goKickAndVocal: 14.09,
+        uhHuh: [
+          [4.22, 4.47],
+          [7.86, 8.23],
+          [11.54, 11.85],
+        ],
+        countOne: 13.43,
+        countTwo: 13.65,
+        countThree: 13.88,
+        goKickAndVocal: 14.11,
         chorusVocalsRise: 15.007,
         kickDropsOut: duration,
       },

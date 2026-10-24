@@ -10,17 +10,22 @@ The user-supplied BIA recording plays from 0 s ("Honorable") to beat 60, where t
 kick drops out before the verse. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
 and two-pass normalizes it to −14 LUFS. [ongo-music.json](../claims/ongo-music.json)
 keeps the source hash and cue times. Tempo is 131 BPM with the first beat at 0.35 s.
-The count-in and GO were located from vocal and kick spectral-flux onsets and agree
-with lrclib's synced timings within about 20 ms. Lyrics are not stored.
+The ad-libs and vocal doubles are panned wide. Syllable onsets therefore come from
+harmonic (median-filter separated) side-channel voice energy at 10 ms resolution, plus
+centre-channel 4–9 kHz consonant bursts for the count. The three "uh-huh"s fall
+8 beats apart, with "uh" on the off-beat. The count is three even eighth-notes into
+"we on go". lrclib's line start of 13.18 s is the 808 kick, not "one". Lyrics are not
+stored.
 
 | Source s      | Cue              | Picture                                                  |
 | ------------- | ---------------- | -------------------------------------------------------- |
 | 0–0.35        | "Honorable"      | A line of light on a dark slab, letterboxed              |
 | 0.35–2.18     | Intro bar 1      | Low-angle reveal, light sweep, WRAITH                    |
-| 2.18–11.34    | Bars 2–6         | Orbit, macro, convoy, crane, chase: five spec callouts   |
-| 11.34–13.17   | Bar 7            | Three lines of code type in                              |
-| 13.17 / 13.45 / 13.64 | "One, two, three" | Hard cuts, a line lights per count            |
-| 14.09–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
+| 2.18–11.54    | Bars 2–6         | Orbit, macro, convoy, crane, chase: five spec callouts   |
+| 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3 | Cut on "uh"; camera punch, flare and text on "HUH" |
+| 11.54–13.43   | Third "uh-huh"   | Cut to code; typing starts on "HUH"                      |
+| 13.43 / 13.65 / 13.88 | "One, two, three" | Hard cuts, a line lights per count            |
+| 14.11–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
 | 16.84–18.67   | "we on go"       | Low and side hero angles                                 |
 | 18.67–22.34   | "Let 'em know"   | The same 16 terminals: xterm.js + WebGL vs Wraith        |
 | 22.34–26.00   | Receipts         | 15× less CPU; same API, one import                       |

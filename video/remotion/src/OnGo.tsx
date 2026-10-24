@@ -28,6 +28,8 @@ const ONE = at(music.cues.countOne),
   TWO = at(music.cues.countTwo),
   THREE = at(music.cues.countThree),
   GO = at(music.cues.goKickAndVocal);
+// Her "uh-huh" ad-libs: cut on "uh", hit on "HUH".
+const UH = music.cues.uhHuh.map(([uh, huh]) => [at(uh), at(huh)] as const);
 const dense = comparison.groups.find((g) => g.workload === 'complex')!;
 const webglWall = [
   Math.floor(wall.bounds.webglSlowest),
@@ -102,7 +104,7 @@ const SHOTS: Shot[] = [
     // The screen boots during a slow orbit.
     name: 'Orbit',
     from: beat(4),
-    to: beat(8),
+    to: UH[0][0],
     camera: (k) => ({
       pos: orbit(mix(-1.05, 0.55, inOut(k)), 5.6, 0.35),
       look: [0, 0.1, 0],
@@ -115,7 +117,7 @@ const SHOTS: Shot[] = [
   },
   {
     name: 'Macro',
-    from: beat(8),
+    from: UH[0][0],
     to: beat(12),
     camera: (k) => ({
       pos: [mix(-1.9, 1.5, inOut(k)), mix(0.45, 0.15, k), 1.35],
@@ -129,7 +131,7 @@ const SHOTS: Shot[] = [
     // Tracking along a row of screens, low and tilted.
     name: 'Convoy',
     from: beat(12),
-    to: beat(16),
+    to: UH[1][0],
     camera: (k) => ({
       pos: [mix(-6.5, 3.5, inOut(k)), -0.55, 4.3],
       look: [mix(-4.2, 6, inOut(k)), 0, 0],
@@ -144,12 +146,12 @@ const SHOTS: Shot[] = [
   {
     // Crane down from overhead onto the retro FPS.
     name: 'Crane',
-    from: beat(16),
+    from: UH[1][0],
     to: beat(20),
     camera: (k) => {
       const e = outExpo(k);
       return {
-        pos: [mix(0.6, -0.4, e), mix(6.5, 0.2, e), mix(1.2, 4.6, e)],
+        pos: [mix(0.8, -0.4, e), mix(4.6, 0.2, e), mix(4.2, 4.6, e)],
         look: [0, 0, 0],
         fov: 32,
       };
@@ -160,7 +162,7 @@ const SHOTS: Shot[] = [
     // Rear three-quarter swinging round to the front.
     name: 'Chase',
     from: beat(20),
-    to: beat(24),
+    to: UH[2][0],
     camera: (k) => ({
       pos: orbit(mix(2.55, 0.6, inOut(k)), mix(5.2, 4.7, k), -0.45),
       look: [0, 0, 0],
@@ -172,7 +174,7 @@ const SHOTS: Shot[] = [
   },
   {
     name: 'Code',
-    from: beat(24),
+    from: UH[2][0],
     to: ONE,
     camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }),
     ghost: (k, f) => ({ position: [3.4, 0.2, -5], rotation: [0, 0.4 + f / 200, 0], scale: 0.9 }),
@@ -441,7 +443,7 @@ const CODE = [
   "import { Terminal } from 'wraithterm/xterm'",
   'new Terminal().open(el)',
 ];
-const TYPE_AT = [beat(24) + 4, beat(25) + 6, beat(26) + 14];
+const TYPE_AT = [UH[2][1], UH[2][1] + 22, UH[2][1] + 46];
 
 const CodeCard: React.FC<{ frame: number; lit: number; transform: string }> = ({
   frame,
@@ -531,7 +533,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
       return (
         <Spec
           frame={frame}
-          start={s + 8}
+          start={UH[0][1] - 4}
           n="02"
           title="A Rust WebGPU renderer."
           sub="ONE WASM MODULE · 20-BYTE CELLS"
@@ -551,7 +553,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
       return (
         <Spec
           frame={frame}
-          start={s + 14}
+          start={UH[1][1] - 4}
           n="04"
           title="Every cell, every frame."
           sub="ON THE GPU"
@@ -814,6 +816,13 @@ export const OnGo: React.FC = () => {
       ? 138 + 40 * ramp(frame, THREE, GO, Easing.in(Easing.quad))
       : 138 * (1 - ramp(frame, GO, GO + 7, outExpo));
   const go = frame >= GO ? Math.exp(-(frame - GO) / 6) : 0;
+  const accent = UH.reduce(
+    (sum, [uh, huh]) =>
+      sum +
+      (frame >= huh ? Math.exp(-(frame - huh) / 7) : 0) +
+      (frame >= uh && frame < huh ? 0.4 * Math.exp(-(frame - uh) / 6) : 0),
+    0,
+  );
   const shake = go * 14;
   const fadeIn = shot.name === 'Tag' ? 0 : 1;
   const exit = shot.to - frame < 6 && !count && shot.name !== 'Badge' ? (shot.to - frame) / 6 : 1;
@@ -823,7 +832,7 @@ export const OnGo: React.FC = () => {
       <Audio src={staticFile('ongo-music.wav')} />
       <AbsoluteFill
         style={{
-          transform: `translate(${(Math.sin(frame * 7.1) * shake).toFixed(1)}px, ${(Math.cos(frame * 9.3) * shake).toFixed(1)}px) scale(${1 + go * 0.04})`,
+          transform: `translate(${(Math.sin(frame * 7.1) * shake).toFixed(1)}px, ${(Math.cos(frame * 9.3) * shake).toFixed(1)}px) scale(${1 + go * 0.04 + accent * 0.012})`,
         }}
       >
         <AbsoluteFill
@@ -837,7 +846,12 @@ export const OnGo: React.FC = () => {
           dpr={1}
           style={{ position: 'absolute' }}
         >
-          <Rig pos={cam.pos} look={cam.look} fov={cam.fov ?? 32} roll={cam.roll ?? 0} />
+          <Rig
+            pos={cam.pos}
+            look={cam.look}
+            fov={(cam.fov ?? 32) - 2.4 * accent}
+            roll={cam.roll ?? 0}
+          />
           <ambientLight intensity={0.35 * fadeIn + 0.08} />
           <directionalLight position={[-4, 6, 6]} intensity={1.6 * fadeIn} color="#ffddba" />
           <directionalLight position={[5, -1, 2]} intensity={0.8} color="#8fa7c4" />
@@ -896,6 +910,15 @@ export const OnGo: React.FC = () => {
           {ready ? <Copy shot={shot} frame={frame} /> : null}
         </div>
       </AbsoluteFill>
+      {accent > 0.02 ? (
+        <AbsoluteFill
+          style={{
+            background: 'radial-gradient(ellipse at 50% 55%, #ffc690 0%, transparent 65%)',
+            opacity: accent * 0.28,
+            mixBlendMode: 'screen',
+          }}
+        />
+      ) : null}
       {go > 0.02 ? (
         <AbsoluteFill
           style={{

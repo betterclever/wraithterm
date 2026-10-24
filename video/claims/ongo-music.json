@@ -7,10 +7,24 @@
   "bpm": 131,
   "beatPhaseSeconds": 0.35,
   "cues": {
-    "countOne": 13.172,
-    "countTwo": 13.451,
-    "countThree": 13.641,
-    "goKickAndVocal": 14.09,
+    "uhHuh": [
+      [
+        4.22,
+        4.47
+      ],
+      [
+        7.86,
+        8.23
+      ],
+      [
+        11.54,
+        11.85
+      ]
+    ],
+    "countOne": 13.43,
+    "countTwo": 13.65,
+    "countThree": 13.88,
+    "goKickAndVocal": 14.11,
     "chorusVocalsRise": 15.007,
     "kickDropsOut": 27.833333333333332
   },
