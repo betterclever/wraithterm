@@ -664,7 +664,12 @@ export class Wraith {
     this.send({ type: 'theme', colors });
   }
   connect(socket: WebSocket): Disposable {
-    let incoming = Promise.resolve();
+    // Messages are written in order and batched across the worker boundary.
+    // Only when queued bytes pass half the backpressure limit does reading
+    // wait, for the latest write (and so everything before it) to be parsed.
+    const highWater = (this.options.maxPendingBytes ?? 8 * 1024 * 1024) / 2;
+    let incoming = Promise.resolve(),
+      latest: Promise<void> = Promise.resolve();
     const receive = (event: MessageEvent) => {
       incoming = incoming
         .then(async () => {
@@ -674,7 +679,9 @@ export class Wraith {
               : event.data instanceof ArrayBuffer
                 ? new Uint8Array(event.data)
                 : String(event.data);
-          await this.write(bytes);
+          if (this.pendingBytes > highWater) await latest;
+          latest = this.write(bytes);
+          latest.catch((error) => this.errors.emit(error));
         })
         .catch((error) => this.errors.emit(error));
     };
