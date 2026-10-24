@@ -41,7 +41,9 @@
     "test:visual-options": "node scripts/gpu-visual-options-test.mjs",
     "benchmark:visual-options": "node scripts/visual-options-benchmark.mjs",
     "benchmark:search": "node scripts/search-benchmark.mjs",
-    "test:native-search": "node scripts/native-search-test.mjs"
+    "test:native-search": "node scripts/native-search-test.mjs",
+    "benchmark:bulk-text": "node scripts/bulk-text-benchmark.mjs",
+    "profile:bulk-text": "node scripts/profile-bulk-text.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-21T13:49:55.110Z",
+  "head": "efc95749aa4141b10b38fa081c41e180b969ff29",
+  "sourceSha256": "caf51ec90b5afdb01953e4649cad44dc7a92a7664138a4f0d18679fb8f2061ec",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "samplingIntervalUs": 500,
+  "methodology": "128 synchronous 1MiB ASCII parse calls; no open renderer; separate from timing. Sampling percentages are diagnostic, not wall-clock improvement claims.",
+  "hot": [
+    {
+      "name": "e.print",
+      "selfMs": 219.737,
+      "selfPercent": 35.201795517933554
+    },
+    {
+      "name": "decode",
+      "selfMs": 206.038,
+      "selfPercent": 33.00722019925635
+    },
+    {
+      "name": "Kf",
+      "selfMs": 68.897,
+      "selfPercent": 11.037276861880647
+    },
+    {
+      "name": "copyFrom",
+      "selfMs": 40.706,
+      "selfPercent": 6.521087883938541
+    },
+    {
+      "name": "print",
+      "selfMs": 33.455,
+      "selfPercent": 5.359480055941726
+    },
+    {
+      "name": "(anonymous)",
+      "selfMs": 10.695,
+      "selfPercent": 1.7133355013689062
+    },
+    {
+      "name": "_deliver",
+      "selfMs": 9.498,
+      "selfPercent": 1.5215764929408013
+    },
+    {
+      "name": "(garbage collector)",
+      "selfMs": 7.26,
+      "selfPercent": 1.1630496250526656
+    },
+    {
+      "name": "scroll",
+      "selfMs": 6.973,
+      "selfPercent": 1.1170723189383247
+    },
+    {
+      "name": "fire",
+      "selfMs": 6.318,
+      "selfPercent": 1.0121415332069892
+    },
+    {
+      "name": "parse",
+      "selfMs": 3.772,
+      "selfPercent": 0.6042731660741949
+    },
+    {
+      "name": "get",
+      "selfMs": 2.542,
+      "selfPercent": 0.40722756844130525
+    },
+    {
+      "name": "recycle",
+      "selfMs": 1.92,
+      "selfPercent": 0.30758337191475454
+    },
+    {
+      "name": "wasm-to-js",
+      "selfMs": 1.316,
+      "selfPercent": 0.2108227694999047
+    },
+    {
+      "name": "__wbg_requestDevice_5cb8a582e55d08cb",
+      "selfMs": 0.661,
+      "selfPercent": 0.10589198376856913
+    },
+    {
+      "name": "configure",
+      "selfMs": 0.644,
+      "selfPercent": 0.1031685893297406
+    },
+    {
+      "name": "__wbg_set_width_0ca908d167690992",
+      "selfMs": 0.641,
+      "selfPercent": 0.10268799031112377
+    },
+    {
+      "name": "_getCyclicIndex",
+      "selfMs": 0.636,
+      "selfPercent": 0.10188699194676244
+    },
+    {
+      "name": "getFg",
+      "selfMs": 0.634,
+      "selfPercent": 0.10156659260101791
+    },
+    {
+      "name": "wasm-function[1375]",
+      "selfMs": 0.631,
+      "selfPercent": 0.1010859935824011
+    }
+  ]
+}

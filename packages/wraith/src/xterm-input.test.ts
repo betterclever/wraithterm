@@ -28,6 +28,9 @@ function snapshot(term: TerminalApi) {
   return {
     x: b.cursorX,
     y: b.cursorY,
+    baseY: b.baseY,
+    viewportY: b.viewportY,
+    buffer: b.type,
     attributes: JSON.stringify(input(term)._curAttrData),
     lines: Array.from({ length: b.length }, (_, y) => {
       const line = b.getLine(y)!;
@@ -40,8 +43,8 @@ function snapshot(term: TerminalApi) {
     }),
   };
 }
-function pair() {
-  const terminals = [new Terminal(options), new OriginalTerminal(options)] as const;
+function pair(settings = options) {
+  const terminals = [new Terminal(settings), new OriginalTerminal(settings)] as const;
   return {
     terminals,
     parse(data: string | Uint8Array) {
@@ -125,6 +128,118 @@ describe('xterm input acceleration against the unmodified upstream runtime', () 
       p.dispose();
     }
   });
+  it.each([2, 3, 7, 37, 80, 160])('retains full wrapped/scrolling state at %i columns', (cols) => {
+    const p = pair({ ...options, cols, scrollback: 12 });
+    const prefixes = [
+      '',
+      '\x1b[2;5r\x1b[5;1H',
+      '\x1b[2;5r\x1b[6;1H',
+      '\x1b[?7l',
+      '\x1b[?1049h',
+      '\x1b[4h',
+      '\x1b(0',
+      '\x1b[4:3;58:2::1:2:3m',
+      '\x1b]8;;https://example.com\x1b\\',
+    ];
+    try {
+      for (const prefix of prefixes)
+        for (const length of [cols - 1, cols, cols + 1, cols * 29 + 3]) {
+          p.terminals.forEach((term) => term.reset());
+          p.parse('界界é\r\n界界\x1b[1;2H' + prefix);
+          const text = 'ABCD─▀'.repeat(Math.ceil(length / 6)).slice(0, length);
+          p.parse(text);
+          p.equal();
+          // A following combining character observes the last printed cell.
+          p.parse('\u0301Z');
+          p.equal();
+          for (const width of [cols + 1, cols]) {
+            p.terminals.forEach((term) => term.resize(width, 6));
+            p.equal();
+          }
+        }
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it('matches streaming long runs, scrollback pruning and async write callbacks', async () => {
+    const p = pair({ ...options, cols: 37, scrollback: 31 });
+    const scrolls: number[][] = [[], []];
+    p.terminals.forEach((term, i) => term.onScroll((row) => scrolls[i]!.push(row)));
+    try {
+      const text = 'ASCII ▀▄─│0123456789 '.repeat(4000);
+      for (const chunk of [1, 36, 37, 38, 16384, text.length]) {
+        p.terminals.forEach((term) => term.reset());
+        scrolls.forEach((rows) => rows.splice(0));
+        // Avoid tens of thousands of public queued callbacks for the one-byte
+        // case; the other sizes exercise actual public write continuations.
+        const sample =
+          chunk === 1 ? text.slice(0, 300) : chunk < 64 ? text.slice(0, 37 * 80) : text;
+        for (let at = 0; at < sample.length; at += chunk) {
+          if (chunk === 1) p.parse(sample.slice(at, at + chunk));
+          else
+            await Promise.all(p.terminals.map((term) => write(term, sample.slice(at, at + chunk))));
+        }
+        p.equal();
+        expect(scrolls[0]).toEqual(scrolls[1]);
+      }
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it('leaves long runs to replaced Unicode providers and accessibility handlers', () => {
+    const p = pair({ ...options, cols: 7, scrollback: 12 });
+    const calls = [0, 0];
+    try {
+      p.terminals.forEach((term, i) => {
+        term.unicode.register({
+          version: '6',
+          wcwidth: () => 2,
+          charProperties: () => {
+            calls[i]!++;
+            return 4;
+          },
+        });
+        term.unicode.activeVersion = '6';
+      });
+      p.parse('ABCD▀─'.repeat(100));
+      p.equal();
+      expect(calls[0]).toBe(calls[1]);
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it('falls back when a scroll listener changes the active width provider', () => {
+    const p = pair({ ...options, cols: 7, rows: 3, scrollback: 10 });
+    const switched = [false, false];
+    try {
+      p.terminals.forEach((term, i) => {
+        const service = (
+          term as unknown as {
+            _core: {
+              _bufferService: {
+                onScroll(callback: () => void): unknown;
+              };
+            };
+          }
+        )._core._bufferService;
+        service.onScroll(() => {
+          if (switched[i]) return;
+          switched[i] = true;
+          term.unicode.register({ version: 'switched', wcwidth: () => 2, charProperties: () => 4 });
+          term.unicode.activeVersion = 'switched';
+        });
+      });
+      p.parse('ABCDEF'.repeat(200));
+      expect(switched).toEqual([true, true]);
+      p.equal();
+    } finally {
+      p.dispose();
+    }
+  });
+
   it('matches 2400 common style/color combinations and atomic fallback after a supported prefix', () => {
     const p = pair();
     const styles = [0, 1, 2, 3, 7, 8, 9];

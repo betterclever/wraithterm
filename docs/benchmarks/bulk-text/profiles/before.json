@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-21T13:31:34.157Z",
+  "head": "84c668af5c8dacbdbb62e403e4a9cb314b5ad472",
+  "sourceSha256": "35704512abaf17490fe6b4271be674460e7134afa5723bc805444c7e350f5600",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "samplingIntervalUs": 500,
+  "methodology": "128 synchronous 1MiB ASCII parse calls; no open renderer; separate from timing. Sampling percentages are diagnostic, not wall-clock improvement claims.",
+  "hot": [
+    {
+      "name": "e.print",
+      "selfMs": 326.353,
+      "selfPercent": 33.672514463003914
+    },
+    {
+      "name": "print",
+      "selfMs": 211.043,
+      "selfPercent": 21.775036447698458
+    },
+    {
+      "name": "decode",
+      "selfMs": 184.612,
+      "selfPercent": 19.047933495460676
+    },
+    {
+      "name": "setCellFromCodepoint",
+      "selfMs": 71.017,
+      "selfPercent": 7.327406089783604
+    },
+    {
+      "name": "Kf",
+      "selfMs": 61.526,
+      "selfPercent": 6.348141812242505
+    },
+    {
+      "name": "copyFrom",
+      "selfMs": 40.604,
+      "selfPercent": 4.189447552974266
+    },
+    {
+      "name": "_getCurrentLinkId",
+      "selfMs": 13.901,
+      "selfPercent": 1.4342801308712265
+    },
+    {
+      "name": "(anonymous)",
+      "selfMs": 12.748,
+      "selfPercent": 1.3153156685379752
+    },
+    {
+      "name": "fire",
+      "selfMs": 8.746,
+      "selfPercent": 0.9023965200057367
+    },
+    {
+      "name": "scroll",
+      "selfMs": 8.239,
+      "selfPercent": 0.850085173602477
+    },
+    {
+      "name": "(garbage collector)",
+      "selfMs": 7.592,
+      "selfPercent": 0.7833288794744516
+    },
+    {
+      "name": "_deliver",
+      "selfMs": 6.924,
+      "selfPercent": 0.714405843187711
+    },
+    {
+      "name": "parse",
+      "selfMs": 5.061,
+      "selfPercent": 0.5221848602502897
+    },
+    {
+      "name": "recycle",
+      "selfMs": 2.526,
+      "selfPercent": 0.2606281282339916
+    },
+    {
+      "name": "wcwidth",
+      "selfMs": 2.524,
+      "selfPercent": 0.2604217718379236
+    },
+    {
+      "name": "_getCyclicIndex",
+      "selfMs": 1.266,
+      "selfPercent": 0.13062359871109797
+    },
+    {
+      "name": "configure",
+      "selfMs": 1.262,
+      "selfPercent": 0.1302108859189618
+    },
+    {
+      "name": "markRangeDirty",
+      "selfMs": 1.257,
+      "selfPercent": 0.12969499492879155
+    },
+    {
+      "name": "Li.r._wbg_cb_unref",
+      "selfMs": 0.755,
+      "selfPercent": 0.07789953951570218
+    },
+    {
+      "name": "__wbg_maxUniformBuffersPerShaderStage_bee5f00a4d706c7f",
+      "selfMs": 0.622,
+      "selfPercent": 0.06417683917717451
+    }
+  ]
+}
