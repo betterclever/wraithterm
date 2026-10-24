@@ -82,7 +82,12 @@ fn has_cursor(index: u32) -> bool {
     let cursor = has_cursor(v.index);
     let cursor_style = (u.grid.w >> 1u) & 7u; // Ghostty: bar=0 block=1 underline=2 hollow=3
     if cursor && cursor_style == 1u { fg = select(bg, color(u.theme.y), (u.grid.w & 65536u) != 0u); bg = color(u.theme.x); }
-    if v.layer == 0u { return vec4<f32>(bg, select(1., f32(u.theme.w & 255u) / 255., (v.flags & 2097152u) != 0u)); }
+    // Bit 21 opts into alpha in each color word's high byte. Existing native
+    // and external 24-bit records retain their original opaque interpretation.
+    let packed_alpha = (v.flags & (1u << 21u)) != 0u;
+    let fg_alpha = select(1., f32(v.foreground >> 24u) / 255., packed_alpha && !(cursor && cursor_style == 1u));
+    let bg_alpha = select(1., f32(v.background >> 24u) / 255., packed_alpha);
+    if v.layer == 0u { return vec4<f32>(bg, select(bg_alpha, 1., cursor && cursor_style == 1u)); }
     if v.local.x > u.view.x - f32(v.index % u.grid.x) * u.view.z { discard; }
     let cell_span = u.view.z * select(1., 2., (v.flags & 65536u) != 0u);
     let inside = v.local.x < cell_span;
@@ -103,15 +108,15 @@ fn has_cursor(index: u32) -> bool {
         if underline == 3u { decoration = abs(v.local.y - (ul_y - 1. + sin(v.local.x * 1.1))) < 0.75; }
         if underline == 4u { decoration = abs(v.local.y - ul_y) < 0.6 && (u32(v.local.x) % 3u) == 0u; }
         if underline == 5u { decoration = abs(v.local.y - ul_y) < 0.6 && (u32(v.local.x) % 6u) < 4u; }
-        if decoration { return vec4(color(v.underline), 1.); }
-        if (v.flags & 32u) != 0u && abs(v.local.y - u.view.w * 0.55) < 0.6 { return vec4(fg, 1.); }
-        if (v.flags & 64u) != 0u && v.local.y < 1. { return vec4(fg, 1.); }
+        if decoration { return vec4(color(v.underline), select(1., f32(v.underline >> 24u) / 255., packed_alpha)); }
+        if (v.flags & 32u) != 0u && abs(v.local.y - u.view.w * 0.55) < 0.6 { return vec4(fg, fg_alpha); }
+        if (v.flags & 64u) != 0u && v.local.y < 1. { return vec4(fg, fg_alpha); }
     }
     if (v.glyph & SLOT) == 0u || (v.flags & 16u) != 0u || ((v.flags & 8u) != 0u && u.text.w == 0.) { discard; }
     // Atlas has one mip level. Explicit LOD avoids derivative requirements
     // after per-cell cursor, decoration, and visibility branches.
     let sample = textureSampleLevel(glyphs, glyph_sampler, v.uv, 0.);
     let tint = select(fg, sample.rgb, (v.glyph >> 31u) != 0u);
-    let alpha = sample.a * select(1., 0.5, (v.flags & 4u) != 0u);
+    let alpha = sample.a * select(fg_alpha, 1., (v.glyph >> 31u) != 0u) * select(1., 0.5, (v.flags & 4u) != 0u);
     return vec4(tint, alpha);
 }

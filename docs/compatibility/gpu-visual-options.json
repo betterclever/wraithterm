@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-21T08:09:38.281Z",
+  "checks": [
+    {
+      "dpr": 1,
+      "check": "actual transparent pixels over colored parent, palette alpha, opaque truecolor and foreground alpha"
+    },
+    {
+      "dpr": 1,
+      "check": "actual opaque block cursor over translucent background"
+    },
+    {
+      "dpr": 1,
+      "check": "idempotent retained alpha/contrast"
+    },
+    {
+      "dpr": 1,
+      "check": "direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells"
+    },
+    {
+      "dpr": 1,
+      "check": "zero uploads for identical alpha rows"
+    },
+    {
+      "dpr": 1,
+      "check": "retained scrolling with both options"
+    },
+    {
+      "dpr": 1,
+      "check": "live transparency and theme changes"
+    },
+    {
+      "dpr": 1,
+      "check": "contrast matches upstream DOM"
+    },
+    {
+      "dpr": 1,
+      "check": "dim and block exclusions"
+    },
+    {
+      "dpr": 1,
+      "check": "underline color"
+    },
+    {
+      "dpr": 1,
+      "check": "atlas rebuild"
+    },
+    {
+      "dpr": 1,
+      "check": "selection and decoration precedence"
+    },
+    {
+      "dpr": 1,
+      "check": "joiner fallback and resumption"
+    },
+    {
+      "dpr": 1,
+      "check": "resize"
+    },
+    {
+      "dpr": 1,
+      "check": "forced renderer failure restoration"
+    },
+    {
+      "dpr": 1,
+      "check": "disposal"
+    },
+    {
+      "dpr": 2,
+      "check": "actual transparent pixels over colored parent, palette alpha, opaque truecolor and foreground alpha"
+    },
+    {
+      "dpr": 2,
+      "check": "actual opaque block cursor over translucent background"
+    },
+    {
+      "dpr": 2,
+      "check": "idempotent retained alpha/contrast"
+    },
+    {
+      "dpr": 2,
+      "check": "direct words match public getters for alpha, contrast, inverse/bold palettes and wide/combined cells"
+    },
+    {
+      "dpr": 2,
+      "check": "zero uploads for identical alpha rows"
+    },
+    {
+      "dpr": 2,
+      "check": "retained scrolling with both options"
+    },
+    {
+      "dpr": 2,
+      "check": "live transparency and theme changes"
+    },
+    {
+      "dpr": 2,
+      "check": "contrast matches upstream DOM"
+    },
+    {
+      "dpr": 2,
+      "check": "dim and block exclusions"
+    },
+    {
+      "dpr": 2,
+      "check": "underline color"
+    },
+    {
+      "dpr": 2,
+      "check": "atlas rebuild"
+    },
+    {
+      "dpr": 2,
+      "check": "selection and decoration precedence"
+    },
+    {
+      "dpr": 2,
+      "check": "joiner fallback and resumption"
+    },
+    {
+      "dpr": 2,
+      "check": "resize"
+    },
+    {
+      "dpr": 2,
+      "check": "forced renderer failure restoration"
+    },
+    {
+      "dpr": 2,
+      "check": "disposal"
+    }
+  ],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "head": "ef77d0d32f05765077c5d9bc98007d2d3b1b6e2b",
+  "sources": {
+    "packages/wraith/src/xterm-renderer.ts": "0e0efc8ae7bf6131c9158a8379c3ff66c8e3a6e1591bbc0cb2b4a0d3305413ad",
+    "packages/wraith/src/xterm-contrast.ts": "317ec6892918cbbd580d195a6bb5033da28a5437181318f69c2ac9847a9d8333",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "b84a37fd1ccf2991031f4e00ca82c0551860240841d8b19a910e0790fefa807c"
+  }
+}

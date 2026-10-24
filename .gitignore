@@ -15,4 +15,6 @@ packages/wraith/dist/
 # and validation records instead of hundreds of megabytes of generated images.
 **/benchmarks/comparison/*.png
 **/benchmarks/workflows/**/*.png
+docs/compatibility/gpu-visual-options-dpr*.png
+docs/compatibility/xterm-preview.png
 .wrangler/

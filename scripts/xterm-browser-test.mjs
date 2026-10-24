@@ -517,17 +517,17 @@ try {
     expect(a.renderer === 'webgpu', 'Joiner removal');
     a.options.minimumContrastRatio = 4.5;
     await frame();
-    expect(a.renderer === 'dom', 'Contrast fallback');
+    expect(a.renderer === 'webgpu', 'GPU contrast adjustment');
     a.options.minimumContrastRatio = 1;
     await frame();
     expect(a.renderer === 'webgpu', 'Contrast restore');
     a.options.allowTransparency = true;
     await frame();
-    expect(a.renderer === 'dom', 'Transparency fallback');
+    expect(a.renderer === 'webgpu', 'GPU transparency');
     a.options.allowTransparency = false;
     await frame();
     expect(a.renderer === 'webgpu', 'Transparency restore');
-    checks.push('markers/decorations/joiners and visual option fallbacks');
+    checks.push('GPU markers/decorations/contrast/transparency and character joiner fallback');
     class Socket extends EventTarget {
       readyState = WebSocket.OPEN;
       sent = [];

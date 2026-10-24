@@ -25,21 +25,26 @@ The renderer should consume stable row identities, revisions, glyph IDs and pack
 
 - The SGR action pass removes temporary RGB/palette normalization arrays and applies supported style/color combinations atomically, preserving upstream parser hooks and extended-state handling. The compatible dense pipeline improves 14.5%, the dashboard 17.8%, and a longer dense batch 13.3%. Native code is unchanged. See [the SGR report](benchmarks/sgr-actions/REPORT.md).
 
-Current results and limitations are in [the SGR report](benchmarks/sgr-actions/REPORT.md); the [retained-row report](benchmarks/retained-rows/REPORT.md) records the previous GPU milestone. Earlier measurements remain in [the efficiency report](benchmarks/efficiency/REPORT.md) and [the optimization report](benchmarks/optimization/REPORT.md), attached to their original binaries.
+The latest measurements are in [the broader workflow study](benchmarks/workflows/REPORT.md),
+[the GPU visual-option study](benchmarks/gpu-visual-options/REPORT.md), and
+[the public scrolling validation](benchmarks/selection-retention/REPORT.md).
+Each retains its own source hashes and limits. The [SGR report](benchmarks/sgr-actions/REPORT.md),
+[retained-row report](benchmarks/retained-rows/REPORT.md), [efficiency report](benchmarks/efficiency/REPORT.md),
+and [optimization report](benchmarks/optimization/REPORT.md) preserve the earlier binaries' measurements.
 
 ## Prioritized implementation backlog
 
-| Priority | Investment                                                          | Why it matters                                                                    | Proof required                                                                                |
-| -------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| P0       | GPU support for search decorations, link hover and minimum contrast | Ordinary features currently trigger much slower DOM rendering                     | Original-addon and pixel tests; GPU mode remains active during decorated search and hover     |
-| P0       | Input scheduling and latency instrumentation                        | A fast average can coexist with delayed keystrokes or large pauses                | Local input-to-visible-echo distribution, main-thread long tasks and frame-miss counts        |
-| P0       | Separate model lifetime from GPU lifetime                           | Device loss currently makes the native profile terminate its worker               | Simulated loss/recovery preserves text, history, modes, selections and ordered pending writes |
-| P1       | Bounded multi-page glyph atlas with generations                     | A single 2048-square atlas can reset or overflow on large Unicode/Retina scenes   | Atlas exhaustion, font changes, mixed scripts and stale-reference tests                       |
-| P1       | Shared device/pipeline/atlas resources where ownership allows       | Each terminal currently owns another GPU device and RGBA atlas                    | 1/4/8/16-terminal resource and responsiveness measurements                                    |
-| P1       | Smaller compositor-only Wasm artifact                               | The compatible renderer downloads code for native parsing/shaping it does not use | Cold-load and first-correct-frame comparisons; unchanged APIs and consumers                   |
-| P1       | Complete rendering and input conformance corpus                     | Public API shape alone does not establish visual or protocol parity               | Differential state, pixels, keyboard/IME and real application traces                          |
-| P2       | Persistent render target with damage rendering                      | Sparse changes still redraw the entire canvas                                     | GPU pass timings; scroll, cursor, transparency and resize correctness                         |
-| P2       | SIMD, upload staging rings, compact glyph draw lists                | These may improve specific bottlenecks after larger waste is removed              | Per-platform measurements showing a meaningful benefit without regressions                    |
+| Priority | Investment                                                    | Why it matters                                                                    | Proof required                                                                                |
+| -------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Done     | GPU search decorations, link hover, contrast and transparency | These ordinary visual features now retain GPU rendering                           | Original-addon tests plus actual alpha pixels, contrast differential checks and retained rows |
+| P0       | Input scheduling and latency instrumentation                  | A fast average can coexist with delayed keystrokes or large pauses                | Local input-to-visible-echo distribution, main-thread long tasks and frame-miss counts        |
+| P0       | Separate model lifetime from GPU lifetime                     | Device loss currently makes the native profile terminate its worker               | Simulated loss/recovery preserves text, history, modes, selections and ordered pending writes |
+| P1       | Bounded multi-page glyph atlas with generations               | A single 2048-square atlas can reset or overflow on large Unicode/Retina scenes   | Atlas exhaustion, font changes, mixed scripts and stale-reference tests                       |
+| P1       | Shared device/pipeline/atlas resources where ownership allows | Each terminal currently owns another GPU device and RGBA atlas                    | 1/4/8/16-terminal resource and responsiveness measurements                                    |
+| P1       | Smaller compositor-only Wasm artifact                         | The compatible renderer downloads code for native parsing/shaping it does not use | Cold-load and first-correct-frame comparisons; unchanged APIs and consumers                   |
+| P1       | Complete rendering and input conformance corpus               | Public API shape alone does not establish visual or protocol parity               | Differential state, pixels, keyboard/IME and real application traces                          |
+| P2       | Persistent render target with damage rendering                | Sparse changes still redraw the entire canvas                                     | GPU pass timings; scroll, cursor, transparency and resize correctness                         |
+| P2       | SIMD, upload staging rings, compact glyph draw lists          | These may improve specific bottlenecks after larger waste is removed              | Per-platform measurements showing a meaningful benefit without regressions                    |
 
 ## CPU, copies and the terminal core
 
