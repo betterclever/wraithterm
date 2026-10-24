@@ -75,14 +75,31 @@ const orbit = (angle: number, radius: number, y: number, look: V3 = [0, 0, 0]): 
   look[2] + Math.cos(angle) * radius,
 ];
 
+// One subject per act, seen from many angles; acts change on musical switches.
+const HERO = (brightness = 1) =>
+  slab('reactor', [0, 0, 0], [0, 0, 0], { brightness, reflection: 0.3 });
+// The wall act: Wraith's wall, and xterm's wall dark beside it until "let 'em know".
+const NATIVE: V3 = [2.15, 0.25, 0];
+const WALLS = (xterm = 0) => [
+  slab('wall-webgl', [-2.15, 0.25, 0], [0, 0.12, 0], {
+    width: 4.1,
+    reflection: 0.2 * xterm,
+    brightness: xterm,
+  }),
+  slab('wall-native', NATIVE, [0, -0.12, 0], { width: 4.1, reflection: 0.2 }),
+];
+const SITE = () => [slab('home', [3.3, 0, 0], [0, -0.42, 0], { width: 5, reflection: 0.25 })];
+const SIDE_END = orbit(0.7, 4.2, 0.2, NATIVE);
+
 const SHOTS: Shot[] = [
+  // Act 1: the hero terminal.
   {
     // "Honorable": the slab's edge catches a single line of light in the dark.
     name: 'Tag',
     from: 0,
     to: beat(0),
     camera: () => ({ pos: [-3.4, -0.9, 3.9], look: [0, -0.2, 0], fov: 30 }),
-    slabs: () => [slab('pipes', [0, 0, 0], [0, 0.35, 0], { brightness: 0.04, reflection: 0.25 })],
+    slabs: () => [HERO(0.04)],
     sweep: (k) => mix(-1.4, -0.9, k),
   },
   {
@@ -95,13 +112,11 @@ const SHOTS: Shot[] = [
       fov: 30,
       roll: -0.04,
     }),
-    slabs: (k) => [
-      slab('pipes', [0, 0, 0], [0, 0.35, 0], { brightness: 0.05 + 0.3 * k, reflection: 0.3 }),
-    ],
+    slabs: (k) => [HERO(0.05 + 0.3 * k)],
     sweep: (k) => mix(-0.9, 1.3, k),
   },
   {
-    // The screen boots during a slow orbit.
+    // The screen comes fully on during a slow orbit.
     name: 'Orbit',
     from: beat(4),
     to: UH[0][0],
@@ -110,9 +125,7 @@ const SHOTS: Shot[] = [
       look: [0, 0.1, 0],
       fov: 32,
     }),
-    slabs: (k) => [
-      slab('reactor', [0, 0, 0], [0, 0, 0], { brightness: ramp(k, 0.05, 0.45), reflection: 0.3 }),
-    ],
+    slabs: (k) => [HERO(mix(0.35, 1, ramp(k, 0.05, 0.45)))],
     sweep: (k) => mix(1.2, -1.2, k),
   },
   {
@@ -120,31 +133,27 @@ const SHOTS: Shot[] = [
     from: UH[0][0],
     to: beat(12),
     camera: (k) => ({
-      pos: [mix(-1.9, 1.5, inOut(k)), mix(0.45, 0.15, k), 1.35],
-      look: [mix(-1.4, 1.9, inOut(k)), 0.1, 0],
+      pos: [mix(-2.2, 2.2, inOut(k)), mix(0.35, 0.2, k), 2.6],
+      look: [mix(-1.9, 2.6, inOut(k)), 0.1, 0],
       fov: 26,
       roll: 0.05,
     }),
-    slabs: () => [slab('dense', [0, 0, 0], [0, -0.12, 0], { width: 6.4 })],
+    slabs: () => [HERO()],
   },
   {
-    // Tracking along a row of screens, low and tilted.
-    name: 'Convoy',
+    // Low tracking shot along the screen.
+    name: 'Low',
     from: beat(12),
     to: UH[1][0],
     camera: (k) => ({
-      pos: [mix(-6.5, 3.5, inOut(k)), -0.55, 4.3],
-      look: [mix(-4.2, 6, inOut(k)), 0, 0],
+      pos: [mix(-4.2, -1, inOut(k)), -1.25, 3.3],
+      look: [mix(-1.2, 0.8, inOut(k)), 0.25, 0],
       fov: 34,
-      roll: -0.09,
+      roll: -0.07,
     }),
-    slabs: () =>
-      ['showcase-wraith', 'compatible', 'reactor', 'home'].map((file, i) =>
-        slab(file, [-6 + i * 4.6, 0, 0], [0, -0.38, 0], { width: 4, reflection: 0.22 }),
-      ),
+    slabs: () => [HERO()],
   },
   {
-    // Crane down from overhead onto the retro FPS.
     name: 'Crane',
     from: UH[1][0],
     to: beat(20),
@@ -156,7 +165,7 @@ const SHOTS: Shot[] = [
         fov: 32,
       };
     },
-    slabs: () => [slab('doomish-native', [0, 0, 0], [0, 0.1, 0], { width: 6.2, reflection: 0.28 })],
+    slabs: () => [HERO()],
   },
   {
     // Rear three-quarter swinging round to the front.
@@ -169,9 +178,10 @@ const SHOTS: Shot[] = [
       fov: 33,
       roll: 0.04,
     }),
-    slabs: () => [slab('pipes', [0, 0, 0], [0, 0, 0], { reflection: 0.3 })],
+    slabs: () => [HERO()],
     sweep: (k) => mix(-1, 1.2, k),
   },
+  // The count: one code card.
   {
     name: 'Code',
     from: UH[2][0],
@@ -182,80 +192,86 @@ const SHOTS: Shot[] = [
   { name: 'One', from: ONE, to: TWO, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
   { name: 'Two', from: TWO, to: THREE, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
   { name: 'Three', from: THREE, to: GO, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
+  // Act 2: Wraith's wall of sixteen.
   {
-    // Launch: start inside one tile, rip back to reveal all sixteen.
+    // Launch: start inside one tile, rip back to the whole wall.
     name: 'Go',
     from: GO,
     to: beat(36),
     camera: (k, f) => {
       const e = outExpo(Math.min(1, (f - GO) / 50));
       return {
-        pos: [mix(-1.15, 0.5, e) + 0.6 * k, mix(0.55, -0.15, e), mix(0.55, 7.2, e) + 0.5 * k],
-        look: [mix(-1.15, 0, e) + 0.2 * k, mix(0.55, 0, e), 0],
-        fov: mix(30, 36, e),
+        pos: [
+          NATIVE[0] + mix(-0.5, 0.2, e) + 0.3 * k,
+          NATIVE[1] + mix(0.33, -0.1, e),
+          mix(0.6, 4.4, e) + 0.3 * k,
+        ],
+        look: [NATIVE[0] + mix(-0.5, 0, e), NATIVE[1] + mix(0.33, 0, e), 0],
+        fov: mix(30, 34, e),
         roll: mix(0.12, 0, e),
       };
     },
-    slabs: () => [slab('wall-native', [0, 0, 0], [0, 0, 0], { width: 6.4, reflection: 0.25 })],
+    slabs: () => WALLS(),
   },
-  // Four hero angles, one per "we on go".
   {
-    name: 'HeroLow',
+    name: 'WallLow',
     from: beat(36),
     to: beat(38),
     camera: (k) => ({
-      pos: [mix(-1.8, -1.2, k), -1.15, 3.6],
-      look: [0, 0.2, 0],
-      fov: 34,
+      pos: [NATIVE[0] + mix(-1.2, -0.6, k), -1.05, 2.9],
+      look: [NATIVE[0], 0.45, 0],
+      fov: 36,
       roll: -0.06,
     }),
-    slabs: () => [slab('doomish-native', [0, 0, 0], [0, 0.25, 0], { reflection: 0.3 })],
+    slabs: () => WALLS(),
   },
   {
-    name: 'HeroSide',
+    name: 'WallSide',
     from: beat(38),
     to: beat(40),
-    camera: (k) => ({ pos: orbit(mix(1.15, 0.85, k), 5, 0.1), look: [0, 0, 0], fov: 30 }),
-    slabs: () => [slab('pipes', [0, 0, 0], [0, 0, 0], { reflection: 0.3 })],
+    camera: (k) => ({ pos: orbit(mix(0.95, 0.7, k), 4.2, 0.2, NATIVE), look: NATIVE, fov: 32 }),
+    slabs: () => WALLS(),
     sweep: (k) => mix(1, -1, k),
   },
+  // Act 3: same set. Pull back; xterm's wall powers on beside it.
   {
-    // Split: the same sixteen terminals in xterm.js + WebGL and in Wraith.
     name: 'LetEmKnow',
     from: beat(40),
     to: beat(48),
-    camera: (k) => ({
-      // Centered dolly only: the labels are screen-fixed under each wall.
-      pos: [0, 0.15, mix(8.7, 8.2, inOut(k))],
-      look: [0, 0.05, 0],
-      fov: 34,
-    }),
-    slabs: () => [
-      slab('wall-webgl', [-2.15, 0.25, 0], [0, 0.12, 0], { width: 4.1, reflection: 0.2 }),
-      slab('wall-native', [2.15, 0.25, 0], [0, -0.12, 0], { width: 4.1, reflection: 0.2 }),
-    ],
+    camera: (k, f) => {
+      const e = outExpo(Math.min(1, (f - beat(40)) / 40));
+      return {
+        // Settles to a centered dolly before the screen-fixed labels appear.
+        pos: lerp3(SIDE_END, [0, 0.15, mix(8.7, 8.2, inOut(k))], e),
+        look: lerp3(NATIVE, [0, 0.05, 0], e),
+        fov: 34,
+      };
+    },
+    slabs: (k, f) => WALLS(ramp(f, beat(40) + 4, beat(40) + 22)),
   },
+  // Act 4: the website.
   {
     name: 'Receipt',
     from: beat(48),
     to: beat(52),
     camera: (k) => ({
-      pos: orbit(mix(-0.5, -0.2, k), 6.2, 0.2, [1.3, 0, 0]),
-      look: [1.3, 0, 0],
+      pos: orbit(mix(-0.45, -0.25, k), 6.6, 0.4, [1.2, 0, 0]),
+      look: [1.2, 0, 0],
       fov: 32,
     }),
-    slabs: () => [slab('dense', [1.3, 0, 0], [0, -0.3, 0], { width: 5.6, reflection: 0.25 })],
+    slabs: SITE,
   },
   {
     name: 'Install',
     from: beat(52),
     to: beat(56),
     camera: (k) => ({
-      pos: orbit(mix(0.3, 0.1, k), 6.4, 0.3, [1.2, 0, 0]),
-      look: [1.2, 0, 0],
-      fov: 32,
+      pos: [mix(0.2, 0.6, k), -0.6, 5.8],
+      look: [1.4, 0.2, 0],
+      fov: 33,
+      roll: 0.03,
     }),
-    slabs: () => [slab('home', [2.6, 0, 0], [0, -0.42, 0], { width: 5, reflection: 0.25 })],
+    slabs: SITE,
   },
   {
     name: 'Badge',
@@ -363,6 +379,16 @@ const Reveal: React.FC<{
     </div>
   );
 };
+
+const Scrim = () => (
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(90deg, #000d 0%, #0009 34%, transparent 58%)',
+    }}
+  />
+);
 
 const Fine: React.FC<{ children: React.ReactNode; opacity?: number }> = ({
   children,
@@ -539,7 +565,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
           sub="ONE WASM MODULE · 20-BYTE CELLS"
         />
       );
-    case 'Convoy':
+    case 'Low':
       return (
         <Spec
           frame={frame}
@@ -628,8 +654,8 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
           </Fine>
         </>
       );
-    case 'HeroLow':
-    case 'HeroSide':
+    case 'WallLow':
+    case 'WallSide':
       return (
         <div
           style={{
@@ -709,6 +735,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
     case 'Receipt':
       return (
         <>
+          <Scrim />
           <div style={{ position: 'absolute', left: 130, top: 300 }}>
             <Reveal at={s + 6} frame={frame} size={210} color={amber}>
               {`${dense.cpuHeadline}×`}
@@ -725,25 +752,28 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
       );
     case 'Install':
       return (
-        <div style={{ position: 'absolute', left: 130, top: 330 }}>
-          <Reveal at={s + 4} frame={frame} size={92}>
-            Same API.
-          </Reveal>
-          <Reveal at={s + 12} frame={frame} size={92} color={amber}>
-            One import.
-          </Reveal>
-          <div
-            style={{
-              ...mono,
-              fontSize: 40,
-              color: cream,
-              marginTop: 40,
-              opacity: ramp(frame, s + 24, s + 40),
-            }}
-          >
-            <span style={{ color: amber }}>$</span> npm i wraithterm
+        <>
+          <Scrim />
+          <div style={{ position: 'absolute', left: 130, top: 330 }}>
+            <Reveal at={s + 4} frame={frame} size={92}>
+              Same API.
+            </Reveal>
+            <Reveal at={s + 12} frame={frame} size={92} color={amber}>
+              One import.
+            </Reveal>
+            <div
+              style={{
+                ...mono,
+                fontSize: 40,
+                color: cream,
+                marginTop: 40,
+                opacity: ramp(frame, s + 24, s + 40),
+              }}
+            >
+              <span style={{ color: amber }}>$</span> npm i wraithterm
+            </div>
           </div>
-        </div>
+        </>
       );
     case 'Badge':
       return (
@@ -883,7 +913,7 @@ export const OnGo: React.FC = () => {
           </mesh>
           {ghost ? <Ghost {...ghost} /> : null}
           {(shot.slabs?.(k, frame) ?? []).map((p, i) => (
-            <Browser key={`${shot.name}-${p.file}-${i}`} {...p} />
+            <Browser key={`${p.file}-${i}`} {...p} />
           ))}
         </ThreeCanvas>
         {sweep !== undefined ? (

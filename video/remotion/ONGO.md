@@ -20,19 +20,21 @@ stored.
 | Source s      | Cue              | Picture                                                  |
 | ------------- | ---------------- | -------------------------------------------------------- |
 | 0–0.35        | "Honorable"      | A line of light on a dark slab, letterboxed              |
-| 0.35–2.18     | Intro bar 1      | Low-angle reveal, light sweep, WRAITH                    |
-| 2.18–11.54    | Bars 2–6         | Orbit, macro, convoy, crane, chase: five spec callouts   |
+| 0.35–2.18     | Intro bar 1      | One hero terminal: low-angle reveal, light sweep, WRAITH |
+| 2.18–11.54    | Bars 2–6         | Same terminal: orbit, macro, low track, crane, chase     |
 | 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3 | Cut on "uh"; camera punch, flare and text on "HUH" |
 | 11.54–13.43   | Third "uh-huh"   | Cut to code; typing starts on "HUH"                      |
 | 13.43 / 13.65 / 13.88 | "One, two, three" | Hard cuts, a line lights per count            |
 | 14.11–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
-| 16.84–18.67   | "we on go"       | Low and side hero angles                                 |
-| 18.67–22.34   | "Let 'em know"   | The same 16 terminals: xterm.js + WebGL vs Wraith        |
-| 22.34–26.00   | Receipts         | 15× less CPU; same API, one import                       |
+| 16.84–18.67   | "we on go"       | Same wall: low angle, side orbit                         |
+| 18.67–22.34   | "Let 'em know"   | Pull back; xterm.js + WebGL's dark wall powers on beside |
+| 22.34–26.00   | Receipts         | The website, two angles: 15× less CPU; same API          |
 | 26.00–27.83   | Badge            | Ghost, WRAITH, tagline, URL; cut on the kick drop-out    |
 
-Text rises from behind a line with a blur-to-sharp settle. Only the count is a hard
-cut.
+Each act has one subject seen from several angles. Subjects change only at the count,
+at GO and before the receipts. Slabs keep their identity across angles, so footage
+plays continuously. Text rises from behind a line with a blur-to-sharp settle. Only
+the count is a hard cut.
 
 ## Evidence on screen
 
