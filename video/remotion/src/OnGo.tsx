@@ -531,19 +531,23 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
   switch (shot.name) {
     case 'Reveal':
       return (
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 640, textAlign: 'center' }}>
-          <Reveal
-            at={beat(2)}
-            frame={frame}
-            size={34}
-            weight={400}
-            font={mono}
-            tracking={0.6}
-            color={cream}
-          >
-            WRAITH
-          </Reveal>
-        </div>
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(ellipse at 50% 46%, #000a 0%, transparent 62%)',
+            }}
+          />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 330, textAlign: 'center' }}>
+            <Reveal at={beat(0) + 2} frame={frame} size={112}>
+              Meet the fastest
+            </Reveal>
+            <Reveal at={beat(2)} frame={frame} size={112} color={amber}>
+              terminal on the web.
+            </Reveal>
+          </div>
+        </>
       );
     case 'Orbit':
       return (
@@ -644,7 +648,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
             <Reveal at={GO + 10} frame={frame} size={150}>
               16 terminals.
             </Reveal>
-            <Reveal at={beat(32) + 2} frame={frame} size={150} color={amber}>
+            <Reveal at={GO + 42} frame={frame} size={150} color={amber}>
               60 fps. Each.
             </Reveal>
           </div>

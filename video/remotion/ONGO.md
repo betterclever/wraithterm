@@ -1,35 +1,37 @@
 # WE ON GO
 
-`WraithOnGo` is a 27.833-second (1,670-frame) car-launch film where the car is a
+`WraithOnGo` is a 28.717-second (1,723-frame) car-launch film where the car is a
 terminal. Features come first, then the count-in launches it, then the receipts.
 Output: `video/wraith-ongo.mp4`. Earlier cuts and exports are unchanged.
 
 ## Music
 
-The user-supplied BIA recording plays from 0 s ("Honorable") to beat 60, where the
-kick drops out before the verse. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
+The user-supplied BIA recording plays from 0 s ("Honorable") through the kick drop-out
+at beat 60 (27.83 s), then fades over the breakdown to silence at 28.72 s, just before
+the first verse syllable at 28.74 s. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
 and two-pass normalizes it to −14 LUFS. [ongo-music.json](../claims/ongo-music.json)
 keeps the source hash and cue times. Tempo is 131 BPM with the first beat at 0.35 s.
 The ad-libs and vocal doubles are panned wide. Syllable onsets therefore come from
 harmonic (median-filter separated) side-channel voice energy at 10 ms resolution, plus
-centre-channel 4–9 kHz consonant bursts for the count. The three "uh-huh"s fall
-8 beats apart, with "uh" on the off-beat. The count is three even eighth-notes into
-"we on go". lrclib's line start of 13.18 s is the 808 kick, not "one". Lyrics are not
+The three "uh-huh"s fall 8 beats apart, with "uh" on the off-beat. The count is on
+quarter notes (beats 29–31). "We on go" lands on the bar 8 downbeat, where the vocal
+level jumps. Centre 4–9 kHz bursts every eighth note are the hi-hat. lrclib's 13.18 s
+is the 808 and its 14.11 s is "two"; neither marks the words they label. Lyrics are not
 stored.
 
 | Source s      | Cue              | Picture                                                  |
 | ------------- | ---------------- | -------------------------------------------------------- |
 | 0–0.35        | "Honorable"      | A line of light on a dark slab, letterboxed              |
-| 0.35–2.18     | Intro bar 1      | One hero terminal: low-angle reveal, light sweep, WRAITH |
+| 0.35–2.18     | Intro bar 1      | One hero terminal; "Meet the fastest terminal on the web." |
 | 2.18–11.54    | Bars 2–6         | Same terminal: orbit, macro, low track, crane, chase     |
 | 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3 | Cut on "uh"; camera punch, flare and text on "HUH" |
-| 11.54–13.43   | Third "uh-huh"   | Cut to code; typing starts on "HUH"                      |
-| 13.43 / 13.65 / 13.88 | "One, two, three" | Hard cuts, a line lights per count            |
-| 14.11–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
+| 11.54–13.65   | Third "uh-huh"   | Cut to code; typing starts on "HUH"                      |
+| 13.65 / 14.13 / 14.59 | "One, two, three" | Hard cuts, a line lights per count            |
+| 15.01–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
 | 16.84–18.67   | "we on go"       | Same wall: low angle, side orbit                         |
 | 18.67–22.34   | "Let 'em know"   | Pull back; xterm.js + WebGL's dark wall powers on beside |
 | 22.34–26.00   | Receipts         | The website, two angles: 15× less CPU; same API          |
-| 26.00–27.83   | Badge            | Ghost, WRAITH, tagline, URL; cut on the kick drop-out    |
+| 26.00–28.72   | Badge            | Ghost, WRAITH, tagline, URL; music fades before the verse |
 
 Each act has one subject seen from several angles. Subjects change only at the count,
 at GO and before the receipts. Slabs keep their identity across angles, so footage

@@ -1,6 +1,6 @@
-// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0 s up to beat 60,
-// where the kick drops out before the verse. Two-pass loudness normalization; a short
-// fade only removes the edge click. The recording stays local.
+// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0 s through the
+// kick drop-out at beat 60, fading across the breakdown to silence just before the first
+// verse syllable. Two-pass loudness normalization. The recording stays local.
 // Usage: node ongo.mjs '--music=/path/BIA - WE ON GO (Official Audio).mp4'
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
@@ -14,7 +14,10 @@ if (!music) throw Error('Pass --music=/absolute/path/to/the supplied recording')
 const BPM = 131,
   PHASE = 0.35,
   FPS = 60;
-const frames = Math.round((PHASE + (60 * 60) / BPM) * FPS);
+const KICK_DROPS_OUT = PHASE + (60 * 60) / BPM;
+// First verse syllable measured at 28.74 s (centre vocal rise and consonant burst).
+const VERSE = 28.74;
+const frames = Math.round((VERSE - 0.02) * FPS);
 const duration = frames / FPS;
 const run = (args) => {
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8', maxBuffer: 1e7 });
@@ -32,7 +35,7 @@ const output = resolve(root, 'footage/ongo-music.wav');
 run([
   ...trim,
   '-af',
-  `loudnorm=${target}:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true,afade=t=out:st=${(duration - 0.03).toFixed(3)}:d=0.03`,
+  `loudnorm=${target}:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true,afade=t=out:st=${KICK_DROPS_OUT.toFixed(3)}:d=${(duration - KICK_DROPS_OUT).toFixed(3)}:curve=qsin`,
   '-ar',
   '48000',
   '-ac',
@@ -60,21 +63,24 @@ await writeFile(
       bpm: BPM,
       beatPhaseSeconds: PHASE,
       // Vocal onsets measured in the source: the ad-libs and doubles are panned wide, so
-      // syllables come from harmonic side-channel voice energy at 10 ms resolution, with
-      // centre-channel consonant bursts for the count. 13.17 s is the 808, not "one".
-      // Lyrics themselves are not stored.
+      // syllables come from harmonic side-channel voice energy at 10 ms resolution. The
+      // count is on quarter notes (beats 29-31) and "we on go" lands on the bar 8
+      // downbeat. Centre 4-9 kHz bursts every eighth note are the hi-hat, and 13.17 s is
+      // the 808; neither is the count. Lyrics themselves are not stored.
       cues: {
         uhHuh: [
           [4.22, 4.47],
           [7.86, 8.23],
           [11.54, 11.85],
         ],
-        countOne: 13.43,
-        countTwo: 13.65,
-        countThree: 13.88,
-        goKickAndVocal: 14.11,
+        countOne: 13.65,
+        countTwo: 14.13,
+        countThree: 14.59,
+        goKickAndVocal: 15.01,
         chorusVocalsRise: 15.007,
-        kickDropsOut: duration,
+        kickDropsOut: KICK_DROPS_OUT,
+        fadeToSilence: duration,
+        firstVerseSyllable: VERSE,
       },
       loudnormFirstPass: stats,
     },
