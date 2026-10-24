@@ -475,8 +475,45 @@ const Spec: React.FC<{ frame: number; start: number; n: string; title: string; s
 const CODE = [
   'npm i wraithterm',
   "import { Terminal } from 'wraithterm/xterm'",
-  'new Terminal().open(el)',
+  'await Wraith.mount(el)',
 ];
+// The count: one usage line per beat.
+const USAGE = [
+  { label: 'INSTALL', line: 'npm i wraithterm' },
+  { label: 'DROP-IN · THE XTERM.JS API', line: "import { Terminal } from 'wraithterm/xterm'" },
+  { label: 'NATIVE · GHOSTTY IN A WORKER', line: 'await Wraith.mount(el)' },
+];
+const UsageLine: React.FC<{ n: number; transform: string }> = ({ n, transform }) => (
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      perspective: 1600,
+    }}
+  >
+    <div
+      style={{
+        transform,
+        padding: '46px 72px 54px',
+        borderRadius: 26,
+        background: 'linear-gradient(160deg, #1a120c, #0b0806)',
+        border: '1px solid #4a3020',
+        boxShadow: `0 40px 120px #000c, 0 0 80px ${amber}22, inset 0 1px 0 #ffffff14`,
+      }}
+    >
+      <div style={{ ...mono, fontSize: 24, letterSpacing: '.3em', color: muted, marginBottom: 22 }}>
+        {USAGE[n - 1]!.label}
+      </div>
+      <div style={{ ...mono, fontSize: 56, color: cream, whiteSpace: 'pre' }}>
+        {n === 1 ? <span style={{ color: amber }}>$ </span> : null}
+        {USAGE[n - 1]!.line}
+      </div>
+    </div>
+  </div>
+);
 const TYPE_AT = [UH[2][1], UH[2][1] + 22, UH[2][1] + 46];
 
 const CodeCard: React.FC<{ frame: number; lit: number; transform: string }> = ({
@@ -620,8 +657,8 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
     case 'Three': {
       const n = shot.name === 'One' ? 1 : shot.name === 'Two' ? 2 : 3;
       const angle = [
-        'rotateY(22deg) rotateX(4deg) scale(1.02) translateX(-170px)',
-        'rotateY(-18deg) rotateX(-6deg) scale(1.0) translateX(60px)',
+        'rotateY(18deg) rotateX(4deg) translateX(-160px)',
+        'rotateY(-10deg) rotateX(-5deg) translateX(40px)',
         `scale(${mix(1.04, 1.14, ramp(frame, s, shot.to, Easing.in(Easing.quad)))})`,
       ][n - 1];
       return (
@@ -645,7 +682,7 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
           >
             {n}
           </div>
-          <CodeCard frame={frame + 400} lit={n} transform={angle} />
+          <UsageLine n={n} transform={angle} />
         </>
       );
     }
