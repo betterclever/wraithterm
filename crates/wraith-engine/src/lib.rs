@@ -3,6 +3,8 @@ pub mod core;
 #[cfg(target_arch = "wasm32")]
 mod gpu;
 pub mod image;
+#[cfg(target_arch = "wasm32")]
+mod images;
 #[cfg(any(target_arch = "wasm32", test))]
 mod retained;
 #[cfg(any(target_arch = "wasm32", test))]

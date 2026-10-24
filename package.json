@@ -37,6 +37,7 @@
     "test:input": "node scripts/test-production-input.mjs",
     "test:native-interaction": "node scripts/native-interaction-test.mjs",
     "test:native-display": "node scripts/native-display-test.mjs",
+    "test:native-kitty": "node scripts/native-kitty-test.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",
     "test:visual-options": "node scripts/gpu-visual-options-test.mjs",
     "benchmark:visual-options": "node scripts/visual-options-benchmark.mjs",

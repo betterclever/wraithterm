@@ -10,6 +10,7 @@ export type Command =
       size: number;
       lineHeight: number;
       history: number;
+      imageStorageLimit?: number;
       theme: number[];
     }
   | { type: 'write'; bytes: Uint8Array; ids: number[] }

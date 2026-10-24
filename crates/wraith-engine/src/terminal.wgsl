@@ -10,6 +10,7 @@ struct Uniforms {
     grid: vec4<u32>, // columns, rows, cursor index, visible | style << 1
     theme: vec4<u32>, // cursor, selected fg, selected bg, reserved
     text: vec4<f32>, // tile width/height, atlas size, blink phase
+    images: vec4<u32>, // bit 0: images below backgrounds; default background
 }
 @group(0) @binding(0) var<storage, read> cells: array<Cell>;
 @group(0) @binding(1) var<uniform> u: Uniforms;
@@ -87,7 +88,11 @@ fn has_cursor(index: u32) -> bool {
     let packed_alpha = (v.flags & (1u << 21u)) != 0u;
     let fg_alpha = select(1., f32(v.foreground >> 24u) / 255., packed_alpha && !(cursor && cursor_style == 1u));
     let bg_alpha = select(1., f32(v.background >> 24u) / 255., packed_alpha);
-    if v.layer == 0u { return vec4<f32>(bg, select(bg_alpha, 1., cursor && cursor_style == 1u)); }
+    if v.layer == 0u {
+        // Kitty images below backgrounds show through default-colored cells.
+        if (u.images.x & 1u) != 0u && !selected && !cursor && (v.background & 0xffffffu) == u.images.y { discard; }
+        return vec4<f32>(bg, select(bg_alpha, 1., cursor && cursor_style == 1u));
+    }
     if v.local.x > u.view.x - f32(v.index % u.grid.x) * u.view.z { discard; }
     let cell_span = u.view.z * select(1., 2., (v.flags & 65536u) != 0u);
     let inside = v.local.x < cell_span;

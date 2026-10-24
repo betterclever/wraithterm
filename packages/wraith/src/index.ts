@@ -230,6 +230,7 @@ export class Wraith {
           size: (options.fontSize ?? 14) * terminal.dpr,
           lineHeight: options.lineHeight ?? 1.35,
           history: options.scrollback ?? 10000,
+          imageStorageLimit: options.imageStorageLimit,
           theme: Object.values(terminal.theme).map(packColor),
         },
         [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],

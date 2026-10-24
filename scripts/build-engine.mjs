@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, writeFile, access, copyFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, access, copyFile, rm, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -93,6 +94,11 @@ await mkdir(link, { recursive: true });
 await copyFile(join(output, 'lib/libghostty-vt.a'), join(link, 'libghostty-vt.a'));
 await prepareCellLayout({ zig, ghostty, link, root, native, env });
 const object = join(link, 'bridge.o');
+const wuffsPackages = (await readdir(join(ghostty, 'zig-pkg'))).filter((d) => d.startsWith('N-V-'));
+const wuffs = wuffsPackages
+  .map((d) => join(ghostty, 'zig-pkg', d, 'release/c'))
+  .find((d) => existsSync(join(d, 'wuffs-v0.4.c')));
+if (!wuffs) throw new Error('Wuffs source missing from Ghostty packages');
 const compiler = [
   'cc',
   '-O3',
@@ -100,10 +106,14 @@ const compiler = [
   join(root, 'native/bridge.c'),
   '-I' + join(ghostty, 'include'),
   '-I' + link,
+  // Wuffs' single-file source, pinned through Ghostty's package manifest.
+  '-I' + wuffs,
   '-o',
   object,
 ];
-if (!native) compiler.push('-target', 'wasm32-freestanding');
+// Ghostty's minimal libc headers let Wuffs' declarations compile freestanding.
+if (!native)
+  compiler.push('-target', 'wasm32-freestanding', '-I' + join(ghostty, 'pkg/wuffs/include'));
 run(zig, compiler);
 await rm(join(link, 'libwraith-bridge.a'), { force: true });
 run(zig, ['ar', 'rcs', join(link, 'libwraith-bridge.a'), object]);

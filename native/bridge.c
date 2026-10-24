@@ -3,6 +3,8 @@
 #include "bridge.h"
 #include <ghostty/vt.h>
 #include "ghostty-cell-layout.h"
+/* Declarations only: libghostty-vt already links Wuffs' PNG decoder. */
+#include "wuffs-v0.4.c"
 
 extern void* wraith_alloc(size_t len, uint8_t alignment);
 extern void wraith_dealloc(void* ptr, size_t len, uint8_t alignment);
@@ -17,10 +19,6 @@ extern void wraith_row_store(void* user, uint32_t row, uint64_t id0, uint64_t id
 extern void wraith_cell(void* user, uint32_t x, uint32_t y, uint32_t scalar, const uint8_t* text,
                         size_t len, uint32_t fg, uint32_t bg, uint32_t ul, uint32_t flags);
 extern void wraith_placement(void* user, const WraithPlacement* placement);
-/* PNG decoding is Rust's: read the header, then decode RGBA straight into the
- * buffer Ghostty will own, so pixels are written exactly once. */
-extern bool wraith_png_size(const uint8_t* data, size_t len, uint32_t* width, uint32_t* height);
-extern bool wraith_png_decode(const uint8_t* data, size_t len, uint8_t* out, size_t out_len);
 
 static void* alloc_fn(void* ctx, size_t n, uint8_t a, uintptr_t r) {
   (void)ctx; (void)r; return wraith_alloc(n, a);
@@ -62,19 +60,46 @@ static GhosttyColorRgb resolve(GhosttyStyleColor c, const GhosttyRenderStateColo
   if (c.tag == GHOSTTY_STYLE_COLOR_PALETTE) return colors->palette[c.value.palette];
   return fallback;
 }
-/* Larger images are rejected before any allocation (16,384 px per side). */
+/* Kitty PNG payloads decode with Wuffs, already linked by libghostty-vt,
+ * straight into the RGBA buffer Ghostty will own: pixels are written once.
+ * Larger images are rejected before any pixel allocation (16,384 px a side). */
 #define WRAITH_IMAGE_SIDE 16384u
 static bool decode_png(void* user, const GhosttyAllocator* a, const uint8_t* data, size_t len,
                        GhosttySysImage* out) {
-  (void)user; uint32_t w = 0, h = 0;
-  if (!wraith_png_size(data, len, &w, &h) || !w || !h || w > WRAITH_IMAGE_SIDE || h > WRAITH_IMAGE_SIDE)
-    return false;
-  size_t bytes = (size_t)w * h * 4;
-  uint8_t* pixels = ghostty_alloc(a, bytes);
-  if (!pixels) return false;
-  if (!wraith_png_decode(data, len, pixels, bytes)) { ghostty_free(a, pixels, bytes); return false; }
+  (void)user;
+  size_t decoder_len = sizeof__wuffs_png__decoder(), work_len = 0, bytes = 0;
+  wuffs_png__decoder* decoder = wraith_alloc(decoder_len, 3);
+  uint8_t *work = NULL, *pixels = NULL;
+  bool ok = false;
+  if (!decoder) return false;
+  wuffs_base__io_buffer source = wuffs_base__ptr_u8__reader((uint8_t*)data, len, true);
+  wuffs_base__image_config config;
+  wuffs_base__pixel_buffer buffer;
+  if (wuffs_png__decoder__initialize(decoder, decoder_len, WUFFS_VERSION, 0).repr ||
+      wuffs_png__decoder__decode_image_config(decoder, &config, &source).repr)
+    goto done;
+  uint32_t w = wuffs_base__pixel_config__width(&config.pixcfg);
+  uint32_t h = wuffs_base__pixel_config__height(&config.pixcfg);
+  uint64_t work_max = wuffs_png__decoder__workbuf_len(decoder).max_incl;
+  if (!w || !h || w > WRAITH_IMAGE_SIDE || h > WRAITH_IMAGE_SIDE || work_max > SIZE_MAX) goto done;
+  wuffs_base__pixel_config__set(&config.pixcfg, WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
+  bytes = (size_t)w * h * 4;
+  work_len = (size_t)work_max;
+  if (work_len && !(work = wraith_alloc(work_len, 3))) goto done;
+  if (!(pixels = ghostty_alloc(a, bytes))) goto done;
+  if (wuffs_base__pixel_buffer__set_from_slice(&buffer, &config.pixcfg,
+                                               wuffs_base__make_slice_u8(pixels, bytes)).repr ||
+      wuffs_png__decoder__decode_frame(decoder, &buffer, &source, WUFFS_BASE__PIXEL_BLEND__SRC,
+                                       wuffs_base__make_slice_u8(work, work_len), NULL).repr)
+    goto done;
   *out = (GhosttySysImage){.width = w, .height = h, .data = pixels, .data_len = bytes};
-  return true;
+  ok = true;
+done:
+  if (!ok && pixels) ghostty_free(a, pixels, bytes);
+  if (work) wraith_dealloc(work, work_len, 3);
+  wraith_dealloc(decoder, decoder_len, 3);
+  return ok;
 }
 static void on_pty(GhosttyTerminal t, void* user, const uint8_t* p, size_t n) {
   (void)t; WraithBridge* b = user; wraith_emit(b->user, 0, p, n);

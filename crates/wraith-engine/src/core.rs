@@ -128,6 +128,9 @@ pub(crate) struct State {
     /// collected during the current update.
     pub placements: Vec<Placement>,
     pub staged: Vec<Placement>,
+    /// Ghostty's storage-wide generation. It also advances when a pending
+    /// payload completes, which leaves the image's own generation unchanged.
+    pub image_generation: u64,
 }
 /// Ghostty's row identity, its raw cells and its selection range. Equal keys
 /// produce equal snapshots: a row id changes when the row is edited in place,
@@ -264,6 +267,7 @@ impl Core {
             next_version: 0,
             placements: Vec::new(),
             staged: Vec::new(),
+            image_generation: 0,
         });
         // Ghostty borrows the stable allocation only for synchronous callbacks
         // and never after bridge_free. StateOwner then releases the allocation.
@@ -325,11 +329,16 @@ impl Core {
         check(unsafe { wraith_bridge_images(self.bridge.as_ptr(), &mut generation) })?;
         let state = &mut *self.state;
         state.staged.sort_by_key(|p| (p.layer, p.z));
+        let storage = std::mem::replace(&mut state.image_generation, generation) != generation;
         if state.staged == state.placements {
-            return Ok(false);
+            return Ok(storage && !state.placements.is_empty());
         }
         std::mem::swap(&mut state.staged, &mut state.placements);
         Ok(true)
+    }
+    /// Ghostty's storage-wide image generation (zero until an image is stored).
+    pub fn image_generation(&self) -> u64 {
+        self.state.image_generation
     }
     /// Visible Kitty graphics placements in draw order.
     pub fn placements(&self) -> &[Placement] {

@@ -18,6 +18,12 @@ export interface WraithOptions {
   screenReaderMode?: boolean;
   /** Maximum unacknowledged input bytes. Defaults to 8 MiB. */
   maxPendingBytes?: number;
+  /**
+   * Decoded Kitty graphics image bytes each screen may store. Defaults to
+   * 64 MiB; when full, Ghostty evicts the oldest images. Zero disables Kitty
+   * graphics.
+   */
+  imageStorageLimit?: number;
 }
 export interface WraithStats {
   frames: number;

@@ -264,6 +264,8 @@ async function handle(command: Command) {
       command.history,
     );
     for (const font of command.fonts) engine.add_font(font);
+    if (command.imageStorageLimit !== undefined)
+      engine.set_image_limit(Math.max(0, Math.floor(command.imageStorageLimit)));
     engine.theme(command.theme[0]!, command.theme[1]!, command.theme[2]!);
     post({
       type: 'ready',

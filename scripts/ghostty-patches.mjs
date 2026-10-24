@@ -11,6 +11,8 @@ export async function applyGhosttyPatches(directory, revision, enabled = true) {
   // The bridge requires the search cache ABI even when that experiment is off.
   await applyPatch(directory, revision, enabled, 'batch-sgr');
   await applyPatch(directory, revision, true, 'search-pages');
+  // Kitty graphics in the freestanding Wasm build: direct transmission only.
+  await applyPatch(directory, revision, true, 'kitty-freestanding');
 }
 async function applyPatch(directory, revision, enabled, name) {
   const manifestUrl = new URL(`../native/patches/${name}.json`, import.meta.url);

@@ -13,7 +13,6 @@ crate-type = ["cdylib", "rlib"]
 bytemuck = { version = "1", features = ["derive"] }
 swash = "0.2.10"
 harfrust = "0.13"
-png = { version = "0.18", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { version = "30", default-features = false, features = ["webgpu", "wgsl"] }

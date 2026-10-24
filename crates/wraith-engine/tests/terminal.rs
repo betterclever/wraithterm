@@ -279,13 +279,18 @@ fn dirty_rows_are_incremental() {
 }
 #[test]
 fn shaders_validate_and_buffer_layout_matches() {
-    let module = naga::front::wgsl::parse_str(include_str!("../src/terminal.wgsl")).unwrap();
-    naga::valid::Validator::new(
-        naga::valid::ValidationFlags::all(),
-        naga::valid::Capabilities::empty(),
-    )
-    .validate(&module)
-    .unwrap();
+    for source in [
+        include_str!("../src/terminal.wgsl"),
+        include_str!("../src/image.wgsl"),
+    ] {
+        let module = naga::front::wgsl::parse_str(source).unwrap();
+        naga::valid::Validator::new(
+            naga::valid::ValidationFlags::all(),
+            naga::valid::Capabilities::empty(),
+        )
+        .validate(&module)
+        .unwrap();
+    }
 }
 #[test]
 fn font_rasterization_and_warm_cache() {

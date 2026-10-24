@@ -52,6 +52,11 @@ export class Engine {
     configure_font(font: Uint8Array, fallbacks: Array<any>, size: number, line_height: number): Uint32Array;
     static create(canvas: OffscreenCanvas, font: Uint8Array, cols: number, rows: number, font_size: number, line_height: number, history: number): Promise<Engine>;
     fence(): Promise<void>;
+    image_upload_bytes(): number;
+    /**
+     * Kitty graphics textures uploaded and their bytes, for diagnostics.
+     */
+    image_uploads(): number;
     key(key: number, mods: number, action: number, text: string, unshifted: number): void;
     link(x: number, y: number): string;
     metrics(): Float64Array;
@@ -64,6 +69,10 @@ export class Engine {
     search(needle: string, action: number): Uint32Array;
     select(x1: number, y1: number, x2: number, y2: number): void;
     select_mode(x1: number, y1: number, x2: number, y2: number, mode: number): void;
+    /**
+     * Decoded Kitty graphics bytes each screen may store; zero disables them.
+     */
+    set_image_limit(bytes: number): void;
     take_events(): Array<any>;
     text(selected: boolean): string;
     theme(fg: number, bg: number, cursor: number): void;
@@ -128,6 +137,8 @@ export interface InitOutput {
     readonly engine_cursor_x: (a: number) => number;
     readonly engine_cursor_y: (a: number) => number;
     readonly engine_fence: (a: number) => any;
+    readonly engine_image_upload_bytes: (a: number) => number;
+    readonly engine_image_uploads: (a: number) => number;
     readonly engine_key: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_link: (a: number, b: number, c: number) => [number, number];
     readonly engine_metrics: (a: number) => [number, number];
@@ -142,6 +153,7 @@ export interface InitOutput {
     readonly engine_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_select_mode: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly engine_set_image_limit: (a: number, b: number) => [number, number];
     readonly engine_take_events: (a: number) => any;
     readonly engine_text: (a: number, b: number) => [number, number, number, number];
     readonly engine_theme: (a: number, b: number, c: number, d: number) => void;
@@ -159,6 +171,7 @@ export interface InitOutput {
     readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
     readonly wraith_emit: (a: number, b: number, c: number, d: number) => void;
+    readonly wraith_placement: (a: number, b: number) => void;
     readonly wraith_row: (a: number, b: number) => void;
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
@@ -167,10 +180,10 @@ export interface InitOutput {
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__58: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__59: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__61: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__62: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__57: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__60: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;
