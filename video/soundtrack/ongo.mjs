@@ -1,6 +1,7 @@
-// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0-30 s. One long
-// fade runs from the kick drop-out at beat 60 into the first verse line, reaching
-// silence at 30 s. Two-pass loudness normalization. The recording stays local.
+// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0-30 s. The fade
+// runs from the kick drop-out at beat 60 to silence 40 ms before the first verse
+// syllable, so no vocal is heard; the rest of the 30 s is silent. Two-pass loudness
+// normalization. The recording stays local.
 // Usage: node ongo.mjs '--music=/path/BIA - WE ON GO (Official Audio).mp4'
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
@@ -18,6 +19,7 @@ const KICK_DROPS_OUT = PHASE + (60 * 60) / BPM;
 // First verse syllable measured at 28.74 s (centre vocal rise and consonant burst).
 const VERSE = 28.74;
 const END = 30;
+const SILENT = VERSE - 0.04;
 const frames = END * FPS;
 const duration = frames / FPS;
 const run = (args) => {
@@ -36,7 +38,7 @@ const output = resolve(root, 'footage/ongo-music.wav');
 run([
   ...trim,
   '-af',
-  `loudnorm=${target}:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true,afade=t=out:st=${KICK_DROPS_OUT.toFixed(3)}:d=${(duration - KICK_DROPS_OUT).toFixed(3)}:curve=qsin`,
+  `loudnorm=${target}:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true,afade=t=out:st=${KICK_DROPS_OUT.toFixed(3)}:d=${(SILENT - KICK_DROPS_OUT).toFixed(3)}:curve=qsin`,
   '-ar',
   '48000',
   '-ac',
@@ -80,7 +82,7 @@ await writeFile(
         goKickAndVocal: 15.01,
         chorusVocalsRise: 15.007,
         kickDropsOut: KICK_DROPS_OUT,
-        fadeToSilence: duration,
+        fadeToSilence: SILENT,
         firstVerseSyllable: VERSE,
       },
       loudnormFirstPass: stats,

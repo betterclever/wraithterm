@@ -6,9 +6,9 @@ Output: `video/wraith-ongo.mp4`. Earlier cuts and exports are unchanged.
 
 ## Music
 
-The user-supplied BIA recording plays from 0 s ("Honorable") from 0 to 30 s. One long fade runs
-from the kick drop-out at beat 60 (27.83 s), through the breakdown and the opening of
-the first verse line (28.74 s), to silence at 30 s. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
+The user-supplied BIA recording plays from 0 s ("Honorable") from 0 to 30 s. The fade runs from
+the kick drop-out at beat 60 (27.83 s) to silence at 28.70 s, 40 ms before the first
+verse syllable (28.74 s), so no vocal is heard; the rest is silent. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
 and two-pass normalizes it to −14 LUFS. [ongo-music.json](../claims/ongo-music.json)
 keeps the source hash and cue times. Tempo is 131 BPM with the first beat at 0.35 s.
 The ad-libs and vocal doubles are panned wide. Syllable onsets therefore come from
