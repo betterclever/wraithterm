@@ -263,6 +263,15 @@ pages, so retention can exceed the configured count by a page; `scrollback: 0`
 disables history. The independent upstream default byte cap is removed when a
 positive line count is configured.
 
+The native profile renders [Kitty graphics](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+on the GPU. Applications can transmit RGB, RGBA or PNG images directly
+(base64, optionally zlib-compressed and chunked), then place, crop, scale,
+layer and delete them. Replies arrive through `onBytes`. Each screen stores up
+to `imageStorageLimit` decoded bytes (64 MiB by default; `0` disables Kitty
+graphics), evicting the oldest images first. File, temp-file and shared-memory
+transmission are unavailable in browsers. Unicode-placeholder placements, timed
+animation playback and the xterm-compatible profile are not supported yet.
+
 Native search matches ASCII letters without case sensitivity; other UTF-8 bytes
 match exactly. It searches literal strings up to 4096 UTF-8 bytes. Results use
 Ghostty's newest-to-oldest indexing (`-1` when no match is selected); search work
@@ -291,9 +300,10 @@ Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) for ownership, the frame path, and
 failure handling. [COMPATIBILITY.md](docs/COMPATIBILITY.md) distinguishes verified
 behavior from upstream capabilities and remaining renderer work.
 
-This release implements a broad text-terminal path. **Kitty graphics / Sixel,
-OSC 52 clipboard operations, cross-cell ligatures, contextual script runs, and
-cross-browser certification remain release work.** This is not a claim of complete
+This release implements a broad text-terminal path and native Kitty graphics.
+**Sixel, Kitty Unicode placeholders and timed animation, OSC 52 clipboard
+operations, cross-cell ligatures, contextual script runs, and cross-browser
+certification remain release work.** This is not a claim of complete
 terminal-spec conformance.
 
 ## Build from source
