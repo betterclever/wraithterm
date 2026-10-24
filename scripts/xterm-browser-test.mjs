@@ -6,7 +6,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pixelSummary } from './png.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const report = resolve(root, 'docs/compatibility');
+const report = resolve(process.env.WRAITH_REPORT_DIR ?? resolve(root, 'docs/compatibility'));
 await mkdir(report, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
@@ -30,7 +30,7 @@ try {
   await page.waitForFunction(() => window.compat.term.renderer === 'webgpu');
   const pixels = pixelSummary(await page.locator('.wraith-xterm-webgpu').screenshot());
   assert(pixels.bright > 300 && pixels.colors > 20, JSON.stringify(pixels));
-  await page.screenshot({ path: resolve(root, '../wraith-xterm-preview.png') });
+  await page.screenshot({ path: resolve(report, 'xterm-preview.png') });
   checks.push('Rust/Wasm/WebGPU pixels');
   const results = await page.evaluate(async () => {
     const {
@@ -178,6 +178,39 @@ try {
     same(seen[0], seen[1], 'Parser handlers');
     same(dump(a), dump(b), 'Intercepted buffer');
     checks.push('async CSI, OSC, DCS and ESC parser hooks');
+    const sgrSeen = [[], []],
+      sgrHandlers = [];
+    for (const [i, t] of [a, b].entries()) {
+      sgrHandlers.push(
+        t.parser.registerCsiHandler({ final: 'm' }, (params) => {
+          sgrSeen[i].push(['sync', params]);
+          return params[0] === 48;
+        }),
+        t.parser.registerCsiHandler({ final: 'm' }, async (params) => {
+          await Promise.resolve();
+          sgrSeen[i].push(['async', params]);
+          return false;
+        }),
+      );
+    }
+    await Promise.all(
+      [a, b].map((t) =>
+        write(
+          t,
+          '\x1b[0;1;38;2;11;22;33;48;5;21mA界' +
+            '\x1b[48;2;100;200;255mB' +
+            '\x1b[0;3;38;2;4;5;6;4:3;58:2::9:8:7mC' +
+            '\x1b[38;2;255mD\x1b[0m',
+        ),
+      ),
+    );
+    same(sgrSeen[0], sgrSeen[1], 'SGR interception order');
+    expect(sgrSeen[0].length === 10, 'Every SGR reaches both hooks');
+    same(dump(a), dump(b), 'Accelerated colors after async continuation');
+    for (const handler of sgrHandlers) handler.dispose();
+    checks.push(
+      'accelerated SGR colors preserve async interception, fallthrough and malformed parameters',
+    );
     const events = [[], []];
     for (const [i, t] of [a, b].entries()) {
       t.onData((d) => events[i].push(d));
@@ -231,7 +264,7 @@ try {
     checks.push('original Fit addon, mutable fonts/geometry and atlas reset');
     const compositor = a._core._renderService._renderer.value.gpu;
     const renderMethod =
-      typeof compositor.render_staged === 'function' ? 'render_staged' : 'render';
+      typeof compositor.render_retained === 'function' ? 'render_retained' : 'render_staged';
     const render = compositor[renderMethod].bind(compositor);
     let attempts = 0;
     compositor[renderMethod] = (...args) => (++attempts === 1 ? false : render(...args));
@@ -283,7 +316,7 @@ try {
       renderer.renderRows(0, a.rows - 1);
       const expected = Array.from(renderer.staging);
       const upload = compositor.upload.bind(compositor);
-      const staged = compositor.render_staged.bind(compositor);
+      const staged = compositor[renderMethod].bind(compositor);
       let grew = false,
         observed;
       compositor.upload = (...args) => {
@@ -293,9 +326,9 @@ try {
         }
         return upload(...args);
       };
-      compositor.render_staged = (count, start) => {
-        observed = Array.from(renderer.staging.subarray(start * 5, (start + count) * 5));
-        return staged(count, start);
+      compositor[renderMethod] = (...args) => {
+        observed = Array.from(renderer.staging);
+        return staged(...args);
       };
       try {
         renderer.clearTextureAtlas();
@@ -305,33 +338,41 @@ try {
         expect(a.renderer === 'webgpu', 'Mid-row memory growth preserves GPU rendering');
       } finally {
         compositor.upload = upload;
-        compositor.render_staged = staged;
+        compositor[renderMethod] = staged;
       }
       checks.push('staged frame bounds and uniform validation reject before submission');
       checks.push(
         'Wasm views refresh before packing and cold mid-row growth preserves submitted cells',
       );
     }
-    if (typeof compositor.render_staged === 'function') {
-      // Row reuse: mirror every submitted span as the GPU buffer would hold
-      // it, and require it to equal a fresh full repack after each step.
+    if (typeof compositor.render_retained === 'function') {
       const renderer = a._core._renderService._renderer.value;
-      const staged = compositor.render_staged.bind(compositor);
-      let mirror = [];
-      compositor.render_staged = (count, start) => {
-        const words = renderer.staging.subarray(start * 5, (start + count) * 5);
-        mirror.splice(start * 5, words.length, ...words);
-        return staged(count, start);
+      const staged = compositor.render_retained.bind(compositor);
+      let slots = Array.from(compositor.row_slots),
+        mirror = [];
+      compositor.render_retained = () => {
+        const old = slots;
+        const sources = Array.from(renderer.rowSources);
+        const result = staged();
+        slots = Array.from(compositor.row_slots);
+        for (let y = 0; y < a.rows; y++) {
+          if (sources[y] !== 0xffffffff && slots[y] === old[sources[y]]) continue;
+          const words = renderer.staging.subarray(y * a.cols * 5, (y + 1) * a.cols * 5);
+          for (let x = 0; x < words.length; x++) mirror[slots[y] * words.length + x] = words[x];
+        }
+        return result;
       };
       const options = { scrollback: a.options.scrollback };
       const verify = async (label) => {
         await frame();
-        const incremental = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
-        same(mirror.slice(0, incremental.length), incremental, `${label}: submitted cells`);
+        const incremental = Array.from(renderer.staging);
+        const visible = slots.flatMap((slot) =>
+          mirror.slice(slot * a.cols * 5, (slot + 1) * a.cols * 5),
+        );
+        same(visible, incremental, `${label}: retained GPU slots`);
         renderer.rowCached.fill(0);
         renderer.pack(0, a.rows - 1);
-        const fresh = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
-        same(incremental, fresh, `${label}: reused rows equal a full repack`);
+        same(incremental, Array.from(renderer.staging), `${label}: equals a full repack`);
       };
       const line = (i) =>
         `\x1b[3${i % 8};4${(i * 3) % 8}m${String(i).padStart(5, '0')}\x1b[0m ` +
@@ -343,7 +384,11 @@ try {
         a.reset();
         renderer.invalidate();
         await frame();
-        mirror = Array.from(renderer.staging.subarray(0, a.cols * a.rows * 5));
+        mirror = [];
+        slots.forEach((slot, y) => {
+          const words = renderer.staging.subarray(y * a.cols * 5, (y + 1) * a.cols * 5);
+          for (let x = 0; x < words.length; x++) mirror[slot * words.length + x] = words[x];
+        });
         for (let i = 0; i < 3 * a.rows; i += 3) {
           await write(a, line(i) + line(i + 1) + line(i + 2));
           if (i % 9 === 0) await verify(`append ${i}`);
@@ -363,24 +408,59 @@ try {
         a.scrollToBottom();
         await write(a, '\x1b[5;1H\x1b[2Kedited row\x1b[10;1H\x1b[M');
         await verify('in-place edit and deleted line');
-        let submitted = -1;
-        const counting = compositor.render_staged;
-        compositor.render_staged = (count, start) => {
-          submitted = count;
-          return counting(count, start);
-        };
-        // Combined text is always repacked; measure on plain rows.
-        await write(a, '\x1bc' + 'plain row\r\n'.repeat(a.rows - 1));
+        await write(
+          a,
+          '\x1bc' + Array.from({ length: a.rows - 1 }, (_, y) => `plain ${y}\r\n`).join(''),
+        );
         await verify('plain rows');
+        let before = Number(compositor.cell_upload_bytes);
         await write(a, '\x1b[3;1Hx');
         await verify('single cell edit');
-        compositor.render_staged = counting;
-        expect(submitted === a.cols, `A one-cell edit submits one row, not ${submitted / a.cols}`);
+        expect(
+          Number(compositor.cell_upload_bytes) - before === a.cols * 20,
+          'One-cell edit uploads one row',
+        );
+        // Sparse damage uploads the two edited rows without their clean gap.
+        before = Number(compositor.cell_upload_bytes);
+        await write(a, `\x1b[1;1Hx\x1b[${a.rows};1Hz`);
+        await verify('disjoint row edits');
+        expect(
+          Number(compositor.cell_upload_bytes) - before === a.cols * 40,
+          'Two disjoint edits upload only two rows',
+        );
+        // Uniform-only cursor changes preserve every physical slot.
+        before = Number(compositor.cell_upload_bytes);
+        await write(a, '\x1b[2;2H');
+        await verify('cursor-only update');
+        expect(
+          Number(compositor.cell_upload_bytes) === before,
+          'Cursor-only update uploads no cells',
+        );
+        renderer.refreshStaging();
+        const source = renderer.rowSources[0],
+          frames = compositor.frames;
+        renderer.rowSources[0] = a.rows;
+        let rejected = false;
+        try {
+          compositor.render_retained();
+        } catch (e) {
+          rejected = String(e).includes('invalid retained row source');
+        }
+        renderer.rowSources[0] = source;
+        expect(
+          rejected && compositor.frames === frames,
+          'Invalid row source rejects before submission',
+        );
+        renderer.stamp = 0xffffffff;
+        await write(a, '\x1b[4;1Hw');
+        await verify('row stamp wraparound');
       } finally {
-        compositor.render_staged = staged;
+        compositor.render_retained = staged;
         a.options.scrollback = options.scrollback;
       }
-      checks.push('reused and scrolled rows equal a full repack and every change is submitted');
+      checks.push(
+        'retained GPU rows survive scrolling, sparse edits, selection, stamp wrap and invalid sources',
+      );
     }
     a.reset();
     b.reset();
@@ -400,7 +480,7 @@ try {
     searchA.findNext('Wraith', { decorations });
     searchB.findNext('Wraith', { decorations });
     await frame();
-    expect(a.renderer === 'dom', 'Decorated search fallback');
+    expect(a.renderer === 'webgpu', 'Decorated search stays on GPU');
     searchA.clearDecorations();
     searchB.clearDecorations();
     a.clearSelection();
@@ -408,7 +488,7 @@ try {
     a.refresh(0, a.rows - 1);
     await frame();
     expect(a.renderer === 'webgpu', 'Resume after search decorations');
-    checks.push('original Search addon, decoration fallback and GPU resumption');
+    checks.push('original Search addon with GPU decorations and cleanup');
     const marker = a.registerMarker(0);
     let markerDisposed = false,
       decorationRendered = false;
@@ -419,7 +499,7 @@ try {
     });
     a.refresh(0, a.rows - 1);
     await frame();
-    expect(decorationRendered && a.renderer === 'dom', 'Decoration rendering');
+    expect(decorationRendered && a.renderer === 'webgpu', 'Decoration callback with GPU rendering');
     marker.dispose();
     a.refresh(0, a.rows - 1);
     await frame();
@@ -517,6 +597,9 @@ try {
   await fallbackPage.waitForFunction(() => window.compat);
   assert.equal(await fallbackPage.evaluate(() => window.compat.term.webgpuReady), false);
   assert.equal(await fallbackPage.evaluate(() => window.compat.term.renderer), 'dom');
+  await fallbackPage.waitForFunction(() =>
+    document.querySelector('.xterm-rows')?.textContent.includes('Wraith'),
+  );
   assert.match(await fallbackPage.locator('.xterm-rows').innerText(), /Wraith/);
   await fallbackPage.close();
   checks.push('missing WebGPU preserves a working DOM terminal');
@@ -524,7 +607,7 @@ try {
   const loss = await page.evaluate(async () => {
     const term = window.compat.term;
     const gpu = term.wraithRenderer.gpu;
-    const method = typeof gpu.render_staged === 'function' ? 'render_staged' : 'render';
+    const method = typeof gpu.render_retained === 'function' ? 'render_retained' : 'render_staged';
     gpu[method] = () => {
       throw new Error('simulated device failure');
     };

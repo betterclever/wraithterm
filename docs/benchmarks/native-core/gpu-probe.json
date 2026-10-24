@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-17T11:56:09.837Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "vendor": "apple",
+  "architecture": "metal-3",
+  "device": "",
+  "description": "",
+  "isFallbackAdapter": false,
+  "note": "Separate untimed adapter probe, same Chrome executable/headless launch and no software-GPU flags. Paired benchmark engines report WebGPU adapter (BrowserWebGpu)."
+}

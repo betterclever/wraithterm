@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-17T08:46:37.704Z",
+  "cols": 192,
+  "rows": 54,
+  "captureTimes": [
+    0,
+    2.5,
+    5
+  ],
+  "captureFrames": 3,
+  "verified": [
+    "automatic startup playback",
+    "serialized terminal labels",
+    "192×54 and 240×68 grids",
+    "pause and resume",
+    "replay entrance",
+    "pointer steering",
+    "pulse",
+    "ANSI bytes",
+    "one terminal canvas without scene overlays"
+  ],
+  "errors": [],
+  "frames": 4,
+  "error": null,
+  "stats": {
+    "generationMs": 3.5,
+    "bytes": 107927,
+    "sgrChanges": 3892,
+    "particles": 2560
+  },
+  "canvases": 1,
+  "hasOverlay": false
+}

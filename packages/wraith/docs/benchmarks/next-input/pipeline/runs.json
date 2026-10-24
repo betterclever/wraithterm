@@ -1,0 +1,3917 @@
+{
+  "date": "2026-10-17T10:56:05.085Z",
+  "head": "21869292ae61df01a73807c2a16ce29557066466",
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18
+  },
+  "baselineRef": "21869292ae61df01a73807c2a16ce29557066466",
+  "baselineParser": "/** Copyright (c) 2018 The xterm.js authors. All rights reserved. @license MIT\n * Generated derivative of EscapeSequenceParser.ts (c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef). */\nvar TableAccess;\n(function (TableAccess) {\n    TableAccess[TableAccess[\"TRANSITION_ACTION_SHIFT\"] = 4] = \"TRANSITION_ACTION_SHIFT\";\n    TableAccess[TableAccess[\"TRANSITION_STATE_MASK\"] = 15] = \"TRANSITION_STATE_MASK\";\n    TableAccess[TableAccess[\"INDEX_STATE_SHIFT\"] = 8] = \"INDEX_STATE_SHIFT\";\n})(TableAccess || (TableAccess = {}));\nvar ParserState;\n(function (ParserState) {\n    ParserState[ParserState[\"GROUND\"] = 0] = \"GROUND\";\n    ParserState[ParserState[\"ESCAPE\"] = 1] = \"ESCAPE\";\n})(ParserState || (ParserState = {}));\nvar ParserStackType;\n(function (ParserStackType) {\n    ParserStackType[ParserStackType[\"NONE\"] = 0] = \"NONE\";\n    ParserStackType[ParserStackType[\"FAIL\"] = 1] = \"FAIL\";\n    ParserStackType[ParserStackType[\"RESET\"] = 2] = \"RESET\";\n    ParserStackType[ParserStackType[\"CSI\"] = 3] = \"CSI\";\n    ParserStackType[ParserStackType[\"ESC\"] = 4] = \"ESC\";\n    ParserStackType[ParserStackType[\"OSC\"] = 5] = \"OSC\";\n    ParserStackType[ParserStackType[\"DCS\"] = 6] = \"DCS\";\n})(ParserStackType || (ParserStackType = {}));\nvar ParserAction;\n(function (ParserAction) {\n    ParserAction[ParserAction[\"IGNORE\"] = 0] = \"IGNORE\";\n    ParserAction[ParserAction[\"ERROR\"] = 1] = \"ERROR\";\n    ParserAction[ParserAction[\"PRINT\"] = 2] = \"PRINT\";\n    ParserAction[ParserAction[\"EXECUTE\"] = 3] = \"EXECUTE\";\n    ParserAction[ParserAction[\"OSC_START\"] = 4] = \"OSC_START\";\n    ParserAction[ParserAction[\"OSC_PUT\"] = 5] = \"OSC_PUT\";\n    ParserAction[ParserAction[\"OSC_END\"] = 6] = \"OSC_END\";\n    ParserAction[ParserAction[\"CSI_DISPATCH\"] = 7] = \"CSI_DISPATCH\";\n    ParserAction[ParserAction[\"PARAM\"] = 8] = \"PARAM\";\n    ParserAction[ParserAction[\"COLLECT\"] = 9] = \"COLLECT\";\n    ParserAction[ParserAction[\"ESC_DISPATCH\"] = 10] = \"ESC_DISPATCH\";\n    ParserAction[ParserAction[\"CLEAR\"] = 11] = \"CLEAR\";\n    ParserAction[ParserAction[\"DCS_HOOK\"] = 12] = \"DCS_HOOK\";\n    ParserAction[ParserAction[\"DCS_PUT\"] = 13] = \"DCS_PUT\";\n    ParserAction[ParserAction[\"DCS_UNHOOK\"] = 14] = \"DCS_UNHOOK\";\n})(ParserAction || (ParserAction = {}));\nconst NON_ASCII_PRINTABLE = 0xa0;\nfunction installParameterBatching(terminal) {\n    const parser = terminal?._core?._inputHandler?._parser;\n    const p = parser?._params;\n    if (typeof parser?.parse !== 'function' || !(p?.params instanceof Int32Array) ||\n        typeof p.addParam !== 'function' || typeof p.addSubParam !== 'function' ||\n        typeof p.addDigit !== 'function' || typeof p._digitIsSub !== 'boolean' ||\n        typeof p._rejectDigits !== 'boolean' || !parser._parseStack ||\n        !(parser._transitions?.table instanceof Uint8Array))\n        return false;\n    parser.parse = fastParse;\n    return true;\n}\nfunction fastParse(data, length, promiseResult) {\n    let code = 0;\n    let transition = 0;\n    let start = 0;\n    let handlerResult;\n    // resume from async handler\n    if (this._parseStack.state) {\n        // allow sync parser reset even in continuation mode\n        // Note: can be used to recover parser from improper continuation error below\n        if (this._parseStack.state === ParserStackType.RESET) {\n            this._parseStack.state = ParserStackType.NONE;\n            start = this._parseStack.chunkPos + 1; // continue with next codepoint in GROUND\n        }\n        else {\n            if (promiseResult === undefined || this._parseStack.state === ParserStackType.FAIL) {\n                /**\n                 * Reject further parsing on improper continuation after pausing. This is a really bad\n                 * condition with screwed up execution order and prolly messed up terminal state,\n                 * therefore we exit hard with an exception and reject any further parsing.\n                 *\n                 * Note: With `Terminal.write` usage this exception should never occur, as the top level\n                 * calls are guaranteed to handle async conditions properly. If you ever encounter this\n                 * exception in your terminal integration it indicates, that you injected data chunks to\n                 * `InputHandler.parse` or `EscapeSequenceParser.parse` synchronously without waiting for\n                 * continuation of a running async handler.\n                 *\n                 * It is possible to get rid of this error by calling `reset`. But dont rely on that, as\n                 * the pending async handler still might mess up the terminal later. Instead fix the\n                 * faulty async handling, so this error will not be thrown anymore.\n                 */\n                this._parseStack.state = ParserStackType.FAIL;\n                throw new Error('improper continuation due to previous async handler, giving up parsing');\n            }\n            // we have to resume the old handler loop if:\n            // - return value of the promise was `false`\n            // - handlers are not exhausted yet\n            const handlers = this._parseStack.handlers;\n            let handlerPos = this._parseStack.handlerPos - 1;\n            switch (this._parseStack.state) {\n                case ParserStackType.CSI:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos](this._params);\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case ParserStackType.ESC:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos]();\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case ParserStackType.DCS:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= ParserState.ESCAPE;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n                case ParserStackType.OSC:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= ParserState.ESCAPE;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n            }\n            // cleanup before continuing with the main sync loop\n            this._parseStack.state = ParserStackType.NONE;\n            start = this._parseStack.chunkPos + 1;\n            this.precedingJoinState = 0;\n            this.currentState = this._parseStack.transition & TableAccess.TRANSITION_STATE_MASK;\n        }\n    }\n    // continue with main sync loop\n    // process input string\n    for (let i = start; i < length; ++i) {\n        code = data[i];\n        // normal transition & action lookup\n        transition = this._transitions.table[this.currentState << TableAccess.INDEX_STATE_SHIFT | (code < 0xa0 ? code : NON_ASCII_PRINTABLE)];\n        switch (transition >> TableAccess.TRANSITION_ACTION_SHIFT) {\n            case ParserAction.PRINT:\n                // read ahead with loop unrolling\n                // Note: 0x20 (SP) is included, 0x7F (DEL) is excluded\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.EXECUTE:\n                if (this._executeHandlers[code])\n                    this._executeHandlers[code]();\n                else\n                    this._executeHandlerFb(code);\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.IGNORE:\n                break;\n            case ParserAction.ERROR:\n                const inject = this._errorHandler({\n                    position: i,\n                    code,\n                    currentState: this.currentState,\n                    collect: this._collect,\n                    params: this._params,\n                    abort: false\n                });\n                if (inject.abort)\n                    return;\n                // inject values: currently not implemented\n                break;\n            case ParserAction.CSI_DISPATCH:\n                // Trigger CSI Handler\n                const handlers = this._csiHandlers[this._collect << 8 | code];\n                let j = handlers ? handlers.length - 1 : -1;\n                for (; j >= 0; j--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlers[j](this._params);\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(ParserStackType.CSI, handlers, j, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (j < 0) {\n                    this._csiHandlerFb(this._collect << 8 | code, this._params);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.PARAM: {\n                const p = this._params;\n                // A colon at the first position must enter the upstream subparam path.\n                if (code !== 0x3a && !p._digitIsSub && !p._rejectDigits && p.length) {\n                    const store = p.params;\n                    let index = p.length - 1;\n                    let value = store[index];\n                    do {\n                        if (code === 0x3b) {\n                            store[index] = value;\n                            p.addParam(0);\n                            if (p._rejectDigits)\n                                break;\n                            index++;\n                            value = 0;\n                        }\n                        else {\n                            value = value * 10 + code - 48;\n                            if (value > 0x7fffffff)\n                                value = 0x7fffffff;\n                        }\n                    } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c && code !== 0x3a);\n                    store[index] = value;\n                    if (i === length || code < 0x30 || code > 0x3b) {\n                        i--;\n                        break;\n                    }\n                }\n                do {\n                    switch (code) {\n                        case 0x3b:\n                            p.addParam(0);\n                            break;\n                        case 0x3a:\n                            p.addSubParam(-1);\n                            break;\n                        default: p.addDigit(code - 48);\n                    }\n                } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c);\n                i--;\n                break;\n            }\n            case ParserAction.COLLECT:\n                this._collect <<= 8;\n                this._collect |= code;\n                break;\n            case ParserAction.ESC_DISPATCH:\n                const handlersEsc = this._escHandlers[this._collect << 8 | code];\n                let jj = handlersEsc ? handlersEsc.length - 1 : -1;\n                for (; jj >= 0; jj--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlersEsc[jj]();\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(ParserStackType.ESC, handlersEsc, jj, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (jj < 0) {\n                    this._escHandlerFb(this._collect << 8 | code);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.CLEAR:\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                break;\n            case ParserAction.DCS_HOOK:\n                this._dcsParser.hook(this._collect << 8 | code, this._params);\n                break;\n            case ParserAction.DCS_PUT:\n                // inner loop - exit DCS_PUT: 0x18, 0x1a, 0x1b, 0x7f, 0x80 - 0x9f\n                // unhook triggered by: 0x1b, 0x9c (success) and 0x18, 0x1a (abort)\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) === 0x18 || code === 0x1a || code === 0x1b || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._dcsParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.DCS_UNHOOK:\n                handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(ParserStackType.DCS, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= ParserState.ESCAPE;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.OSC_START:\n                this._oscParser.start();\n                break;\n            case ParserAction.OSC_PUT:\n                // inner loop: 0x20 (SP) included, 0x7F (DEL) included\n                for (let j = i + 1;; j++) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._oscParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.OSC_END:\n                handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(ParserStackType.OSC, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= ParserState.ESCAPE;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n        }\n        this.currentState = transition & TableAccess.TRANSITION_STATE_MASK;\n    }\n}\n",
+  "baselineSgr": "function (params) {\n        const values = params.params;\n        const attr = this._curAttrData;\n        let fg = attr.fg, bg = attr.bg, reset = false;\n        // Validate the entire supported sequence in locals before changing state.\n        // Any colon or unsupported attribute replays the original action from its\n        // original state, preserving extended attributes and upstream diagnostics.\n        for (let i = 0; i < params.length; i++) {\n            if (params.hasSubParams(i))\n                return attributes.call(this, params);\n            const code = values[i];\n            switch (code) {\n                case 0:\n                    fg = bg = 0;\n                    reset = true;\n                    break;\n                case 1:\n                    fg |= 0x8000000;\n                    break;\n                case 2:\n                    bg |= 0x8000000;\n                    break;\n                case 3:\n                    bg |= 0x4000000;\n                    break;\n                case 7:\n                    fg |= 0x4000000;\n                    break;\n                case 8:\n                    fg |= 0x40000000;\n                    break;\n                case 9:\n                    fg |= 0x80000000;\n                    break;\n                case 38:\n                case 48: {\n                    const mode = values[i + 1];\n                    const advance = mode === 2 ? 4 : mode === 5 ? 2 : 0;\n                    if (!advance || i + advance >= params.length)\n                        return attributes.call(this, params);\n                    for (let j = i + 1; j <= i + advance; j++)\n                        if (params.hasSubParams(j))\n                            return attributes.call(this, params);\n                    const old = code === 38 ? fg : bg;\n                    const color = mode === 2\n                        ? (old & ~0x3ffffff) |\n                            0x3000000 |\n                            ((values[i + 2] & 255) << 16) |\n                            ((values[i + 3] & 255) << 8) |\n                            (values[i + 4] & 255)\n                        : (old & ~0x30000ff) | 0x2000000 | (values[i + 2] & 255);\n                    if (code === 38)\n                        fg = color;\n                    else\n                        bg = color;\n                    i += advance;\n                    break;\n                }\n                default:\n                    return attributes.call(this, params);\n            }\n        }\n        if (reset) {\n            // Upstream owns extended-attribute reset/cloning and hyperlink retention.\n            this._processSGR0(attr);\n            bg |= attr.bg & 0x10000000;\n        }\n        attr.fg = fg;\n        attr.bg = bg;\n        return true;\n    };",
+  "pairs": 40,
+  "framesPerBlock": 32,
+  "stage": "GPU-completed pipeline",
+  "method": "Same terminal and GPU device. Warm each action 256 updates. Alternate baseline/current production parser and SGR actions in configurable blocks. Pipeline mode fences every 32 updates and at block end; CPU-only mode never submits a GPU frame. All submissions counted. No other benchmark agents run concurrently; unrelated desktop activity remains possible. Baseline actions extracted from the recorded immutable Git commit; remaining code and workload bytes shared. Neither mode measures presentation FPS.",
+  "sources": {
+    "scripts/paired-next-input.mjs": "8032bb5b999040baf30a6a7be7a0aa4ae2fd7c0d8aacac43b03498cbdd94eec8",
+    "scripts/generate-xterm-parser.mjs": "e86b4c1709c9403e058127eb0bb7730a06d32d08a467d3bceceb278b5cb3f5ee",
+    "packages/wraith/src/xterm-parser.js": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42",
+    "packages/wraith/src/xterm-print.ts": "35704512abaf17490fe6b4271be674460e7134afa5723bc805444c7e350f5600",
+    "demo/compare.js": "8667d54a0773a618ed3f406edca4c9ecf21222fcfafefd2a9546496a3b9fb7ae",
+    "demo/showcase.js": "319443683eacf195961bbbe5da363e4d2c2bfd3525a5e64b10492b6f3b3a2cad",
+    "demo/pipes-scene.js": "9f13ae983cb2f5064d82456a55a4973a71a0d3acf6d3976b5d2b69606d9a48f1",
+    "packages/wraith/src/xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147",
+    "packages/wraith/src/xterm-input.ts": "fcb5ecdf479a1a8996eb5146d5a77d2ea4a1821e4c974dab4b99793ba5326c1e",
+    "packages/wraith/src/xterm-renderer.ts": "15c5b4b9845f897dd5ff41a91e9f1c6f9b7d51a5e44b5674a2e9278990077290",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552"
+  },
+  "results": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 68.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 467.15328467153284
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 63.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.14465409099745
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 63.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 506.3291139300197
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 66.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.0419161756792
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 66.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.203007518797
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 64.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 497.66718506421785
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 63.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.5673981132649
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 67.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761957558
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 67.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.0740740740741
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 66.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.0419161623216
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 63.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 505.52922591729816
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 67.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.67355981494455
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 63.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 502.3547880749495
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 67.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761825568
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 67,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 477.6119402985075
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 63.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.14465409099745
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 63.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 507.1315372454663
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 67.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.9001490339443
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 67.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 475.4829123275741
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 64.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 494.5904173163601
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 64.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 498.44236759256927
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 66.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.0419161756792
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 67.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 475.4829123275741
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 63.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 502.3547880749495
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 64.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 498.44236759256927
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 68.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 464.44121915568917
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 67.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.9001490339443
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 64.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.82716050234404
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 63.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 505.52922590242264
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 67.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.77744806859243
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 68.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 467.15328467153284
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 67.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.77744806859243
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 64.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.06625577528996
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 63.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.56739812790823
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 67.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.9001490339443
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 66.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.203007518797
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 63.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 502.3547880602602
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 63.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 504.73186119577247
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 66.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.92771085418866
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 67.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761825568
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 64.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 497.6671850786343
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 67.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 475.4829123275741
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 66.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.0419161756792
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 63,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 507.93650793650795
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 64.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371402765
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 67,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 477.6119402985075
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 66.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.92771085418866
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 63.600000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.1446540762619
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 63.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 507.1315372454663
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 66.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.760119945389
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 66.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 482.65460029623523
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 63.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.5673981132649
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 67.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761957558
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 66.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.760119945389
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 62.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 508.7440381527898
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 63,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 507.93650793650795
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 66.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 483.38368579244377
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 66.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.203007518797
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 64.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.82716050234404
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 67.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761825568
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 67.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761957558
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 63.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.5673981132649
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 66.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 481.9277108406697
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 66.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 479.760119945389
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 67.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.77744806859243
+        }
+      ]
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 67.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.0740740740741
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 64.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.82716050234404
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 64.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.82716050234404
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 68.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 465.1162790647305
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 68.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 468.5212298758948
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 64.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.06625577528996
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 64.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.89440993501387
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 68.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 467.8362573073935
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 67.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 474.0740740740741
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 65.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 489.2966360828398
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 68.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 467.8362573073935
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 67.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 473.3727810676974
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 64.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 494.5904173163601
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 68.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 467.15328467153284
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 67.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.6735598279493
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 65.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 490.79754600385724
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 64.89999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.0662557894411
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 67.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.9764011747544
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 64,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 64.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 494.5904173163601
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 68.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 469.2082111360061
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 68.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 468.5212298758948
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 64.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 498.44236759256927
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 67.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.97640118772085
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 68.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 468.52122986311747
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 65.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 491.5514592962076
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 65.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 489.2966360828398
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 67.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.6735598279493
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 67.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.67355981494455
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 66.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 484.1149773098388
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 65.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 487.0624048623389
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 68.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 466.47230320953025
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 67.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.6735598279493
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 64.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 494.5904173163601
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 68.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 469.2082111488209
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 68.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 469.2082111488209
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 68.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 466.47230320953025
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 65.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 491.5514592962076
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 65,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 492.3076923076923
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 69.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 459.1104734625834
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 64.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 497.66718506421785
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 65.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 490.7975460178784
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 67.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 473.3727810546541
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 67.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.1904761957558
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 68.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 465.1162790773228
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 67.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.67355981494455
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 65.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 487.80487805155065
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 68,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 470.5882352941176
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 68,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 470.5882352941176
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 65.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 490.7975460178784
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 67.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 471.2812960209784
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 67.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 475.48291234073395
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 65.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 487.80487805155065
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 64.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.8271604881492
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 68.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 466.47230320953025
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 70.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 451.97740112518716
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 64.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 494.5904173163601
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 65,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 492.3076923076923
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 69.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 463.0969609286906
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 69.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 458.45272205814365
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 65.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 490.0459418014531
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 66.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 483.3836858060445
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 69.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 463.0969609286906
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 67.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 472.67355981494455
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 65.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 490.0459418154314
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 69.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 461.0951008620782
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 5.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5423.728813216865
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 10.300000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3106.796116280122
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 5.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5714.285714665846
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 10.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3018.8679246343977
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 5.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5517.2413786016095
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 10.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3047.6190476190477
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 5.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5614.03508845312
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 10.300000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3106.796116280122
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 5.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5714.285714665846
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 10.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3018.8679246343977
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 5.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5714.285714665846
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 9.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3232.3232322016024
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 6,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5333.333333333333
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 11.200000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2857.1428568577585
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 14.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2191.780821973733
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 7.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4210.526315995861
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 11,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2909.090909090909
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 5.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5517.2413786016095
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 10.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3106.796116841953
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 5.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5614.035086618566
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 10.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3018.8679246343977
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 5.799999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5517.241380373448
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 11.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2807.0175437679213
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 6.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.6811591699025
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 12.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2539.6825397576276
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 11.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2689.0756301679194
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 9.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3368.4210526315787
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 12.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2644.628099254975
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 12,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2666.6666666666665
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 7.100000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4507.042252575209
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 11.799999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2711.864407036504
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 7.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4266.666666666667
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 12.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2499.999999854481
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 12.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2580.645161212793
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 6.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4848.484848758515
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 12,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2666.6666666666665
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 6.799999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4705.882353714594
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 12.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2580.645161212793
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 13,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2461.5384615384614
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 8.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3764.705882352941
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 12.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2560
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 11.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2807.0175437679213
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 6.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4705.882352425565
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 10.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2935.7798169151056
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 6.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.6811591699025
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 12.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2560
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 12.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2539.6825397576276
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 6.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4776.119402188398
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 13.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2442.7480916725185
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 13.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2442.7480916725185
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 7.200000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4444.444443754576
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 13.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2388.0597014261475
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 17.199999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 1860.4651163596602
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 15.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2064.516129032258
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 13.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2302.1582733195955
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 7.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4210.526315995861
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 12.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2480.6201549671237
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 12.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2644.628099254975
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 7.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4324.32432410663
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 12.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2519.6850395178985
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 12.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2601.6260164965483
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 7.300000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4383.561643388218
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 12.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2601.6260164965483
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 6.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.6811591699025
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 12.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2539.6825397576276
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 13.200000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2424.2424240371743
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 6.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.6811591699025
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 12.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2480.6201549671237
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 12.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2580.645161212793
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 6.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.681160421838
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 27.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 1159.4202898707217
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 7.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4155.8441562462785
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 15.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2038.216560364466
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 13.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2302.1582736280925
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 12.600000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2539.6825393821887
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 6.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4637.6811591699025
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 12,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2666.6666666666665
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 15.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2091.50326812663
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 7.900000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4050.632911201395
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 13.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2370.3703703703704
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 48.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 655.73770493305
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 46.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 692.6406926518628
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 46.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 685.22483938403
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 49.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 642.5702811389183
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 49.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 649.0872210855252
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 46.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 683.760683777012
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 47,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 680.8510638297872
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 49.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 643.8631790840989
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 49.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 642.5702811148846
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 45.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 698.6899563489268
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 47.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 676.5327695720102
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 47.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 670.8595387683492
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 49.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 649.0872211100489
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 47,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 680.8510638297872
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 46.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 689.6551724082561
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 50.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 633.6633663366337
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 49.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 645.1612903274263
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 45.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 698.6899563205117
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 46.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 691.1447084122043
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 48.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 662.525879932514
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 48.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 662.5258799069644
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 42.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 754.7169811254445
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 40.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 798.0049875385855
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 47.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 675.1054852267616
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 46.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 682.3027718495911
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 44.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 722.347629784691
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 51.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 616.5703275706891
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 46.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 685.22483938403
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 41.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 774.8184019580127
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 39.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 804.0201004874613
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 41.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 763.723150351205
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 49.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 647.7732793473418
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 48.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 654.3967280363012
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 45.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 706.4017659927966
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 45,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 711.1111111111111
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 46.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 683.7606837497982
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 49,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 653.0612244897959
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 45.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 706.4017660218425
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 45.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 706.4017659927966
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 47.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 668.058455109627
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 44.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 719.1011235955057
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 44.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 725.6235827725695
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 45.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 697.1677559856271
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 42.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 752.9411764705883
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 44.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 715.8836689157355
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 42.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 754.7169811254445
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 39.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 804.0201005250896
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 44,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 727.2727272727273
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 44.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 719.1011235955057
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 39.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 802.0050125612802
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 39.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 802.0050125238404
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 40.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 792.0792079134883
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 42.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 754.7169811254445
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 38.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091384055811
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 38.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 837.6963350540262
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 42.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 747.6635514213921
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 43.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 728.9293849596459
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 39.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 804.0201004874613
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 38.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 839.8950131315718
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 40.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 788.1773399087099
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 40.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 794.0446649977268
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 38.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 839.8950131315718
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 38.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 829.0155440494516
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 40.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 792.0792079134883
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 39.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 806.045340065505
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 38.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091383649477
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 37.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 844.3271767727035
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 40.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 798.0049875385855
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 40.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 796.0199004753825
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 37.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 844.3271767727035
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 38,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 842.1052631578947
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 40.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 790.1234567901234
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 40.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 794.0446650344271
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 37.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 844.3271767727035
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 38.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 833.333333325249
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 42.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 758.2938388424773
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 39.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 802.0050125612802
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 38.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 833.333333325249
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 37.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 848.8063660225831
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 39.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 804.0201005250896
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 128.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.25446082162543
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 112.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.9396628235275
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 113.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 281.9383259911894
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 129.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.86986831627146
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 112.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.69750890057145
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 112.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.44444444444446
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 128.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.2211837999
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 129.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.8698683198477
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 110.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 289.85507246279
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 111,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 288.2882882882883
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 128.89999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.2544608252128
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 129,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.06201550387595
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 113.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 282.9354553455207
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 111.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 286.48164727138266
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 129.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.6780185772797
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 129.2999999988824,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.4864655860525
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 112,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.7142857142857
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 113,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.1858407079646
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 127.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 250.19546520646438
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 128.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.64024864168803
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 111.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 286.99551569506724
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 112.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.93966281883473
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 128,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 250
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 128.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.25446082162543
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 111.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 286.22540250733346
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 112.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.2049910845032
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 129.2999999988824,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.4864655860525
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 130.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 245.21072796934865
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 111.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 286.4816472666055
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 112.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.44444444444446
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 128.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.83359253571305
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 128.7999999988824,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.44720497109986
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 111.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.96961572737683
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 114.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 279.7202797193688
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 130.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 244.8355011490621
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 132.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 242.24072671944765
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 111.89999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.96961573213696
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 111,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 288.2882882882883
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 128.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.80483996950085
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 128.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.25446082162543
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 112.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.95102404557844
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 112.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.43666961819673
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 128.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.80483996950085
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 129.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.8698683198477
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 112,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.7142857142857
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 112.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.69750889585356
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 129,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.06201550387595
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 129.2000000011176,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.67801857370895
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 112.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.68794326522203
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 113,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.1858407079646
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 129.2000000011176,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.67801857370895
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 111.89999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.96961573213696
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 112.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.95102404085213
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 128,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 250
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 128.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.64024864168803
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 112.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 283.93966281883473
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 112,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.7142857142857
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 128.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.64024864168803
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 111.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.96961572737683
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 112.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.44444444444446
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 128.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.25446082162543
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 111.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.96961572737683
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 112.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.69750889585356
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 128.7999999988824,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.44720497109986
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 112.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.19182948584256
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 112.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.2049910845032
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 128.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 248.83359253571305
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 128.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.0272373540856
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 113.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 281.4423922621785
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 112.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.1918294811414
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 128.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 249.2211837999
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 129.2999999988824,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.4864655860525
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 112,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.7142857142857
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 112.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 285.45941124091297
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 129.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 247.29520865462035
+        }
+      ]
+    },
+    {
+      "workload": "complex",
+      "dpr": 2,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 74.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 429.5302013422819
+        },
+        {
+          "pair": 0,
+          "kind": "production",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 1,
+          "kind": "production",
+          "elapsedMs": 65.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 488.5496183206107
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 68.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 465.7933042263034
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 79.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 400.50062578036045
+        },
+        {
+          "pair": 2,
+          "kind": "production",
+          "elapsedMs": 76.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 419.39711664072775
+        },
+        {
+          "pair": 3,
+          "kind": "production",
+          "elapsedMs": 70.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 455.84045584529383
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 79.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 404.04040403470265
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 80.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 396.0396039658739
+        },
+        {
+          "pair": 4,
+          "kind": "production",
+          "elapsedMs": 78,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 410.2564102564103
+        },
+        {
+          "pair": 5,
+          "kind": "production",
+          "elapsedMs": 75,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 426.6666666666667
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 79.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 402.5157232704403
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 78.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 408.68454661169227
+        },
+        {
+          "pair": 6,
+          "kind": "production",
+          "elapsedMs": 75.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 423.841059602649
+        },
+        {
+          "pair": 7,
+          "kind": "production",
+          "elapsedMs": 75.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 423.841059602649
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 79.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 401.0025062619202
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 79.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 404.5512010132833
+        },
+        {
+          "pair": 8,
+          "kind": "production",
+          "elapsedMs": 76.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 420.49934297183506
+        },
+        {
+          "pair": 9,
+          "kind": "production",
+          "elapsedMs": 75.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 422.72126816796504
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 79.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 402.01005024373063
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 79.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 404.040404044205
+        },
+        {
+          "pair": 10,
+          "kind": "production",
+          "elapsedMs": 76.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 417.2099087393852
+        },
+        {
+          "pair": 11,
+          "kind": "production",
+          "elapsedMs": 75.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 421.6073781270479
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 77.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 411.8404118344882
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 77.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 411.8404118443609
+        },
+        {
+          "pair": 12,
+          "kind": "production",
+          "elapsedMs": 73.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 434.7826086978528
+        },
+        {
+          "pair": 13,
+          "kind": "production",
+          "elapsedMs": 74.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 431.8488528928002
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 77.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 411.31105399048425
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 14,
+          "kind": "production",
+          "elapsedMs": 73.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 433.0175913374653
+        },
+        {
+          "pair": 15,
+          "kind": "production",
+          "elapsedMs": 74.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 428.380187409923
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 78.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 407.12468193577183
+        },
+        {
+          "pair": 16,
+          "kind": "production",
+          "elapsedMs": 75.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 424.4031830217758
+        },
+        {
+          "pair": 17,
+          "kind": "production",
+          "elapsedMs": 74.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 427.8074866374079
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 77.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 414.50777201472476
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 18,
+          "kind": "production",
+          "elapsedMs": 74.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 428.9544235946354
+        },
+        {
+          "pair": 19,
+          "kind": "production",
+          "elapsedMs": 74.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 428.380187409923
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 77,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 415.5844155844156
+        },
+        {
+          "pair": 20,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 20,
+          "kind": "production",
+          "elapsedMs": 74.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 430.6864064667743
+        },
+        {
+          "pair": 21,
+          "kind": "production",
+          "elapsedMs": 73.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 434.19267299205904
+        },
+        {
+          "pair": 21,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 22,
+          "kind": "baseline",
+          "elapsedMs": 77,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 415.5844155844156
+        },
+        {
+          "pair": 22,
+          "kind": "production",
+          "elapsedMs": 75,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 426.6666666666667
+        },
+        {
+          "pair": 23,
+          "kind": "production",
+          "elapsedMs": 74.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 427.8074866267548
+        },
+        {
+          "pair": 23,
+          "kind": "baseline",
+          "elapsedMs": 77.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 414.5077720247258
+        },
+        {
+          "pair": 24,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 24,
+          "kind": "production",
+          "elapsedMs": 74.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 431.84885290365554
+        },
+        {
+          "pair": 25,
+          "kind": "production",
+          "elapsedMs": 74.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 428.380187409923
+        },
+        {
+          "pair": 25,
+          "kind": "baseline",
+          "elapsedMs": 77.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 411.31105399048425
+        },
+        {
+          "pair": 26,
+          "kind": "baseline",
+          "elapsedMs": 78.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 407.64331210191085
+        },
+        {
+          "pair": 26,
+          "kind": "production",
+          "elapsedMs": 74.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 429.5302013422819
+        },
+        {
+          "pair": 27,
+          "kind": "production",
+          "elapsedMs": 74.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 430.10752689033484
+        },
+        {
+          "pair": 27,
+          "kind": "baseline",
+          "elapsedMs": 77.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 415.04539558212105
+        },
+        {
+          "pair": 28,
+          "kind": "baseline",
+          "elapsedMs": 76.89999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 416.12483745929876
+        },
+        {
+          "pair": 28,
+          "kind": "production",
+          "elapsedMs": 74.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 431.84885290365554
+        },
+        {
+          "pair": 29,
+          "kind": "production",
+          "elapsedMs": 74.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 431.2668463655164
+        },
+        {
+          "pair": 29,
+          "kind": "baseline",
+          "elapsedMs": 77.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 412.3711340225982
+        },
+        {
+          "pair": 30,
+          "kind": "baseline",
+          "elapsedMs": 78.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 408.163265304183
+        },
+        {
+          "pair": 30,
+          "kind": "production",
+          "elapsedMs": 69.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 457.7968526441982
+        },
+        {
+          "pair": 31,
+          "kind": "production",
+          "elapsedMs": 67.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 476.9001490339443
+        },
+        {
+          "pair": 31,
+          "kind": "baseline",
+          "elapsedMs": 74.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 429.5302013422819
+        },
+        {
+          "pair": 32,
+          "kind": "baseline",
+          "elapsedMs": 72.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 441.9889502739689
+        },
+        {
+          "pair": 32,
+          "kind": "production",
+          "elapsedMs": 69.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 463.0969609286906
+        },
+        {
+          "pair": 33,
+          "kind": "production",
+          "elapsedMs": 71.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 450.07032349040315
+        },
+        {
+          "pair": 33,
+          "kind": "baseline",
+          "elapsedMs": 72.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 443.8280166343779
+        },
+        {
+          "pair": 34,
+          "kind": "baseline",
+          "elapsedMs": 71.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 445.68245126041904
+        },
+        {
+          "pair": 34,
+          "kind": "production",
+          "elapsedMs": 69.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 457.7968526441982
+        },
+        {
+          "pair": 35,
+          "kind": "production",
+          "elapsedMs": 71.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 449.43820225189404
+        },
+        {
+          "pair": 35,
+          "kind": "baseline",
+          "elapsedMs": 72.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 441.9889502739689
+        },
+        {
+          "pair": 36,
+          "kind": "baseline",
+          "elapsedMs": 68.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 468.52122986311747
+        },
+        {
+          "pair": 36,
+          "kind": "production",
+          "elapsedMs": 65.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 486.32218845810803
+        },
+        {
+          "pair": 37,
+          "kind": "production",
+          "elapsedMs": 65.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 487.8048780376999
+        },
+        {
+          "pair": 37,
+          "kind": "baseline",
+          "elapsedMs": 74.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 428.38018742060467
+        },
+        {
+          "pair": 38,
+          "kind": "baseline",
+          "elapsedMs": 71.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 447.5524475524476
+        },
+        {
+          "pair": 38,
+          "kind": "production",
+          "elapsedMs": 69.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 457.7968526441982
+        },
+        {
+          "pair": 39,
+          "kind": "production",
+          "elapsedMs": 69.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 459.77011494498964
+        },
+        {
+          "pair": 39,
+          "kind": "baseline",
+          "elapsedMs": 72.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 442.60027662061185
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  }
+}

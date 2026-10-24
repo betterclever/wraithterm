@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-12T03:29:21.783Z",
+  "repetitions": 3,
+  "frames": 1024,
+  "groups": [
+    {
+      "kind": "baseline",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 323.07935005521375,
+      "range": [
+        322.43844070664284,
+        329.88627943434005
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 1.962500000372529,
+      "redrawMeanMs": 0.8094726566341706
+    },
+    {
+      "kind": "params",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 347.6017515897646,
+      "range": [
+        325.22390904263193,
+        380.41459246432316
+      ],
+      "ratioToBaseline": 1.0759021012341397,
+      "parseMeanMs": 1.6687500001862645,
+      "redrawMeanMs": 0.7405273435870185
+    },
+    {
+      "kind": "print",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 346.7894879492469,
+      "range": [
+        317.7164132795532,
+        372.81100957674454
+      ],
+      "ratioToBaseline": 1.0733879707569707,
+      "parseMeanMs": 1.4406249998137355,
+      "redrawMeanMs": 0.6277343753026798
+    },
+    {
+      "kind": "combined",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 359.4874495348429,
+      "range": [
+        337.55274262001313,
+        382.06104022257836
+      ],
+      "ratioToBaseline": 1.1126908899420747,
+      "parseMeanMs": 1.768750000745058,
+      "redrawMeanMs": 0.8130859375814907
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 319.0925804719056,
+      "range": [
+        318.6060983198507,
+        357.37968100922757
+      ],
+      "ratioToBaseline": 0.9876600916071335,
+      "parseMeanMs": 2.0531250005587935,
+      "redrawMeanMs": 0.8378906250582077
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 322.4079846388748,
+      "range": [
+        290.0356879879829,
+        360.08158098168207
+      ],
+      "ratioToBaseline": 0.9979219797977672,
+      "parseMeanMs": 1.65625,
+      "redrawMeanMs": 0.7762695312849246
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 343.6241610738255,
+      "range": [
+        323.9481176842771,
+        399.9531304906582
+      ],
+      "ratioToBaseline": 1.0635906040268457,
+      "parseMeanMs": 1.764062499627471,
+      "redrawMeanMs": 0.7614257813547738
+    },
+    {
+      "kind": "fused",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 306.4767149538051,
+      "range": [
+        304.5624888476684,
+        319.8600612196417
+      ],
+      "ratioToBaseline": 0.9486112773887551,
+      "parseMeanMs": 1.5437500001862645,
+      "redrawMeanMs": 0.6627929689129815
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "complex",
+      "dpr": 2,
+      "updatesPerSecond": 330.90967846178705,
+      "range": [
+        330.461161133359,
+        333.27908868999185
+      ],
+      "ratioToBaseline": 1.024236548715463,
+      "parseMeanMs": 1.8390624998137355,
+      "redrawMeanMs": 0.8172851561103016
+    }
+  ]
+}

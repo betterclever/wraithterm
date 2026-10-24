@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-11T05:32:59.832Z",
+  "workload": "append",
+  "frames": 512,
+  "warmup": 32,
+  "grid": {
+    "cols": 240,
+    "rows": 80
+  },
+  "measuredSeparatelyFromSpeed": true,
+  "results": [
+    {
+      "type": "wraith",
+      "version": "before",
+      "wasmSha256": "cb823209679769fe8b8f25060401f630f596ba590124ebbe37e2242fc9d1ed20",
+      "frames": 512,
+      "cells": 194188800,
+      "rowMap": 0,
+      "total": 0,
+      "uploadBytesPerUpdate": 379275
+    },
+    {
+      "type": "wraith",
+      "version": "after",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "frames": 512,
+      "cells": 22080000,
+      "rowMap": 161600,
+      "total": 0,
+      "uploadBytesPerUpdate": 43440.625
+    },
+    {
+      "type": "ghostty",
+      "version": "before",
+      "wasmSha256": "cb823209679769fe8b8f25060401f630f596ba590124ebbe37e2242fc9d1ed20",
+      "frames": 512,
+      "cells": 0,
+      "rowMap": 0,
+      "total": 196608000,
+      "uploadBytesPerUpdate": 384000
+    },
+    {
+      "type": "ghostty",
+      "version": "after",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "frames": 512,
+      "cells": 22118400,
+      "rowMap": 163840,
+      "total": 22282240,
+      "uploadBytesPerUpdate": 43520
+    }
+  ]
+}

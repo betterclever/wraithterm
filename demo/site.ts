@@ -1,3 +1,4 @@
+import ghostSprite from './ghost-sprite.json';
 import { Wraith } from '../packages/wraith/dist/index.js';
 const $ = (id: string) => document.getElementById(id)!;
 const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
@@ -42,26 +43,8 @@ type RGB = [number, number, number];
 // The ghost: a little pixel spirit drawn in half-block cells of the same terminal. It follows
 // the pointer with a springy lag and, when the pointer rests, wanders and settles beside the
 // wordmark. 'o' marks the eyes; the last two rows are the wavy tail (two frames).
-const GHOST = [
-  '.....######.....',
-  '...##########...',
-  '..############..',
-  '.##############.',
-  '.###oo####oo###.',
-  '####oo####oo####',
-  '####oo####oo####',
-  '################',
-  '################',
-  '################',
-  '################',
-  '################',
-  '################',
-  '################',
-];
-const TAIL = [
-  ['##.###.###.###.#', '#...#...#...#...'],
-  ['#.###.###.###.##', '..#...#...#...#.'],
-];
+const GHOST = ghostSprite.body;
+const TAIL = ghostSprite.tails;
 const GHOST_W = 16,
   GHOST_H = GHOST.length + 2,
   GHOST_SCALE = 1.25;

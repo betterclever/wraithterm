@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-17",
+  "baselineCommit": "d38e14967b66c79a0661ea5d162a1e590719429d",
+  "baselineWasm": "c517a0e8071a38007a9ca65dd72ee70ca944bc5b131306b166e834a008f1cca3",
+  "candidateWasm": "e279c2da3755e4df0742ff76b975f520240ec9bc035008eae808e8ae382d73d1",
+  "checks": {
+    "build": "engine and SDK passed; optimized with Binaryen 133",
+    "generatedAbi": "100130 raw cells compared with public libghostty getters on each of native and Wasm targets",
+    "native": "44 Rust tests passed",
+    "vitest": "45 tests passed, including 12 ABI schema/offset tests",
+    "typecheck": "passed",
+    "rustfmt": "passed",
+    "demoBuild": "passed; existing large-chunk warning",
+    "wasm": "31 stream boundaries, effects, alternate screens, 100 create/free cycles passed",
+    "pixels": "60 byte-identical frames in native and compatible profiles, DPR 1 and 2",
+    "nativeBrowser": "worker, pixels, input, resize, paste, benchmark smoke and disposal passed",
+    "compatibleBrowser": "20 API, addon, fallback and disposal checks passed",
+    "nativeConsumer": "installed archive Vite dev and production passed",
+    "compatibleConsumer": "unchanged xterm imports, API, addons and GPU pixels passed in Vite dev and production"
+  },
+  "measurementLimits": "Pilot overlapped unrelated browser/video-encoding host load. Browser test throughput is smoke evidence only, not a paired performance claim."
+}

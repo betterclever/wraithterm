@@ -1,15 +1,42 @@
 # Performance
 
-**Current results:** the [efficiency pass](benchmarks/efficiency/REPORT.md)
+The latest [native decoder pass](benchmarks/native-followup/REPORT.md) adds
+3.5% dense, 2.8% style/glyph churn and 3.7% dashboard GPU-completed throughput
+over the already optimized libghostty build. Pipes and log gains are inconclusive.
+It follows the [native core pass](benchmarks/native-core/REPORT.md), which measured
+1.47× dense, 1.26× churn, 1.23× dashboard and 1.14× Pipes throughput against its
+own earlier baseline. These are separate paired experiments; use each report's
+build hashes and conditions rather than comparing absolute rates across reports.
+
+The [latest alternatives study](benchmarks/performance-experiments/REPORT.md)
+tests nine research paths in 162 runs plus 480 short paired triplets. The input
+combination shows about 7% on dense repaint and 12% on the dashboard; another
+2× is not established. SIMD packing and fused print staging do not provide a
+broad pipeline win. These prototypes are isolated from the shipped SDK.
+
+**Compatible SGR results:** the [SGR action pass](benchmarks/sgr-actions/REPORT.md)
+records 75 paired runs plus a separate 4,096-update dense batch. Common xterm
+color/style actions improve dense compatible throughput **14.5% (676 → 774
+completed updates/s)** and dashboard throughput **17.8% (1,002 → 1,180)**.
+The longer dense batch improves **13.3% (677 → 767)**. The 1000-update/s dense
+target remains open. That pass left native code and the GPU renderer unchanged.
+These are GPU-completed batches, not physical display presentations; compare
+within each batch because this is shared hardware.
+
+The earlier [retained GPU row pass](benchmarks/retained-rows/REPORT.md)
+improved compatible log streaming 33% and native log streaming 28%. Its absolute
+rates belong to that historical batch and are not the baseline for the SGR pass.
+
+The earlier [efficiency pass](benchmarks/efficiency/REPORT.md)
 measures both profiles against `a136240` with interleaved runs. Dense
 240×80 updates are 23–60% faster, and log streaming is about 95% faster.
 Redraw CPU drops to 0.3 ms (compat) and 0.5 ms (native). Every scene is
 pixel-identical to the earlier build. Sections below are earlier
 measurements, retained with their original builds.
 
-These measurements cover the **libghostty `Wraith.mount()` worker profile**.
+The older native-only benchmark table below covers the **libghostty `Wraith.mount()` worker profile**.
 The xterm-compatible `Terminal` profile uses a different semantic core and
-browser rasterizer; these throughput figures do not measure that profile.
+browser rasterizer; the native-only table does not measure that profile.
 
 The recorded Chrome suite verifies actual terminal pixels before measuring throughput.
 It ran with default Chrome WebGPU settings on macOS, devicePixelRatio 1, a 13 CSS
@@ -60,7 +87,7 @@ forced Wasm memory growth. All new records carry their source/binary identities.
 The sustained dense run completed **8,192 frames in 3.59 seconds**, averaging
 **2,280 GPU-completed frames/s**. Its CPU p95 was **0.50 ms**.
 
-[Latest native browser verification](benchmarks/chrome.json) includes the exact Wasm SHA-256,
+[Earlier native browser verification](benchmarks/chrome.json) includes the exact Wasm SHA-256,
 Ghostty revision, user agent, all timings, and the pixel assertion summary.
 [An earlier unoptimized run](benchmarks/baseline-chrome.json) is retained for
 context. Runs are observations on this machine, not a controlled A/B comparison.
@@ -94,7 +121,7 @@ feed. This suite does not certify a particular monitor refresh rate.
 
 ## Distribution size
 
-The optimized Wasm module is **2.27 MiB raw / 797 KiB gzip**.
+The earlier optimized Wasm module measured **2.27 MiB raw / 797 KiB gzip**.
 wasm-opt version 133 with -O3 --strip-dwarf reduced it from
 2,931,003 to 2,380,758 bytes. Font data is a separate
 270 KB asset for the libghostty profile. The xterm profile rasterizes CSS fonts
@@ -118,5 +145,6 @@ physical refresh behavior separately on the intended 120/144/240 Hz displays.
 Measure cold Unicode glyph storms, atlas rebuilding, multiple simultaneous
 terminals, large PTY output bursts, and background-to-foreground transitions.
 Optional GPU timestamp queries can separate GPU pass time from CPU time and
-queue/fence overhead. A row-identity mapping could reduce scroll uploads. These
+queue/fence overhead. Physical GPU row retention is implemented. Remaining work
+includes logical CPU row copies and broader cache eligibility for extended/combined cells. These
 should each be backed by a recorded before/after workload.

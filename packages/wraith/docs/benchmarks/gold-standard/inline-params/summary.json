@@ -1,0 +1,127 @@
+{
+  "date": "2026-10-17T08:47:04.083Z",
+  "pairs": 40,
+  "framesPerBlock": 32,
+  "summary": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 891.3649024977142,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 896.3585434126902,
+          "pairedMedianRatio": 1.0056657223849097,
+          "pairedRatioP10": 0.9943820224927798,
+          "pairedRatioP90": 1.0308123249193764
+        }
+      ]
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 881.5426997290414,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 891.3649024977142,
+          "pairedMedianRatio": 1.0112676056442966,
+          "pairedRatioP10": 0.9944903581215624,
+          "pairedRatioP90": 1.0337078651470817
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 6808.510638028046,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 6808.510638028046,
+          "pairedMedianRatio": 0.9791666667434684,
+          "pairedRatioP10": 0.7833333333643774,
+          "pairedRatioP90": 1.2765957446302587
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 1502.3474177878245,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 1516.5876776849545,
+          "pairedMedianRatio": 1.0094786730389156,
+          "pairedRatioP10": 0.9953051643366975,
+          "pairedRatioP90": 1.028037383204414
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 465.79330421998895,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 471.97640118123763,
+          "pairedMedianRatio": 1.0133928571483637,
+          "pairedRatioP10": 1.0043731778262386,
+          "pairedRatioP90": 1.0265095728984368
+        }
+      ]
+    },
+    {
+      "workload": "complex",
+      "dpr": 2,
+      "modes": [
+        {
+          "kind": "baseline",
+          "completedUpdatesPerSecond": 888.8888888888889,
+          "pairedMedianRatio": 1,
+          "pairedRatioP10": 1,
+          "pairedRatioP90": 1
+        },
+        {
+          "kind": "params",
+          "completedUpdatesPerSecond": 896.3585434360739,
+          "pairedMedianRatio": 1.0084507042201052,
+          "pairedRatioP10": 0.9974424552524699,
+          "pairedRatioP90": 1.0225352112623587
+        }
+      ]
+    }
+  ]
+}

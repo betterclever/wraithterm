@@ -1,0 +1,1363 @@
+{
+  "date": "2026-10-17T10:54:55.997Z",
+  "head": "21869292ae61df01a73807c2a16ce29557066466",
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18
+  },
+  "pairs": 20,
+  "framesPerBlock": 32,
+  "method": "Same terminal and GPU device. Warm each action 256 updates. Alternate baseline/folded parser actions every 32 real input updates, fence every block. All submissions counted. No parser/pixel validation or profiling runs concurrently. Fixed current workload bytes; existing SGR acceleration retained in all modes. GPU-completed throughput, not presentation FPS.",
+  "sources": {
+    ".cache/enum-pilot.mjs": "103592526147a8449a91b368e6d6ca03a10fe6b1f735d94694b43980c6280e0e",
+    "scripts/generate-xterm-parser.mjs": "e86b4c1709c9403e058127eb0bb7730a06d32d08a467d3bceceb278b5cb3f5ee",
+    "packages/wraith/src/xterm-parser.js": "910b238be1dcd2c2fe877e2f97265bcab00d9820c87e73680aa8c8f188b51a64",
+    "packages/wraith/src/xterm-print.ts": "35704512abaf17490fe6b4271be674460e7134afa5723bc805444c7e350f5600",
+    "demo/compare.js": "8667d54a0773a618ed3f406edca4c9ecf21222fcfafefd2a9546496a3b9fb7ae",
+    "demo/showcase.js": "319443683eacf195961bbbe5da363e4d2c2bfd3525a5e64b10492b6f3b3a2cad",
+    "demo/pipes-scene.js": "9f13ae983cb2f5064d82456a55a4973a71a0d3acf6d3976b5d2b69606d9a48f1",
+    "packages/wraith/src/xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147",
+    "packages/wraith/src/xterm-input.ts": "fcb5ecdf479a1a8996eb5146d5a77d2ea4a1821e4c974dab4b99793ba5326c1e",
+    "packages/wraith/src/xterm-renderer.ts": "15c5b4b9845f897dd5ff41a91e9f1c6f9b7d51a5e44b5674a2e9278990077290",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552"
+  },
+  "source": {
+    "baseline": "/** Copyright (c) 2018 The xterm.js authors. All rights reserved. @license MIT\n * Generated derivative of EscapeSequenceParser.ts (c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef). */\nvar TableAccess;\n(function (TableAccess) {\n    TableAccess[TableAccess[\"TRANSITION_ACTION_SHIFT\"] = 4] = \"TRANSITION_ACTION_SHIFT\";\n    TableAccess[TableAccess[\"TRANSITION_STATE_MASK\"] = 15] = \"TRANSITION_STATE_MASK\";\n    TableAccess[TableAccess[\"INDEX_STATE_SHIFT\"] = 8] = \"INDEX_STATE_SHIFT\";\n})(TableAccess || (TableAccess = {}));\nvar ParserState;\n(function (ParserState) {\n    ParserState[ParserState[\"GROUND\"] = 0] = \"GROUND\";\n    ParserState[ParserState[\"ESCAPE\"] = 1] = \"ESCAPE\";\n    ParserState[ParserState[\"CSI_ENTRY\"] = 3] = \"CSI_ENTRY\";\n})(ParserState || (ParserState = {}));\nvar ParserStackType;\n(function (ParserStackType) {\n    ParserStackType[ParserStackType[\"NONE\"] = 0] = \"NONE\";\n    ParserStackType[ParserStackType[\"FAIL\"] = 1] = \"FAIL\";\n    ParserStackType[ParserStackType[\"RESET\"] = 2] = \"RESET\";\n    ParserStackType[ParserStackType[\"CSI\"] = 3] = \"CSI\";\n    ParserStackType[ParserStackType[\"ESC\"] = 4] = \"ESC\";\n    ParserStackType[ParserStackType[\"OSC\"] = 5] = \"OSC\";\n    ParserStackType[ParserStackType[\"DCS\"] = 6] = \"DCS\";\n})(ParserStackType || (ParserStackType = {}));\nvar ParserAction;\n(function (ParserAction) {\n    ParserAction[ParserAction[\"IGNORE\"] = 0] = \"IGNORE\";\n    ParserAction[ParserAction[\"ERROR\"] = 1] = \"ERROR\";\n    ParserAction[ParserAction[\"PRINT\"] = 2] = \"PRINT\";\n    ParserAction[ParserAction[\"EXECUTE\"] = 3] = \"EXECUTE\";\n    ParserAction[ParserAction[\"OSC_START\"] = 4] = \"OSC_START\";\n    ParserAction[ParserAction[\"OSC_PUT\"] = 5] = \"OSC_PUT\";\n    ParserAction[ParserAction[\"OSC_END\"] = 6] = \"OSC_END\";\n    ParserAction[ParserAction[\"CSI_DISPATCH\"] = 7] = \"CSI_DISPATCH\";\n    ParserAction[ParserAction[\"PARAM\"] = 8] = \"PARAM\";\n    ParserAction[ParserAction[\"COLLECT\"] = 9] = \"COLLECT\";\n    ParserAction[ParserAction[\"ESC_DISPATCH\"] = 10] = \"ESC_DISPATCH\";\n    ParserAction[ParserAction[\"CLEAR\"] = 11] = \"CLEAR\";\n    ParserAction[ParserAction[\"DCS_HOOK\"] = 12] = \"DCS_HOOK\";\n    ParserAction[ParserAction[\"DCS_PUT\"] = 13] = \"DCS_PUT\";\n    ParserAction[ParserAction[\"DCS_UNHOOK\"] = 14] = \"DCS_UNHOOK\";\n})(ParserAction || (ParserAction = {}));\nconst NON_ASCII_PRINTABLE = 0xa0;\nexport function installParameterBatching(terminal) {\n    const parser = terminal?._core?._inputHandler?._parser;\n    const p = parser?._params;\n    if (typeof parser?.parse !== 'function' || !(p?.params instanceof Int32Array) ||\n        typeof p.addParam !== 'function' || typeof p.addSubParam !== 'function' ||\n        typeof p.addDigit !== 'function' || typeof p._digitIsSub !== 'boolean' ||\n        typeof p._rejectDigits !== 'boolean' || !parser._parseStack ||\n        !(parser._transitions?.table instanceof Uint8Array) ||\n        parser._transitions.table[0x1b] !== 0xb1 ||\n        parser._transitions.table[0x15b] !== 0xb3)\n        return false;\n    parser.parse = fastParse;\n    return true;\n}\nfunction fastParse(data, length, promiseResult) {\n    let code = 0;\n    let transition = 0;\n    let start = 0;\n    let handlerResult;\n    // resume from async handler\n    if (this._parseStack.state) {\n        // allow sync parser reset even in continuation mode\n        // Note: can be used to recover parser from improper continuation error below\n        if (this._parseStack.state === ParserStackType.RESET) {\n            this._parseStack.state = ParserStackType.NONE;\n            start = this._parseStack.chunkPos + 1; // continue with next codepoint in GROUND\n        }\n        else {\n            if (promiseResult === undefined || this._parseStack.state === ParserStackType.FAIL) {\n                /**\n                 * Reject further parsing on improper continuation after pausing. This is a really bad\n                 * condition with screwed up execution order and prolly messed up terminal state,\n                 * therefore we exit hard with an exception and reject any further parsing.\n                 *\n                 * Note: With `Terminal.write` usage this exception should never occur, as the top level\n                 * calls are guaranteed to handle async conditions properly. If you ever encounter this\n                 * exception in your terminal integration it indicates, that you injected data chunks to\n                 * `InputHandler.parse` or `EscapeSequenceParser.parse` synchronously without waiting for\n                 * continuation of a running async handler.\n                 *\n                 * It is possible to get rid of this error by calling `reset`. But dont rely on that, as\n                 * the pending async handler still might mess up the terminal later. Instead fix the\n                 * faulty async handling, so this error will not be thrown anymore.\n                 */\n                this._parseStack.state = ParserStackType.FAIL;\n                throw new Error('improper continuation due to previous async handler, giving up parsing');\n            }\n            // we have to resume the old handler loop if:\n            // - return value of the promise was `false`\n            // - handlers are not exhausted yet\n            const handlers = this._parseStack.handlers;\n            let handlerPos = this._parseStack.handlerPos - 1;\n            switch (this._parseStack.state) {\n                case ParserStackType.CSI:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos](this._params);\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case ParserStackType.ESC:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos]();\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case ParserStackType.DCS:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= ParserState.ESCAPE;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n                case ParserStackType.OSC:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= ParserState.ESCAPE;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n            }\n            // cleanup before continuing with the main sync loop\n            this._parseStack.state = ParserStackType.NONE;\n            start = this._parseStack.chunkPos + 1;\n            this.precedingJoinState = 0;\n            this.currentState = this._parseStack.transition & TableAccess.TRANSITION_STATE_MASK;\n        }\n    }\n    // continue with main sync loop\n    // process input string\n    for (let i = start; i < length; ++i) {\n        code = data[i];\n        // ESC [ has two consecutive CLEAR actions in the pinned table. With\n        // both introducer bytes present in GROUND, one reset is equivalent. Keep\n        // the actual CSI parameter parsing and dispatch (including async hooks)\n        // in the original loop. Incomplete introducers use upstream transitions.\n        if (code === 0x1b && this.currentState === ParserState.GROUND &&\n            i + 2 < length && data[i + 1] === 0x5b) {\n            this._params.reset();\n            this._params.addParam(0);\n            this._collect = 0;\n            this.currentState = ParserState.CSI_ENTRY;\n            i += 2;\n            code = data[i];\n        }\n        // normal transition & action lookup\n        transition = this._transitions.table[this.currentState << TableAccess.INDEX_STATE_SHIFT | (code < 0xa0 ? code : NON_ASCII_PRINTABLE)];\n        switch (transition >> TableAccess.TRANSITION_ACTION_SHIFT) {\n            case ParserAction.PRINT:\n                // read ahead with loop unrolling\n                // Note: 0x20 (SP) is included, 0x7F (DEL) is excluded\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.EXECUTE:\n                if (this._executeHandlers[code])\n                    this._executeHandlers[code]();\n                else\n                    this._executeHandlerFb(code);\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.IGNORE:\n                break;\n            case ParserAction.ERROR:\n                const inject = this._errorHandler({\n                    position: i,\n                    code,\n                    currentState: this.currentState,\n                    collect: this._collect,\n                    params: this._params,\n                    abort: false\n                });\n                if (inject.abort)\n                    return;\n                // inject values: currently not implemented\n                break;\n            case ParserAction.CSI_DISPATCH:\n                // Trigger CSI Handler\n                const handlers = this._csiHandlers[this._collect << 8 | code];\n                let j = handlers ? handlers.length - 1 : -1;\n                for (; j >= 0; j--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlers[j](this._params);\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(ParserStackType.CSI, handlers, j, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (j < 0) {\n                    this._csiHandlerFb(this._collect << 8 | code, this._params);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.PARAM: {\n                const p = this._params;\n                // A colon at the first position must enter the upstream subparam path.\n                if (code !== 0x3a && !p._digitIsSub && !p._rejectDigits && p.length) {\n                    const store = p.params;\n                    let index = p.length - 1;\n                    let value = store[index];\n                    do {\n                        if (code === 0x3b) {\n                            store[index] = value;\n                            p.addParam(0);\n                            if (p._rejectDigits)\n                                break;\n                            index++;\n                            value = 0;\n                        }\n                        else {\n                            value = value * 10 + code - 48;\n                            if (value > 0x7fffffff)\n                                value = 0x7fffffff;\n                        }\n                    } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c && code !== 0x3a);\n                    store[index] = value;\n                    if (i === length || code < 0x30 || code > 0x3b) {\n                        i--;\n                        break;\n                    }\n                }\n                do {\n                    switch (code) {\n                        case 0x3b:\n                            p.addParam(0);\n                            break;\n                        case 0x3a:\n                            p.addSubParam(-1);\n                            break;\n                        default: p.addDigit(code - 48);\n                    }\n                } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c);\n                i--;\n                break;\n            }\n            case ParserAction.COLLECT:\n                this._collect <<= 8;\n                this._collect |= code;\n                break;\n            case ParserAction.ESC_DISPATCH:\n                const handlersEsc = this._escHandlers[this._collect << 8 | code];\n                let jj = handlersEsc ? handlersEsc.length - 1 : -1;\n                for (; jj >= 0; jj--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlersEsc[jj]();\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(ParserStackType.ESC, handlersEsc, jj, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (jj < 0) {\n                    this._escHandlerFb(this._collect << 8 | code);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.CLEAR:\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                break;\n            case ParserAction.DCS_HOOK:\n                this._dcsParser.hook(this._collect << 8 | code, this._params);\n                break;\n            case ParserAction.DCS_PUT:\n                // inner loop - exit DCS_PUT: 0x18, 0x1a, 0x1b, 0x7f, 0x80 - 0x9f\n                // unhook triggered by: 0x1b, 0x9c (success) and 0x18, 0x1a (abort)\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) === 0x18 || code === 0x1a || code === 0x1b || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._dcsParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.DCS_UNHOOK:\n                handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(ParserStackType.DCS, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= ParserState.ESCAPE;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n            case ParserAction.OSC_START:\n                this._oscParser.start();\n                break;\n            case ParserAction.OSC_PUT:\n                // inner loop: 0x20 (SP) included, 0x7F (DEL) included\n                for (let j = i + 1;; j++) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._oscParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case ParserAction.OSC_END:\n                handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(ParserStackType.OSC, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= ParserState.ESCAPE;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n        }\n        this.currentState = transition & TableAccess.TRANSITION_STATE_MASK;\n    }\n}\n",
+    "folded": "/** Copyright (c) 2018 The xterm.js authors. All rights reserved. @license MIT\n * Generated derivative of EscapeSequenceParser.ts (c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef). */\nvar TableAccess;\n(function (TableAccess) {\n    TableAccess[TableAccess[\"TRANSITION_ACTION_SHIFT\"] = 4] = \"TRANSITION_ACTION_SHIFT\";\n    TableAccess[TableAccess[\"TRANSITION_STATE_MASK\"] = 15] = \"TRANSITION_STATE_MASK\";\n    TableAccess[TableAccess[\"INDEX_STATE_SHIFT\"] = 8] = \"INDEX_STATE_SHIFT\";\n})(TableAccess || (TableAccess = {}));\nvar ParserState;\n(function (ParserState) {\n    ParserState[ParserState[\"GROUND\"] = 0] = \"GROUND\";\n    ParserState[ParserState[\"ESCAPE\"] = 1] = \"ESCAPE\";\n    ParserState[ParserState[\"CSI_ENTRY\"] = 3] = \"CSI_ENTRY\";\n})(ParserState || (ParserState = {}));\nvar ParserStackType;\n(function (ParserStackType) {\n    ParserStackType[ParserStackType[\"NONE\"] = 0] = \"NONE\";\n    ParserStackType[ParserStackType[\"FAIL\"] = 1] = \"FAIL\";\n    ParserStackType[ParserStackType[\"RESET\"] = 2] = \"RESET\";\n    ParserStackType[ParserStackType[\"CSI\"] = 3] = \"CSI\";\n    ParserStackType[ParserStackType[\"ESC\"] = 4] = \"ESC\";\n    ParserStackType[ParserStackType[\"OSC\"] = 5] = \"OSC\";\n    ParserStackType[ParserStackType[\"DCS\"] = 6] = \"DCS\";\n})(ParserStackType || (ParserStackType = {}));\nvar ParserAction;\n(function (ParserAction) {\n    ParserAction[ParserAction[\"IGNORE\"] = 0] = \"IGNORE\";\n    ParserAction[ParserAction[\"ERROR\"] = 1] = \"ERROR\";\n    ParserAction[ParserAction[\"PRINT\"] = 2] = \"PRINT\";\n    ParserAction[ParserAction[\"EXECUTE\"] = 3] = \"EXECUTE\";\n    ParserAction[ParserAction[\"OSC_START\"] = 4] = \"OSC_START\";\n    ParserAction[ParserAction[\"OSC_PUT\"] = 5] = \"OSC_PUT\";\n    ParserAction[ParserAction[\"OSC_END\"] = 6] = \"OSC_END\";\n    ParserAction[ParserAction[\"CSI_DISPATCH\"] = 7] = \"CSI_DISPATCH\";\n    ParserAction[ParserAction[\"PARAM\"] = 8] = \"PARAM\";\n    ParserAction[ParserAction[\"COLLECT\"] = 9] = \"COLLECT\";\n    ParserAction[ParserAction[\"ESC_DISPATCH\"] = 10] = \"ESC_DISPATCH\";\n    ParserAction[ParserAction[\"CLEAR\"] = 11] = \"CLEAR\";\n    ParserAction[ParserAction[\"DCS_HOOK\"] = 12] = \"DCS_HOOK\";\n    ParserAction[ParserAction[\"DCS_PUT\"] = 13] = \"DCS_PUT\";\n    ParserAction[ParserAction[\"DCS_UNHOOK\"] = 14] = \"DCS_UNHOOK\";\n})(ParserAction || (ParserAction = {}));\nconst NON_ASCII_PRINTABLE = 0xa0;\nfunction installParameterBatching(terminal) {\n    const parser = terminal?._core?._inputHandler?._parser;\n    const p = parser?._params;\n    if (typeof parser?.parse !== 'function' || !(p?.params instanceof Int32Array) ||\n        typeof p.addParam !== 'function' || typeof p.addSubParam !== 'function' ||\n        typeof p.addDigit !== 'function' || typeof p._digitIsSub !== 'boolean' ||\n        typeof p._rejectDigits !== 'boolean' || !parser._parseStack ||\n        !(parser._transitions?.table instanceof Uint8Array) ||\n        parser._transitions.table[0x1b] !== 0xb1 ||\n        parser._transitions.table[0x15b] !== 0xb3)\n        return false;\n    parser.parse = fastParse;\n    return true;\n}\nfunction fastParse(data, length, promiseResult) {\n    let code = 0;\n    let transition = 0;\n    let start = 0;\n    let handlerResult;\n    // resume from async handler\n    if (this._parseStack.state) {\n        // allow sync parser reset even in continuation mode\n        // Note: can be used to recover parser from improper continuation error below\n        if (this._parseStack.state === 2 /* ParserStackType.RESET */) {\n            this._parseStack.state = 0 /* ParserStackType.NONE */;\n            start = this._parseStack.chunkPos + 1; // continue with next codepoint in GROUND\n        }\n        else {\n            if (promiseResult === undefined || this._parseStack.state === 1 /* ParserStackType.FAIL */) {\n                /**\n                 * Reject further parsing on improper continuation after pausing. This is a really bad\n                 * condition with screwed up execution order and prolly messed up terminal state,\n                 * therefore we exit hard with an exception and reject any further parsing.\n                 *\n                 * Note: With `Terminal.write` usage this exception should never occur, as the top level\n                 * calls are guaranteed to handle async conditions properly. If you ever encounter this\n                 * exception in your terminal integration it indicates, that you injected data chunks to\n                 * `InputHandler.parse` or `EscapeSequenceParser.parse` synchronously without waiting for\n                 * continuation of a running async handler.\n                 *\n                 * It is possible to get rid of this error by calling `reset`. But dont rely on that, as\n                 * the pending async handler still might mess up the terminal later. Instead fix the\n                 * faulty async handling, so this error will not be thrown anymore.\n                 */\n                this._parseStack.state = 1 /* ParserStackType.FAIL */;\n                throw new Error('improper continuation due to previous async handler, giving up parsing');\n            }\n            // we have to resume the old handler loop if:\n            // - return value of the promise was `false`\n            // - handlers are not exhausted yet\n            const handlers = this._parseStack.handlers;\n            let handlerPos = this._parseStack.handlerPos - 1;\n            switch (this._parseStack.state) {\n                case 3 /* ParserStackType.CSI */:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos](this._params);\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case 4 /* ParserStackType.ESC */:\n                    if (promiseResult === false && handlerPos > -1) {\n                        for (; handlerPos >= 0; handlerPos--) {\n                            handlerResult = handlers[handlerPos]();\n                            if (handlerResult === true) {\n                                break;\n                            }\n                            else if (handlerResult instanceof Promise) {\n                                this._parseStack.handlerPos = handlerPos;\n                                return handlerResult;\n                            }\n                        }\n                    }\n                    this._parseStack.handlers = [];\n                    break;\n                case 6 /* ParserStackType.DCS */:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= 1 /* ParserState.ESCAPE */;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n                case 5 /* ParserStackType.OSC */:\n                    code = data[this._parseStack.chunkPos];\n                    handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a, promiseResult);\n                    if (handlerResult) {\n                        return handlerResult;\n                    }\n                    if (code === 0x1b)\n                        this._parseStack.transition |= 1 /* ParserState.ESCAPE */;\n                    this._params.reset();\n                    this._params.addParam(0); // ZDM\n                    this._collect = 0;\n                    break;\n            }\n            // cleanup before continuing with the main sync loop\n            this._parseStack.state = 0 /* ParserStackType.NONE */;\n            start = this._parseStack.chunkPos + 1;\n            this.precedingJoinState = 0;\n            this.currentState = this._parseStack.transition & 15 /* TableAccess.TRANSITION_STATE_MASK */;\n        }\n    }\n    // continue with main sync loop\n    // process input string\n    for (let i = start; i < length; ++i) {\n        code = data[i];\n        // ESC [ has two consecutive CLEAR actions in the pinned table. With\n        // both introducer bytes present in GROUND, one reset is equivalent. Keep\n        // the actual CSI parameter parsing and dispatch (including async hooks)\n        // in the original loop. Incomplete introducers use upstream transitions.\n        if (code === 0x1b && this.currentState === 0 /* ParserState.GROUND */ &&\n            i + 2 < length && data[i + 1] === 0x5b) {\n            this._params.reset();\n            this._params.addParam(0);\n            this._collect = 0;\n            this.currentState = 3 /* ParserState.CSI_ENTRY */;\n            i += 2;\n            code = data[i];\n        }\n        // normal transition & action lookup\n        transition = this._transitions.table[this.currentState << 8 /* TableAccess.INDEX_STATE_SHIFT */ | (code < 0xa0 ? code : NON_ASCII_PRINTABLE)];\n        switch (transition >> 4 /* TableAccess.TRANSITION_ACTION_SHIFT */) {\n            case 2 /* ParserAction.PRINT */:\n                // read ahead with loop unrolling\n                // Note: 0x20 (SP) is included, 0x7F (DEL) is excluded\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                    if (++j >= length || (code = data[j]) < 0x20 || (code > 0x7e && code < NON_ASCII_PRINTABLE)) {\n                        this._printHandler(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case 3 /* ParserAction.EXECUTE */:\n                if (this._executeHandlers[code])\n                    this._executeHandlers[code]();\n                else\n                    this._executeHandlerFb(code);\n                this.precedingJoinState = 0;\n                break;\n            case 0 /* ParserAction.IGNORE */:\n                break;\n            case 1 /* ParserAction.ERROR */:\n                const inject = this._errorHandler({\n                    position: i,\n                    code,\n                    currentState: this.currentState,\n                    collect: this._collect,\n                    params: this._params,\n                    abort: false\n                });\n                if (inject.abort)\n                    return;\n                // inject values: currently not implemented\n                break;\n            case 7 /* ParserAction.CSI_DISPATCH */:\n                // Trigger CSI Handler\n                const handlers = this._csiHandlers[this._collect << 8 | code];\n                let j = handlers ? handlers.length - 1 : -1;\n                for (; j >= 0; j--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlers[j](this._params);\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(3 /* ParserStackType.CSI */, handlers, j, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (j < 0) {\n                    this._csiHandlerFb(this._collect << 8 | code, this._params);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case 8 /* ParserAction.PARAM */: {\n                const p = this._params;\n                // A colon at the first position must enter the upstream subparam path.\n                if (code !== 0x3a && !p._digitIsSub && !p._rejectDigits && p.length) {\n                    const store = p.params;\n                    let index = p.length - 1;\n                    let value = store[index];\n                    do {\n                        if (code === 0x3b) {\n                            store[index] = value;\n                            p.addParam(0);\n                            if (p._rejectDigits)\n                                break;\n                            index++;\n                            value = 0;\n                        }\n                        else {\n                            value = value * 10 + code - 48;\n                            if (value > 0x7fffffff)\n                                value = 0x7fffffff;\n                        }\n                    } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c && code !== 0x3a);\n                    store[index] = value;\n                    if (i === length || code < 0x30 || code > 0x3b) {\n                        i--;\n                        break;\n                    }\n                }\n                do {\n                    switch (code) {\n                        case 0x3b:\n                            p.addParam(0);\n                            break;\n                        case 0x3a:\n                            p.addSubParam(-1);\n                            break;\n                        default: p.addDigit(code - 48);\n                    }\n                } while (++i < length && (code = data[i]) > 0x2f && code < 0x3c);\n                i--;\n                break;\n            }\n            case 9 /* ParserAction.COLLECT */:\n                this._collect <<= 8;\n                this._collect |= code;\n                break;\n            case 10 /* ParserAction.ESC_DISPATCH */:\n                const handlersEsc = this._escHandlers[this._collect << 8 | code];\n                let jj = handlersEsc ? handlersEsc.length - 1 : -1;\n                for (; jj >= 0; jj--) {\n                    // true means success and to stop bubbling\n                    // a promise indicates an async handler that needs to finish before progressing\n                    handlerResult = handlersEsc[jj]();\n                    if (handlerResult === true) {\n                        break;\n                    }\n                    else if (handlerResult instanceof Promise) {\n                        this._preserveStack(4 /* ParserStackType.ESC */, handlersEsc, jj, transition, i);\n                        return handlerResult;\n                    }\n                }\n                if (jj < 0) {\n                    this._escHandlerFb(this._collect << 8 | code);\n                }\n                this.precedingJoinState = 0;\n                break;\n            case 11 /* ParserAction.CLEAR */:\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                break;\n            case 12 /* ParserAction.DCS_HOOK */:\n                this._dcsParser.hook(this._collect << 8 | code, this._params);\n                break;\n            case 13 /* ParserAction.DCS_PUT */:\n                // inner loop - exit DCS_PUT: 0x18, 0x1a, 0x1b, 0x7f, 0x80 - 0x9f\n                // unhook triggered by: 0x1b, 0x9c (success) and 0x18, 0x1a (abort)\n                for (let j = i + 1;; ++j) {\n                    if (j >= length || (code = data[j]) === 0x18 || code === 0x1a || code === 0x1b || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._dcsParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case 14 /* ParserAction.DCS_UNHOOK */:\n                handlerResult = this._dcsParser.unhook(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(6 /* ParserStackType.DCS */, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= 1 /* ParserState.ESCAPE */;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n            case 4 /* ParserAction.OSC_START */:\n                this._oscParser.start();\n                break;\n            case 5 /* ParserAction.OSC_PUT */:\n                // inner loop: 0x20 (SP) included, 0x7F (DEL) included\n                for (let j = i + 1;; j++) {\n                    if (j >= length || (code = data[j]) < 0x20 || (code > 0x7f && code < NON_ASCII_PRINTABLE)) {\n                        this._oscParser.put(data, i, j);\n                        i = j - 1;\n                        break;\n                    }\n                }\n                break;\n            case 6 /* ParserAction.OSC_END */:\n                handlerResult = this._oscParser.end(code !== 0x18 && code !== 0x1a);\n                if (handlerResult) {\n                    this._preserveStack(5 /* ParserStackType.OSC */, [], 0, transition, i);\n                    return handlerResult;\n                }\n                if (code === 0x1b)\n                    transition |= 1 /* ParserState.ESCAPE */;\n                this._params.reset();\n                this._params.addParam(0); // ZDM\n                this._collect = 0;\n                this.precedingJoinState = 0;\n                break;\n        }\n        this.currentState = transition & 15 /* TableAccess.TRANSITION_STATE_MASK */;\n    }\n}\n"
+  },
+  "validation": {
+    "comparisons": 336,
+    "fragments": 16554,
+    "randomAtoms": 2500,
+    "asyncEvents": 9,
+    "checks": [
+      "full buffer/attributes/parser state",
+      "random malformed CSI",
+      "overflow/subparameters",
+      "UTF-8 fragmentation",
+      "wrapping and wide-cell repair",
+      "margins/insert/delete/alternate screen",
+      "charset/hyperlinks",
+      "accessibility events",
+      "custom Unicode provider",
+      "CSI/OSC/DCS/ESC async continuation"
+    ]
+  },
+  "results": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 0,
+          "kind": "folded",
+          "elapsedMs": 64.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 497.6671850786343
+        },
+        {
+          "pair": 1,
+          "kind": "folded",
+          "elapsedMs": 64.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 498.44236759256927
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 64,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500
+        },
+        {
+          "pair": 2,
+          "kind": "folded",
+          "elapsedMs": 63.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 504.7318612106011
+        },
+        {
+          "pair": 3,
+          "kind": "folded",
+          "elapsedMs": 63.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 504.73186119577247
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 63.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 504.73186119577247
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 64.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.89440993501387
+        },
+        {
+          "pair": 4,
+          "kind": "folded",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 5,
+          "kind": "folded",
+          "elapsedMs": 64,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 64.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.89440993501387
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 63.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.56739812790823
+        },
+        {
+          "pair": 6,
+          "kind": "folded",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 7,
+          "kind": "folded",
+          "elapsedMs": 64.60000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371402765
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 65,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 492.3076923076923
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 63.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 506.3291139300197
+        },
+        {
+          "pair": 8,
+          "kind": "folded",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 9,
+          "kind": "folded",
+          "elapsedMs": 63.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500.782472610539
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 64,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 64.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 497.66718506421785
+        },
+        {
+          "pair": 10,
+          "kind": "folded",
+          "elapsedMs": 63.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 507.1315372454663
+        },
+        {
+          "pair": 11,
+          "kind": "folded",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 64.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 498.44236759256927
+        },
+        {
+          "pair": 12,
+          "kind": "folded",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 13,
+          "kind": "folded",
+          "elapsedMs": 62.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 508.74403816785514
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 63.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 503.93700787401576
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 64.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 493.06625577528996
+        },
+        {
+          "pair": 14,
+          "kind": "folded",
+          "elapsedMs": 65.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 487.0624048623389
+        },
+        {
+          "pair": 15,
+          "kind": "folded",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 64.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 495.3560371545594
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 64,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 500
+        },
+        {
+          "pair": 16,
+          "kind": "folded",
+          "elapsedMs": 63.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 506.3291139300197
+        },
+        {
+          "pair": 17,
+          "kind": "folded",
+          "elapsedMs": 63.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.5673981132649
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 63.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.5673981132649
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 63.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 501.56739812790823
+        },
+        {
+          "pair": 18,
+          "kind": "folded",
+          "elapsedMs": 64.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 499.21996880165324
+        },
+        {
+          "pair": 19,
+          "kind": "folded",
+          "elapsedMs": 65.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 488.5496183206107
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 64.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 496.1240310077519
+        }
+      ]
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 11.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2807.01754422656
+        },
+        {
+          "pair": 0,
+          "kind": "folded",
+          "elapsedMs": 11.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2782.608695652174
+        },
+        {
+          "pair": 1,
+          "kind": "folded",
+          "elapsedMs": 8.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3678.1609190677395
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 9.799999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3265.3061228213533
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 7.199999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4444.444444904357
+        },
+        {
+          "pair": 2,
+          "kind": "folded",
+          "elapsedMs": 10.199999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3137.254902189945
+        },
+        {
+          "pair": 3,
+          "kind": "folded",
+          "elapsedMs": 7.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4324.32432410663
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 10,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3200
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 6.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4705.882352425565
+        },
+        {
+          "pair": 4,
+          "kind": "folded",
+          "elapsedMs": 10.199999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3137.254902189945
+        },
+        {
+          "pair": 5,
+          "kind": "folded",
+          "elapsedMs": 6.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4776.119402188398
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 10.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3106.796116841953
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 6.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5079.365080266132
+        },
+        {
+          "pair": 6,
+          "kind": "folded",
+          "elapsedMs": 10,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3200
+        },
+        {
+          "pair": 7,
+          "kind": "folded",
+          "elapsedMs": 7,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4571.428571428572
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 11.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2735.042734781483
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 10.599999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3018.8679246343977
+        },
+        {
+          "pair": 8,
+          "kind": "folded",
+          "elapsedMs": 6.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5079.365080266132
+        },
+        {
+          "pair": 9,
+          "kind": "folded",
+          "elapsedMs": 6.300000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5079.365078764377
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 11.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2735.042735216903
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 13.200000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2424.2424240371743
+        },
+        {
+          "pair": 10,
+          "kind": "folded",
+          "elapsedMs": 7.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4324.32432410663
+        },
+        {
+          "pair": 11,
+          "kind": "folded",
+          "elapsedMs": 10.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2935.7798169151056
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 12,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2666.6666666666665
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 5.600000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5714.285712765188
+        },
+        {
+          "pair": 12,
+          "kind": "folded",
+          "elapsedMs": 5.199999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 6153.846154727879
+        },
+        {
+          "pair": 13,
+          "kind": "folded",
+          "elapsedMs": 9.800000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3265.3061222007304
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 5.899999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5423.72881492915
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 10.100000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3168.316831215727
+        },
+        {
+          "pair": 14,
+          "kind": "folded",
+          "elapsedMs": 6.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5245.901639664631
+        },
+        {
+          "pair": 15,
+          "kind": "folded",
+          "elapsedMs": 9.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3298.9690724183424
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 5.700000001117587,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5614.035086618566
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 9.699999999254942,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3298.9690724183424
+        },
+        {
+          "pair": 16,
+          "kind": "folded",
+          "elapsedMs": 6.099999999627471,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5245.901639664631
+        },
+        {
+          "pair": 17,
+          "kind": "folded",
+          "elapsedMs": 9.600000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3333.333332815932
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 5.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 5925.92592756117
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 5.299999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 6037.735850329754
+        },
+        {
+          "pair": 18,
+          "kind": "folded",
+          "elapsedMs": 10.300000000745058,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 3106.796116280122
+        },
+        {
+          "pair": 19,
+          "kind": "folded",
+          "elapsedMs": 11.400000000372529,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 2807.0175437679213
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 6.799999998882413,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 4705.882353714594
+        }
+      ]
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 38.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091384055811
+        },
+        {
+          "pair": 0,
+          "kind": "folded",
+          "elapsedMs": 37.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 851.0638297956662
+        },
+        {
+          "pair": 1,
+          "kind": "folded",
+          "elapsedMs": 37.100000001490116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 862.5336926877284
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 38.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 824.7422680649928
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 43,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 744.1860465116279
+        },
+        {
+          "pair": 2,
+          "kind": "folded",
+          "elapsedMs": 37.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 846.5608465441604
+        },
+        {
+          "pair": 3,
+          "kind": "folded",
+          "elapsedMs": 37.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732535096
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 37.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 848.8063660645201
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 37.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 851.0638297956662
+        },
+        {
+          "pair": 4,
+          "kind": "folded",
+          "elapsedMs": 37.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732535096
+        },
+        {
+          "pair": 5,
+          "kind": "folded",
+          "elapsedMs": 37.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 857.9088471678501
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 38,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 842.1052631578947
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 37.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 857.9088472106914
+        },
+        {
+          "pair": 6,
+          "kind": "folded",
+          "elapsedMs": 37.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732535096
+        },
+        {
+          "pair": 7,
+          "kind": "folded",
+          "elapsedMs": 38.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 839.8950131315718
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 38.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 824.7422680254
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 38.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 837.6963350948726
+        },
+        {
+          "pair": 8,
+          "kind": "folded",
+          "elapsedMs": 37.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732535096
+        },
+        {
+          "pair": 9,
+          "kind": "folded",
+          "elapsedMs": 39.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 812.182741109072
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 38.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 829.0155440494516
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 38.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 837.6963350540262
+        },
+        {
+          "pair": 10,
+          "kind": "folded",
+          "elapsedMs": 37.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732961221
+        },
+        {
+          "pair": 11,
+          "kind": "folded",
+          "elapsedMs": 38.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 831.1688311688312
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 38,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 842.1052631578947
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 38.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091383649477
+        },
+        {
+          "pair": 12,
+          "kind": "folded",
+          "elapsedMs": 37.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732535096
+        },
+        {
+          "pair": 13,
+          "kind": "folded",
+          "elapsedMs": 37.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 853.3333333333334
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 38.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091384055811
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 38.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 833.333333325249
+        },
+        {
+          "pair": 14,
+          "kind": "folded",
+          "elapsedMs": 37.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 844.3271767727035
+        },
+        {
+          "pair": 15,
+          "kind": "folded",
+          "elapsedMs": 37.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 851.0638297956662
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 38.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 835.5091383649477
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 37.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 848.8063660645201
+        },
+        {
+          "pair": 16,
+          "kind": "folded",
+          "elapsedMs": 37.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 851.0638297956662
+        },
+        {
+          "pair": 17,
+          "kind": "folded",
+          "elapsedMs": 37.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 848.8063660225831
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 39.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 810.126582278481
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 39.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 816.3265306277605
+        },
+        {
+          "pair": 18,
+          "kind": "folded",
+          "elapsedMs": 37.70000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 848.8063660225831
+        },
+        {
+          "pair": 19,
+          "kind": "folded",
+          "elapsedMs": 37.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 855.6149732961221
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 38.399999998509884,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 833.3333333656709
+        }
+      ]
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "results": [
+        {
+          "pair": 0,
+          "kind": "baseline",
+          "elapsedMs": 126.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 252.3659306015934
+        },
+        {
+          "pair": 0,
+          "kind": "folded",
+          "elapsedMs": 119.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 268.00670017084894
+        },
+        {
+          "pair": 1,
+          "kind": "folded",
+          "elapsedMs": 118.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 270.49873203549
+        },
+        {
+          "pair": 1,
+          "kind": "baseline",
+          "elapsedMs": 124.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 256.4102564087256
+        },
+        {
+          "pair": 2,
+          "kind": "baseline",
+          "elapsedMs": 125.29999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 255.387071031807
+        },
+        {
+          "pair": 2,
+          "kind": "folded",
+          "elapsedMs": 116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 275.86206896551727
+        },
+        {
+          "pair": 3,
+          "kind": "folded",
+          "elapsedMs": 115.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 277.5368603624737
+        },
+        {
+          "pair": 3,
+          "kind": "baseline",
+          "elapsedMs": 127.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 251.77025963881817
+        },
+        {
+          "pair": 4,
+          "kind": "baseline",
+          "elapsedMs": 124,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 258.06451612903226
+        },
+        {
+          "pair": 4,
+          "kind": "folded",
+          "elapsedMs": 118.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 270.95681625826364
+        },
+        {
+          "pair": 5,
+          "kind": "folded",
+          "elapsedMs": 117.10000000149012,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 273.27070879242353
+        },
+        {
+          "pair": 5,
+          "kind": "baseline",
+          "elapsedMs": 122.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 262.0802620810617
+        },
+        {
+          "pair": 6,
+          "kind": "baseline",
+          "elapsedMs": 122.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 261.4379084959363
+        },
+        {
+          "pair": 6,
+          "kind": "folded",
+          "elapsedMs": 116.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 274.6781115879828
+        },
+        {
+          "pair": 7,
+          "kind": "folded",
+          "elapsedMs": 116,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 275.86206896551727
+        },
+        {
+          "pair": 7,
+          "kind": "baseline",
+          "elapsedMs": 121.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 262.94165982083734
+        },
+        {
+          "pair": 8,
+          "kind": "baseline",
+          "elapsedMs": 121.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 263.5914332776096
+        },
+        {
+          "pair": 8,
+          "kind": "folded",
+          "elapsedMs": 114.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 278.74564460201674
+        },
+        {
+          "pair": 9,
+          "kind": "folded",
+          "elapsedMs": 118.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 269.1337258191736
+        },
+        {
+          "pair": 9,
+          "kind": "baseline",
+          "elapsedMs": 119.20000000111759,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 268.4563758364092
+        },
+        {
+          "pair": 10,
+          "kind": "baseline",
+          "elapsedMs": 119.59999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 267.55852842892705
+        },
+        {
+          "pair": 10,
+          "kind": "folded",
+          "elapsedMs": 111.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 288.0288028812538
+        },
+        {
+          "pair": 11,
+          "kind": "folded",
+          "elapsedMs": 113.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 281.9383259911894
+        },
+        {
+          "pair": 11,
+          "kind": "baseline",
+          "elapsedMs": 119.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 267.11185308681956
+        },
+        {
+          "pair": 12,
+          "kind": "baseline",
+          "elapsedMs": 120.79999999888241,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 264.90066225410635
+        },
+        {
+          "pair": 12,
+          "kind": "folded",
+          "elapsedMs": 115.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 276.3385146787056
+        },
+        {
+          "pair": 13,
+          "kind": "folded",
+          "elapsedMs": 114.69999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 278.9886660872525
+        },
+        {
+          "pair": 13,
+          "kind": "baseline",
+          "elapsedMs": 120.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 265.7807308961876
+        },
+        {
+          "pair": 14,
+          "kind": "baseline",
+          "elapsedMs": 117,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 273.5042735042735
+        },
+        {
+          "pair": 14,
+          "kind": "folded",
+          "elapsedMs": 110.80000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 288.80866425798575
+        },
+        {
+          "pair": 15,
+          "kind": "folded",
+          "elapsedMs": 112.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.69750889585356
+        },
+        {
+          "pair": 15,
+          "kind": "baseline",
+          "elapsedMs": 116.39999999850988,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 274.9140893505984
+        },
+        {
+          "pair": 16,
+          "kind": "baseline",
+          "elapsedMs": 119.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 268.2313495373022
+        },
+        {
+          "pair": 16,
+          "kind": "folded",
+          "elapsedMs": 112.5,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.44444444444446
+        },
+        {
+          "pair": 17,
+          "kind": "folded",
+          "elapsedMs": 112.30000000074506,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.95102404085213
+        },
+        {
+          "pair": 17,
+          "kind": "baseline",
+          "elapsedMs": 120.19999999925494,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 266.2229617320994
+        },
+        {
+          "pair": 18,
+          "kind": "baseline",
+          "elapsedMs": 118.90000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 269.1337258191736
+        },
+        {
+          "pair": 18,
+          "kind": "folded",
+          "elapsedMs": 112.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 284.69750889585356
+        },
+        {
+          "pair": 19,
+          "kind": "folded",
+          "elapsedMs": 114.09999999962747,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 280.4557405793556
+        },
+        {
+          "pair": 19,
+          "kind": "baseline",
+          "elapsedMs": 119.40000000037253,
+          "frames": 32,
+          "submittedFrames": 32,
+          "updatesPerSecond": 268.006700166668
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  }
+}

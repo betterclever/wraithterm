@@ -3,9 +3,11 @@ name = "wraith-launch"
 version = "0.1.0"
 edition = "2024"
 publish = false
+default-run = "wraith-launch"
 description = "The Wraith launch video, rendered with fframes."
 
 [dependencies]
+serde_json = "=1.0.151"
 fframes = { version = "=1.2.0", features = ["compile-time-svgtree", "cli"] }
 fframes_skia_renderer = { version = "=1.2.0", features = ["metal"] }
 fframes_native_player = { version = "=1.2.0", default-features = false, features = ["metal", "audio"] }
@@ -30,3 +32,15 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[[bin]]
+name = "wraith-velocity"
+path = "src/velocity_main.rs"
+
+[[bin]]
+name = "wraith-phantom"
+path = "src/phantom_main.rs"
+
+[[bin]]
+name = "wraith-product"
+path = "src/product_main.rs"

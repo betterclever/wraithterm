@@ -17,12 +17,20 @@ export class Compositor {
     fence(): Promise<void>;
     render(packed: Uint32Array, start: number, dimensions: Float32Array, frame: Uint32Array): boolean;
     /**
+     * Retain previous GPU row slots using the staged source map, uploading
+     * only new logical rows. Cells and uniforms keep the legacy arena layout.
+     */
+    render_retained(): boolean;
+    /**
      * Upload staged cells `start..start + cells` (indices into the grid, at
      * the same offsets in staging) and present with the staged uniforms.
      */
     render_staged(cells: number, start: number): boolean;
     upload(x: number, y: number, width: number, height: number, pixels: Uint8Array): void;
+    readonly cell_upload_bytes: bigint;
     readonly frames: bigint;
+    readonly row_map_upload_bytes: bigint;
+    readonly row_slots: Uint32Array;
     /**
      * Cell words followed by four f32 dimensions and eight u32 frame words.
      * Views are valid until configure/free; refresh them after memory growth.
@@ -55,10 +63,12 @@ export class Engine {
     write(bytes: Uint8Array): void;
     readonly adapter: string;
     readonly cell_height: number;
+    readonly cell_upload_bytes: bigint;
     readonly cell_width: number;
     readonly cursor_x: number;
     readonly cursor_y: number;
     readonly needs_present: boolean;
+    readonly row_map_upload_bytes: bigint;
 }
 
 /**
@@ -86,18 +96,23 @@ export interface InitOutput {
     readonly __wbg_compositor_free: (a: number, b: number) => void;
     readonly __wbg_engine_free: (a: number, b: number) => void;
     readonly __wbg_headless_free: (a: number, b: number) => void;
+    readonly compositor_cell_upload_bytes: (a: number) => bigint;
     readonly compositor_configure: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly compositor_create: (a: any) => any;
     readonly compositor_fence: (a: number) => any;
     readonly compositor_frames: (a: number) => bigint;
     readonly compositor_render: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
+    readonly compositor_render_retained: (a: number) => [number, number, number];
     readonly compositor_render_staged: (a: number, b: number, c: number) => [number, number, number];
+    readonly compositor_row_map_upload_bytes: (a: number) => bigint;
+    readonly compositor_row_slots: (a: number) => [number, number];
     readonly compositor_staging_ptr: (a: number) => number;
     readonly compositor_staging_words: (a: number) => number;
     readonly compositor_upload: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_adapter: (a: number) => [number, number];
     readonly engine_add_font: (a: number, b: number, c: number) => [number, number];
     readonly engine_cell_height: (a: number) => number;
+    readonly engine_cell_upload_bytes: (a: number) => bigint;
     readonly engine_cell_width: (a: number) => number;
     readonly engine_create: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => any;
     readonly engine_cursor_x: (a: number) => number;
@@ -112,6 +127,7 @@ export interface InitOutput {
     readonly engine_release_hold: (a: number) => void;
     readonly engine_render: (a: number, b: number, c: number) => [number, number, number];
     readonly engine_resize: (a: number, b: number, c: number) => [number, number];
+    readonly engine_row_map_upload_bytes: (a: number) => bigint;
     readonly engine_scroll: (a: number, b: number) => void;
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_take_events: (a: number) => any;
@@ -126,8 +142,6 @@ export interface InitOutput {
     readonly headless_resize: (a: number, b: number, c: number) => [number, number];
     readonly headless_scroll: (a: number, b: number) => void;
     readonly headless_take_events: (a: number) => any;
-    readonly headless_text: (a: number) => [number, number, number, number];
-    readonly headless_write: (a: number, b: number, c: number) => void;
     readonly wraith_alloc: (a: number, b: number) => number;
     readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
@@ -135,13 +149,15 @@ export interface InitOutput {
     readonly wraith_row: (a: number, b: number) => void;
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
+    readonly headless_text: (a: number) => [number, number, number, number];
+    readonly headless_write: (a: number, b: number, c: number) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__47: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__48: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__53: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__54: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__46: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__52: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

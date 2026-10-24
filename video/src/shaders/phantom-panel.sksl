@@ -1,0 +1,57 @@
+uniform float3 iResolution;
+uniform shader uSource;
+uniform float2 uSourceSize;
+uniform float3 uCenter;
+uniform float2 uSize;
+uniform float3 uAngles;
+uniform float4 uCrop;
+uniform float uOpacity;
+uniform float uChrome;
+uniform float uClock;
+float2 turn(float2 p,float a) { return float2(cos(a)*p.x-sin(a)*p.y,sin(a)*p.x+cos(a)*p.y); }
+float3 rotate(float3 p) {
+    p.yz=turn(p.yz,uAngles.x); p.xz=turn(p.xz,uAngles.y); p.xy=turn(p.xy,uAngles.z); return p;
+}
+half4 main(float2 coord) {
+    float2 screen=(coord-0.5*iResolution.xy)/iResolution.y;
+    float3 ro=float3(0,0,6), rd=normalize(float3(screen.x,-screen.y,-1.8));
+    float3 axisX=rotate(float3(1,0,0)), axisY=rotate(float3(0,1,0)), normal=rotate(float3(0,0,1));
+    float denom=dot(rd,normal);
+    if(abs(denom)<0.001) return half4(0);
+    float travel=dot(uCenter-ro,normal)/denom;
+    if(travel<0.0) return half4(0);
+    float3 p=ro+rd*travel-uCenter;
+    float2 local=float2(dot(p,axisX),dot(p,axisY));
+    float2 q=abs(local)-(uSize*0.5-float2(0.055));
+    float sd=length(max(q,0.0))+min(max(q.x,q.y),0.0)-0.055;
+    float px=travel/(1.8*iResolution.y);
+    float alpha=(1.0-smoothstep(-px,px,sd))*uOpacity;
+    if(alpha<0.001) return half4(0);
+    float2 uv=float2(local.x/uSize.x+0.5,0.5-local.y/uSize.y);
+    float3 col=float3(0.035,0.027,0.023);
+    float bar=0.057*uChrome;
+    if(uv.y>bar) {
+        float2 sourceUv=uCrop.xy+float2(uv.x,(uv.y-bar)/(1.0-bar))*uCrop.zw;
+        float2 sampleAt=sourceUv*uSourceSize;
+        float2 footprint=uSourceSize*uCrop.zw/uSize*px;
+        footprint*=0.3;
+        col=float3(uSource.eval(sampleAt+float2(-footprint.x,-footprint.y)).rgb)
+            +float3(uSource.eval(sampleAt+float2(footprint.x,-footprint.y)).rgb)
+            +float3(uSource.eval(sampleAt+float2(-footprint.x,footprint.y)).rgb)
+            +float3(uSource.eval(sampleAt+footprint).rgb);
+        col*=0.25;
+    } else {
+        float dots=0.0;
+        for(int i=0;i<3;i++) {
+            float2 at=float2(0.024+float(i)*0.017,0.027);
+            dots=max(dots,1.0-smoothstep(0.005,0.007,length((uv-at)*float2(1,uSize.y/uSize.x))));
+        }
+        col=mix(col,float3(0.78,0.43,0.22),dots*0.8);
+        col+=float3(0.03,0.016,0.008)*uv.x;
+    }
+    float edge=1.0-smoothstep(0.0,px*2.0,abs(sd+px));
+    col+=float3(0.85,0.60,0.36)*edge*0.42;
+    float sheen=exp(-pow((uv.x+uv.y*.6-uClock*.11-0.15)*2.8,2.0));
+    col+=float3(0.16,0.12,0.09)*sheen*.16;
+    return half4(half3(col*alpha),half(alpha));
+}

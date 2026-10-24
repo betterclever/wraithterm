@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-11T07:02:17.701Z",
+  "builds": {
+    "before": {
+      "directory": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline",
+      "head": "574b206d6c91c4661c13263060cbe7083ac0662e",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "rendererSha256": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+      "sdkSources": {
+        "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+        "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+        "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+        "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+        "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+        "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+        "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+        "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+        "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+        "xterm-internals.ts": "86ca053753d7b04c8a1884798bed1edcddf967a831f655647541e6dbf52d8271",
+        "xterm-renderer.ts": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+        "xterm.ts": "a0cfc1004d54f13529038320d770194a56bdb5f875e4f70d545d4da6b9cbbe31"
+      }
+    },
+    "after": {
+      "directory": "/Users/betterclever/projects/wraith",
+      "head": "08c117f6c17daae74b89374a701071191a9f25d5",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "rendererSha256": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+      "sdkSources": {
+        "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+        "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+        "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+        "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+        "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+        "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+        "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+        "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+        "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+        "xterm-input.ts": "743ed5ff15ad33740e0141e0ec4c75f30bef270f4894aade94570beae1f9c3c3",
+        "xterm-internals.ts": "86ca053753d7b04c8a1884798bed1edcddf967a831f655647541e6dbf52d8271",
+        "xterm-renderer.ts": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+        "xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147"
+      }
+    }
+  },
+  "repetitions": 1,
+  "frames": 4096,
+  "groups": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "targets": {
+        "wraith-before": {
+          "completedUpdatesPerSecond": 677.1926924030752,
+          "range": [
+            677.1926924030752,
+            677.1926924030752
+          ],
+          "redrawP50Ms": 0.3999999761581421,
+          "pipelineP95Ms": 1.699999988079071,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "wraith-after": {
+          "completedUpdatesPerSecond": 767.1848660797903,
+          "range": [
+            767.1848660797903,
+            767.1848660797903
+          ],
+          "redrawP50Ms": 0.30000001192092896,
+          "pipelineP95Ms": 1.5,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "xterm-webgl": {
+          "completedUpdatesPerSecond": 174.01426611088846,
+          "range": [
+            174.01426611088846,
+            174.01426611088846
+          ],
+          "redrawP50Ms": 4.100000023841858,
+          "pipelineP95Ms": 7.100000023841858,
+          "cellUploadBytesPerUpdate": null,
+          "rowMapBytesPerUpdate": null
+        },
+        "native-before": {
+          "completedUpdatesPerSecond": 586.8615230317358,
+          "range": [
+            586.8615230317358,
+            586.8615230317358
+          ],
+          "redrawP50Ms": 0.5,
+          "pipelineP95Ms": 1.800000011920929,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        },
+        "native-after": {
+          "completedUpdatesPerSecond": 591.2240184757505,
+          "range": [
+            591.2240184757505,
+            591.2240184757505
+          ],
+          "redrawP50Ms": 0.5999999642372131,
+          "pipelineP95Ms": 1.800000011920929,
+          "cellUploadBytesPerUpdate": 384000,
+          "rowMapBytesPerUpdate": 0
+        }
+      },
+      "wraithGain": 0.13289005431728795,
+      "nativeGain": 0.007433602771362402,
+      "wraithVsXterm": 4.408746956361101,
+      "nativeVsXterm": 3.3975606235583022
+    }
+  ]
+}

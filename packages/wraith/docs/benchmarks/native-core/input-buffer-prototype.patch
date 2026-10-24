@@ -1,0 +1,60 @@
+diff --git a/crates/wraith-engine/src/web.rs b/crates/wraith-engine/src/web.rs
+index 5233b0e..1235c8d 100644
+--- a/crates/wraith-engine/src/web.rs
++++ b/crates/wraith-engine/src/web.rs
+@@ -23,6 +23,7 @@ fn events(core: &mut Core) -> js_sys::Array {
+ #[wasm_bindgen]
+ pub struct Headless {
+     core: Core,
++    input: Vec<u8>,
+ }
+ #[wasm_bindgen]
+ impl Headless {
+@@ -30,10 +31,13 @@ impl Headless {
+     pub fn new(cols: u16, rows: u16, history: u32) -> Result<Headless, JsValue> {
+         Ok(Self {
+             core: Core::new(cols, rows, history as usize).map_err(error)?,
++            input: Vec::new(),
+         })
+     }
+-    pub fn write(&mut self, data: &[u8]) {
+-        self.core.write(data);
++    pub fn write(&mut self, data: &js_sys::Uint8Array) {
++        self.input.resize(data.length() as usize, 0);
++        data.copy_to(&mut self.input);
++        self.core.write(&self.input);
+     }
+     pub fn text(&mut self) -> Result<String, JsValue> {
+         self.core.update().map_err(error)?;
+@@ -89,6 +93,7 @@ impl Headless {
+ #[wasm_bindgen]
+ pub struct Engine {
+     core: Core,
++    input: Vec<u8>,
+     renderer: Renderer,
+     bytes: u64,
+     parse_ms: f64,
+@@ -119,17 +124,20 @@ impl Engine {
+         core.theme(0xe8e5de, 0x17120e, 0xf0d691);
+         Ok(Self {
+             core,
++            input: Vec::new(),
+             renderer,
+             bytes: 0,
+             parse_ms: 0.,
+             render_ms: 0.,
+         })
+     }
+-    pub fn write(&mut self, bytes: &[u8]) {
++    pub fn write(&mut self, bytes: &js_sys::Uint8Array) {
++        self.input.resize(bytes.length() as usize, 0);
++        bytes.copy_to(&mut self.input);
+         let started = now();
+-        self.core.write(bytes);
++        self.core.write(&self.input);
+         self.parse_ms += now() - started;
+-        self.bytes += bytes.len() as u64;
++        self.bytes += self.input.len() as u64;
+     }
+     pub fn render(&mut self, time: f64, force: bool) -> Result<bool, JsValue> {
+         let started = now();

@@ -1,0 +1,1057 @@
+{
+  "head": "47d843ab3f84a36bceec20ac17548d9f60bf6f7f",
+  "date": "2026-10-17T10:47:59.036Z",
+  "settings": {
+    "headless": true,
+    "cols": 240,
+    "rows": 80,
+    "scrollback": 0,
+    "font": "JetBrainsMono-Regular.ttf",
+    "fontSize": 15,
+    "frames": 256,
+    "warmup": 64,
+    "repetitions": 3,
+    "targets": [
+      "wraith",
+      "ghostty",
+      "restty",
+      "ghostty-web",
+      "webgl"
+    ],
+    "conditions": [
+      {
+        "workload": "complex",
+        "dpr": 1
+      },
+      {
+        "workload": "churn",
+        "dpr": 1
+      },
+      {
+        "workload": "append",
+        "dpr": 1
+      },
+      {
+        "workload": "showcase",
+        "dpr": 1
+      },
+      {
+        "workload": "pipes",
+        "dpr": 1
+      },
+      {
+        "workload": "dense-no-combining",
+        "dpr": 1
+      },
+      {
+        "workload": "complex",
+        "dpr": 2
+      }
+    ],
+    "restty": {
+      "ligatures": false,
+      "fontSizeMode": "em",
+      "alphaBlending": "native",
+      "fontHinting": false
+    },
+    "ghosttyWeb": {
+      "lineBoxHeight": 20,
+      "defaultLineHeightOverridden": true
+    },
+    "input": "identical UTF-8 bytes; Restty decode included because its public runtime accepts strings",
+    "measurement": "manual existing renderer turn per update; WebGPU/WebGL fences every 32 and final; Canvas2D readback every 32 and final; no physical presentation FPS"
+  },
+  "groups": [
+    {
+      "workload": "complex",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 495.35603715098864,
+          "range": [
+            448.10082268598075,
+            506.3291139244237
+          ],
+          "runs": [
+            448.10082268598075,
+            495.35603715098864,
+            506.3291139244237
+          ],
+          "parseP50Ms": 1.300000000745058,
+          "renderP50Ms": 0.599999999627471,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 350.9252912954078,
+          "range": [
+            323.3956543710466,
+            376.4152330531379
+          ],
+          "runs": [
+            323.3956543710466,
+            376.4152330531379,
+            350.9252912954078
+          ],
+          "parseP50Ms": 1.900000000372529,
+          "renderP50Ms": 0.900000000372529,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 68.21936790492603,
+          "range": [
+            67.37196694564854,
+            68.61247353328122
+          ],
+          "runs": [
+            68.21936790492603,
+            68.61247353328122,
+            67.37196694564854
+          ],
+          "parseP50Ms": 2.400000000372529,
+          "renderP50Ms": 12,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 15.75462176599355,
+          "range": [
+            15.702438785024517,
+            15.88631356852524
+          ],
+          "runs": [
+            15.75462176599355,
+            15.88631356852524,
+            15.702438785024517
+          ],
+          "parseP50Ms": 3.300000000745058,
+          "renderP50Ms": 67.09999999962747,
+          "gpuFenced": false,
+          "validation": false,
+          "errors": []
+        },
+        "webgl": {
+          "median": 113.54060407153261,
+          "range": [
+            107.49979003945576,
+            130.2666395278328
+          ],
+          "runs": [
+            113.54060407153261,
+            130.2666395278328,
+            107.49979003945576
+          ],
+          "parseP50Ms": 1.5,
+          "renderP50Ms": 6.800000000745058,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "churn",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 472.4118841111349,
+          "range": [
+            467.15328467153284,
+            552.2001725629976
+          ],
+          "runs": [
+            472.4118841111349,
+            552.2001725629976,
+            467.15328467153284
+          ],
+          "parseP50Ms": 1.400000000372529,
+          "renderP50Ms": 0.599999999627471,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 231.06778590117693,
+          "range": [
+            226.14840989399292,
+            251.94370632774783
+          ],
+          "runs": [
+            251.94370632774783,
+            226.14840989399292,
+            231.06778590117693
+          ],
+          "parseP50Ms": 3.5,
+          "renderP50Ms": 1,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 49.64126430095016,
+          "range": [
+            49.086342108788266,
+            58.053835861859824
+          ],
+          "runs": [
+            58.053835861859824,
+            49.64126430095016,
+            49.086342108788266
+          ],
+          "parseP50Ms": 4.799999998882413,
+          "renderP50Ms": 15.399999998509884,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 6.984650139965699,
+          "range": [
+            6.7865805972721125,
+            7.194830963629642
+          ],
+          "runs": [
+            7.194830963629642,
+            6.984650139965699,
+            6.7865805972721125
+          ],
+          "parseP50Ms": 4.099999999627471,
+          "renderP50Ms": 163.90000000037253,
+          "gpuFenced": false,
+          "validation": false,
+          "errors": []
+        },
+        "webgl": {
+          "median": 97.4458528415501,
+          "range": [
+            87.00084961767205,
+            109.98453342500471
+          ],
+          "runs": [
+            97.4458528415501,
+            87.00084961767205,
+            109.98453342500471
+          ],
+          "parseP50Ms": 1.599999999627471,
+          "renderP50Ms": 8.299999998882413,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "append",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 3742.690058459148,
+          "range": [
+            3570.432357080337,
+            3908.3969465648856
+          ],
+          "runs": [
+            3742.690058459148,
+            3908.3969465648856,
+            3570.432357080337
+          ],
+          "parseP50Ms": 0,
+          "renderP50Ms": 0.10000000149011612,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 1840.4025880710683,
+          "range": [
+            1802.8169014084508,
+            1849.7109826539806
+          ],
+          "runs": [
+            1840.4025880710683,
+            1849.7109826539806,
+            1802.8169014084508
+          ],
+          "parseP50Ms": 0,
+          "renderP50Ms": 0.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 152.4989575267252,
+          "range": [
+            149.25373134318633,
+            153.6245799327549
+          ],
+          "runs": [
+            149.25373134318633,
+            152.4989575267252,
+            153.6245799327549
+          ],
+          "parseP50Ms": 0,
+          "renderP50Ms": 6.300000000745058,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 20.975182098992388,
+          "range": [
+            20.74722424831834,
+            20.98171476342361
+          ],
+          "runs": [
+            20.975182098992388,
+            20.74722424831834,
+            20.98171476342361
+          ],
+          "parseP50Ms": 0,
+          "renderP50Ms": 39.399999998509884,
+          "gpuFenced": false,
+          "validation": true,
+          "errors": []
+        },
+        "webgl": {
+          "median": 599.5316159250585,
+          "range": [
+            595.6258724978042,
+            624.085811797422
+          ],
+          "runs": [
+            624.085811797422,
+            599.5316159250585,
+            595.6258724978042
+          ],
+          "parseP50Ms": 0,
+          "renderP50Ms": 1.400000000372529,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 1458.6894586894587,
+          "range": [
+            798.7519500780031,
+            1463.6935391621196
+          ],
+          "runs": [
+            798.7519500780031,
+            1463.6935391621196,
+            1458.6894586894587
+          ],
+          "parseP50Ms": 0.40000000037252903,
+          "renderP50Ms": 0.2000000011175871,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 1002.3492560674495,
+          "range": [
+            555.7967867980282,
+            1003.9215686274509
+          ],
+          "runs": [
+            555.7967867980282,
+            1003.9215686274509,
+            1002.3492560674495
+          ],
+          "parseP50Ms": 0.5,
+          "renderP50Ms": 0.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 182.92247231153985,
+          "range": [
+            106.82244940538286,
+            185.5206899050155
+          ],
+          "runs": [
+            106.82244940538286,
+            182.92247231153985,
+            185.5206899050155
+          ],
+          "parseP50Ms": 0.8000000007450581,
+          "renderP50Ms": 4.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 32.40055182189975,
+          "range": [
+            19.077427528131754,
+            32.86644156577939
+          ],
+          "runs": [
+            19.077427528131754,
+            32.40055182189975,
+            32.86644156577939
+          ],
+          "parseP50Ms": 0.900000000372529,
+          "renderP50Ms": 25.90000000037253,
+          "gpuFenced": false,
+          "validation": true,
+          "errors": []
+        },
+        "webgl": {
+          "median": 575.9280089988752,
+          "range": [
+            563.132424107261,
+            603.2045240360482
+          ],
+          "runs": [
+            603.2045240360482,
+            575.9280089988752,
+            563.132424107261
+          ],
+          "parseP50Ms": 0.599999999627471,
+          "renderP50Ms": 0.8000000007450581,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "pipes",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 456.00285001751,
+          "range": [
+            447.70898915646455,
+            461.26126126126127
+          ],
+          "runs": [
+            447.70898915646455,
+            456.00285001751,
+            461.26126126126127
+          ],
+          "parseP50Ms": 1.900000000372529,
+          "renderP50Ms": 0.2000000011175871,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 248.35079549846233,
+          "range": [
+            243.9489231941196,
+            250.12212994626282
+          ],
+          "runs": [
+            243.9489231941196,
+            250.12212994626282,
+            248.35079549846233
+          ],
+          "parseP50Ms": 3.300000000745058,
+          "renderP50Ms": 0.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 126.92117005453645,
+          "range": [
+            126.41975308641975,
+            131.05354766058937
+          ],
+          "runs": [
+            126.92117005453645,
+            131.05354766058937,
+            126.41975308641975
+          ],
+          "parseP50Ms": 5,
+          "renderP50Ms": 2.599999999627471,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 25.803850418304606,
+          "range": [
+            25.761006289308177,
+            25.945858291021246
+          ],
+          "runs": [
+            25.803850418304606,
+            25.761006289308177,
+            25.945858291021246
+          ],
+          "parseP50Ms": 5,
+          "renderP50Ms": 37.5,
+          "gpuFenced": false,
+          "validation": true,
+          "errors": []
+        },
+        "webgl": {
+          "median": 242.4472014394447,
+          "range": [
+            237.30070448630255,
+            252.3908113968372
+          ],
+          "runs": [
+            252.3908113968372,
+            242.4472014394447,
+            237.30070448630255
+          ],
+          "parseP50Ms": 2.300000000745058,
+          "renderP50Ms": 1.400000000372529,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "dense-no-combining",
+      "dpr": 1,
+      "targets": {
+        "wraith": {
+          "median": 918.2209469128977,
+          "range": [
+            910.060433698265,
+            919.2100538599641
+          ],
+          "runs": [
+            910.060433698265,
+            919.2100538599641,
+            918.2209469128977
+          ],
+          "parseP50Ms": 0.7999999988824129,
+          "renderP50Ms": 0.30000000074505806,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 650.0761808042827,
+          "range": [
+            647.2819216182048,
+            651.0681586990974
+          ],
+          "runs": [
+            650.0761808042827,
+            651.0681586990974,
+            647.2819216182048
+          ],
+          "parseP50Ms": 1,
+          "renderP50Ms": 0.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 111.3430758525065,
+          "range": [
+            110.27353004522938,
+            111.5808743407213
+          ],
+          "runs": [
+            111.5808743407213,
+            110.27353004522938,
+            111.3430758525065
+          ],
+          "parseP50Ms": 1.5,
+          "renderP50Ms": 7.400000000372529,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 25.725282123946496,
+          "range": [
+            25.652587805000252,
+            25.848403154311974
+          ],
+          "runs": [
+            25.725282123946496,
+            25.652587805000252,
+            25.848403154311974
+          ],
+          "parseP50Ms": 1.599999999627471,
+          "renderP50Ms": 41.5,
+          "gpuFenced": false,
+          "validation": true,
+          "errors": []
+        },
+        "webgl": {
+          "median": 264.6541920808465,
+          "range": [
+            255.69316819835248,
+            270.7275803718238
+          ],
+          "runs": [
+            270.7275803718238,
+            264.6541920808465,
+            255.69316819835248
+          ],
+          "parseP50Ms": 0.900000000372529,
+          "renderP50Ms": 2.300000000745058,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "workload": "complex",
+      "dpr": 2,
+      "targets": {
+        "wraith": {
+          "median": 861.0830810607415,
+          "range": [
+            853.9026017376729,
+            884.5888044218053
+          ],
+          "runs": [
+            884.5888044218053,
+            853.9026017376729,
+            861.0830810607415
+          ],
+          "parseP50Ms": 0.8000000007450581,
+          "renderP50Ms": 0.30000000074505806,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty": {
+          "median": 594.1053608720787,
+          "range": [
+            592.4554501277961,
+            610.8327368175318
+          ],
+          "runs": [
+            592.4554501277961,
+            610.8327368175318,
+            594.1053608720787
+          ],
+          "parseP50Ms": 1.099999999627471,
+          "renderP50Ms": 0.5,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "restty": {
+          "median": 108.30935860553407,
+          "range": [
+            104.45995021825733,
+            108.37355008038222
+          ],
+          "runs": [
+            104.45995021825733,
+            108.30935860553407,
+            108.37355008038222
+          ],
+          "parseP50Ms": 1.599999999627471,
+          "renderP50Ms": 7.599999999627471,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        },
+        "ghostty-web": {
+          "median": 11.355269111006814,
+          "range": [
+            11.249730841400952,
+            11.467376210570078
+          ],
+          "runs": [
+            11.467376210570078,
+            11.249730841400952,
+            11.355269111006814
+          ],
+          "parseP50Ms": 2.199999999254942,
+          "renderP50Ms": 111.30000000074506,
+          "gpuFenced": false,
+          "validation": false,
+          "errors": []
+        },
+        "webgl": {
+          "median": 242.93034731430916,
+          "range": [
+            227.83908864372097,
+            244.76527392667447
+          ],
+          "runs": [
+            242.93034731430916,
+            244.76527392667447,
+            227.83908864372097
+          ],
+          "parseP50Ms": 0.900000000372529,
+          "renderP50Ms": 2.599999999627471,
+          "gpuFenced": true,
+          "validation": true,
+          "errors": []
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "mismatches": [
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 0,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 1,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "churn",
+      "dpr": 1,
+      "repeat": 2,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 0,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 0,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 0,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 1,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 1,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 1,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 2,
+      "phase": "public-buffer-text",
+      "reference": "same terminal grapheme-aware core snapshot",
+      "offset": 322,
+      "actual": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇ea0123456789",
+      "expected": "ρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä012345",
+      "actualLength": 19279,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 2,
+      "phase": "initial",
+      "reference": "wraith",
+      "offset": 10583,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19702,
+      "expectedLength": 19702
+    },
+    {
+      "target": "ghostty-web",
+      "workload": "complex",
+      "dpr": 2,
+      "repeat": 2,
+      "phase": "final",
+      "reference": "wraith",
+      "offset": 7380,
+      "actual": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇é̈a\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "expected": "στυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä\n-_!@#$%^&*~αβγδεζηθλμνξπρστυφψω─│┌┐└┘├┤┬┴┼░▒▓█▁▂▃▄▅▆▇éä0123456789abcdefABCDEF{}[]();:/=>+-_!@#$",
+      "actualLength": 19701,
+      "expectedLength": 19701
+    }
+  ]
+}

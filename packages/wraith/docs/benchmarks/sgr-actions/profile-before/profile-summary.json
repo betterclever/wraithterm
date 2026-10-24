@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-11T06:57:26.774Z",
+  "iterations": 2048,
+  "warmup": 32,
+  "sourceDirectory": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline",
+  "sdkSources": {
+    "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+    "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+    "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+    "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+    "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+    "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+    "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+    "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+    "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+    "xterm-internals.ts": "86ca053753d7b04c8a1884798bed1edcddf967a831f655647541e6dbf52d8271",
+    "xterm-renderer.ts": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b",
+    "xterm.ts": "a0cfc1004d54f13529038320d770194a56bdb5f875e4f70d545d4da6b9cbbe31"
+  },
+  "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "samplingIntervalUs": 500,
+  "measuredSeparatelyFromBenchmark": true,
+  "activeSampledMs": 2929.113,
+  "inclusiveGroups": [
+    {
+      "name": "parser including callees",
+      "sampledMs": 2086.065,
+      "sampledPercent": 71.21831762721342
+    },
+    {
+      "name": "other renderer work",
+      "sampledMs": 278.507,
+      "sampledPercent": 9.508236793868997
+    },
+    {
+      "name": "packing including callees",
+      "sampledMs": 467.168,
+      "sampledPercent": 15.949128626993906
+    },
+    {
+      "name": "other sampled work",
+      "sampledMs": 97.373,
+      "sampledPercent": 3.324316951923671
+    }
+  ],
+  "hot": [
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 6606,
+      "selfMs": 912.411,
+      "selfPercent": 31.149737138853983
+    },
+    {
+      "name": "_extractColor",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 7374,
+      "selfMs": 329.095,
+      "selfPercent": 11.235312533179838
+    },
+    {
+      "name": "pack",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-renderer.ts",
+      "line": 295,
+      "selfMs": 323.677,
+      "selfPercent": 11.05034186117094
+    },
+    {
+      "name": "print",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 6917,
+      "selfMs": 303.174,
+      "selfPercent": 10.350368865933133
+    },
+    {
+      "name": "charAttributes",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 7406,
+      "selfMs": 264.765,
+      "selfPercent": 9.039084528319666
+    },
+    {
+      "name": "decode",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 87,
+      "selfMs": 240.589,
+      "selfPercent": 8.21371521003116
+    },
+    {
+      "name": "writeBuffer",
+      "url": "",
+      "line": 0,
+      "selfMs": 196.924,
+      "selfPercent": 6.7229908849539095
+    },
+    {
+      "name": "(garbage collector)",
+      "url": "",
+      "line": 0,
+      "selfMs": 69.076,
+      "selfPercent": 2.3582565780152556
+    },
+    {
+      "name": "scalar",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-atlas.ts",
+      "line": 56,
+      "selfMs": 42.47,
+      "selfPercent": 1.4499269915500017
+    },
+    {
+      "name": "tile",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-atlas.ts",
+      "line": 119,
+      "selfMs": 34.666,
+      "selfPercent": 1.1834982125988311
+    },
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 6899,
+      "selfMs": 30.331,
+      "selfPercent": 1.0355011909748788
+    },
+    {
+      "name": "resolveColor",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-renderer.ts",
+      "line": 22,
+      "selfMs": 28.216,
+      "selfPercent": 0.9632950316358571
+    },
+    {
+      "name": "loadCell",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 5416,
+      "selfMs": 23.977,
+      "selfPercent": 0.818575452705307
+    },
+    {
+      "name": "submit",
+      "url": "",
+      "line": 0,
+      "selfMs": 10.119,
+      "selfPercent": 0.34546294390144733
+    },
+    {
+      "name": "(anonymous)",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=ce5d721b",
+      "line": 6880,
+      "selfMs": 10.058,
+      "selfPercent": 0.34338040219001453
+    },
+    {
+      "name": "createView",
+      "url": "",
+      "line": 0,
+      "selfMs": 9.49,
+      "selfPercent": 0.32398886625405027
+    },
+    {
+      "name": "wordColor",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-renderer.ts",
+      "line": 13,
+      "selfMs": 9.346,
+      "selfPercent": 0.3190727022139467
+    },
+    {
+      "name": "beginRenderPass",
+      "url": "",
+      "line": 0,
+      "selfMs": 6.95,
+      "selfPercent": 0.23727319499111163
+    },
+    {
+      "name": "renderRows",
+      "url": "http://127.0.0.1:5190/@fs/Users/betterclever/Documents/Codex/2026-10-09/thi/work/parser-baseline/packages/wraith/src/xterm-renderer.ts",
+      "line": 186,
+      "selfMs": 4.984,
+      "selfPercent": 0.1701538998324749
+    },
+    {
+      "name": "decode",
+      "url": "",
+      "line": 0,
+      "selfMs": 3.778,
+      "selfPercent": 0.12898102599660716
+    }
+  ]
+}

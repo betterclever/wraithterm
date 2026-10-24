@@ -1,5 +1,10 @@
 # Wraith launch video: "The Arrival"
 
+The latest revision adds the website ghost and an interactive terminal showcase:
+[Ghost Reactor](GHOST_REACTOR.md). The 40-second film tells the product story: real output, measured CPU
+advantage, and two integration paths. See [the product cut](PRODUCT.md). Earlier
+cuts: [Phantom](PHANTOM.md) and [Velocity](VELOCITY.md).
+
 A 62-second, 1920×1080, 60 fps launch video made with
 [fframes](https://github.com/dmtrKovalenko/fframes) (Skia on Metal), following fframes'
 official [`fframes-video` skill](https://github.com/dmtrKovalenko/fframes/tree/main/skills/fframes-video).

@@ -1,0 +1,6625 @@
+{
+  "date": "2026-10-11T05:24:42.686Z",
+  "builds": {
+    "before": {
+      "directory": "/Users/betterclever/Documents/Codex/2026-10-09/thi/work/retained-rows-baseline",
+      "head": "951e53d59a8a551d5a64a6aecf367b106bd92626",
+      "wasmSha256": "cb823209679769fe8b8f25060401f630f596ba590124ebbe37e2242fc9d1ed20",
+      "rendererSha256": "dc27c99bcc6fef86ddd370e86697bf2fe227928ed45fd92e01c44d261d57acc2"
+    },
+    "after": {
+      "directory": "/Users/betterclever/projects/wraith",
+      "head": "e40f434fcc3358119a2650fece1e427f792a8ee0",
+      "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+      "rendererSha256": "367bb6afb5c90adfaa38023cf391c61c08fdde1cba5e0f4c3ce939b66c20db6b"
+    }
+  },
+  "repetitions": 3,
+  "frames": 512,
+  "headless": true,
+  "textNormalization": "remove trailing ASCII spaces/tabs per row and trailing empty rows",
+  "grid": {
+    "cols": 240,
+    "rows": 80,
+    "cells": 19200
+  },
+  "conditions": [
+    {
+      "workload": "complex",
+      "dpr": 1
+    },
+    {
+      "workload": "churn",
+      "dpr": 1
+    },
+    {
+      "workload": "append",
+      "dpr": 1
+    },
+    {
+      "workload": "showcase",
+      "dpr": 1
+    },
+    {
+      "workload": "complex",
+      "dpr": 2
+    }
+  ],
+  "xterm": "6.0.0",
+  "webglAddon": "0.19.0",
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18,
+    "memoryGiB": 48,
+    "platform": "darwin",
+    "release": "27.2.0"
+  },
+  "results": [
+    {
+      "target": "wraith-before",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.300000011920929,
+        "p99": 1.4000000357627869,
+        "mean": 1.059374999254942
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.31601562502328306
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.7000000476837158,
+        "mean": 1.3406249998370185
+      },
+      "pipelineElapsedMs": 700.1000000238419,
+      "pipelineUpdatesPerSecond": 731.3240965327294,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 149.65844722565615,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 789.6999999880791,
+        "renderCallbacksPerSecond": 60.78257566256121,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 19,
+          "p99": 19.099999964237213,
+          "mean": 16.644680851317467
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.5,
+          "p99": 2.199999988079071,
+          "mean": 0.9562499982615312
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.300000011920929,
+        "mean": 1.004687499254942
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.32031249965075403
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.600000023841858,
+        "p99": 1.699999988079071,
+        "mean": 1.3289062503026798
+      },
+      "pipelineElapsedMs": 694.8000000119209,
+      "pipelineUpdatesPerSecond": 736.9027058019797,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 150.80005599374255,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 802.3000000119209,
+        "renderCallbacksPerSecond": 59.82799451487822,
+        "frameIntervalMs": {
+          "p50": 16.69999998807907,
+          "p95": 18.5,
+          "p99": 18.69999998807907,
+          "mean": 16.69148936170213
+        },
+        "rendererCpuMs": {
+          "p50": 0.699999988079071,
+          "p95": 1.600000023841858,
+          "p99": 1.800000011920929,
+          "mean": 0.8979166609545549
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 24
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 0,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1,
+        "mean": 0.907812500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.099999964237213,
+        "p95": 2.599999964237213,
+        "p99": 3.100000023841858,
+        "mean": 2.1353515622904524
+      },
+      "pipelineCpuMs": {
+        "p50": 3,
+        "p95": 3.600000023841858,
+        "p99": 4.100000023841858,
+        "mean": 3.0537109376164153
+      },
+      "pipelineElapsedMs": 1781.6000000238419,
+      "pipelineUpdatesPerSecond": 287.3821284200428,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 58.809990404607014,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 801.8999999761581,
+        "renderCallbacksPerSecond": 59.857837637395086,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.599999964237213,
+          "p99": 19,
+          "mean": 16.719148935155665
+        },
+        "rendererCpuMs": {
+          "p50": 3.899999976158142,
+          "p95": 4.900000035762787,
+          "p99": 5.299999952316284,
+          "mean": 4.00000000372529
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 17
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.199999988079071,
+        "mean": 1.048437500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4910156255355105
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5999999642372131,
+        "p95": 1.699999988079071,
+        "p99": 1.899999976158142,
+        "mean": 1.5603515624534339
+      },
+      "pipelineElapsedMs": 814.1999999880791,
+      "pipelineUpdatesPerSecond": 628.8381233204327,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 128.6856778528421,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.0999999642372131,
+        "p95": 1.100000023841858,
+        "p99": 1.199999988079071,
+        "mean": 1.0656249998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5999999642372131,
+        "p95": 0.699999988079071,
+        "p99": 0.7000000476837158,
+        "mean": 0.558593749650754
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5999999642372131,
+        "p95": 1.699999988079071,
+        "p99": 1.899999976158142,
+        "mean": 1.5644531247671694
+      },
+      "pipelineElapsedMs": 816,
+      "pipelineUpdatesPerSecond": 627.4509803921569,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 128.4018123851103,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.2000000476837158,
+        "mean": 0.9968750001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.31621093733701855
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.4000000357627869,
+        "p99": 1.600000023841858,
+        "mean": 1.3025390623370185
+      },
+      "pipelineElapsedMs": 677.1999999880791,
+      "pipelineUpdatesPerSecond": 756.0543414190976,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 154.7192541466249,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 787.0999999642372,
+        "renderCallbacksPerSecond": 60.98335662835845,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.200000047683716,
+          "p99": 18.5,
+          "mean": 16.68723404280683
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.5,
+          "p99": 1.600000023841858,
+          "mean": 0.9583333370586237
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.0999999642372131,
+        "p95": 1.100000023841858,
+        "p99": 1.2000000476837158,
+        "mean": 1.0593750001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.48769531154539436
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5999999642372131,
+        "p95": 1.699999988079071,
+        "p99": 1.899999976158142,
+        "mean": 1.5624999998835847
+      },
+      "pipelineElapsedMs": 815.0999999642372,
+      "pipelineUpdatesPerSecond": 628.143786066083,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 128.54358840736975,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.0999999642372131,
+        "p95": 1.199999988079071,
+        "p99": 1.2000000476837158,
+        "mean": 1.0859375
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.49843750009313226
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 1.699999988079071,
+        "p99": 1.9000000357627869,
+        "mean": 1.5923828124068677
+      },
+      "pipelineElapsedMs": 831.2000000476837,
+      "pipelineUpdatesPerSecond": 615.9769008308806,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 126.05375228613967,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 1,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.8999999761581421,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.9171874998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.099999964237213,
+        "p95": 2.5,
+        "p99": 2.900000035762787,
+        "mean": 2.1097656248603016
+      },
+      "pipelineCpuMs": {
+        "p50": 3.5,
+        "p95": 4.600000023841858,
+        "p99": 5,
+        "mean": 3.5910156248137355
+      },
+      "pipelineElapsedMs": 2056.2999999523163,
+      "pipelineUpdatesPerSecond": 248.99090600198065,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 50.95359573441602,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 792.1999999880791,
+        "renderCallbacksPerSecond": 60.590759910025625,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.899999976158142,
+          "p99": 19.80000001192093,
+          "mean": 16.678723403748045
+        },
+        "rendererCpuMs": {
+          "p50": 3.899999976158142,
+          "p95": 5.299999952316284,
+          "p99": 5.5,
+          "mean": 3.9208333330849805
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.2000000476837158,
+        "mean": 1.0031249998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.32011718780267984
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.699999988079071,
+        "mean": 1.3337890625698492
+      },
+      "pipelineElapsedMs": 690.8999999761581,
+      "pipelineUpdatesPerSecond": 741.0623824253413,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 151.65129383393494,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 787.8000000119209,
+        "renderCallbacksPerSecond": 60.92916983913895,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.5,
+          "p99": 19.19999998807907,
+          "mean": 16.674468084852744
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.5,
+          "p99": 1.699999988079071,
+          "mean": 0.9562499982615312
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 2,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.300000011920929,
+        "mean": 0.959374999627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.100000023841858,
+        "p95": 2.700000047683716,
+        "p99": 3.400000035762787,
+        "mean": 2.19921875
+      },
+      "pipelineCpuMs": {
+        "p50": 3.100000023841858,
+        "p95": 3.600000023841858,
+        "p99": 4.100000023841858,
+        "mean": 3.1759765626629815
+      },
+      "pipelineElapsedMs": 1868.300000011921,
+      "pipelineUpdatesPerSecond": 274.04592410037634,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 56.08086437166486,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 789.3999999761581,
+        "renderCallbacksPerSecond": 60.80567519818814,
+        "frameIntervalMs": {
+          "p50": 16.80000001192093,
+          "p95": 18.5,
+          "p99": 19,
+          "mean": 16.689361701620385
+        },
+        "rendererCpuMs": {
+          "p50": 3.900000035762787,
+          "p95": 4.800000011920929,
+          "p99": 5,
+          "mean": 3.9416666689018407
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 26
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.0999999642372131,
+        "p95": 1.199999988079071,
+        "p99": 1.2000000476837158,
+        "mean": 1.084374999627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5999999642372131,
+        "p95": 0.699999988079071,
+        "p99": 0.7000000476837158,
+        "mean": 0.5687499986961484
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 1.899999976158142,
+        "p99": 1.9000000357627869,
+        "mean": 1.6064453127328306
+      },
+      "pipelineElapsedMs": 837.7000000476837,
+      "pipelineUpdatesPerSecond": 611.197325976908,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 125.07565823121156,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.0999999642372131,
+        "p95": 1.199999988079071,
+        "p99": 1.199999988079071,
+        "mean": 1.079687500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4951171880820766
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5999999642372131,
+        "p95": 1.699999988079071,
+        "p99": 1.899999976158142,
+        "mean": 1.5705078124301508
+      },
+      "pipelineElapsedMs": 820.2000000476837,
+      "pipelineUpdatesPerSecond": 624.2379906976762,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 127.74430492582137,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.300000011920929,
+        "mean": 1.006249999627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.3148437502095476
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.316015625023283
+      },
+      "pipelineElapsedMs": 686.3999999761581,
+      "pipelineUpdatesPerSecond": 745.9207459466552,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 152.64551123235628,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 795.1000000238419,
+        "renderCallbacksPerSecond": 60.369764807647684,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.599999964237213,
+          "p99": 18.69999998807907,
+          "mean": 16.674468084852744
+        },
+        "rendererCpuMs": {
+          "p50": 0.7000000476837158,
+          "p95": 1.5,
+          "p99": 1.5999999642372131,
+          "mean": 0.8770833251376947
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.199999988079071,
+        "mean": 1
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.31621093745343387
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.600000023841858,
+        "p99": 1.7000000476837158,
+        "mean": 1.3400390624301508
+      },
+      "pipelineElapsedMs": 700.3000000119209,
+      "pipelineUpdatesPerSecond": 731.1152363148428,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 149.61570598952798,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 799.4000000357628,
+        "renderCallbacksPerSecond": 60.04503377264526,
+        "frameIntervalMs": {
+          "p50": 16.69999998807907,
+          "p95": 18.30000001192093,
+          "p99": 18.400000035762787,
+          "mean": 16.648936170212767
+        },
+        "rendererCpuMs": {
+          "p50": 0.7000000476837158,
+          "p95": 1.300000011920929,
+          "p99": 1.300000011920929,
+          "mean": 0.8166666689018408
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 24
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.2000000476837158,
+        "p99": 1.300000011920929,
+        "mean": 1.015625
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.31757812516298145
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.699999988079071,
+        "mean": 1.322656250325963
+      },
+      "pipelineElapsedMs": 685.5,
+      "pipelineUpdatesPerSecond": 746.9000729394603,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 143.15793672501823,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 796.3999999761581,
+        "renderCallbacksPerSecond": 60.27122049401931,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.30000001192093,
+          "p99": 19.30000001192093,
+          "mean": 16.653191490376248
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.4000000357627869,
+          "p99": 1.600000023841858,
+          "mean": 0.9729166701436043
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.2000000476837158,
+        "mean": 1.0062500005587935
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.3226562502095476
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3240234376862645
+      },
+      "pipelineElapsedMs": 686.5,
+      "pipelineUpdatesPerSecond": 745.8120903131828,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 142.9494036780772,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 792,
+        "renderCallbacksPerSecond": 60.60606060606061,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.599999964237213,
+          "p99": 18.80000001192093,
+          "mean": 16.668085105875704
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.5,
+          "p99": 1.600000023841858,
+          "mean": 0.9999999975164732
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 19
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 0,
+      "type": "webgl",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.2999999523162842,
+        "mean": 0.9500000001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.199999988079071,
+        "p95": 3.199999988079071,
+        "p99": 4.099999964237213,
+        "mean": 2.2820312497206032
+      },
+      "pipelineCpuMs": {
+        "p50": 3.399999976158142,
+        "p95": 4.699999988079071,
+        "p99": 5.300000011920929,
+        "mean": 3.5060546876629815
+      },
+      "pipelineElapsedMs": 2010.2000000476837,
+      "pipelineUpdatesPerSecond": 254.70102476761264,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 48.818408925814424,
+      "cacheBefore": {
+        "atlasPages": 16,
+        "glyphs": 151800
+      },
+      "cacheAfter": {
+        "atlasPages": 16,
+        "glyphs": 151800
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 805.0999999642372,
+        "renderCallbacksPerSecond": 59.61992299358114,
+        "frameIntervalMs": {
+          "p50": 16.69999998807907,
+          "p95": 18.799999952316284,
+          "p99": 19,
+          "mean": 16.689361701620385
+        },
+        "rendererCpuMs": {
+          "p50": 3.699999988079071,
+          "p95": 4.800000011920929,
+          "p99": 6,
+          "mean": 3.825000005463759
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 24
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-before",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.800000011920929,
+        "p95": 1.9000000357627869,
+        "p99": 2,
+        "mean": 1.743750000372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.5048828125
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.5,
+        "p99": 2.600000023841858,
+        "mean": 2.261328125023283
+      },
+      "pipelineElapsedMs": 1176.300000011921,
+      "pipelineUpdatesPerSecond": 435.26311314699586,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 83.42664764431308,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-after",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.800000011920929,
+        "p95": 2,
+        "p99": 2,
+        "mean": 1.7468750001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.49277343798894435
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.5,
+        "p99": 2.600000023841858,
+        "mean": 2.268359374953434
+      },
+      "pipelineElapsedMs": 1181.0999999642372,
+      "pipelineUpdatesPerSecond": 433.49420033485984,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 83.0876010735513,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.300000011920929,
+        "mean": 1.001562500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.3162109376862645
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3224609373137355
+      },
+      "pipelineElapsedMs": 686.9000000357628,
+      "pipelineUpdatesPerSecond": 745.3777842092637,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 142.86616045987873,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 795.6000000238419,
+        "renderCallbacksPerSecond": 60.33182503589942,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.200000047683716,
+          "p99": 19.399999976158142,
+          "mean": 16.659574468085108
+        },
+        "rendererCpuMs": {
+          "p50": 0.8999999761581421,
+          "p95": 1.5,
+          "p99": 1.899999976158142,
+          "mean": 0.9416666639347872
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 20
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-after",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.800000011920929,
+        "p95": 1.9000000357627869,
+        "p99": 2,
+        "mean": 1.7374999998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.699999988079071,
+        "p99": 0.7000000476837158,
+        "mean": 0.5494140627561137
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.5,
+        "p99": 2.599999964237213,
+        "mean": 2.2474609375931323
+      },
+      "pipelineElapsedMs": 1169.5,
+      "pipelineUpdatesPerSecond": 437.7939290294998,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 83.91172776827705,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-before",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.800000011920929,
+        "p95": 2,
+        "p99": 2,
+        "mean": 1.7609374998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.699999988079071,
+        "mean": 0.5021484369644895
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.699999988079071,
+        "p99": 3,
+        "mean": 2.3095703125
+      },
+      "pipelineElapsedMs": 1201.0999999642372,
+      "pipelineUpdatesPerSecond": 426.2759137584255,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 81.70407595364414,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 1,
+      "type": "webgl",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.2000000476837158,
+        "mean": 0.9390624994412065
+      },
+      "renderAndLayoutMs": {
+        "p50": 2,
+        "p95": 3,
+        "p99": 3.600000023841858,
+        "mean": 2.174609374953434
+      },
+      "pipelineCpuMs": {
+        "p50": 3,
+        "p95": 4,
+        "p99": 4.5,
+        "mean": 3.160546874976717
+      },
+      "pipelineElapsedMs": 1850,
+      "pipelineUpdatesPerSecond": 276.7567567567568,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 53.04581925675675,
+      "cacheBefore": {
+        "atlasPages": 15,
+        "glyphs": 151800
+      },
+      "cacheAfter": {
+        "atlasPages": 15,
+        "glyphs": 151800
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 803.8999999761581,
+        "renderCallbacksPerSecond": 59.70891902154941,
+        "frameIntervalMs": {
+          "p50": 16.400000035762787,
+          "p95": 18.600000023841858,
+          "p99": 19.30000001192093,
+          "mean": 16.668085105875704
+        },
+        "rendererCpuMs": {
+          "p50": 3.699999988079071,
+          "p95": 5.5,
+          "p99": 5.800000011920929,
+          "mean": 3.8895833330849805
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.300000011920929,
+        "p99": 1.5,
+        "mean": 1.0656249998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.3166015623137355
+      },
+      "pipelineCpuMs": {
+        "p50": 1.399999976158142,
+        "p95": 1.600000023841858,
+        "p99": 1.800000011920929,
+        "mean": 1.3824218752561137
+      },
+      "pipelineElapsedMs": 722.8000000119209,
+      "pipelineUpdatesPerSecond": 708.3563917979465,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 135.77029001574638,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 787.8000000119209,
+        "renderCallbacksPerSecond": 60.92916983913895,
+        "frameIntervalMs": {
+          "p50": 16.400000035762787,
+          "p95": 18.400000035762787,
+          "p99": 18.80000001192093,
+          "mean": 16.648936170212767
+        },
+        "rendererCpuMs": {
+          "p50": 0.9000000357627869,
+          "p95": 1.300000011920929,
+          "p99": 1.5,
+          "mean": 0.900000004718701
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 19
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 2,
+      "type": "webgl",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.300000011920929,
+        "mean": 0.939062500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 2,
+        "p95": 2.800000011920929,
+        "p99": 3.400000035762787,
+        "mean": 2.136523437569849
+      },
+      "pipelineCpuMs": {
+        "p50": 3,
+        "p95": 3.800000011920929,
+        "p99": 4.300000011920929,
+        "mean": 3.114648437476717
+      },
+      "pipelineElapsedMs": 1825.4000000357628,
+      "pipelineUpdatesPerSecond": 280.4864687136896,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 53.76069114883169,
+      "cacheBefore": {
+        "atlasPages": 15,
+        "glyphs": 151800
+      },
+      "cacheAfter": {
+        "atlasPages": 15,
+        "glyphs": 151800
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 789.5,
+        "renderCallbacksPerSecond": 60.79797340088664,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.599999964237213,
+          "p99": 19.600000023841858,
+          "mean": 16.678723403748045
+        },
+        "rendererCpuMs": {
+          "p50": 3.600000023841858,
+          "p95": 5.300000011920929,
+          "p99": 6.599999964237213,
+          "mean": 3.7208333301047483
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-before",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 2.199999988079071,
+        "p95": 2.399999976158142,
+        "p99": 2.400000035762787,
+        "mean": 2.095312500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.699999988079071,
+        "p99": 0.7000000476837158,
+        "mean": 0.5267578116618097
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.699999988079071,
+        "p99": 2.899999976158142,
+        "mean": 2.3037109375
+      },
+      "pipelineElapsedMs": 1199.5,
+      "pipelineUpdatesPerSecond": 426.84451854939556,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 81.8130601292205,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "native-after",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.800000011920929,
+        "p95": 1.9000000357627869,
+        "p99": 2,
+        "mean": 1.7437499994412065
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4953125003958121
+      },
+      "pipelineCpuMs": {
+        "p50": 2.300000011920929,
+        "p95": 2.5,
+        "p99": 2.5,
+        "mean": 2.247851562569849
+      },
+      "pipelineElapsedMs": 1170.9000000357628,
+      "pipelineUpdatesPerSecond": 437.2704756890956,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 83.81139774703448,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.2000000476837158,
+        "p99": 1.399999976158142,
+        "mean": 1.034375000745058
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.31953125004656613
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.699999988079071,
+        "mean": 1.3384765622904524
+      },
+      "pipelineElapsedMs": 694.4000000357628,
+      "pipelineUpdatesPerSecond": 737.3271889021186,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 141.32310717158109,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 799,
+        "renderCallbacksPerSecond": 60.07509386733417,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.5,
+          "p99": 19,
+          "mean": 16.655319149189808
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.399999976158142,
+          "p99": 1.5999999642372131,
+          "mean": 0.9437500002483526
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "churn",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 200980,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.0999999642372131,
+        "p99": 1.199999988079071,
+        "mean": 0.998437499627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.31484374997671694
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3244140626629815
+      },
+      "pipelineElapsedMs": 687.3999999761581,
+      "pipelineUpdatesPerSecond": 744.8356124785544,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 142.76224269479738,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 798.1000000238419,
+        "renderCallbacksPerSecond": 60.142839241405945,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.5,
+          "p99": 18.80000001192093,
+          "mean": 16.674468086120932
+        },
+        "rendererCpuMs": {
+          "p50": 1.100000023841858,
+          "p95": 1.600000023841858,
+          "p99": 1.600000023841858,
+          "mean": 1.0499999982615311
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "9c0c2fd061b46d4eca656cd4128bfbf5307db945867174d87a407c04808e836f",
+      "finalTextSha256": "160a3ed6b36dd1e5d66e5b6a77aaaa38259d8ad9b3b877143b3f51ba89c09dad"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.40000003576278687,
+        "mean": 0.04843750037252903
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.30000001192092896,
+        "p99": 0.30000001192092896,
+        "mean": 0.17207031266298145
+      },
+      "pipelineCpuMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.30000001192092896,
+        "p99": 0.3999999761581421,
+        "mean": 0.18964843754656613
+      },
+      "pipelineElapsedMs": 123.60000002384186,
+      "pipelineUpdatesPerSecond": 4142.394821207424,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 5.171198674164312,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 803.8000000119209,
+        "renderCallbacksPerSecond": 59.71634734920145,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.100000023841858,
+          "p99": 18.80000001192093,
+          "mean": 16.685106383993272
+        },
+        "rendererCpuMs": {
+          "p50": 2.699999988079071,
+          "p95": 3.300000011920929,
+          "p99": 3.300000011920929,
+          "mean": 2.7458333348234496
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 21388800,
+        "rowMap": 162240
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.19999998807907104,
+        "mean": 0.043750000186264515
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.09999996423721313,
+        "p95": 0.19999998807907104,
+        "p99": 0.20000004768371582,
+        "mean": 0.08398437488358468
+      },
+      "pipelineCpuMs": {
+        "p50": 0.10000002384185791,
+        "p95": 0.20000004768371582,
+        "p99": 0.30000001192092896,
+        "mean": 0.11367187520954758
+      },
+      "pipelineElapsedMs": 90.19999998807907,
+      "pipelineUpdatesPerSecond": 5676.27494531781,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 7.086032775326742,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 801.6000000238419,
+        "renderCallbacksPerSecond": 59.880239519177074,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.80000001192093,
+          "p99": 19.100000023841858,
+          "mean": 16.678723403748045
+        },
+        "rendererCpuMs": {
+          "p50": 2.300000011920929,
+          "p95": 3.900000035762787,
+          "p99": 4.400000035762787,
+          "mean": 2.608333334326744
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 0,
+      "type": "webgl",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.19999998807907104,
+        "mean": 0.040624999441206455
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.800000011920929,
+        "p99": 0.8999999761581421,
+        "mean": 0.7212890627561137
+      },
+      "pipelineCpuMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.800000011920929,
+        "p99": 0.9000000357627869,
+        "mean": 0.7263671871041879
+      },
+      "pipelineElapsedMs": 485,
+      "pipelineUpdatesPerSecond": 1055.6701030927834,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 1.3178559922680413,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 800.1000000238419,
+        "renderCallbacksPerSecond": 59.99250093559513,
+        "frameIntervalMs": {
+          "p50": 16.399999976158142,
+          "p95": 19,
+          "p99": 19.399999976158142,
+          "mean": 16.642553191235724
+        },
+        "rendererCpuMs": {
+          "p50": 2.300000011920929,
+          "p95": 3.300000011920929,
+          "p99": 3.399999976158142,
+          "mean": 2.1750000044703484
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-before",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.01093750074505806
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.40000003576278687,
+        "p99": 0.5,
+        "mean": 0.35820312530267984
+      },
+      "pipelineCpuMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.40000003576278687,
+        "p99": 0.5,
+        "mean": 0.36171875009313226
+      },
+      "pipelineElapsedMs": 194.19999998807907,
+      "pipelineUpdatesPerSecond": 2636.457260717966,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 3.2912469427869966,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-after",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 22118400,
+        "rowMap": 163840
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.012500000186264515
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.28125000023283064
+      },
+      "pipelineCpuMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.28281250002328306
+      },
+      "pipelineElapsedMs": 153.19999998807907,
+      "pipelineUpdatesPerSecond": 3342.0365537848575,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 4.172063683418635,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.20000004768371582,
+        "mean": 0.04374999925494194
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.30000001192092896,
+        "p99": 0.30000001192092896,
+        "mean": 0.16562499979045242
+      },
+      "pipelineCpuMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.30000001192092896,
+        "p99": 0.3999999761581421,
+        "mean": 0.1859374997438863
+      },
+      "pipelineElapsedMs": 120.19999998807907,
+      "pipelineUpdatesPerSecond": 4259.567388109634,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 5.317472182307731,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 802.8000000119209,
+        "renderCallbacksPerSecond": 59.7907324355845,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.30000001192093,
+          "p99": 18.900000035762787,
+          "mean": 16.640425532422167
+        },
+        "rendererCpuMs": {
+          "p50": 2.699999988079071,
+          "p95": 3.399999976158142,
+          "p99": 3.600000023841858,
+          "mean": 2.7854166676600776
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-after",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 22118400,
+        "rowMap": 163840
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.010937499813735485
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.28398437541909516
+      },
+      "pipelineCpuMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.40000003576278687,
+        "mean": 0.28437500004656613
+      },
+      "pipelineElapsedMs": 153.10000002384186,
+      "pipelineUpdatesPerSecond": 3344.219463881565,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 4.174788740368813,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-before",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.010937499813735485
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.40000003576278687,
+        "p99": 0.5,
+        "mean": 0.36132812523283064
+      },
+      "pipelineCpuMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.5,
+        "p99": 0.5,
+        "mean": 0.36757812497671694
+      },
+      "pipelineElapsedMs": 197.39999997615814,
+      "pipelineUpdatesPerSecond": 2593.7183387124574,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 3.2378933957811418,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 1,
+      "type": "webgl",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.30000001192092896,
+        "mean": 0.042187499813735485
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.800000011920929,
+        "p99": 0.800000011920929,
+        "mean": 0.7185546876862645
+      },
+      "pipelineCpuMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.8999999761581421,
+        "p99": 1,
+        "mean": 0.7296874998137355
+      },
+      "pipelineElapsedMs": 479.60000002384186,
+      "pipelineUpdatesPerSecond": 1067.5562968610247,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 1.3326942373190702,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 802.6999999880791,
+        "renderCallbacksPerSecond": 59.7981811395451,
+        "frameIntervalMs": {
+          "p50": 16.80000001192093,
+          "p95": 18.5,
+          "p99": 19.200000047683716,
+          "mean": 16.714893616260365
+        },
+        "rendererCpuMs": {
+          "p50": 1.600000023841858,
+          "p95": 3.200000047683716,
+          "p99": 3.300000011920929,
+          "mean": 1.858333336810271
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 26
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 21388800,
+        "rowMap": 162240
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.2999999523162842,
+        "mean": 0.046875
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.09999996423721313,
+        "p95": 0.19999998807907104,
+        "p99": 0.20000004768371582,
+        "mean": 0.08359374979045242
+      },
+      "pipelineCpuMs": {
+        "p50": 0.10000002384185791,
+        "p95": 0.20000004768371582,
+        "p99": 0.30000001192092896,
+        "mean": 0.10566406254656613
+      },
+      "pipelineElapsedMs": 90.59999996423721,
+      "pipelineUpdatesPerSecond": 5651.214130266039,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 7.054747864263768,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 803.8000000119209,
+        "renderCallbacksPerSecond": 59.71634734920145,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.5,
+          "p99": 19,
+          "mean": 16.689361701620385
+        },
+        "rendererCpuMs": {
+          "p50": 2.800000011920929,
+          "p95": 3.399999976158142,
+          "p99": 3.5,
+          "mean": 2.818749997764826
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 19
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 2,
+      "type": "webgl",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.20000004768371582,
+        "mean": 0.0390625
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.800000011920929,
+        "p99": 0.8999999761581421,
+        "mean": 0.7126953125698492
+      },
+      "pipelineCpuMs": {
+        "p50": 0.699999988079071,
+        "p95": 0.800000011920929,
+        "p99": 0.9000000357627869,
+        "mean": 0.7253906249534339
+      },
+      "pipelineElapsedMs": 487.60000002384186,
+      "pipelineUpdatesPerSecond": 1050.0410171758922,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 1.3108288683731488,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 319
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 802.4000000357628,
+        "renderCallbacksPerSecond": 59.82053838217927,
+        "frameIntervalMs": {
+          "p50": 16.899999976158142,
+          "p95": 18.19999998807907,
+          "p99": 19,
+          "mean": 16.71489361752855
+        },
+        "rendererCpuMs": {
+          "p50": 2.699999988079071,
+          "p95": 3.200000047683716,
+          "p99": 3.300000011920929,
+          "mean": 2.3312500019868216
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 27
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-before",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.01249999925494194
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.5,
+        "p99": 0.5,
+        "mean": 0.3916015620343387
+      },
+      "pipelineCpuMs": {
+        "p50": 0.3999999761581421,
+        "p95": 0.5,
+        "p99": 0.5,
+        "mean": 0.36542968766298145
+      },
+      "pipelineElapsedMs": 195.80000001192093,
+      "pipelineUpdatesPerSecond": 2614.9131765517254,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 3.264352176767548,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "native-after",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 22118400,
+        "rowMap": 163840
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "mean": 0.010937499813735485
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.28281250037252903
+      },
+      "pipelineCpuMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.28437499969732016
+      },
+      "pipelineElapsedMs": 152.30000001192093,
+      "pipelineUpdatesPerSecond": 3361.785948522156,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 4.196718031516554,
+      "cacheBefore": {
+        "glyphVariants": 43,
+        "atlasHits": 27245,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 1712
+      },
+      "cacheAfter": {
+        "glyphVariants": 43,
+        "atlasHits": 884573,
+        "atlasMisses": 43,
+        "atlasResets": 0,
+        "reusedRows": 74345
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.20000004768371582,
+        "mean": 0.04531249962747097
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.2999999523162842,
+        "p99": 0.30000001192092896,
+        "mean": 0.16367187537252903
+      },
+      "pipelineCpuMs": {
+        "p50": 0.19999998807907104,
+        "p95": 0.30000001192092896,
+        "p99": 0.30000001192092896,
+        "mean": 0.18593750020954758
+      },
+      "pipelineElapsedMs": 119.90000003576279,
+      "pipelineUpdatesPerSecond": 4270.225186382692,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 5.330776947951264,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 801,
+        "renderCallbacksPerSecond": 59.9250936329588,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.69999998807907,
+          "p99": 18.900000035762787,
+          "mean": 16.642553192503907
+        },
+        "rendererCpuMs": {
+          "p50": 2.899999976158142,
+          "p95": 3.600000023841858,
+          "p99": 4.599999964237213,
+          "mean": 2.933333339790503
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "append",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 21388800,
+        "rowMap": 162240
+      },
+      "bytesPerFrame": 1309,
+      "sgrChangesPerFrame": 24,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.30000001192092896,
+        "mean": 0.046875
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.09999996423721313,
+        "p95": 0.19999998807907104,
+        "p99": 0.20000004768371582,
+        "mean": 0.08144531270954758
+      },
+      "pipelineCpuMs": {
+        "p50": 0.10000002384185791,
+        "p95": 0.20000004768371582,
+        "p99": 0.30000001192092896,
+        "mean": 0.10566406266298145
+      },
+      "pipelineElapsedMs": 86.40000003576279,
+      "pipelineUpdatesPerSecond": 5925.92592347306,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 7.3976869905722005,
+      "cacheBefore": {
+        "glyphVariants": 43
+      },
+      "cacheAfter": {
+        "glyphVariants": 43
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 802.3999999761581,
+        "renderCallbacksPerSecond": 59.82053838662292,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.600000023841858,
+          "p99": 19,
+          "mean": 16.69574468059743
+        },
+        "rendererCpuMs": {
+          "p50": 2.899999976158142,
+          "p95": 3.300000011920929,
+          "p99": 4.300000011920929,
+          "mean": 2.797916665673256
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "08733c8dc9bd9faa72de56390e19816ea8ae2efb17e5782981d27d143412ef75",
+      "finalTextSha256": "43d2c292292d803d42258ea81958880ba36ca1403f400fb8cd771a730dd8a024"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 0.7000000476837158,
+        "mean": 0.6218749992549419
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.30000001192092896,
+        "p99": 0.5,
+        "mean": 0.2515625001396984
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 0.9000000357627869,
+        "p99": 1,
+        "mean": 0.8527343749301508
+      },
+      "pipelineElapsedMs": 443.2999999523163,
+      "pipelineUpdatesPerSecond": 1154.9740583240998,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 152.2142172507515,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 798.8999999761581,
+        "renderCallbacksPerSecond": 60.08261359548439,
+        "frameIntervalMs": {
+          "p50": 16.30000001192093,
+          "p95": 18.400000035762787,
+          "p99": 19,
+          "mean": 16.627659574468087
+        },
+        "rendererCpuMs": {
+          "p50": 0.8999999761581421,
+          "p95": 1.199999988079071,
+          "p99": 1.199999988079071,
+          "mean": 0.7999999970197678
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 18
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 191692800,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 0.7999999523162842,
+        "mean": 0.618750000372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.2486328121740371
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 0.9000000357627869,
+        "p99": 1,
+        "mean": 0.8578125000931323
+      },
+      "pipelineElapsedMs": 446.10000002384186,
+      "pipelineUpdatesPerSecond": 1147.7247253365526,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 151.25882648821724,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 799.1999999880791,
+        "renderCallbacksPerSecond": 60.06006006095592,
+        "frameIntervalMs": {
+          "p50": 16.799999952316284,
+          "p95": 18.5,
+          "p99": 18.80000001192093,
+          "mean": 16.68723404280683
+        },
+        "rendererCpuMs": {
+          "p50": 0.800000011920929,
+          "p95": 1.199999988079071,
+          "p99": 1.199999988079071,
+          "mean": 0.787500003973643
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 25
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 0,
+      "type": "webgl",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5999999642372131,
+        "p95": 0.6000000238418579,
+        "p99": 0.7000000476837158,
+        "mean": 0.576562499627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.800000011920929,
+        "p95": 0.9000000357627869,
+        "p99": 1,
+        "mean": 0.7843750000465661
+      },
+      "pipelineCpuMs": {
+        "p50": 1.399999976158142,
+        "p95": 1.5,
+        "p99": 1.5,
+        "mean": 1.3601562497206032
+      },
+      "pipelineElapsedMs": 856.1999999880791,
+      "pipelineUpdatesPerSecond": 597.9911235775854,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 78.80934653228157,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 793,
+        "renderCallbacksPerSecond": 60.529634300126105,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.19999998807907,
+          "p99": 18.600000023841858,
+          "mean": 16.70851063855151
+        },
+        "rendererCpuMs": {
+          "p50": 2.400000035762787,
+          "p95": 3.300000011920929,
+          "p99": 3.800000011920929,
+          "mean": 2.2354166644314923
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-before",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4890625001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.47832031350117177
+      },
+      "pipelineCpuMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.300000011920929,
+        "mean": 1.0285156249301508
+      },
+      "pipelineElapsedMs": 538.8999999761581,
+      "pipelineUpdatesPerSecond": 950.0835034749522,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 125.21165801259099,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-after",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 192307200,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.6000000238418579,
+        "p99": 0.699999988079071,
+        "mean": 0.5843750005587935
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.46015624911524355
+      },
+      "pipelineCpuMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1.0999999642372131,
+        "p99": 1.199999988079071,
+        "mean": 0.9476562499767169
+      },
+      "pipelineElapsedMs": 493.80000001192093,
+      "pipelineUpdatesPerSecond": 1036.8570271114615,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 136.64755467470846,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 0.800000011920929,
+        "mean": 0.6234375005587935
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.3999999761581421,
+        "p99": 0.5,
+        "mean": 0.251953125
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 1,
+        "p99": 1,
+        "mean": 0.8673828126629815
+      },
+      "pipelineElapsedMs": 451,
+      "pipelineUpdatesPerSecond": 1135.2549889135255,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 149.6154379157428,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 793.8000000119209,
+        "renderCallbacksPerSecond": 60.468631896295236,
+        "frameIntervalMs": {
+          "p50": 16.69999998807907,
+          "p95": 18.400000035762787,
+          "p99": 19.30000001192093,
+          "mean": 16.672340426039188
+        },
+        "rendererCpuMs": {
+          "p50": 0.800000011920929,
+          "p95": 1.199999988079071,
+          "p99": 1.199999988079071,
+          "mean": 0.7833333276212215
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 25
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-after",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 192307200,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4796874998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.5,
+        "p99": 0.6000000238418579,
+        "mean": 0.4544921866618097
+      },
+      "pipelineCpuMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.199999988079071,
+        "mean": 0.9484374996973202
+      },
+      "pipelineElapsedMs": 494.80000001192093,
+      "pipelineUpdatesPerSecond": 1034.7615197810524,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 136.37138742597884,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-before",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4812500001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.5999999642372131,
+        "p99": 0.6000000238418579,
+        "mean": 0.46464843733701855
+      },
+      "pipelineCpuMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.9437500004423782
+      },
+      "pipelineElapsedMs": 496.4000000357628,
+      "pipelineUpdatesPerSecond": 1031.4262690634837,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 135.93183419649213,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 1,
+      "type": "webgl",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7999999523162842,
+        "p99": 0.800000011920929,
+        "mean": 0.599999999627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.800000011920929,
+        "p95": 0.8999999761581421,
+        "p99": 0.9000000357627869,
+        "mean": 0.7798828121740371
+      },
+      "pipelineCpuMs": {
+        "p50": 1.399999976158142,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3621093749534339
+      },
+      "pipelineElapsedMs": 859.3999999761581,
+      "pipelineUpdatesPerSecond": 595.7644868678195,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 78.5158977215173,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 801.7999999523163,
+        "renderCallbacksPerSecond": 59.865303071657024,
+        "frameIntervalMs": {
+          "p50": 16.399999976158142,
+          "p95": 18.5,
+          "p99": 18.900000035762787,
+          "mean": 16.72340425531915
+        },
+        "rendererCpuMs": {
+          "p50": 2.400000035762787,
+          "p95": 3.300000011920929,
+          "p99": 3.699999988079071,
+          "mean": 2.3062500009934106
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 191692800,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 0.800000011920929,
+        "mean": 0.6328125
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.3999999761581421,
+        "p99": 0.5,
+        "mean": 0.24999999988358468
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.8789062498835847
+      },
+      "pipelineElapsedMs": 458.89999997615814,
+      "pipelineUpdatesPerSecond": 1115.7114840414047,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 147.03979625954608,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 799.6000000238419,
+        "renderCallbacksPerSecond": 60.03001500571382,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.600000023841858,
+          "p99": 18.80000001192093,
+          "mean": 16.68723404280683
+        },
+        "rendererCpuMs": {
+          "p50": 0.699999988079071,
+          "p95": 1.199999988079071,
+          "p99": 1.300000011920929,
+          "mean": 0.7479166686534882
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 2,
+      "type": "webgl",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5999999642372131,
+        "p95": 0.699999988079071,
+        "p99": 0.699999988079071,
+        "mean": 0.578125
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.800000011920929,
+        "p95": 1,
+        "p99": 1,
+        "mean": 0.8216796872438863
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5,
+        "p95": 1.800000011920929,
+        "p99": 1.899999976158142,
+        "mean": 1.528710937476717
+      },
+      "pipelineElapsedMs": 947.3999999761581,
+      "pipelineUpdatesPerSecond": 540.4264302437036,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 71.22288632224836,
+      "cacheBefore": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "cacheAfter": {
+        "atlasPages": 1,
+        "glyphs": 1745
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 803.3000000119209,
+        "renderCallbacksPerSecond": 59.7535167425466,
+        "frameIntervalMs": {
+          "p50": 16.30000001192093,
+          "p95": 18.69999998807907,
+          "p99": 19.5,
+          "mean": 16.714893616260365
+        },
+        "rendererCpuMs": {
+          "p50": 2.399999976158142,
+          "p95": 3.400000035762787,
+          "p99": 3.600000023841858,
+          "mean": 2.2250000052154064
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 19
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-before",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.5031249998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4703124992083758
+      },
+      "pipelineCpuMs": {
+        "p50": 1,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.94921875
+      },
+      "pipelineElapsedMs": 501.19999998807907,
+      "pipelineUpdatesPerSecond": 1021.5482841424138,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 134.63001297207686,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "native-after",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 192307200,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.5,
+        "p95": 0.5999999642372131,
+        "p99": 0.6000000238418579,
+        "mean": 0.48593750037252903
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.5,
+        "p99": 0.6000000238418579,
+        "mean": 0.4541015635477379
+      },
+      "pipelineCpuMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1.0999999642372131,
+        "p99": 1.199999988079071,
+        "mean": 0.9539062499534339
+      },
+      "pipelineElapsedMs": 497.80000001192093,
+      "pipelineUpdatesPerSecond": 1028.525512229287,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 135.54954298590624,
+      "cacheBefore": {
+        "glyphVariants": 238,
+        "atlasHits": 287478,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 139
+      },
+      "cacheAfter": {
+        "glyphVariants": 238,
+        "atlasHits": 9517286,
+        "atlasMisses": 238,
+        "atlasResets": 0,
+        "reusedRows": 1930
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 0.800000011920929,
+        "mean": 0.6218750001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.3999999761581421,
+        "p99": 0.5,
+        "mean": 0.25156249990686774
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.8818359372671694
+      },
+      "pipelineElapsedMs": 462.39999997615814,
+      "pipelineUpdatesPerSecond": 1107.2664360432511,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 145.92682202309507,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 798,
+        "renderCallbacksPerSecond": 60.150375939849624,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.100000023841858,
+          "p99": 18.599999964237213,
+          "mean": 16.69361702178387
+        },
+        "rendererCpuMs": {
+          "p50": 0.800000011920929,
+          "p95": 1.2000000476837158,
+          "p99": 1.300000011920929,
+          "mean": 0.7979166681567827
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 191692800,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 138192,
+      "sgrChangesPerFrame": 3189,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          },
+          "char": {
+            "width": 9,
+            "height": 20,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.6000000238418579,
+        "p95": 0.800000011920929,
+        "p99": 0.8999999761581421,
+        "mean": 0.6359374998137355
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.20000004768371582,
+        "p95": 0.3999999761581421,
+        "p99": 0.40000003576278687,
+        "mean": 0.2503906253259629
+      },
+      "pipelineCpuMs": {
+        "p50": 0.8999999761581421,
+        "p95": 1,
+        "p99": 1.100000023841858,
+        "mean": 0.8591796873370185
+      },
+      "pipelineElapsedMs": 446.69999998807907,
+      "pipelineUpdatesPerSecond": 1146.183120693225,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 151.05565816387,
+      "cacheBefore": {
+        "glyphVariants": 238
+      },
+      "cacheAfter": {
+        "glyphVariants": 238
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 795.3000000119209,
+        "renderCallbacksPerSecond": 60.35458317525527,
+        "frameIntervalMs": {
+          "p50": 16.200000047683716,
+          "p95": 18.5,
+          "p99": 18.69999998807907,
+          "mean": 16.68297872391153
+        },
+        "rendererCpuMs": {
+          "p50": 0.699999988079071,
+          "p95": 1.199999988079071,
+          "p99": 1.2000000476837158,
+          "mean": 0.7604166654249033
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+      "finalTextSha256": "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.2000000476837158,
+        "mean": 1.0250000013038516
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.3224609374301508
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3349609375
+      },
+      "pipelineElapsedMs": 700.7999999523163,
+      "pipelineUpdatesPerSecond": 730.593607355647,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 149.50895963667116,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 787.5,
+        "renderCallbacksPerSecond": 60.95238095238095,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.5,
+          "p99": 18.5,
+          "mean": 16.674468086120932
+        },
+        "rendererCpuMs": {
+          "p50": 1.0999999642372131,
+          "p95": 1.5999999642372131,
+          "p99": 1.600000023841858,
+          "mean": 1.0479166607062023
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 0,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.300000011920929,
+        "mean": 1.0093749994412065
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5,
+        "mean": 0.31171875004656613
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5,
+        "p95": 1.7999999523162842,
+        "p99": 1.9000000357627869,
+        "mean": 1.4990234373835847
+      },
+      "pipelineElapsedMs": 781.8999999761581,
+      "pipelineUpdatesPerSecond": 654.8151937787594,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 134.00163564323424,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 788.6999999880791,
+        "renderCallbacksPerSecond": 60.85964245052048,
+        "frameIntervalMs": {
+          "p50": 16.19999998807907,
+          "p95": 18.599999964237213,
+          "p99": 19.099999964237213,
+          "mean": 16.657446808003364
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.4000000357627869,
+          "p99": 1.699999988079071,
+          "mean": 0.9833333330849806
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 20
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 0,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.199999988079071,
+        "mean": 0.9343750001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.199999988079071,
+        "p95": 2.699999988079071,
+        "p99": 3,
+        "mean": 2.2078125001862645
+      },
+      "pipelineCpuMs": {
+        "p50": 3.100000023841858,
+        "p95": 3.600000023841858,
+        "p99": 4.199999988079071,
+        "mean": 3.1656249999068677
+      },
+      "pipelineElapsedMs": 1804.2999999523163,
+      "pipelineUpdatesPerSecond": 283.7665576752929,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 58.07009860279277,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 796.1999999880791,
+        "renderCallbacksPerSecond": 60.286360211904885,
+        "frameIntervalMs": {
+          "p50": 16.19999998807907,
+          "p95": 19.100000023841858,
+          "p99": 19.600000023841858,
+          "mean": 16.682978722643345
+        },
+        "rendererCpuMs": {
+          "p50": 3.800000011920929,
+          "p95": 4.900000035762787,
+          "p99": 5.699999988079071,
+          "mean": 3.9083333301047483
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.2000000476837158,
+        "p99": 1.399999976158142,
+        "mean": 1.1265624994412065
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.5037109378026798
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 1.7000000476837158,
+        "p99": 1.9000000357627869,
+        "mean": 1.606835937476717
+      },
+      "pipelineElapsedMs": 840.7999999523163,
+      "pipelineUpdatesPerSecond": 608.9438630221655,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 124.614508696708,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 0,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.2999999523162842,
+        "p99": 1.399999976158142,
+        "mean": 1.110937500372529
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.5017578118713573
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 2,
+        "p99": 2,
+        "mean": 1.7062499998137355
+      },
+      "pipelineElapsedMs": 894.3000000119209,
+      "pipelineUpdatesPerSecond": 572.5148160496199,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 117.15965437197065,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.100000023841858,
+        "p99": 1.2000000476837158,
+        "mean": 1.021874999627471
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.31210937490686774
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5999999642372131,
+        "p99": 1.699999988079071,
+        "mean": 1.344335937523283
+      },
+      "pipelineElapsedMs": 701.6999999880791,
+      "pipelineUpdatesPerSecond": 729.6565483948955,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 149.31719952690608,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 785.8999999761581,
+        "renderCallbacksPerSecond": 61.07647283554673,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.399999976158142,
+          "p99": 18.600000023841858,
+          "mean": 16.642553191235724
+        },
+        "rendererCpuMs": {
+          "p50": 1.199999988079071,
+          "p95": 1.600000023841858,
+          "p99": 1.699999988079071,
+          "mean": 1.1000000002483528
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.199999988079071,
+        "p99": 1.2000000476837158,
+        "mean": 1.09375
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.4966796862427145
+      },
+      "pipelineCpuMs": {
+        "p50": 1.5999999642372131,
+        "p95": 1.699999988079071,
+        "p99": 1.800000011920929,
+        "mean": 1.5734374999301508
+      },
+      "pipelineElapsedMs": 823.8999999761581,
+      "pipelineUpdatesPerSecond": 621.4346401442118,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 127.17062617949021,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 1,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.199999988079071,
+        "p99": 1.199999988079071,
+        "mean": 1.09375
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.5078125
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 1.699999988079071,
+        "p99": 1.899999976158142,
+        "mean": 1.6041015626396984
+      },
+      "pipelineElapsedMs": 839.8000000119209,
+      "pipelineUpdatesPerSecond": 609.6689687934415,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 124.76289462343738,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 1,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1.100000023841858,
+        "p99": 1.199999988079071,
+        "mean": 0.9453125
+      },
+      "renderAndLayoutMs": {
+        "p50": 2,
+        "p95": 2.600000023841858,
+        "p99": 3,
+        "mean": 2.1015625
+      },
+      "pipelineCpuMs": {
+        "p50": 3.300000011920929,
+        "p95": 4.299999952316284,
+        "p99": 4.599999964237213,
+        "mean": 3.4433593751164153
+      },
+      "pipelineElapsedMs": 1936.8999999761581,
+      "pipelineUpdatesPerSecond": 264.33992462507223,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 54.09462486836683,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 791.3000000119209,
+        "renderCallbacksPerSecond": 60.65967395333866,
+        "frameIntervalMs": {
+          "p50": 16.5,
+          "p95": 18.19999998807907,
+          "p99": 18.30000001192093,
+          "mean": 16.672340426039188
+        },
+        "rendererCpuMs": {
+          "p50": 3.699999988079071,
+          "p95": 4.300000011920929,
+          "p99": 4.400000035762787,
+          "mean": 3.7083333283662796
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 1,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.399999976158142,
+        "p99": 1.4000000357627869,
+        "mean": 1.046875
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.3117187499301508
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3291015626164153
+      },
+      "pipelineElapsedMs": 694,
+      "pipelineUpdatesPerSecond": 737.7521613832853,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 150.97388891390491,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 799.8999999761581,
+        "renderCallbacksPerSecond": 60.00750093940579,
+        "frameIntervalMs": {
+          "p50": 16.400000035762787,
+          "p95": 18.30000001192093,
+          "p99": 18.899999976158142,
+          "mean": 16.651063830294508
+        },
+        "rendererCpuMs": {
+          "p50": 0.699999988079071,
+          "p95": 1.4000000357627869,
+          "p99": 1.5,
+          "mean": 0.7625000017384688
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 18
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "xterm-webgl",
+      "repeat": 2,
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 0.9000000357627869,
+        "p95": 1,
+        "p99": 1.0999999642372131,
+        "mean": 0.9312499994412065
+      },
+      "renderAndLayoutMs": {
+        "p50": 2.099999964237213,
+        "p95": 2.600000023841858,
+        "p99": 2.900000035762787,
+        "mean": 2.137890624930151
+      },
+      "pipelineCpuMs": {
+        "p50": 3.099999964237213,
+        "p95": 3.599999964237213,
+        "p99": 4,
+        "mean": 3.108789062476717
+      },
+      "pipelineElapsedMs": 1768.7000000476837,
+      "pipelineUpdatesPerSecond": 289.47814778435946,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 59.23892062160076,
+      "cacheBefore": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "cacheAfter": {
+        "atlasPages": 14,
+        "glyphs": 27793
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 796.5,
+        "renderCallbacksPerSecond": 60.263653483992464,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.69999998807907,
+          "p99": 19,
+          "mean": 16.689361701620385
+        },
+        "rendererCpuMs": {
+          "p50": 3.800000011920929,
+          "p95": 4.699999988079071,
+          "p99": 5.300000011920929,
+          "mean": 3.8062499997516475
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 23
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-before",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.300000011920929,
+        "p99": 1.399999976158142,
+        "mean": 1.1156250005587935
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.699999988079071,
+        "mean": 0.519335938966833
+      },
+      "pipelineCpuMs": {
+        "p50": 1.899999976158142,
+        "p95": 2,
+        "p99": 2.099999964237213,
+        "mean": 1.7978515622671694
+      },
+      "pipelineElapsedMs": 940.6999999880791,
+      "pipelineUpdatesPerSecond": 544.275539498765,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 111.3807578479619,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "native-after",
+      "repeat": 2,
+      "type": "ghostty",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1.100000023841858,
+        "p95": 1.199999988079071,
+        "p99": 1.2000000476837158,
+        "mean": 1.1015625
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.5,
+        "p95": 0.6000000238418579,
+        "p99": 0.6000000238418579,
+        "mean": 0.49335937574505806
+      },
+      "pipelineCpuMs": {
+        "p50": 1.600000023841858,
+        "p95": 1.7000000476837158,
+        "p99": 1.899999976158142,
+        "mean": 1.5941406248603016
+      },
+      "pipelineElapsedMs": 834.6000000238419,
+      "pipelineUpdatesPerSecond": 613.467529337855,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 125.54023352894427,
+      "cacheBefore": {
+        "glyphVariants": 279,
+        "atlasHits": 632761,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "cacheAfter": {
+        "glyphVariants": 279,
+        "atlasHits": 20283321,
+        "atlasMisses": 279,
+        "atlasResets": 0,
+        "reusedRows": 1
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-before",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.2000000476837158,
+        "p99": 1.300000011920929,
+        "mean": 1.0203125001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.5999999642372131,
+        "mean": 0.3164062498835847
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3283203124301508
+      },
+      "pipelineElapsedMs": 695,
+      "pipelineUpdatesPerSecond": 736.6906474820144,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 150.7566602967626,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 795.5,
+        "renderCallbacksPerSecond": 60.33940917661848,
+        "frameIntervalMs": {
+          "p50": 16.599999964237213,
+          "p95": 18.5,
+          "p99": 18.899999976158142,
+          "mean": 16.640425532422167
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.5,
+          "p99": 1.7999999523162842,
+          "mean": 1.008333332836628
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 21
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    },
+    {
+      "target": "wraith-after",
+      "repeat": 2,
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 2,
+      "frames": 512,
+      "submittedFrames": 512,
+      "gpuUploadBytes": {
+        "cells": 196608000,
+        "rowMap": 0
+      },
+      "bytesPerFrame": 214581,
+      "sgrChangesPerFrame": 4800,
+      "dimensions": {
+        "css": {
+          "canvas": {
+            "width": 2160,
+            "height": 1600
+          },
+          "cell": {
+            "width": 9,
+            "height": 20
+          }
+        },
+        "device": {
+          "canvas": {
+            "width": 4320,
+            "height": 3200
+          },
+          "cell": {
+            "width": 18,
+            "height": 40
+          },
+          "char": {
+            "width": 18,
+            "height": 40,
+            "left": 0,
+            "top": 0
+          }
+        }
+      },
+      "parseMs": {
+        "p50": 1,
+        "p95": 1.199999988079071,
+        "p99": 1.399999976158142,
+        "mean": 1.0203125001862645
+      },
+      "renderAndLayoutMs": {
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.6000000238418579,
+        "mean": 0.3154296876164153
+      },
+      "pipelineCpuMs": {
+        "p50": 1.300000011920929,
+        "p95": 1.5,
+        "p99": 1.600000023841858,
+        "mean": 1.3216796873603016
+      },
+      "pipelineElapsedMs": 690,
+      "pipelineUpdatesPerSecond": 742.0289855072464,
+      "gpuFenced": true,
+      "inputMiBPerSecond": 151.84909986413044,
+      "cacheBefore": {
+        "glyphVariants": 279
+      },
+      "cacheAfter": {
+        "glyphVariants": 279
+      },
+      "publicApiPacing": {
+        "frames": 48,
+        "elapsedMs": 801.6000000238419,
+        "renderCallbacksPerSecond": 59.880239519177074,
+        "frameIntervalMs": {
+          "p50": 16.600000023841858,
+          "p95": 18.5,
+          "p99": 18.80000001192093,
+          "mean": 16.636170212258683
+        },
+        "rendererCpuMs": {
+          "p50": 1,
+          "p95": 1.4000000357627869,
+          "p99": 1.4000000357627869,
+          "mean": 0.9437500002483526
+        },
+        "intervalsOver8_33Ms": 47,
+        "intervalsOver16_67Ms": 22
+      },
+      "initialTextSha256": "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+      "finalTextSha256": "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+    }
+  ],
+  "errors": [],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "adapters": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  }
+}

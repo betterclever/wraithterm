@@ -1,0 +1,36 @@
+diff --git a/src/terminal/style.zig b/src/terminal/style.zig
+index 701356e..d4a81f1 100644
+--- a/src/terminal/style.zig
++++ b/src/terminal/style.zig
+@@ -108,9 +108,7 @@ pub const Style = struct {
+         // ~5% faster (unequal styles usually differ in the first
+         // field or two), so each target keeps its own strategy.
+         if (comptime builtin.cpu.arch.isWasm()) {
+-            const a: u128 = @bitCast(PackedStyle.fromStyle(self));
+-            const b: u128 = @bitCast(PackedStyle.fromStyle(other));
+-            return a == b;
++            return @reduce(.And, equalityWords(self) == equalityWords(other));
+         }
+ 
+         return self.flags == other.flags and
+@@ -119,6 +117,20 @@ pub const Style = struct {
+             self.underline_color.eql(other.underline_color);
+     }
+ 
++    // Four independent lanes avoid packing colors across 64-bit boundaries.
++    // Tags distinguish default, palette and RGB even when payloads are zero.
++    inline fn equalityWords(self: Style) @Vector(4, u32) {
++        return .{ colorWord(self.fg_color), colorWord(self.bg_color), colorWord(self.underline_color), @as(u16, @bitCast(self.flags)) };
++    }
++
++    inline fn colorWord(c: Color) u32 {
++        return switch (c) {
++            .none => 0,
++            .palette => |idx| @as(u32, idx) | (1 << 24),
++            .rgb => |rgb| @as(u32, @as(u24, @bitCast(rgb))) | (2 << 24),
++        };
++    }
++
+     /// Returns the bg color for a cell with this style given the cell
+     /// that has this style and the palette to use.
+     ///

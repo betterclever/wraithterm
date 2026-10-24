@@ -1,5 +1,6 @@
 use crate::{
     core::Core,
+    retained::{RetainedRows, NEW_ROW},
     text::{Atlas, ATLAS_SIZE},
 };
 use bytemuck::{Pod, Zeroable};
@@ -35,6 +36,9 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     bind: wgpu::BindGroup,
     cell_buffer: wgpu::Buffer,
+    row_buffer: wgpu::Buffer,
+    retained: RetainedRows,
+    row_sources: Vec<u32>,
     uniform: wgpu::Buffer,
     texture: wgpu::Texture,
     atlas_view: wgpu::TextureView,
@@ -49,20 +53,23 @@ pub struct Renderer {
     /// Pack pass that last wrote each row; copy sources must predate it.
     pack_stamps: Vec<u32>,
     pack_stamp: u32,
-    /// Rows whose packed cells changed this frame and must be uploaded.
-    changed_rows: Vec<bool>,
     /// Atlas resets already reflected in packed rows; any other reset (a
     /// font change, say) invalidates every packed glyph reference.
     atlas_resets: u64,
     pub atlas: Atlas,
     pub frames: u64,
     pub upload_bytes: u64,
+    pub cell_upload_bytes: u64,
+    pub row_map_upload_bytes: u64,
     pub adapter: String,
     pub lost: Arc<Mutex<Option<String>>>,
     last_blink: bool,
     pending_present: bool,
 }
 impl Renderer {
+    pub fn row_slots(&self) -> &[u32] {
+        &self.retained.slots
+    }
     pub fn needs_present(&self) -> bool {
         self.pending_present
     }
@@ -215,6 +222,7 @@ impl Renderer {
                 | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
+        let row_buffer = Self::row_buffer(&device, rows as usize);
         let bind = Self::bind(
             &device,
             &pipeline,
@@ -222,6 +230,7 @@ impl Renderer {
             &uniform,
             &atlas_view,
             &sampler,
+            &row_buffer,
         );
         if let Some(error) = error_scope.pop().await {
             return Err(format!("WebGPU pipeline initialization: {error}"));
@@ -235,6 +244,9 @@ impl Renderer {
             pipeline,
             bind,
             cell_buffer,
+            row_buffer,
+            retained: RetainedRows::new(rows as usize),
+            row_sources: vec![NEW_ROW; rows as usize],
             uniform,
             texture,
             atlas_view,
@@ -244,11 +256,12 @@ impl Renderer {
             packed_versions: vec![0; rows as usize],
             pack_stamps: vec![0; rows as usize],
             pack_stamp: 0,
-            changed_rows: vec![false; rows as usize],
             atlas_resets: 0,
             atlas,
             frames: 0,
             upload_bytes: 0,
+            cell_upload_bytes: 0,
+            row_map_upload_bytes: 0,
             adapter: adapter_name,
             lost,
             last_blink: true,
@@ -262,6 +275,7 @@ impl Renderer {
         uniform: &wgpu::Buffer,
         texture: &wgpu::TextureView,
         sampler: &wgpu::Sampler,
+        rows: &wgpu::Buffer,
     ) -> wgpu::BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Wraith frame bindings"),
@@ -283,7 +297,19 @@ impl Renderer {
                     binding: 3,
                     resource: wgpu::BindingResource::Sampler(sampler),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: rows.as_entire_binding(),
+                },
             ],
+        })
+    }
+    fn row_buffer(device: &wgpu::Device, rows: usize) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Wraith retained row map"),
+            size: rows as u64 * 4,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         })
     }
     pub fn resize(&mut self, cols: u16, rows: u16) {
@@ -296,7 +322,9 @@ impl Renderer {
         self.cells.resize(self.cell_count, GpuCell::default());
         self.packed_versions = vec![0; rows as usize];
         self.pack_stamps = vec![0; rows as usize];
-        self.changed_rows = vec![false; rows as usize];
+        self.retained = RetainedRows::new(rows as usize);
+        self.row_sources = vec![NEW_ROW; rows as usize];
+        self.row_buffer = Self::row_buffer(&self.device, rows as usize);
         self.cell_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith resized packed cells"),
             size: (self.cell_count * CELL_BYTES) as u64,
@@ -310,6 +338,7 @@ impl Renderer {
             &self.uniform,
             &self.atlas_view,
             &self.sampler,
+            &self.row_buffer,
         );
     }
     pub fn validate_size(&self, cols: u16, rows: u16) -> Result<(), String> {
@@ -341,7 +370,6 @@ impl Renderer {
         }
         // A miss with no free atlas slot resets the atlas; every visible row
         // is then repacked once so no stale glyph reference is drawn.
-        self.changed_rows.fill(false);
         if self.atlas.resets != self.atlas_resets {
             self.packed_versions.fill(0);
         }
@@ -386,23 +414,17 @@ impl Renderer {
             );
             self.upload_bytes += upload.pixels.len() as u64;
         }
-        // Adjacent changed rows merge into one writeBuffer call.
+        // Scrolls retain GPU slots; only newly packed rows cross the bus.
         let cols = core.state.cols;
-        let mut row = 0;
-        while row < core.state.rows {
-            if !self.changed_rows[row] {
-                row += 1;
-                continue;
-            }
-            let start = row;
-            while row < core.state.rows && self.changed_rows[row] {
-                row += 1;
-            }
-            let bytes = bytemuck::cast_slice(&self.cells[start * cols..row * cols]);
+        self.retained.plan(&self.row_sources)?;
+        for &(source, slot, rows) in &self.retained.uploads {
+            let bytes = bytemuck::cast_slice(&self.cells[source * cols..(source + rows) * cols]);
             self.queue
-                .write_buffer(&self.cell_buffer, (start * cols * CELL_BYTES) as u64, bytes);
+                .write_buffer(&self.cell_buffer, (slot * cols * CELL_BYTES) as u64, bytes);
             self.upload_bytes += bytes.len() as u64;
+            self.cell_upload_bytes += bytes.len() as u64;
         }
+        self.upload_row_map();
         let frame = core.frame;
         let cursor_visible = frame.cursor_visible != 0 && (frame.cursor_blink == 0 || blink);
         let uniforms = Uniforms {
@@ -440,6 +462,9 @@ impl Renderer {
         let state = &*core.state;
         let cols = state.cols;
         self.pack_stamp = self.pack_stamp.wrapping_add(1);
+        for (y, source) in self.row_sources.iter_mut().enumerate() {
+            *source = y as u32;
+        }
         let (mut shift, mut searched) = (1isize, false);
         for y in 0..state.rows {
             if !state.dirty[y] {
@@ -467,9 +492,11 @@ impl Renderer {
                 None
             };
             if let Some(r) = source {
+                self.row_sources[y] = r as u32;
                 shift = r as isize - y as isize;
                 self.cells.copy_within(r * cols..(r + 1) * cols, y * cols);
             } else {
+                self.row_sources[y] = NEW_ROW;
                 let row = &state.cells[y * cols..(y + 1) * cols];
                 for (cell, gpu) in row.iter().zip(&mut self.cells[y * cols..(y + 1) * cols]) {
                     *gpu = GpuCell {
@@ -483,13 +510,22 @@ impl Renderer {
             }
             self.packed_versions[y] = version;
             self.pack_stamps[y] = self.pack_stamp;
-            self.changed_rows[y] = true;
         }
     }
-    fn present(&mut self, uniforms: Uniforms) -> Result<bool, String> {
+    fn upload_row_map(&mut self) {
+        if self.retained.changed {
+            let bytes = bytemuck::cast_slice(&self.retained.slots);
+            self.queue.write_buffer(&self.row_buffer, 0, bytes);
+            self.row_map_upload_bytes += bytes.len() as u64;
+            self.upload_bytes += bytes.len() as u64;
+        }
+    }
+    fn present(&mut self, mut uniforms: Uniforms) -> Result<bool, String> {
         if let Some(error) = &*self.lost.lock().unwrap() {
             return Err(error.clone());
         }
+        // Dense identity frames bypass row indirection in the vertex shader.
+        uniforms.grid[3] |= u32::from(!self.retained.identity) << 20;
         self.queue
             .write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniforms));
         // An acquired surface can be temporarily unavailable. Retain the need
@@ -554,6 +590,9 @@ impl Renderer {
         self.canvas.set_height(height);
         self.surface.configure(&self.device, &self.config);
         self.cell_count = cols as usize * rows as usize;
+        self.retained = RetainedRows::new(rows as usize);
+        self.row_sources = vec![NEW_ROW; rows as usize];
+        self.row_buffer = Self::row_buffer(&self.device, rows as usize);
         self.cell_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Wraith xterm cells"),
             size: (self.cell_count * CELL_BYTES) as u64,
@@ -567,6 +606,7 @@ impl Renderer {
             &self.uniform,
             &self.atlas_view,
             &self.sampler,
+            &self.row_buffer,
         );
         Ok(())
     }
@@ -633,6 +673,34 @@ impl Renderer {
         dimensions: &[f32],
         frame: &[u32],
     ) -> Result<bool, String> {
+        self.validate_frame(packed, start, dimensions, frame)?;
+        if !packed.is_empty() {
+            let cols = frame[0] as usize;
+            if self.retained.identity {
+                self.write_cells(start as usize, packed);
+            } else {
+                // Legacy partial uploads remain valid even after retained
+                // rendering has rotated physical slots.
+                let mut cell = start as usize;
+                let end = cell + packed.len() / CELL_WORDS;
+                while cell < end {
+                    let count = (cols - cell % cols).min(end - cell);
+                    let physical = self.retained.slots[cell / cols] as usize * cols + cell % cols;
+                    let offset = (cell - start as usize) * CELL_WORDS;
+                    self.write_cells(physical, &packed[offset..offset + count * CELL_WORDS]);
+                    cell += count;
+                }
+            }
+        }
+        self.present_external(dimensions, frame)
+    }
+    fn validate_frame(
+        &self,
+        packed: &[u32],
+        start: u32,
+        dimensions: &[f32],
+        frame: &[u32],
+    ) -> Result<(), String> {
         if !packed.len().is_multiple_of(CELL_WORDS)
             || start as usize > self.cell_count
             || packed.len() / CELL_WORDS > self.cell_count - start as usize
@@ -645,12 +713,41 @@ impl Renderer {
         {
             return Err("invalid compositor frame".into());
         }
-        if !packed.is_empty() {
-            let bytes = bytemuck::cast_slice(packed);
-            self.queue
-                .write_buffer(&self.cell_buffer, start as u64 * CELL_BYTES as u64, bytes);
-            self.upload_bytes += bytes.len() as u64;
+        Ok(())
+    }
+    fn write_cells(&mut self, start: usize, packed: &[u32]) {
+        let bytes = bytemuck::cast_slice(packed);
+        self.queue
+            .write_buffer(&self.cell_buffer, start as u64 * CELL_BYTES as u64, bytes);
+        self.upload_bytes += bytes.len() as u64;
+        self.cell_upload_bytes += bytes.len() as u64;
+    }
+    pub fn render_retained(
+        &mut self,
+        packed: &[u32],
+        sources: &[u32],
+        dimensions: &[f32],
+        frame: &[u32],
+    ) -> Result<bool, String> {
+        self.validate_frame(packed, 0, dimensions, frame)?;
+        if packed.len() / CELL_WORDS != self.cell_count {
+            return Err("incomplete retained frame".into());
         }
+        self.retained.plan(sources)?;
+        let cols = frame[0] as usize;
+        // Coalesce only when both logical input and physical destination are
+        // contiguous. Sparse damage must never upload the clean gap between it.
+        for i in 0..self.retained.uploads.len() {
+            let (source, slot, rows) = self.retained.uploads[i];
+            self.write_cells(
+                slot * cols,
+                &packed[source * cols * CELL_WORDS..(source + rows) * cols * CELL_WORDS],
+            );
+        }
+        self.upload_row_map();
+        self.present_external(dimensions, frame)
+    }
+    fn present_external(&mut self, dimensions: &[f32], frame: &[u32]) -> Result<bool, String> {
         self.present(Uniforms {
             view: [
                 self.config.width as f32,

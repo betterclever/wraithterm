@@ -1,0 +1,204 @@
+{
+  "date": "2026-10-17T08:59:16.886Z",
+  "iterations": 4096,
+  "warmup": 32,
+  "sourceDirectory": "/Users/betterclever/projects/wraith",
+  "head": "e9be65b32601cd6387fba1531c4740b9073a0636",
+  "url": "http://127.0.0.1:5173/compare.html?type=wraith",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "sdkSources": {
+    "index.ts": "bd8f4b0f7a74c4a557c50521b8f6973693fb58549925eb5c44c506804b8d9fe9",
+    "keycodes.ts": "59d88d106ad835bdcc69b4a775f27ea1456158ed25ac0b65af9767b8d439b3ca",
+    "protocol.ts": "73a98810d09dd32a8b5d97ea8c7e98253aca450705039ab06f6de9e953402745",
+    "types.ts": "9bb2cc2e25d66a01f7995d5fe2e44ab65dae26268b4c09c4df5943d7606d4089",
+    "vite.ts": "e074e02859cef129d74a75fc51b016224234b5f45392e87866f96993aee539c6",
+    "worker.ts": "38fef1dd2609429bb9513c0a36afb18b4bb711f3d7587fcc03c7a099c681ec17",
+    "xterm-api.d.ts": "c7dca3a572944680fa83888a8777299048f56cf477244a8fb426652944cc2890",
+    "xterm-atlas.ts": "0f7745500e92f9e7b3fcfbb240c39f1165200762f812834e03adcb599173b9e8",
+    "xterm-base.d.ts": "d3ef2123399ecb89e45dfe8acdf11b9e7179e9dc9f29ff71251ea5b9ac0cb306",
+    "xterm-input.ts": "e5330ba39bb05e75b3a7975969f36c592e4255a4d57ea97a1ac25cbffd88d747",
+    "xterm-internals.ts": "5446270585e264255878bfd351536fcff98bd7d1933dce1ba800f9fec44ee46b",
+    "xterm-parser.d.ts": "5392b9a9dc22aab9e28afbd84f0d7a781d0d8500a406864db00dae6b0160a56c",
+    "xterm-parser.js": "b0023b654253ce18fde8efed44503052b84683fb614f5be2d37ff5cc46dbca06",
+    "xterm-print.ts": "35704512abaf17490fe6b4271be674460e7134afa5723bc805444c7e350f5600",
+    "xterm-renderer.ts": "15c5b4b9845f897dd5ff41a91e9f1c6f9b7d51a5e44b5674a2e9278990077290",
+    "xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147"
+  },
+  "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "samplingIntervalUs": 500,
+  "measuredSeparatelyFromBenchmark": true,
+  "activeSampledMs": 4532.305,
+  "inclusiveGroups": [
+    {
+      "name": "parser including callees",
+      "sampledMs": 3175.311,
+      "sampledPercent": 70.05951717724204
+    },
+    {
+      "name": "other renderer work",
+      "sampledMs": 460.817,
+      "sampledPercent": 10.167387234530773
+    },
+    {
+      "name": "packing including callees",
+      "sampledMs": 822.345,
+      "sampledPercent": 18.14407900615691
+    },
+    {
+      "name": "other sampled work",
+      "sampledMs": 73.832,
+      "sampledPercent": 1.629016582070271
+    }
+  ],
+  "hot": [
+    {
+      "name": "fastParse",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-parser.js?t=1792226340404",
+      "line": 55,
+      "selfMs": 1613.295,
+      "selfPercent": 35.59546411814739
+    },
+    {
+      "name": "pack",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-renderer.ts?t=1792226340060",
+      "line": 293,
+      "selfMs": 575.434,
+      "selfPercent": 12.696277059906604
+    },
+    {
+      "name": "decode",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 87,
+      "selfMs": 442.399,
+      "selfPercent": 9.761015642151179
+    },
+    {
+      "name": "writeBuffer",
+      "url": "",
+      "line": 0,
+      "selfMs": 390.202,
+      "selfPercent": 8.609349988581968
+    },
+    {
+      "name": "input.charAttributes",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-input.ts?t=1792226340404",
+      "line": 40,
+      "selfMs": 368.009,
+      "selfPercent": 8.119687443806187
+    },
+    {
+      "name": "print",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 6917,
+      "selfMs": 310.606,
+      "selfPercent": 6.853157499329811
+    },
+    {
+      "name": "input.print",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-print.ts?t=1792225927206",
+      "line": 8,
+      "selfMs": 199.825,
+      "selfPercent": 4.408904519885577
+    },
+    {
+      "name": "charAttributes",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 7406,
+      "selfMs": 148.007,
+      "selfPercent": 3.2656010572986593
+    },
+    {
+      "name": "scalar",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-atlas.ts",
+      "line": 56,
+      "selfMs": 78.721,
+      "selfPercent": 1.7368866393590014
+    },
+    {
+      "name": "tile",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-atlas.ts",
+      "line": 119,
+      "selfMs": 53.257,
+      "selfPercent": 1.1750533117254907
+    },
+    {
+      "name": "resolveColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-renderer.ts?t=1792226340060",
+      "line": 22,
+      "selfMs": 51.082,
+      "selfPercent": 1.1270644848482174
+    },
+    {
+      "name": "input._extractColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-input.ts?t=1792226340404",
+      "line": 12,
+      "selfMs": 47.219,
+      "selfPercent": 1.04183191554849
+    },
+    {
+      "name": "parse",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 6899,
+      "selfMs": 40.228,
+      "selfPercent": 0.8875836908592869
+    },
+    {
+      "name": "loadCell",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 5416,
+      "selfMs": 38.398,
+      "selfPercent": 0.8472068847970294
+    },
+    {
+      "name": "(garbage collector)",
+      "url": "",
+      "line": 0,
+      "selfMs": 26.748,
+      "selfPercent": 0.5901632833624392
+    },
+    {
+      "name": "(anonymous)",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 6880,
+      "selfMs": 21.482,
+      "selfPercent": 0.4739751627483146
+    },
+    {
+      "name": "wordColor",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-renderer.ts?t=1792226340060",
+      "line": 13,
+      "selfMs": 15.733,
+      "selfPercent": 0.34713021299316793
+    },
+    {
+      "name": "submit",
+      "url": "",
+      "line": 0,
+      "selfMs": 10.744,
+      "selfPercent": 0.23705377285950527
+    },
+    {
+      "name": "getCell",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/node_modules/.vite/deps/@wraith-terminal_xterm-base_lib_xterm__mjs.js?v=abb96071",
+      "line": 8789,
+      "selfMs": 8.692,
+      "selfPercent": 0.1917787968814985
+    },
+    {
+      "name": "show",
+      "url": "http://127.0.0.1:5173/@fs/Users/betterclever/projects/wraith/packages/wraith/src/xterm-renderer.ts?t=1792226340060",
+      "line": 169,
+      "selfMs": 6.308,
+      "selfPercent": 0.13917862985831714
+    }
+  ]
+}

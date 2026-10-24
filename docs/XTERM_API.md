@@ -5,6 +5,11 @@ inherits the pinned upstream implementation and its exact public declarations.
 Parser hooks, modes, synchronous buffer views, keyboard/mouse input, clipboard
 behavior, accessibility, events and addons use xterm's authoritative state.
 Wraith replaces the visual renderer with its Rust/Wasm/WebGPU compositor.
+It also accelerates common SGR color/style actions inside each terminal instance.
+Every sequence still passes through upstream parser hooks, including async
+interception and fallthrough. Mixed/colon parameters, underline attributes and
+unsupported combinations use upstream actions, with differential tests against
+the unmodified runtime.
 
 This profile deliberately uses xterm's semantic core. `Wraith.mount()` remains the
 separate libghostty worker profile. A full xterm API cannot be obtained by renaming
@@ -120,12 +125,18 @@ The GPU renderer reads changed xterm rows directly, resolves colors/styles and
 selection, and packs 20-byte cells directly into reusable Wasm staging memory, skipping or
 moving rows whose raw xterm words are unchanged. Canvas2D
 rasterizes CSS font glyphs only on cache misses; Rust owns texture uploads,
-resident cell buffers and the shared two-draw WebGPU pipeline. Font options and
+resident cell buffers and the shared two-draw WebGPU pipeline. Moved GPU rows
+keep their physical slots; only new content and a small row map are uploaded.
+Font options and
 DPR changes update geometry and the atlas. There is no ANSI replay into Ghostty.
 
-Transparency, minimum contrast adjustment, custom character joiners, buffer
-color decorations, and link hover decoration currently use the retained xterm
-DOM renderer. GPU rendering resumes when the feature is removed. Unsupported
+Buffer color decorations (including Search addon matches) and link hover
+underlines stay on WebGPU. Top/bottom decoration precedence and selection colors
+are resolved while packing affected rows; upstream retains decoration DOM
+elements, onRender callbacks and overview rulers.
+
+Transparency, minimum contrast adjustment and custom character joiners currently
+use the retained xterm DOM renderer. GPU rendering resumes when the feature is removed. Unsupported
 WebGPU environments, device errors and atlas capacity errors also use DOM, with
 a diagnostic reason. This preserves behavior while GPU coverage expands; it
 means some options and decorated addons do not currently receive GPU acceleration.

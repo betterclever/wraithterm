@@ -9,3 +9,6 @@ packages/wraith/licenses/** -text -whitespace
 demo/fonts/OFL.txt -text -whitespace
 packages/wraith/wasm/OFL.txt -text -whitespace
 packages/wraith/wasm/Ghostty-MIT.txt -text -whitespace
+
+# Unified diff context lines contain a mandatory leading space.
+*.patch -whitespace

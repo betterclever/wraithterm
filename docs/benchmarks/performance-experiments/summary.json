@@ -1,0 +1,592 @@
+{
+  "date": "2026-10-12T03:12:58.903Z",
+  "repetitions": 3,
+  "frames": 1024,
+  "groups": [
+    {
+      "kind": "baseline",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 808.9106564651916,
+      "range": [
+        733.7871730562522,
+        810.7680126682502
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 0.8843749994412065,
+      "redrawMeanMs": 0.3142578122788109
+    },
+    {
+      "kind": "params",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 830.2927106057749,
+      "range": [
+        771.6654107008289,
+        860.7211902246454
+      ],
+      "ratioToBaseline": 1.0264331468125534,
+      "parseMeanMs": 0.8218749994412065,
+      "redrawMeanMs": 0.3216796877095476
+    },
+    {
+      "kind": "print",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 793.9215382156425,
+      "range": [
+        788.4200801028602,
+        814.5084314426581
+      ],
+      "ratioToBaseline": 0.9814699953205598,
+      "parseMeanMs": 0.920312499627471,
+      "redrawMeanMs": 0.32304687483701855
+    },
+    {
+      "kind": "combined",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 862.0254229894533,
+      "range": [
+        851.7717517546035,
+        878.8190868610336
+      ],
+      "ratioToBaseline": 1.0656620927165983,
+      "parseMeanMs": 0.798437500372529,
+      "redrawMeanMs": 0.31328125012805685
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 812.1183281936413,
+      "range": [
+        751.6699699301494,
+        822.0277755164186
+      ],
+      "ratioToBaseline": 1.003965421524383,
+      "parseMeanMs": 0.8734375005587935,
+      "redrawMeanMs": 0.33154296869179234
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 802.2563459505712,
+      "range": [
+        789.1491985058456,
+        817.7607411034567
+      ],
+      "ratioToBaseline": 0.9917737385934579,
+      "parseMeanMs": 0.8796875001862645,
+      "redrawMeanMs": 0.31748046906432137
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 861.952861952862,
+      "range": [
+        860.5765190524563,
+        864.1350210970464
+      ],
+      "ratioToBaseline": 1.0655723905523218,
+      "parseMeanMs": 0.8000000007450581,
+      "redrawMeanMs": 0.3201171872788109
+    },
+    {
+      "kind": "fused",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 791.7729838324916,
+      "range": [
+        783.6534782347454,
+        805.284680702108
+      ],
+      "ratioToBaseline": 0.9788138869283923,
+      "parseMeanMs": 0.90625,
+      "redrawMeanMs": 0.31845703115686774
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "complex",
+      "dpr": 1,
+      "updatesPerSecond": 838.5194890353717,
+      "range": [
+        821.2366669496992,
+        840.9296214256588
+      ],
+      "ratioToBaseline": 1.0366033409666848,
+      "parseMeanMs": 0.84375,
+      "redrawMeanMs": 0.3249023435055278
+    },
+    {
+      "kind": "baseline",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 785.517029785281,
+      "range": [
+        751.3941884290011,
+        805.4747109182711
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 0.928124999627471,
+      "redrawMeanMs": 0.336425781075377
+    },
+    {
+      "kind": "params",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 852.9779258642233,
+      "range": [
+        845.6519943593667,
+        860.7935440311677
+      ],
+      "ratioToBaseline": 1.0858808829356412,
+      "parseMeanMs": 0.8218749994412065,
+      "redrawMeanMs": 0.3153320315759629
+    },
+    {
+      "kind": "print",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 822.8865316381962,
+      "range": [
+        803.9569757098723,
+        825.2075106935889
+      ],
+      "ratioToBaseline": 1.0475731275528553,
+      "parseMeanMs": 0.875,
+      "redrawMeanMs": 0.3222656248835847
+    },
+    {
+      "kind": "combined",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 849.1583050172034,
+      "range": [
+        780.4878048780488,
+        862.0254229894533
+      ],
+      "ratioToBaseline": 1.081018326552791,
+      "parseMeanMs": 0.8156249998137355,
+      "redrawMeanMs": 0.3209960935055278
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 810.7038239482171,
+      "range": [
+        747.2270869949032,
+        816.5218084527012
+      ],
+      "ratioToBaseline": 1.0320639695995144,
+      "parseMeanMs": 0.8953125001862645,
+      "redrawMeanMs": 0.3336914064711891
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 781.3811522319726,
+      "range": [
+        733.5769038021991,
+        799.0012484617466
+      ],
+      "ratioToBaseline": 0.9947348340055225,
+      "parseMeanMs": 0.8843749994412065,
+      "redrawMeanMs": 0.33378906233701855
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 847.9629016481662,
+      "range": [
+        797.0112079996921,
+        849.4400663625051
+      ],
+      "ratioToBaseline": 1.0794965220295154,
+      "parseMeanMs": 0.810937499627471,
+      "redrawMeanMs": 0.3177734374185093
+    },
+    {
+      "kind": "fused",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 776.0515346722243,
+      "range": [
+        769.7511839365736,
+        803.2002509775475
+      ],
+      "ratioToBaseline": 0.9879499810263259,
+      "parseMeanMs": 0.9296875,
+      "redrawMeanMs": 0.33203125
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "churn",
+      "dpr": 1,
+      "updatesPerSecond": 832.7234284865633,
+      "range": [
+        750.2930832290855,
+        834.0799869755991
+      ],
+      "ratioToBaseline": 1.060095958345023,
+      "parseMeanMs": 0.859375,
+      "redrawMeanMs": 0.3255859377095476
+    },
+    {
+      "kind": "baseline",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4245.439469529891,
+      "range": [
+        2948.4595454667246,
+        5120
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 0.051562500186264515,
+      "redrawMeanMs": 0.10839843784924597
+    },
+    {
+      "kind": "params",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4785.046728971963,
+      "range": [
+        3391.8516067600794,
+        4978.123479643289
+      ],
+      "ratioToBaseline": 1.1271028036826125,
+      "parseMeanMs": 0.042187499813735485,
+      "redrawMeanMs": 0.09150390629656613
+    },
+    {
+      "kind": "print",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4716.720406120143,
+      "range": [
+        4575.513851409542,
+        5720.670391061452
+      ],
+      "ratioToBaseline": 1.1110087518554206,
+      "parseMeanMs": 0.04062500037252903,
+      "redrawMeanMs": 0.09160156245343387
+    },
+    {
+      "kind": "combined",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4716.720406120143,
+      "range": [
+        2283.1661092530658,
+        5059.28853814537
+      ],
+      "ratioToBaseline": 1.1110087518554206,
+      "parseMeanMs": 0.042187499813735485,
+      "redrawMeanMs": 0.10068359394790605
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 5392.31174200714,
+      "range": [
+        2266.489597107086,
+        5423.728813216865
+      ],
+      "ratioToBaseline": 1.2701421797928134,
+      "parseMeanMs": 0.040625001303851604,
+      "redrawMeanMs": 0.09355468762805685
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4669.402645794138,
+      "range": [
+        2524.0325364310793,
+        5034.414945034195
+      ],
+      "ratioToBaseline": 1.099863201279182,
+      "parseMeanMs": 0.03593749925494194,
+      "redrawMeanMs": 0.09863281244179234
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 4616.771866298303,
+      "range": [
+        2202.624220375381,
+        5470.085470433806
+      ],
+      "ratioToBaseline": 1.0874661856407368,
+      "parseMeanMs": 0.0390625,
+      "redrawMeanMs": 0.10263671865686774
+    },
+    {
+      "kind": "fused",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 5375.3280839895015,
+      "range": [
+        2185.232607656637,
+        5529.157667742509
+      ],
+      "ratioToBaseline": 1.2661417322208874,
+      "parseMeanMs": 0.03281250037252903,
+      "redrawMeanMs": 0.0939453124301508
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "append",
+      "dpr": 1,
+      "updatesPerSecond": 5114.8851151896815,
+      "range": [
+        1831.5149348336613,
+        5313.9595229026845
+      ],
+      "ratioToBaseline": 1.2047952048073993,
+      "parseMeanMs": 0.040624999441206455,
+      "redrawMeanMs": 0.09374999976716936
+    },
+    {
+      "kind": "baseline",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 827.5416195008928,
+      "range": [
+        565.3086010894766,
+        833.129932495155
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 0.9765625,
+      "redrawMeanMs": 0.4237304686103016
+    },
+    {
+      "kind": "params",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 1019.2097142942175,
+      "range": [
+        920.6149420021806,
+        1141.2013819083872
+      ],
+      "ratioToBaseline": 1.2316114262735494,
+      "parseMeanMs": 0.53125,
+      "redrawMeanMs": 0.27812500030267984
+    },
+    {
+      "kind": "print",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 1149.786660647414,
+      "range": [
+        850.2158751413739,
+        1309.2954864707633
+      ],
+      "ratioToBaseline": 1.3894004042248338,
+      "parseMeanMs": 0.517187500372529,
+      "redrawMeanMs": 0.27070312498835847
+    },
+    {
+      "kind": "combined",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 1299.6573169577182,
+      "range": [
+        944.3009959113142,
+        1361.8832290880373
+      ],
+      "ratioToBaseline": 1.570503871142539,
+      "parseMeanMs": 0.47812499944120646,
+      "redrawMeanMs": 0.262207031075377
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 959.3404534596893,
+      "range": [
+        569.2367558027526,
+        1239.4093440023903
+      ],
+      "ratioToBaseline": 1.1592655050247347,
+      "parseMeanMs": 0.5843750005587935,
+      "redrawMeanMs": 0.28837890637805685
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 1263.4176434299816,
+      "range": [
+        875.2136752136752,
+        1342.7747180277809
+      ],
+      "ratioToBaseline": 1.5267119062748462,
+      "parseMeanMs": 0.5281249992549419,
+      "redrawMeanMs": 0.20507812511641532
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 1195.1447245398608,
+      "range": [
+        1133.8722178861326,
+        1528.586356090959
+      ],
+      "ratioToBaseline": 1.4442110177620757,
+      "parseMeanMs": 0.576562499627471,
+      "redrawMeanMs": 0.2702148438547738
+    },
+    {
+      "kind": "fused",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 726.1381364406866,
+      "range": [
+        618.0216066236555,
+        766.0083782439604
+      ],
+      "ratioToBaseline": 0.8774641895094476,
+      "parseMeanMs": 1.0343749998137355,
+      "redrawMeanMs": 0.29121093737194315
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "showcase",
+      "dpr": 1,
+      "updatesPerSecond": 482.0865307740882,
+      "range": [
+        472.17226910390036,
+        790.3673973666762
+      ],
+      "ratioToBaseline": 0.5825526105440405,
+      "parseMeanMs": 0.9812500001862645,
+      "redrawMeanMs": 0.343750000174623
+    },
+    {
+      "kind": "baseline",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 384.34110273555035,
+      "range": [
+        370.10264565403645,
+        432.0492806275901
+      ],
+      "ratioToBaseline": 1,
+      "parseMeanMs": 2.1281249998137355,
+      "redrawMeanMs": 0.2364257813896984
+    },
+    {
+      "kind": "params",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 381.0090787285742,
+      "range": [
+        367.61802189912044,
+        436.5620736765061
+      ],
+      "ratioToBaseline": 0.991330555115598,
+      "parseMeanMs": 1.9874999998137355,
+      "redrawMeanMs": 0.24892578116850927
+    },
+    {
+      "kind": "print",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 379.30140385298864,
+      "range": [
+        369.2751532636134,
+        380.08982592093577
+      ],
+      "ratioToBaseline": 0.9868874319017882,
+      "parseMeanMs": 2.240624999627471,
+      "redrawMeanMs": 0.29052734369179234
+    },
+    {
+      "kind": "combined",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 329.81190414714905,
+      "range": [
+        318.25951825951825,
+        406.7365745115597
+      ],
+      "ratioToBaseline": 0.8581229064487526,
+      "parseMeanMs": 2.3703124998137355,
+      "redrawMeanMs": 0.3321289063314907
+    },
+    {
+      "kind": "wasm-scalar",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 405.99476647563233,
+      "range": [
+        326.67644994949364,
+        418.62556722538704
+      ],
+      "ratioToBaseline": 1.0563397034195976,
+      "parseMeanMs": 2.0046875001862645,
+      "redrawMeanMs": 0.20810546877328306
+    },
+    {
+      "kind": "wasm-simd",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 371.2970013448103,
+      "range": [
+        344.4448181937543,
+        386.28390358339044
+      ],
+      "ratioToBaseline": 0.966061133462181,
+      "parseMeanMs": 2.2921874998137355,
+      "redrawMeanMs": 0.2162109375349246
+    },
+    {
+      "kind": "combined-simd",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 369.36839447231426,
+      "range": [
+        350.2531126051874,
+        397.6853470074494
+      ],
+      "ratioToBaseline": 0.9610431771239981,
+      "parseMeanMs": 2.232812499627471,
+      "redrawMeanMs": 0.20429687481373549
+    },
+    {
+      "kind": "fused",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 251.26984516403814,
+      "range": [
+        242.1948912015137,
+        252.29131763008584
+      ],
+      "ratioToBaseline": 0.6537678207603177,
+      "parseMeanMs": 3.684374999254942,
+      "redrawMeanMs": 0.24130859383149073
+    },
+    {
+      "kind": "combined-fused",
+      "workload": "pipes",
+      "dpr": 1,
+      "updatesPerSecond": 250.1893522944526,
+      "range": [
+        209.9651425056387,
+        255.06899815521314
+      ],
+      "ratioToBaseline": 0.6509565344786915,
+      "parseMeanMs": 3.6281249998137355,
+      "redrawMeanMs": 0.24277343740686774
+    }
+  ]
+}

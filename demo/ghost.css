@@ -1,0 +1,230 @@
+@import './playground.css';
+.reactor-page {
+  max-width: 1600px;
+  margin: auto;
+  padding: 32px clamp(16px, 3vw, 36px) 48px;
+}
+.intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.intro h1 {
+  font-size: clamp(42px, 6vw, 76px);
+  letter-spacing: -0.05em;
+  margin: 0;
+  line-height: 1.05;
+}
+.intro em {
+  color: var(--amber);
+  font-style: normal;
+}
+.eyebrow {
+  font: 11px var(--mono);
+  color: var(--amber);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.intro > p {
+  color: var(--dim);
+  line-height: 1.8;
+}
+.reactor-controls {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.reactor-controls label {
+  display: grid;
+  gap: 7px;
+  font: 11px var(--mono);
+  color: var(--dim);
+}
+.reactor-controls select {
+  min-height: 38px;
+}
+.reactor-controls button {
+  font-size: 12px;
+  min-height: 38px;
+}
+#pulse {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
+#fullscreen {
+  margin-left: auto;
+}
+.reactor-window {
+  border: 1px solid #4b3022;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 20px 100px #0005;
+}
+.reactor-bar,
+.reactor-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  font: 11px var(--mono);
+  color: var(--dim);
+}
+.reactor-bar {
+  background: #19100b;
+  border-bottom: 1px solid #402b20;
+}
+.reactor-bar span {
+  display: flex;
+  gap: 7px;
+}
+.reactor-bar i {
+  width: 8px;
+  height: 8px;
+  background: var(--coral);
+  border-radius: 50%;
+}
+.reactor-bar i:nth-child(2) {
+  background: var(--gold);
+}
+.reactor-bar i:nth-child(3) {
+  background: var(--lilac);
+}
+.reactor-bar b {
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.reactor-bar small {
+  margin-left: auto;
+  color: var(--amber);
+}
+#viewport {
+  width: 100%;
+  aspect-ratio: 16/9;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+#terminal {
+  position: absolute;
+  inset: 0;
+}
+#terminal canvas {
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+}
+.reactor-foot {
+  border-top: 1px solid #402b20;
+  justify-content: space-between;
+}
+.reactor-foot a {
+  color: var(--amber);
+}
+.reactor-foot a[aria-disabled='true'] {
+  pointer-events: none;
+  opacity: 0.4;
+}
+.reactor-meters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+.reactor-meters > div {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.reactor-meters span {
+  font: 10px var(--mono);
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+.reactor-meters strong {
+  font: 600 28px var(--mono);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.reactor-meters small,
+.reactor-note {
+  font-size: 12px;
+  color: var(--dim);
+}
+.reactor-note {
+  max-width: 840px;
+  line-height: 1.8;
+}
+.reactor-window:fullscreen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.reactor-window:fullscreen #viewport {
+  flex: 1;
+  aspect-ratio: auto;
+}
+body.film {
+  margin: 0;
+  overflow: hidden;
+}
+body.film .nav,
+body.film .intro,
+body.film .reactor-controls,
+body.film .reactor-bar,
+body.film .reactor-foot,
+body.film .reactor-meters,
+body.film .reactor-note {
+  display: none;
+}
+body.film .reactor-page {
+  padding: 0;
+  max-width: none;
+}
+body.film .reactor-window {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+body.film #viewport {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+@media (max-width: 700px) {
+  .intro {
+    align-items: start;
+    flex-direction: column;
+  }
+  .intro > p {
+    margin: 0;
+  }
+  .reactor-meters {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .reactor-bar small {
+    display: none;
+  }
+  .reactor-foot {
+    font-size: 9px;
+    padding: 10px;
+  }
+  .reactor-controls {
+    gap: 8px;
+  }
+  #fullscreen {
+    margin-left: 0;
+  }
+}

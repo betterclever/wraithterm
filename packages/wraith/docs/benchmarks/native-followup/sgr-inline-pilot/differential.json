@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-17T17:43:05.335Z",
+  "fragments": 23469,
+  "snapshots": 810,
+  "cells": 239760,
+  "randomAtoms": 2500,
+  "styleCapacityUpdates": 6000,
+  "beforeWasm": "e279c2da3755e4df0742ff76b975f520240ec9bc035008eae808e8ae382d73d1",
+  "afterWasm": "a8a43a8fc9a064268b97b35e6e614590029d513e56a9d05b20d60698649b9183",
+  "corpus": "6e6fd610804033eb1fab6af5aecd53bac3d8c5589cea08388463af1119c7cff2",
+  "checks": [
+    "visible text and every cell foreground/background/flags",
+    "stream boundaries and fragmented UTF-8",
+    "malformed and overflow SGR",
+    "mixed colon/semicolon colors",
+    "current style and cursor query replies",
+    "saved cursors and alternate screens",
+    "mode and event parity",
+    "style capacity/recycling under scrolling"
+  ]
+}

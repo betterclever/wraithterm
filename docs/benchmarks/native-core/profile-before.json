@@ -1,0 +1,156 @@
+{
+  "date": "2026-10-17T11:25:20.320Z",
+  "iterations": 1024,
+  "warmup": 32,
+  "head": "bfeb2dedc2c67a912fd4d10e1c24a1c8ecf179a7",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "wasmSha256": "40f031244d3a09bf16c51ea7064f31ad2e33f3962889ebc6b4899dfe1ef4f552",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  },
+  "samplingIntervalUs": 500,
+  "activeSampledMs": 4399.573,
+  "note": "Sampled self-time from a separate Pipes profile, not benchmark wall time. Symbols resolved from a named build whose every noncustom Wasm section matches the profiled artifact byte for byte. Original profiler group labels were xterm-specific and are deliberately omitted.",
+  "sectionHashes": {
+    "1": "566fe7c9b7ab47f716b65fa2f6b14ae4606a0dc8be965050d8a18d853adf1327",
+    "2": "b043693b954cbcfb015f490118001d6885a8af53bff10502c9359bec6fd60973",
+    "3": "39bd61de72e08cfe50343089dd37e6eb6c0197592d81f7333a98fb7b6b03aa41",
+    "4": "5538e5f08c27f0df43ae179b6f054a5bebecf3e56d6099509d8405b5d341c833",
+    "5": "a1c09eb8693e4fb8f027acac907b3cc649d93aeb2c6c9ac444c0a77ff7b63cb0",
+    "6": "a22ed07142a42cf5670c5ed487064a67e4e4113ccee80a5e7b65f4914e3d2b21",
+    "7": "2cb38e2df362099ca55938654ebf678181bbc191a3dfec4d8550b75e3cc3d97f",
+    "9": "e51e763c0e94bb7a3e23218d5487a355196b980786a86a75bb907901fbb82d5b",
+    "12": "4da123e6abe5a5d1f4c055338ef3af5c1886a6db986ae56176b813a65e516ed0",
+    "10": "f27139e2052af85f2b42bb290608a0138a27aacf73348710e1e7ea6a33211901",
+    "11": "88afd8d98d9049b567f2b98ccd683138a692895008d36325d8c3756f3325a28b"
+  },
+  "namedWasmSha256": "443434232b40895e13972e1b785427d6b91c89d3381cd6fc950beae439daa8a8",
+  "hot": [
+    {
+      "function": "wraith_bridge_write",
+      "wasmIndex": 1879,
+      "selfMs": 708.519,
+      "selfPercent": 16.104267391403663
+    },
+    {
+      "function": "terminal.style.Style.eql",
+      "wasmIndex": 878,
+      "selfMs": 513.997,
+      "selfPercent": 11.682883770765935
+    },
+    {
+      "function": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).addContext__anon_380842",
+      "wasmIndex": 873,
+      "selfMs": 468.075,
+      "selfPercent": 10.63910065817751
+    },
+    {
+      "function": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).insert__anon_380864",
+      "wasmIndex": 747,
+      "selfMs": 464.796,
+      "selfPercent": 10.564570698110929
+    },
+    {
+      "function": "terminal.Screen.manualStyleUpdate",
+      "wasmIndex": 721,
+      "selfMs": 349.396,
+      "selfPercent": 7.941588876920555
+    },
+    {
+      "function": "terminal.page.Page.clonePartialRowFrom",
+      "wasmIndex": 332,
+      "selfMs": 257.852,
+      "selfPercent": 5.860841495299658
+    },
+    {
+      "function": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).addWithId__anon_396866",
+      "wasmIndex": 816,
+      "selfMs": 230.378,
+      "selfPercent": 5.236371802445373
+    },
+    {
+      "function": "<wraith_engine[1c7b24a7df4611e0]::core::Core>::update",
+      "wasmIndex": 988,
+      "selfMs": 220.493,
+      "selfPercent": 5.011690907276684
+    },
+    {
+      "function": "terminal.style.Set__struct_362002.hash",
+      "wasmIndex": 1090,
+      "selfMs": 191.36,
+      "selfPercent": 4.349513009557973
+    },
+    {
+      "function": "terminal.sgr.Parser.next",
+      "wasmIndex": 468,
+      "selfMs": 155.996,
+      "selfPercent": 3.545707731182094
+    },
+    {
+      "function": "terminal.Terminal.print",
+      "wasmIndex": 324,
+      "selfMs": 148.614,
+      "selfPercent": 3.3779187207485815
+    },
+    {
+      "function": "writeBuffer",
+      "wasmIndex": null,
+      "selfMs": 104.167,
+      "selfPercent": 2.3676615889769304
+    },
+    {
+      "function": "terminal.stream_terminal.Handler.vt__anon_427609",
+      "wasmIndex": 653,
+      "selfMs": 84.176,
+      "selfPercent": 1.9132765838866634
+    },
+    {
+      "function": "<wraith_engine[1c7b24a7df4611e0]::gpu::Renderer>::pack",
+      "wasmIndex": 511,
+      "selfMs": 67.372,
+      "selfPercent": 1.53133042683915
+    },
+    {
+      "function": "wraith_cell",
+      "wasmIndex": 796,
+      "selfMs": 58.62,
+      "selfPercent": 1.3324020308334468
+    },
+    {
+      "function": "terminal.ref_counted_set.RefCountedSet(terminal.style.Style,u16,u16,terminal.style.Set__struct_362002).deleteItem__anon_380852",
+      "wasmIndex": 867,
+      "selfMs": 53.95,
+      "selfPercent": 1.22625536614576
+    },
+    {
+      "function": "terminal.render.RowBuilder.row",
+      "wasmIndex": 370,
+      "selfMs": 49.437,
+      "selfPercent": 1.1236772295856894
+    },
+    {
+      "function": "terminal.c.render.row_cells_get",
+      "wasmIndex": 588,
+      "selfMs": 46.201,
+      "selfPercent": 1.0501246370954636
+    },
+    {
+      "function": "terminal.stream.Stream(terminal.stream_terminal.Handler).csiDispatchFinal",
+      "wasmIndex": 330,
+      "selfMs": 45.857,
+      "selfPercent": 1.042305696484636
+    },
+    {
+      "function": "mem.findScalarPos__anon_427985",
+      "wasmIndex": 704,
+      "selfMs": 45.62,
+      "selfPercent": 1.0369188100754323
+    }
+  ]
+}

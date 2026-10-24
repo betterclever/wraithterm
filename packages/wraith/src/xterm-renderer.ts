@@ -11,6 +11,8 @@ import {
   type Renderer,
   type Cell,
   type Colors,
+  type LinkUnderline,
+  type Decoration,
 } from './xterm-internals.js';
 export type RendererState = 'initializing' | 'webgpu' | 'dom' | 'external';
 /** u32 words per packed GPU cell: fg, bg, underline, flags, glyph. */
@@ -75,9 +77,12 @@ export class XtermRenderer implements Renderer {
   private readonly cell: Cell;
   private view = new Float32Array(4);
   private frame = new Uint32Array(8);
+  /** Previous logical row backing each visible row, or 0xffffffff for new
+   * content. Rust maps these to persistent, independently owned GPU slots. */
+  private rowSources = new Uint32Array(0);
   private disposed = false;
   private fatal = false;
-  private hovering = false;
+  private hovering: LinkUnderline | undefined;
   private blink = true;
   private readonly timer: ReturnType<typeof setInterval>;
   private selectedStart: [number, number] | undefined;
@@ -115,12 +120,12 @@ export class XtermRenderer implements Renderer {
     this.subscriptions.push(
       core.optionsService.onOptionChange(() => this.invalidate()),
       core._themeService.onChangeColors(() => this.invalidate()),
-      core.linkifier.onShowLinkUnderline(() => {
-        this.hovering = true;
+      core.linkifier.onShowLinkUnderline((range) => {
+        this.hovering = { ...range };
         this.invalidate();
       }),
       core.linkifier.onHideLinkUnderline(() => {
-        this.hovering = false;
+        this.hovering = undefined;
         this.invalidate();
       }),
     );
@@ -195,8 +200,6 @@ export class XtermRenderer implements Renderer {
     if (this.terminal.options.allowTransparency) return 'Transparency';
     if (this.terminal.options.minimumContrastRatio !== 1) return 'Minimum contrast adjustment';
     if (this.core._characterJoinerService._characterJoiners.length) return 'Character joiners';
-    if (!this.core._decorationService.decorations.next().done) return 'Buffer decorations';
-    if (this.hovering) return 'Link hover decorations';
     return undefined;
   }
   renderRows(start: number, end: number): void {
@@ -252,14 +255,13 @@ export class XtermRenderer implements Renderer {
         end = this.terminal.rows - 1;
         this.rowCached.fill(0);
       }
-      let changed: [number, number] | undefined;
       try {
-        changed = this.pack(start, end);
+        this.pack(start, end);
       } catch (error) {
         if (!(error instanceof AtlasFull)) throw error;
         this.atlas!.reset();
         this.rowCached.fill(0);
-        changed = this.pack(0, this.terminal.rows - 1);
+        this.pack(0, this.terminal.rows - 1);
       }
       const b = this.terminal.buffer.active,
         colors = this.core._themeService.colors;
@@ -289,9 +291,7 @@ export class XtermRenderer implements Renderer {
       this.frame[5] = rgba(colors.cursorAccent.rgba);
       this.frame[7] =
         255 | (Math.max(1, Math.round(o.cursorWidth * this.core._coreBrowserService.dpr)) << 8);
-      const cols = this.terminal.cols;
-      const [first, last] = changed ?? [0, -1];
-      if (!this.gpu!.render_staged((last - first + 1) * cols, first * cols)) {
+      if (!this.gpu!.render_retained()) {
         this.invalidate();
         return;
       }
@@ -315,6 +315,7 @@ export class XtermRenderer implements Renderer {
       this.staging = new Uint32Array(buffer, pointer, words);
       this.view = new Float32Array(buffer, pointer + words * 4, 4);
       this.frame = new Uint32Array(buffer, pointer + (words + 4) * 4, 8);
+      this.rowSources = new Uint32Array(buffer, pointer + (words + 12) * 4, this.terminal.rows);
     }
   }
   private selected(x: number, y: number): boolean {
@@ -330,9 +331,8 @@ export class XtermRenderer implements Renderer {
       );
     return (y > a[1] || (y === a[1] && x >= a[0])) && (y < b[1] || (y === b[1] && x < b[0]));
   }
-  /** Bring staging rows start..end up to date with the buffer. Returns the
-   * first and last rows whose staging changed, or undefined when none did. */
-  private pack(start: number, end: number): [number, number] | undefined {
+  /** Bring logical staging rows up to date and record their prior GPU owners. */
+  private pack(start: number, end: number): void {
     const { cols, rows, buffer, options } = this.terminal;
     const b = buffer.active,
       c = this.core._themeService.colors,
@@ -344,17 +344,16 @@ export class XtermRenderer implements Renderer {
     const rowWords = this.rowWords,
       cached = this.rowCached,
       stamps = this.rowStamp,
-      stamp = ++this.stamp,
+      stamp = (this.stamp = (this.stamp + 1) >>> 0),
       raw = cols * 3,
       packed = cols * CELL_WORDS;
+    for (let y = 0; y < rows; y++) this.rowSources[y] = y;
     // Content moves up when the viewport advances, so copy from rows below
     // first; when it moves back, walk upwards so copy sources stay intact.
     const delta = b.viewportY - this.lastViewportY;
     this.lastViewportY = b.viewportY;
     const step = delta < 0 ? -1 : 1;
-    let first = rows,
-      last = -1,
-      searched = false;
+    let searched = false;
     const hasSelection = !!this.selectedStart && !!this.selectedEnd;
     const selectionBackground = rgba(
       (this.core._coreBrowserService.isFocused
@@ -366,6 +365,19 @@ export class XtermRenderer implements Renderer {
       ? rgba(c.selectionForeground.rgba)
       : undefined;
     const brighten = !!options.drawBoldTextInBrightColors;
+    // Walk decorations once per frame, never once per ordinary cell. Upstream
+    // still owns DOM decoration elements, onRender callbacks and overview rulers.
+    let decorations: Map<number, Decoration[]> | undefined;
+    if (b.type === 'normal') {
+      for (const decoration of this.core._decorationService.decorations) {
+        const y = decoration.marker.line - b.viewportY;
+        if (y < start || y > end) continue;
+        decorations ??= new Map();
+        const list = decorations.get(y);
+        if (list) list.push(decoration);
+        else decorations.set(y, [decoration]);
+      }
+    }
     // Attribute runs are common even when every glyph differs. Keep just the
     // previous decoded style, so RGB churn cannot grow or thrash a style cache.
     // Words are unsigned, so -1 never matches a real attribute word.
@@ -380,7 +392,10 @@ export class XtermRenderer implements Renderer {
       const line = b.getLine(row);
       const words = packedRow(line, cols);
       const selectable = hasSelection && this.rowSelected(row);
-      if (words !== undefined && !selectable) {
+      const overlays = decorations?.get(y);
+      const hover = this.hovering;
+      const hovered = hover !== undefined && y >= hover.y1 && y <= hover.y2;
+      if (words !== undefined && !selectable && !overlays && !hovered) {
         if (cached[y] && sameRow(words, rowWords, y * raw, raw)) continue;
         // Scrolled content: find this row's words among rows staged last
         // frame that have not been overwritten yet, and move them.
@@ -406,14 +421,13 @@ export class XtermRenderer implements Renderer {
           values.copyWithin(y * packed, source * packed, (source + 1) * packed);
           rowWords.copyWithin(y * raw, source * raw, (source + 1) * raw);
           cached[y] = 1;
+          this.rowSources[y] = source;
           stamps[y] = stamp;
           this.shift = source - y;
-          first = Math.min(first, y);
-          last = Math.max(last, y);
           continue rowLoop;
         }
       }
-      let direct = words !== undefined && !selectable;
+      let direct = words !== undefined && !selectable && !overlays && !hovered;
       for (let x = 0, i = y * packed; x < cols; x++, i += CELL_WORDS) {
         if (words !== undefined) {
           const content = words[x * 3]!,
@@ -450,7 +464,7 @@ export class XtermRenderer implements Renderer {
             }
             let fg = styleFg,
               bg = styleBg;
-            if (selectable && this.selected(x, row)) {
+            if (!overlays && selectable && this.selected(x, row)) {
               bg = selectionBackground;
               if (selectionForeground !== undefined) fg = selectionForeground;
             }
@@ -482,7 +496,7 @@ export class XtermRenderer implements Renderer {
           (+!!data.isStrikethrough() << 5) |
           (+!!data.isOverline() << 6) |
           (data.getUnderlineStyle() << 8);
-        if (selectable && this.selected(x, row)) {
+        if (!overlays && selectable && this.selected(x, row)) {
           bg = selectionBackground;
           if (selectionForeground !== undefined) fg = selectionForeground;
         }
@@ -514,15 +528,46 @@ export class XtermRenderer implements Renderer {
         y -= step;
         continue;
       }
+      if (overlays || hovered) {
+        for (let x = 0, i = y * packed; x < cols; x++, i += CELL_WORDS) {
+          let top = false;
+          if (overlays) {
+            for (const d of overlays) {
+              const left = d.options.x ?? 0;
+              if (
+                x < left ||
+                x >= left + (d.options.width ?? 1) ||
+                (top && d.options.layer !== 'top')
+              )
+                continue;
+              if (d.backgroundColorRGB) values[i + 1] = rgba(d.backgroundColorRGB.rgba);
+              if (d.foregroundColorRGB) values[i] = rgba(d.foregroundColorRGB.rgba);
+              top = d.options.layer === 'top';
+            }
+            if (!top && selectable && this.selected(x, row)) {
+              values[i + 1] = selectionBackground;
+              if (selectionForeground !== undefined) values[i] = selectionForeground;
+            }
+          }
+          if (
+            hovered &&
+            x >= (y === hover.y1 ? hover.x1 : 0) &&
+            x < (y === hover.y2 ? hover.x2 : Math.min(hover.cols, cols))
+          ) {
+            // Link hover overrides underline/strike/overline as upstream's CSS
+            // text-decoration shorthand does, using the final foreground.
+            values[i + 3] = (values[i + 3]! & ~0x760) | 0x100;
+            values[i + 2] = values[i]!;
+          }
+        }
+      }
       // Rows with combined text, extended attributes or selection depend on
       // more than their words; they are always repacked.
       if (direct) rowWords.set(words!.subarray(0, raw), y * raw);
       cached[y] = +direct;
+      this.rowSources[y] = 0xffffffff;
       stamps[y] = stamp;
-      first = Math.min(first, y);
-      last = Math.max(last, y);
     }
-    return last < 0 ? undefined : [first, last];
   }
   private rowSelected(row: number): boolean {
     const a = this.selectedStart!,

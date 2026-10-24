@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-11T07:50:37.790Z",
+  "repetitions": 3,
+  "frames": 256,
+  "summary": [
+    {
+      "type": "wraith",
+      "completedUpdatesPerSecond": 418.30065359477123,
+      "range": [
+        417.9591836734694,
+        418.4373978342789
+      ],
+      "parseP50Ms": 2,
+      "redrawP50Ms": 0.20000004768371582,
+      "pipelineP95Ms": 2.600000023841858
+    },
+    {
+      "type": "webgl",
+      "completedUpdatesPerSecond": 193.47037485059428,
+      "range": [
+        193.06184012066365,
+        195.06248095447322
+      ],
+      "parseP50Ms": 2.599999964237213,
+      "redrawP50Ms": 2.100000023841858,
+      "pipelineP95Ms": 6
+    },
+    {
+      "type": "ghostty",
+      "completedUpdatesPerSecond": 229.30849158497594,
+      "range": [
+        222.78304759784913,
+        236.59889094269872
+      ],
+      "parseP50Ms": 3.5,
+      "redrawP50Ms": 0.6000000238418579,
+      "pipelineP95Ms": 5.100000023841858
+    }
+  ]
+}

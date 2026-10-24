@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-17T08:32:09.226Z",
+  "sources": {
+    "xterm-input.js": "a03abdf76c5cbe0cfcc93df0f0b7d1a65c321af09a519d84657a96f94afa7e11",
+    "xterm-print.js": "5a461a5682194cb87df40ef04d2f11abb67a3f457cb5c0b8efa82dfc1d465e8e",
+    "xterm-parser.js": "b0023b654253ce18fde8efed44503052b84683fb614f5be2d37ff5cc46dbca06"
+  },
+  "comparisons": 336,
+  "fragments": 16554,
+  "randomAtoms": 2500,
+  "asyncEvents": 9,
+  "checks": [
+    "full buffer/attributes/parser state",
+    "random malformed CSI",
+    "overflow/subparameters",
+    "UTF-8 fragmentation",
+    "wrapping and wide-cell repair",
+    "margins/insert/delete/alternate screen",
+    "charset/hyperlinks",
+    "accessibility events",
+    "custom Unicode provider",
+    "CSI/OSC/DCS/ESC async continuation"
+  ]
+}

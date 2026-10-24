@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-17T10:55:39.305Z",
+  "sources": {
+    "xterm-input.js": "02b24006890bf49dfee6931d22ccb1957b6f1d67e04740d5b913587a5670da9f",
+    "xterm-print.js": "5a461a5682194cb87df40ef04d2f11abb67a3f457cb5c0b8efa82dfc1d465e8e",
+    "xterm-parser.js": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42"
+  },
+  "generation": {
+    "sourceSha256": "c50c159ec6fb209a1be4f1fb4266c84865e4460d8b82f54e3d429b760386e4ef",
+    "generatedSha256": "dcb56f2ea2c3a36d3380530a48da7ea790e5976b28101095879a8c8bbcbd5d42",
+    "deterministic": true,
+    "residualEnumIdentifiers": 0,
+    "numericCases": 21
+  },
+  "comparisons": 336,
+  "fragments": 16554,
+  "randomAtoms": 2500,
+  "asyncEvents": 9,
+  "checks": [
+    "full buffer/attributes/parser state",
+    "random malformed CSI",
+    "overflow/subparameters",
+    "UTF-8 fragmentation",
+    "wrapping and wide-cell repair",
+    "margins/insert/delete/alternate screen",
+    "charset/hyperlinks",
+    "accessibility events",
+    "custom Unicode provider",
+    "CSI/OSC/DCS/ESC async continuation"
+  ]
+}
