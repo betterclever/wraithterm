@@ -10,6 +10,12 @@ export type BrowserPose = {
   rotation: [number, number, number];
   width?: number;
   opacity?: number;
+  // Omit the wraithterm.com chrome, e.g. around another product's footage.
+  bare?: boolean;
+  // Screen power, 0 (off) to 1; lets a screen boot on camera.
+  brightness?: number;
+  // Opacity of a mirrored floor reflection drawn from the same texture.
+  reflection?: number;
 };
 
 const makeShape = (w: number, h: number, r: number) => {
@@ -34,6 +40,9 @@ export const Browser: React.FC<BrowserPose> = ({
   rotation,
   width = 6.5,
   opacity = 1,
+  bare = false,
+  brightness = 1,
+  reflection = 0,
 }) => {
   const height = (width * 1230) / 1920;
   const [surface] = useState(() => {
@@ -67,6 +76,18 @@ export const Browser: React.FC<BrowserPose> = ({
     };
   }, [delayRender, continueRender, cancelRender]);
   useEffect(() => () => surface.texture.dispose(), [surface]);
+  const [fade] = useState(() => {
+    const canvas = new OffscreenCanvas(4, 256);
+    const c = canvas.getContext('2d')!;
+    const g = c.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, '#000');
+    g.addColorStop(0.55, '#000');
+    g.addColorStop(1, '#fff');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 4, 256);
+    return new CanvasTexture(canvas);
+  });
+  useEffect(() => () => fade.dispose(), [fade]);
   const geometry = useMemo(
     () =>
       new ExtrudeGeometry(makeShape(width, height, 0.085), {
@@ -86,7 +107,7 @@ export const Browser: React.FC<BrowserPose> = ({
       const c = surface.context;
       c.fillStyle = '#08090b';
       c.fillRect(0, 0, 1920, 1230);
-      if (chrome) c.drawImage(chrome, 0, 0, 1920, 150);
+      if (chrome && !bare) c.drawImage(chrome, 0, 0, 1920, 150);
       const image = source as {
         displayWidth?: number;
         displayHeight?: number;
@@ -109,7 +130,7 @@ export const Browser: React.FC<BrowserPose> = ({
       if (isRendering) advance(performance.now());
       else invalidate();
     },
-    [surface, chrome, advance, invalidate, isRendering],
+    [surface, chrome, bare, advance, invalidate, isRendering],
   );
   return (
     <group position={position} rotation={rotation}>
@@ -136,12 +157,26 @@ export const Browser: React.FC<BrowserPose> = ({
         <planeGeometry args={[width - 0.035, height - 0.035]} />
         <meshBasicMaterial
           map={surface.texture}
-          color="white"
+          color={[brightness, brightness, brightness]}
           toneMapped={false}
           transparent={opacity < 1}
           opacity={opacity}
         />
       </mesh>
+      {reflection > 0 ? (
+        <mesh position={[0, -height - 0.12, 0.045]} scale={[1, -1, 1]}>
+          <planeGeometry args={[width - 0.035, height - 0.035]} />
+          <meshBasicMaterial
+            map={surface.texture}
+            alphaMap={fade}
+            color={[brightness, brightness, brightness]}
+            toneMapped={false}
+            transparent
+            opacity={reflection * opacity}
+            depthWrite={false}
+          />
+        </mesh>
+      ) : null}
       <mesh position={[0, 0, -0.073]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[width - 0.1, height - 0.1]} />
         <meshStandardMaterial

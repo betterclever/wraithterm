@@ -6,7 +6,11 @@ import { pulseAt } from './timing';
 
 // Website sprite cells become one instanced, extruded 3D mascot. Eye holes and
 // tails come from the same source asset; there is no separately redrawn logo.
-export const Ghost: React.FC = () => {
+export const Ghost: React.FC<{
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+}> = ({ position, rotation, scale }) => {
   const frame = useCurrentFrame();
   const cells = useMemo(
     () =>
@@ -43,9 +47,9 @@ export const Ghost: React.FC = () => {
   );
   return (
     <group
-      position={[-2.7, 0.25 + Math.sin(frame / 80) * 0.08, -5.0]}
-      rotation={[0.02, 0.14 + Math.sin(frame / 170) * 0.17, 0]}
-      scale={1.1 + pulseAt(frame) * 0.008}
+      position={position ?? [-2.7, 0.25 + Math.sin(frame / 80) * 0.08, -5.0]}
+      rotation={rotation ?? [0.02, 0.14 + Math.sin(frame / 170) * 0.17, 0]}
+      scale={scale ?? 1.1 + pulseAt(frame) * 0.008}
     >
       <primitive object={mesh} />
     </group>

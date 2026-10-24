@@ -1,0 +1,22 @@
+{
+  "fps": 60,
+  "bpm": 131,
+  "sourceOffsetSeconds": 0.795,
+  "cues": [0, 110, 164, 221, 330, 441, 550, 661, 770, 881, 990, 1100, 1209, 1320, 1429],
+  "shots": [
+    "TheQuestion",
+    "EdgeReveal",
+    "MeetWraith",
+    "SameBytes",
+    "WebGLProof",
+    "SpeedFlex",
+    "DOMProof",
+    "MoreWorkloads",
+    "NativeCeiling",
+    "PipeDive",
+    "PipeOrbit",
+    "DropIn",
+    "WebsiteReveal",
+    "Wraith"
+  ]
+}

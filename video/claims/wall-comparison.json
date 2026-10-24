@@ -1,0 +1,140 @@
+{
+  "measured": "2026-10-24T06:40:16.874Z",
+  "head": "0c83438f24f806b44905149e32eb2ad4dc673ee2",
+  "workload": {
+    "terminals": 16,
+    "grid": "160x50",
+    "content": "alternating raycaster / tunnel, truecolor half-block, every cell recolored per frame",
+    "viewport": "1920x1080",
+    "dpr": 2,
+    "pacing": "next frame written after the previous write completes and one animation frame",
+    "nativePacing": "write() then flush() (waits for render) before the next animation frame",
+    "warmMs": 3000,
+    "measureMs": 8000
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "adapter": {},
+  "sources": {
+    "video/capture/halfblock.js": "bfba29fc368ff946b75f3473ab5d9a2bb7c72805cb1b496f210fb45f9eb1fc90",
+    "video/capture/raycast.js": "d31e3bdb2cdd79f3cf3f69705c34fe91e0a6b2ddf6c1f23b7dc4a8e93b995806",
+    "video/capture/wall-bench.mjs": "350b02add550c6559a39d199e13dd8ac78d195dceae736ad057e034c72d300e1"
+  },
+  "runs": [
+    {
+      "round": 0,
+      "type": "webgl",
+      "meanFps": 35.03025765799488,
+      "minTerminalFps": 34.936677272443696,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 0,
+      "type": "wraith",
+      "meanFps": 60.06268496426008,
+      "minTerminalFps": 60.06268496426008,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 0,
+      "type": "native",
+      "meanFps": 59.99250093738283,
+      "minTerminalFps": 59.99250093738283,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 1,
+      "type": "wraith",
+      "meanFps": 60.048713464901326,
+      "minTerminalFps": 59.955033724706475,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 1,
+      "type": "native",
+      "meanFps": 59.973012144356304,
+      "minTerminalFps": 59.973012144356304,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 1,
+      "type": "webgl",
+      "meanFps": 33.71628371628372,
+      "minTerminalFps": 33.71628371628372,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 2,
+      "type": "native",
+      "meanFps": 59.98650303672735,
+      "minTerminalFps": 59.98650303672735,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 2,
+      "type": "webgl",
+      "meanFps": 39.69516608026668,
+      "minTerminalFps": 39.67956876550036,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    },
+    {
+      "round": 2,
+      "type": "wraith",
+      "meanFps": 59.86948919695267,
+      "minTerminalFps": 59.82265517672037,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      }
+    }
+  ],
+  "bounds": {
+    "webglFastest": 39.69516608026668,
+    "webglSlowest": 33.71628371628372,
+    "compatibleSlowest": 59.86948919695267,
+    "nativeSlowest": 59.973012144356304,
+    "nativeSlowestMinTerminal": 59.973012144356304
+  },
+  "limits": "Short synthetic playback on one machine with unrelated desktop apps running. Frames shown per terminal per second as paced by the page; not physical display FPS."
+}

@@ -1,6 +1,10 @@
 # Wraith launch video: "The Arrival"
 
-Latest launch cut: [Ghost Hype in Remotion](remotion/README.md), a 23.8-second
+Latest launch cut: [the Remotion speed flex](remotion/FLEX.md), a question-first
+23.8-second edit with 14 shots, xterm speed comparisons and sharper 3D reveals.
+The local export is `wraith-hype-flex.mp4`.
+
+Earlier: [Ghost Hype in Remotion](remotion/README.md), a 23.8-second
 3D-browser edit with the shared ghost, real terminal footage, a measured
 GPU-completed speed proof and the user-supplied BIA soundtrack. The local export
 is `wraith-hype-remotion.mp4`. The [earlier fframes edition](HYPE.md) remains available.

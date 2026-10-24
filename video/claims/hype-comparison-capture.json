@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-21T17:55:51.994Z",
+  "head": "7f058bbc65e3f0fdc754dc4c00812b593402f5cd",
+  "sources": {
+    "demo/compare.js": "e5ad8db30b5804dce36db8ec11549bfda820774cb194963176a1216d582c424f",
+    "demo/showcase.js": "319443683eacf195961bbbe5da363e4d2c2bfd3525a5e64b10492b6f3b3a2cad",
+    "scripts/compare-renderers.mjs": "3f2405792abee6f87253016b13190c704dbb34a3134887ab1ee7eedbaad383eb",
+    "packages/wraith/src/xterm.ts": "4591792e184a66c0571ff5ec8181f9e6b33249715458fb1fcda7e94e862f5147",
+    "packages/wraith/src/xterm-print.ts": "caf51ec90b5afdb01953e4649cad44dc7a92a7664138a4f0d18679fb8f2061ec",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68"
+  },
+  "captures": [
+    {
+      "type": "webgl",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 60,
+      "sourceFrames": 8,
+      "fps": 30,
+      "bytesHashes": [
+        "185429da79d216a5b8d25db39e5b82a4cbd2928df036fd033e7e226c98a3d2da",
+        "946e6a70bd6fb837096dd0316415668eef363d9b32307a6ba5cf65c664740b32",
+        "ece42766f62947541496355793dfccf3f6c76732902c5a982ac80bfbeaa8ed56",
+        "b5bc9e3ef340498fc3dca1265f61d1afd8b3f974cbe913adab8968d4d4aa89ad",
+        "2ee2034781ee424c41bac0c167da650c89bd4d0c05afad282f3fe8e940fb8cd0",
+        "a9be06009012591692e953913da4f4dc4114d8d63f196207f53a11df320fdda9",
+        "2f02917b4325e978c9c618bc4d95be5389bccd8ff31578785935b21eadddcf66",
+        "4a0ec275b07e1b50dac72b1345cccbe8509adea455ebb4195abac10f4f4aa6a0"
+      ],
+      "textHashes": [
+        "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "6a4748fe2ebefb7902ee36429a1997ba70eb2d07b9d97cb3543b29fc4d07b9da",
+        "8eb86a0e343db6c82ac6547f8e899a442633c21b10ec15f8ded1ab3ebb55accd",
+        "ca9e6469ca62a6aeeecde74deceaf5353521c563cff42a3712d856ae4bdcfbdb",
+        "39853b9bee5b2db6da085526a84fdc0e41c8204bc75137bc374b835c2e30c8f7",
+        "373d7efe2261c632c24962c9633bea675b8db05c0ab3ed4c69b64743aef15172",
+        "906f542555fc8c35cd7189a1a4492b41a77b82f8419ed8640d399339a0eaefef",
+        "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+      ],
+      "errors": []
+    },
+    {
+      "type": "wraith",
+      "workload": "complex",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 60,
+      "sourceFrames": 8,
+      "fps": 30,
+      "bytesHashes": [
+        "185429da79d216a5b8d25db39e5b82a4cbd2928df036fd033e7e226c98a3d2da",
+        "946e6a70bd6fb837096dd0316415668eef363d9b32307a6ba5cf65c664740b32",
+        "ece42766f62947541496355793dfccf3f6c76732902c5a982ac80bfbeaa8ed56",
+        "b5bc9e3ef340498fc3dca1265f61d1afd8b3f974cbe913adab8968d4d4aa89ad",
+        "2ee2034781ee424c41bac0c167da650c89bd4d0c05afad282f3fe8e940fb8cd0",
+        "a9be06009012591692e953913da4f4dc4114d8d63f196207f53a11df320fdda9",
+        "2f02917b4325e978c9c618bc4d95be5389bccd8ff31578785935b21eadddcf66",
+        "4a0ec275b07e1b50dac72b1345cccbe8509adea455ebb4195abac10f4f4aa6a0"
+      ],
+      "textHashes": [
+        "22603441c579fc06479f24dc21b9cfb41e31d4198781f0a4824f47b33b8d5cda",
+        "6a4748fe2ebefb7902ee36429a1997ba70eb2d07b9d97cb3543b29fc4d07b9da",
+        "8eb86a0e343db6c82ac6547f8e899a442633c21b10ec15f8ded1ab3ebb55accd",
+        "ca9e6469ca62a6aeeecde74deceaf5353521c563cff42a3712d856ae4bdcfbdb",
+        "39853b9bee5b2db6da085526a84fdc0e41c8204bc75137bc374b835c2e30c8f7",
+        "373d7efe2261c632c24962c9633bea675b8db05c0ab3ed4c69b64743aef15172",
+        "906f542555fc8c35cd7189a1a4492b41a77b82f8419ed8640d399339a0eaefef",
+        "0105c9999b6d0efedc446c694a3d22289f6ebf045243990fd267c0905d72b62e"
+      ],
+      "errors": []
+    },
+    {
+      "type": "webgl",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 60,
+      "sourceFrames": 8,
+      "fps": 30,
+      "bytesHashes": [
+        "d555357e96bc757ef63abc30be6f7e2f982b28acd5635dac59a6abe7861a82ee",
+        "15e9709d8a35966402c90ef76861d826c15ac8552a8a110549247a5213fa74e2",
+        "4a04d1294fce2415b7f6a028581571a9ac9a5182cee38bad71e0893df82485b4",
+        "9df7777adb6df9981d2d6dd615a472022fc3ab318d98c92151a0dbe32af2881c",
+        "a599c2eed4be6dbcddc37a78041a6fcc112a0c50e6142bb8acddf1709e35d385",
+        "6fd363522d4e4ebd14d33ce1c32fbb2b960f43b0f0dd18705b709fc47869a9fd",
+        "b9824cfe4357c781a9b478b49f8de59acb57426e5cf5c81a14984c39ed9a9d3b",
+        "2cf1776633bc62ec6b241bde5403ae9b7af3eddec71a5dcff50e34a9e1dac6f4"
+      ],
+      "textHashes": [
+        "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+        "ef3eee983e0c44b619c36edd8f0dca2408c97995be5ed054b6bda4b40a463b31",
+        "8ff1d1b5f7e561bc53603c32b9e0b5d6fcd814a5c356afb4fc46aa7c627357fe",
+        "042cc0f2a348dc22e16e47ddbb9f1448178da0e78f6b5bf95ff83551506528b8",
+        "8776f04e9fbfee9ea13ab60ced6e2880b902db2d7d10f14813c6f768459bdc70",
+        "94c3fc6d8facd7d62d8742632b7a6ac75b8cf9ca9e0f6ab7af784e37bfecf710",
+        "d808db83e6c9ef3c72082d3591762ea49548ba0a3d3cb10e355f52f37ebf53c9",
+        "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+      ],
+      "errors": []
+    },
+    {
+      "type": "wraith",
+      "workload": "showcase",
+      "cols": 240,
+      "rows": 80,
+      "dpr": 1,
+      "frames": 60,
+      "sourceFrames": 8,
+      "fps": 30,
+      "bytesHashes": [
+        "d555357e96bc757ef63abc30be6f7e2f982b28acd5635dac59a6abe7861a82ee",
+        "15e9709d8a35966402c90ef76861d826c15ac8552a8a110549247a5213fa74e2",
+        "4a04d1294fce2415b7f6a028581571a9ac9a5182cee38bad71e0893df82485b4",
+        "9df7777adb6df9981d2d6dd615a472022fc3ab318d98c92151a0dbe32af2881c",
+        "a599c2eed4be6dbcddc37a78041a6fcc112a0c50e6142bb8acddf1709e35d385",
+        "6fd363522d4e4ebd14d33ce1c32fbb2b960f43b0f0dd18705b709fc47869a9fd",
+        "b9824cfe4357c781a9b478b49f8de59acb57426e5cf5c81a14984c39ed9a9d3b",
+        "2cf1776633bc62ec6b241bde5403ae9b7af3eddec71a5dcff50e34a9e1dac6f4"
+      ],
+      "textHashes": [
+        "2fde23f76f6ce6ec8ade6bfdb83af84b99795a9486f4e23d7872ea8951481feb",
+        "ef3eee983e0c44b619c36edd8f0dca2408c97995be5ed054b6bda4b40a463b31",
+        "8ff1d1b5f7e561bc53603c32b9e0b5d6fcd814a5c356afb4fc46aa7c627357fe",
+        "042cc0f2a348dc22e16e47ddbb9f1448178da0e78f6b5bf95ff83551506528b8",
+        "8776f04e9fbfee9ea13ab60ced6e2880b902db2d7d10f14813c6f768459bdc70",
+        "94c3fc6d8facd7d62d8742632b7a6ac75b8cf9ca9e0f6ab7af784e37bfecf710",
+        "d808db83e6c9ef3c72082d3591762ea49548ba0a3d3cb10e355f52f37ebf53c9",
+        "971606abc18991ee36c8a4cf19587e9291d1d6f46699ba3b5d1b33b80c5978ef"
+      ],
+      "errors": []
+    }
+  ],
+  "methodology": "Actual xterm WebGL and Wraith-compatible fixtures, same 240x80 grid, bytes and font. Capture each of the warmed benchmark variants 0–7 once; repeat the eight recorded states to create a 60-frame clip at identical 30-fps playback for both products. Captures and timing runs are separate; no artificial xterm slowdown. Runtime files are unchanged."
+}

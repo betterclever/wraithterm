@@ -8,7 +8,10 @@ import { resolve } from 'node:path';
 const root = import.meta.dirname;
 const repo = resolve(root, '../..');
 const video = resolve(root, '..');
-const output = resolve(video, 'wraith-hype-remotion.mp4');
+const flex = process.argv.includes('--flex');
+const cache = resolve(root, flex ? '.cache/flex' : '.cache');
+const outputName = flex ? 'wraith-hype-flex.mp4' : 'wraith-hype-remotion.mp4';
+const output = resolve(video, outputName);
 const run = (cmd, args) => {
   const r = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 8e6 });
   if (r.status !== 0) throw Error(r.stderr || `${cmd} failed`);
@@ -54,7 +57,7 @@ const measured = run('ffmpeg', [
   'null',
   '-',
 ]).stderr;
-await writeFile(resolve(root, '.cache/export-audio.log'), measured);
+await writeFile(resolve(cache, 'export-audio.log'), measured);
 const audio = JSON.parse(measured.match(/\{\s*"input_i"[\s\S]*?\}/)[0]);
 if (Number(audio.input_tp) > -1 || Math.abs(Number(audio.input_i) + 14) > 2)
   throw Error('Export audio misses web loudness/true-peak target');
@@ -80,6 +83,7 @@ const sourceFiles = [
   'render.mjs',
   'review.mjs',
   'analyze-beats.py',
+  'flex-edit.json',
   ...(await readdir(resolve(root, 'src'))).map((f) => `src/${f}`),
 ];
 const sources = {};
@@ -89,13 +93,24 @@ sources['demo/ghost-sprite.json'] = await hash(resolve(repo, 'demo/ghost-sprite.
 const assets = {};
 for (const f of await readdir(resolve(root, 'public')))
   if (/\.(mp4|wav|png|ttf)$/.test(f)) assets[f] = await hash(resolve(root, 'public', f));
-const stills = JSON.parse(await readFile(resolve(root, '.cache/still-review.json'), 'utf8'));
-const render = JSON.parse(await readFile(resolve(root, '.cache/render-log.json'), 'utf8'));
+const stills = JSON.parse(await readFile(resolve(cache, 'still-review.json'), 'utf8'));
+const render = JSON.parse(await readFile(resolve(cache, 'render-log.json'), 'utf8'));
 if (stills.errors.length || render.errors.length) throw Error('Browser errors were recorded');
 const music = JSON.parse(
-  await readFile(resolve(video, '.cache/hype/audio/provenance.json'), 'utf8'),
+  await readFile(
+    resolve(
+      video,
+      flex ? '.cache/hype/audio/flex-provenance.json' : '.cache/hype/audio/provenance.json',
+    ),
+    'utf8',
+  ),
 );
-const sync = JSON.parse(await readFile(resolve(video, 'claims/hype-music.json'), 'utf8'));
+const sync = JSON.parse(
+  await readFile(
+    resolve(video, flex ? 'claims/hype-flex-music.json' : 'claims/hype-music.json'),
+    'utf8',
+  ),
+);
 if (
   music.sourceSha256 !== sync.sourceSha256 ||
   music.offset !== sync.selectedSourceOffsetSeconds ||
@@ -108,6 +123,12 @@ const record = {
   sources,
   assets,
   performanceProofSha256: await hash(resolve(video, 'claims/hype-native.json')),
+  ...(flex
+    ? {
+        comparisonProofSha256: await hash(resolve(video, 'claims/hype-comparison.json')),
+        comparisonCaptureSha256: await hash(resolve(video, 'claims/hype-comparison-capture.json')),
+      }
+    : {}),
   music: {
     ...music,
     biaRecordingIncluded: true,
@@ -123,7 +144,7 @@ const record = {
     reviewedFrameNumbers: stills.frames,
     visualReviewConfirmed: process.argv.includes('--visual-review'),
     listeningReview: false,
-    studioAvailableAt: 'http://localhost:5200/WraithHype',
+    studioAvailableAt: `http://localhost:5200/${flex ? 'WraithFlex' : 'WraithHype'}`,
   },
   encodedAudio: {
     integratedLufs: Number(audio.input_i),
@@ -131,7 +152,7 @@ const record = {
     loudnessRangeLu: Number(audio.input_lra),
   },
   export: {
-    file: 'wraith-hype-remotion.mp4',
+    file: outputName,
     sha256: await hash(output),
     bytes: (await stat(output)).size,
     probe,
@@ -139,7 +160,7 @@ const record = {
   engineChanges: false,
 };
 await writeFile(
-  resolve(video, 'claims/hype-remotion-review.json'),
+  resolve(video, flex ? 'claims/hype-flex-review.json' : 'claims/hype-remotion-review.json'),
   JSON.stringify(record, null, 2) + '\n',
 );
 console.log(

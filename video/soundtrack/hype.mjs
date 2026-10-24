@@ -1,6 +1,6 @@
 // Mix supplied local music, or generate the original temporary 131-BPM score.
 // --music=/local/file --offset=seconds trims the source without changing its tempo.
-import { writeFile, mkdir, stat } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -9,6 +9,8 @@ const root = resolve(import.meta.dirname, '..'),
   cache = resolve(root, '.cache/hype/audio');
 await mkdir(cache, { recursive: true });
 await mkdir(resolve(root, 'footage'), { recursive: true });
+const editPath = process.argv.find((s) => s.startsWith('--edit='))?.slice(7);
+const edit = editPath ? JSON.parse(await readFile(editPath, 'utf8')) : null;
 const RATE = 48000,
   DURATION = 1429 / 60,
   B = 60 / 131,
@@ -151,7 +153,7 @@ for (let beat = 0; beat < 52; beat++) {
     }
   }
 }
-const cues = [0, 110, 330, 550, 769, 989, 1209].map((f) => f / 60);
+const cues = (edit?.cues.slice(0, -1) ?? [0, 110, 330, 550, 769, 989, 1209]).map((f) => f / 60);
 for (let i = 1; i < cues.length; i++) {
   let low = 0;
   event(
@@ -290,10 +292,10 @@ const log = run([
   String(RATE),
   '-c:a',
   'pcm_s16le',
-  resolve(root, 'footage/hype-score.wav'),
+  resolve(root, edit ? 'footage/hype-flex-score.wav' : 'footage/hype-score.wav'),
 ]);
 await writeFile(
-  resolve(cache, 'provenance.json'),
+  resolve(cache, edit ? 'flex-provenance.json' : 'provenance.json'),
   JSON.stringify(
     {
       duration: DURATION,
