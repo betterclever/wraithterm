@@ -18,6 +18,7 @@ import { Ghost } from './Ghost';
 import wall from '../../claims/wall-comparison-120hz.json';
 import music from '../../claims/ongo-music.json';
 import doomPaced from '../../claims/doom-paced.json';
+import workScene from '../../claims/work-scene.json';
 import doomMax from '../../claims/doom-timedemo.json';
 
 // "WE ON GO": a car-launch film where the car is a terminal. Source music runs from 0 s
@@ -82,7 +83,7 @@ const orbit = (angle: number, radius: number, y: number, look: V3 = [0, 0, 0]): 
 
 // One subject per act, seen from many angles; acts change on musical switches.
 const HERO = (brightness = 1) =>
-  slab('reactor', [0, 0, 0], [0, 0, 0], { brightness, reflection: 0.3 });
+  slab('work-scene-native', [0, 0, 0], [0, 0, 0], { brightness, reflection: 0.3 });
 // The wall act: Wraith's wall, and xterm's wall dark beside it until "let 'em know".
 const NATIVE: V3 = [2.15, 0.25, 0];
 const WALLS = (xterm = 0) => [
@@ -172,8 +173,9 @@ const SHOTS: Shot[] = [
     camera: (k) => {
       const e = outExpo(k);
       return {
-        pos: [mix(0.8, -0.4, e), mix(4.6, 0.2, e), mix(4.2, 4.6, e)],
-        look: [0, 0, 0],
+        // Settle on the chart and preview column (screen right, upper half).
+        pos: [mix(2.6, 1.9, e), mix(4.6, 0.55, e), mix(3.8, 3.0, e)],
+        look: [mix(1.2, 1.7, e), mix(0.2, 0.45, e), 0],
         fov: 32,
       };
     },
@@ -631,13 +633,20 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
       );
     case 'Crane':
       return (
-        <Spec
-          frame={frame}
-          start={UH[1][1] - 4}
-          n="04"
-          title="Every cell, every frame."
-          sub="ON THE GPU"
-        />
+        <>
+          <Spec
+            frame={frame}
+            start={UH[1][1] - 4}
+            n="04"
+            title="Kitty graphics."
+            sub="LIVE CHARTS AND PREVIEWS · EVERY FRAME"
+          />
+          <Fine opacity={ramp(frame, UH[1][1] + 10, UH[1][1] + 30)}>
+            Kitty graphics build · 200×60 workspace: PNG chart + 640×360 RGBA preview every frame ·{' '}
+            {Math.floor(workScene.summary['native display'].slowest)} fps on a 120 Hz display · 5
+            rounds · M5 Max · Chrome 155
+          </Fine>
+        </>
       );
     case 'Chase':
       return (

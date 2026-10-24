@@ -1,0 +1,198 @@
+{
+  "measured": "2026-10-24T16:08:54.844Z",
+  "head": "7289db3a14c4b396ff481b120a10aef9c52242a6",
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "6bfc34a92700b1da4da34ad2e9be869723c6c8d05a067b6dd43da13eb626cde2",
+    ".cache/scene/scene-player.js": "fe43315b1b2fdc18b7efd5c5bc7c24d0f3deb658dbd862e6c819ee54278f6b6a",
+    ".cache/scene/make-scene.mjs": "a325d98031c692fe97e3c1f96ff3bd6f6a285889107e64f1605c7e26bf6a919a",
+    ".cache/scene/mixed.bin": "9d65747242dc54589dd4db0145cb72a96e514172b7bb2d096f0a0a16e5877049"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "workload": "200x60 terminal at 1600x900 DPR 2; each frame: DOOM 640x400 Kitty RGB (i=1, 100x36 cells), PNG chart 396x90 (i=2, 99x12 cells), 24-row truecolor process table, 3 scrolling log lines in a 48..60 region, synchronized output; six static PNG thumbnails sent once; ~1 MiB per frame",
+  "modes": {
+    "display": "next frame after the previous is shown and a display frame passes (native: flush to GPU fence, then a display frame)",
+    "max": "native only: next frame right after flush"
+  },
+  "note": "xterm.js and the compatible profile do not support Kitty graphics and skip those sequences, so they draw less. Frames shown per second, not physical display FPS beyond the panel rate.",
+  "summary": {
+    "webgl display": {
+      "slowest": 120.1114874576834,
+      "fastest": 120.125
+    },
+    "wraith display": {
+      "slowest": 120.10548285908014,
+      "fastest": 120.14452348502157
+    },
+    "native display": {
+      "slowest": 120.10659460267632,
+      "fastest": 120.15537764009723
+    },
+    "native max": {
+      "slowest": 362.5978051645451,
+      "fastest": 409.1556866765769
+    }
+  },
+  "runs": [
+    {
+      "round": 0,
+      "type": "webgl",
+      "mode": "display",
+      "fps": 120.1114874576834,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "type": "wraith",
+      "mode": "display",
+      "fps": 120.12349845624692,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "type": "native",
+      "mode": "display",
+      "fps": 120.15537764009723,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "type": "native",
+      "mode": "max",
+      "fps": 400.3549822507756,
+      "frames": 3943,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "type": "wraith",
+      "mode": "display",
+      "fps": 120.10548285908014,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "type": "native",
+      "mode": "display",
+      "fps": 120.15053198803628,
+      "frames": 1200,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "type": "native",
+      "mode": "max",
+      "fps": 389.7273034172196,
+      "frames": 3869,
+      "displayHz": 122
+    },
+    {
+      "round": 1,
+      "type": "webgl",
+      "mode": "display",
+      "fps": 120.125,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "type": "native",
+      "mode": "display",
+      "fps": 120.10659460267632,
+      "frames": 1200,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "type": "native",
+      "mode": "max",
+      "fps": 408.95399267590017,
+      "frames": 3787,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "type": "webgl",
+      "mode": "display",
+      "fps": 120.11749265670895,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "type": "wraith",
+      "mode": "display",
+      "fps": 120.14001750218777,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 3,
+      "type": "native",
+      "mode": "max",
+      "fps": 362.5978051645451,
+      "frames": 3700,
+      "displayHz": 121
+    },
+    {
+      "round": 3,
+      "type": "webgl",
+      "mode": "display",
+      "fps": 120.12049548140826,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 3,
+      "type": "wraith",
+      "mode": "display",
+      "fps": 120.125,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 3,
+      "type": "native",
+      "mode": "display",
+      "fps": 120.125,
+      "frames": 1200,
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "webgl",
+      "mode": "display",
+      "fps": 120.12199695008744,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "wraith",
+      "mode": "display",
+      "fps": 120.14452348502157,
+      "frames": 1201,
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "native",
+      "mode": "display",
+      "fps": 120.12349845630285,
+      "frames": 1200,
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "native",
+      "mode": "max",
+      "fps": 409.1556866765769,
+      "frames": 4034,
+      "displayHz": 122
+    }
+  ]
+}

@@ -29,6 +29,7 @@ if (process.argv.includes('--ongo'))
     'doomish-webgl',
     'doom-text-native',
     'doom-kitty-native',
+    'work-scene-native',
   ])
     await copyFile(resolve(video, `footage/${name}.mp4`), resolve(output, `${name}.mp4`));
 console.log('Prepared local footage, stereo mix and fonts. No media is committed.');
