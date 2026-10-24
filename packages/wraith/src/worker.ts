@@ -21,6 +21,20 @@ let observeRender = false,
 let serial = Promise.resolve();
 let searchGeneration = 0;
 let searchRequest: number | undefined;
+// A posted task yields to writes/input without the nested-timer 4 ms clamp.
+// Coalesce superseded work so cancelled searches do not leave a task backlog.
+const searchTasks = new MessageChannel();
+let nextSearchStep: (() => void) | undefined;
+searchTasks.port1.onmessage = () => {
+  const step = nextSearchStep;
+  nextSearchStep = undefined;
+  step?.();
+};
+function queueSearchStep(step: () => void) {
+  const pending = nextSearchStep !== undefined;
+  nextSearchStep = step;
+  if (!pending) searchTasks.port2.postMessage(null);
+}
 function search(needle: string, direction: number, id: number) {
   // New searches cancel pending requests, rather than leaving callers hanging.
   if (searchRequest !== undefined)
@@ -40,9 +54,15 @@ function search(needle: string, direction: number, id: number) {
     serial = serial
       .then(() => {
         if (disposed || generation !== searchGeneration) return;
-        const status = engine!.search('', 1);
+        // Amortize message/ABI overhead, but yield after a short CPU slice.
+        // One bridge step remains bounded; never hold a borrow across a yield.
+        const deadline = performance.now() + 2;
+        let status: Uint32Array;
+        do {
+          status = engine!.search('', 1);
+        } while (status[0] !== 2 && performance.now() < deadline);
         if (status[0] !== 2) {
-          setTimeout(step, 0);
+          queueSearchStep(step);
           return;
         }
         const selected = engine!.search('', direction > 0 ? 2 : 3);
@@ -56,7 +76,7 @@ function search(needle: string, direction: number, id: number) {
         post({ type: 'result', id, error: String(error) });
       });
   };
-  setTimeout(step, 0);
+  queueSearchStep(step);
 }
 const encoder = new TextEncoder(),
   decoder = new TextDecoder();
@@ -354,6 +374,9 @@ async function handle(command: Command) {
     case 'dispose':
       disposed = true;
       searchGeneration++;
+      nextSearchStep = undefined;
+      searchTasks.port1.close();
+      searchTasks.port2.close();
       clearInterval(blinkTimer);
       clearInterval(statsTimer);
       clearTimeout(holdTimer);

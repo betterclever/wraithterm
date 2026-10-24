@@ -41,6 +41,53 @@ describe('the packaged Ghostty + Rust Wasm ABI', () => {
       core.free();
     }
   });
+  it('matches an ASCII-insensitive substring oracle across cached needles', () => {
+    const core = new Headless(80, 8, 1000);
+    let seed = 7919;
+    const alphabet = [...'aABb_ccXYz01239界é '];
+    const lines = Array.from({ length: 200 }, () =>
+      Array.from({ length: 74 }, () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return alphabet[seed % alphabet.length]!;
+      }).join(''),
+    );
+    const fold = (value: string) => value.replace(/[A-Z]/g, (char) => char.toLowerCase());
+    const queries = [
+      'a',
+      'AB',
+      'ccXY',
+      'ccXYZ',
+      'no-such-needle',
+      '界',
+      'é',
+      ...lines.slice(0, 24).flatMap((line, i) => [line.slice(i, i + 5), line.slice(i, i + 15)]),
+    ];
+    try {
+      core.write(encode(lines.join('\r\n')));
+      for (const needle of queries) {
+        let expected = 0;
+        for (const text of lines.map(fold)) {
+          for (
+            let at = text.indexOf(fold(needle));
+            at !== -1;
+            at = text.indexOf(fold(needle), at + 1)
+          )
+            expected++;
+        }
+        core.search(needle, 0);
+        let complete = false;
+        for (let n = 0; n < 1000; n++)
+          if (core.search('', 1)[0] === 2) {
+            complete = true;
+            break;
+          }
+        expect(complete).toBe(true);
+        expect(core.search('', 2)[1], needle).toBe(expected);
+      }
+    } finally {
+      core.free();
+    }
+  });
   it('preserves UTF-8 and CSI state across one-byte writes', () => {
     const core = new Headless(80, 24, 100);
     try {

@@ -1,0 +1,476 @@
+diff --git a/include/ghostty/vt/search.h b/include/ghostty/vt/search.h
+index e40ec27..7fcb3bc 100644
+--- a/include/ghostty/vt/search.h
++++ b/include/ghostty/vt/search.h
+@@ -296,6 +296,13 @@ typedef enum GHOSTTY_ENUM_TYPED {
+    */
+   GHOSTTY_SEARCH_OPT_SELECT_SCROLL = 3,
+ 
++  /** Wraith extension: opt in to a 32 MiB encoded-page cache (bool*).
++   * Disabled by default. The host MUST pass NULL before every terminal content
++   * mutation (including write/reset/resize) to invalidate cached page text.
++   * NULL clears retained pages without changing the enabled setting.
++   */
++  GHOSTTY_SEARCH_OPT_CACHE_PAGES = 4,
++
+   GHOSTTY_SEARCH_OPT_MAX_VALUE = GHOSTTY_ENUM_MAX_VALUE,
+ } GhosttySearchOption;
+ 
+diff --git a/src/terminal/c/search.zig b/src/terminal/c/search.zig
+index 2ef0876..8de6af4 100644
+--- a/src/terminal/c/search.zig
++++ b/src/terminal/c/search.zig
+@@ -16,6 +16,7 @@ pub const Search = ?*SearchWrapper;
+ 
+ pub const SearchWrapper = struct {
+     alloc: std.mem.Allocator,
++    page_cache: @import("../search/sliding_window.zig").PageCache = .{},
+ 
+     /// The terminal this search is bound to. This is borrowed, so the
+     /// search never frees it. If the terminal is freed first, it sets
+@@ -111,6 +112,7 @@ pub const Option = enum(c_int) {
+     select_next = 1,
+     select_prev = 2,
+     select_scroll = 3,
++    cache_pages = 4,
+ 
+     pub fn Type(comptime self: Option) type {
+         return switch (self) {
+@@ -118,6 +120,7 @@ pub const Option = enum(c_int) {
+             // The value must be NULL. Reserved for future use.
+             .select_next, .select_prev => void,
+             .select_scroll => Scroll,
++            .cache_pages => bool,
+         };
+     }
+ };
+@@ -164,6 +167,7 @@ pub fn free(search_: Search) callconv(lib.calling_conv) void {
+         if (wrapper.search) |*s| s.deinit(null);
+     }
+     const alloc = wrapper.alloc;
++    wrapper.page_cache.deinit(alloc);
+     alloc.destroy(wrapper);
+ }
+ 
+@@ -184,11 +188,11 @@ pub fn feed(search_: Search) callconv(lib.calling_conv) Result {
+     const t = wrapper.zigTerminal() orelse return .invalid_value;
+     const s = if (wrapper.search) |*s| s else return .success;
+ 
+-    // The C API has no renderer cooperation to know whether the active
+-    // area changed, so it is always re-scanned. This is correct without
+-    // any dirty tracking and cheap because the active area search was
+-    // built for exactly this.
+-    s.feed(t, true);
++    // Hosts opting into cached pages invalidate before every mutation,
++    // which also supplies active-area dirty tracking. Other C API users
++    // retain the conservative rescan on every feed.
++    s.feed(t, !wrapper.page_cache.enabled or wrapper.page_cache.dirty);
++    wrapper.page_cache.dirty = false;
+     return .success;
+ }
+ 
+@@ -263,10 +267,12 @@ fn setTyped(
+ 
+             // Create the replacement before dropping the current
+             // search so an allocation failure keeps existing state.
+-            const replacement = TerminalSearch.init(
++            var replacement = TerminalSearch.init(
+                 wrapper.alloc,
+                 bytes,
+             ) catch return .out_of_memory;
++            replacement.page_cache = &wrapper.page_cache;
++            replacement.viewport.window.page_cache = &wrapper.page_cache;
+             if (wrapper.search) |*s| s.deinit(t);
+             wrapper.search = replacement;
+         },
+@@ -289,6 +295,12 @@ fn setTyped(
+             if (!selected) return .no_value;
+         },
+ 
++        .cache_pages => {
++            if (value) |v| wrapper.page_cache.enabled = v.*;
++            // NULL invalidates while preserving the enabled setting.
++            if (value == null or !wrapper.page_cache.enabled) wrapper.page_cache.clear(wrapper.alloc);
++        },
++
+         .select_scroll => {
+             const v = value orelse {
+                 wrapper.select_scroll = .if_needed;
+diff --git a/src/terminal/search/active.zig b/src/terminal/search/active.zig
+index b37f46d..94cfc44 100644
+--- a/src/terminal/search/active.zig
++++ b/src/terminal/search/active.zig
+@@ -87,6 +87,9 @@ pub const ActiveSearch = struct {
+             // last wrap but its complicated and unlikely multiple pages
+             // wrap so this should be fine.
+             const appended = try self.window.appendIfWrapped(node) orelse break;
++            // The overlap page is searched in full too. History must start at
++            // the oldest loaded page or its matches would be counted twice.
++            last_node = node;
+             if (appended.content_len >= self.window.needle.len - 1) break;
+         }
+ 
+diff --git a/src/terminal/search/pagelist.zig b/src/terminal/search/pagelist.zig
+index 80c0bf5..2daa1fa 100644
+--- a/src/terminal/search/pagelist.zig
++++ b/src/terminal/search/pagelist.zig
+@@ -50,6 +50,16 @@ pub const PageListSearch = struct {
+         needle: []const u8,
+         list: *PageList,
+         start: *PageList.List.Node,
++    ) Allocator.Error!PageListSearch {
++        return initCached(alloc, needle, list, start, null);
++    }
++
++    pub fn initCached(
++        alloc: Allocator,
++        needle: []const u8,
++        list: *PageList,
++        start: *PageList.List.Node,
++        cache: ?*@import("sliding_window.zig").PageCache,
+     ) Allocator.Error!PageListSearch {
+         // We put a tracked pin into the node that we're starting from.
+         // By using a tracked pin, we can keep our pagelist references safe
+@@ -65,6 +75,7 @@ pub const PageListSearch = struct {
+         // Create our sliding window we'll use for searching.
+         var window: SlidingWindow = try .init(alloc, .reverse, needle);
+         errdefer window.deinit();
++        window.page_cache = cache;
+ 
+         // We always feed our initial page data into the window, because
+         // we have the lock anyways and this lets our `pin` point to our
+diff --git a/src/terminal/search/screen.zig b/src/terminal/search/screen.zig
+index 458289b..83a3920 100644
+--- a/src/terminal/search/screen.zig
++++ b/src/terminal/search/screen.zig
+@@ -139,6 +139,15 @@ pub const ScreenSearch = struct {
+         alloc: Allocator,
+         screen: *Screen,
+         needle_unowned: []const u8,
++    ) Allocator.Error!ScreenSearch {
++        return initCached(alloc, screen, needle_unowned, null);
++    }
++
++    pub fn initCached(
++        alloc: Allocator,
++        screen: *Screen,
++        needle_unowned: []const u8,
++        cache: ?*@import("sliding_window.zig").PageCache,
+     ) Allocator.Error!ScreenSearch {
+         var result: ScreenSearch = .{
+             .screen = screen,
+@@ -151,6 +160,7 @@ pub const ScreenSearch = struct {
+             .history_results = .empty,
+         };
+         errdefer result.deinit();
++        result.active.window.page_cache = cache;
+ 
+         // Update our initial active area state
+         try result.reloadActive();
+@@ -216,10 +226,11 @@ pub const ScreenSearch = struct {
+             return false;
+         }
+ 
+-        const new: ScreenSearch = try .init(
++        const new: ScreenSearch = try .initCached(
+             self.allocator(),
+             self.screen,
+             self.needle(),
++            self.active.window.page_cache,
+         );
+ 
+         self.deinit();
+@@ -557,11 +568,12 @@ pub const ScreenSearch = struct {
+                 // No history search yet, but we now have history. So let's
+                 // initialize.
+ 
+-                var search: PageListSearch = try .init(
++                var search: PageListSearch = try .initCached(
+                     alloc,
+                     self.needle(),
+                     list,
+                     history_node,
++                    self.active.window.page_cache,
+                 );
+                 errdefer search.deinit();
+ 
+@@ -593,6 +605,7 @@ pub const ScreenSearch = struct {
+                 self.needle(),
+             );
+             defer window.deinit();
++            window.page_cache = self.active.window.page_cache;
+             while (true) {
+                 _ = try window.append(history.start_pin.node);
+                 if (history.start_pin.node == history_node) break;
+diff --git a/src/terminal/search/sliding_window.zig b/src/terminal/search/sliding_window.zig
+index 95b37d7..46ff3b4 100644
+--- a/src/terminal/search/sliding_window.zig
++++ b/src/terminal/search/sliding_window.zig
+@@ -43,6 +43,9 @@ pub const SlidingWindow = struct {
+     /// a small amount of sliding windows are expected to be in use
+     /// at any one time so the memory overhead isn't that large.
+     alloc: Allocator,
++    page_cache: ?*PageCache = null,
++    // Reuse the ASCII-insensitive Horspool table across pages and matches.
++    skip_table: [256]usize = undefined,
+ 
+     /// The data buffer is a circular buffer of u8 that contains the
+     /// encoded page text that we can use to search for the needle.
+@@ -129,8 +132,11 @@ pub const SlidingWindow = struct {
+         const overlap_buf = try alloc.alloc(u8, needle.len * 2);
+         errdefer alloc.free(overlap_buf);
+ 
++        var skip_table: [256]usize = undefined;
++        buildSkipTable(needle, &skip_table);
+         return .{
+             .alloc = alloc,
++            .skip_table = skip_table,
+             .data = data,
+             .meta = meta,
+             .chunk_buf = .empty,
+@@ -193,7 +199,7 @@ pub const SlidingWindow = struct {
+         };
+ 
+         // Search the first slice for the needle.
+-        if (std.ascii.indexOfIgnoreCase(slices[0], self.needle)) |idx| {
++        if (self.findIgnoreCase(slices[0])) |idx| {
+             return self.highlight(
+                 idx,
+                 self.needle.len,
+@@ -219,10 +225,7 @@ pub const SlidingWindow = struct {
+             @memcpy(self.overlap_buf[prefix.len..overlap_len], suffix);
+ 
+             // Search the overlap
+-            const idx = std.ascii.indexOfIgnoreCase(
+-                self.overlap_buf[0..overlap_len],
+-                self.needle,
+-            ) orelse break :overlap;
++            const idx = self.findIgnoreCase(self.overlap_buf[0..overlap_len]) orelse break :overlap;
+ 
+             // We found a match in the overlap buffer. We need to map the
+             // index back to the data buffer in order to get our selection.
+@@ -233,7 +236,7 @@ pub const SlidingWindow = struct {
+         }
+ 
+         // Search the last slice for the needle.
+-        if (std.ascii.indexOfIgnoreCase(slices[1], self.needle)) |idx| {
++        if (self.findIgnoreCase(slices[1])) |idx| {
+             return self.highlight(
+                 slices[0].len + idx,
+                 self.needle.len,
+@@ -299,6 +302,30 @@ pub const SlidingWindow = struct {
+         return null;
+     }
+ 
++    fn buildSkipTable(needle: []const u8, table: *[256]usize) void {
++        @memset(table, @max(needle.len, 1));
++        if (needle.len == 0) return;
++        for (needle[0 .. needle.len - 1], 0..) |byte, i|
++            table[std.ascii.toLower(byte)] = needle.len - 1 - i;
++    }
++
++    fn findIgnoreCase(self: *const SlidingWindow, haystack: []const u8) ?usize {
++        const needle = self.needle;
++        if (needle.len > haystack.len) return null;
++        if (needle.len <= 4 or haystack.len < 52)
++            return std.ascii.indexOfIgnoreCase(haystack, needle);
++        var end = needle.len - 1;
++        const last = std.ascii.toLower(needle[needle.len - 1]);
++        while (end < haystack.len) {
++            const byte = std.ascii.toLower(haystack[end]);
++            const start = end + 1 - needle.len;
++            if (byte == last and std.ascii.eqlIgnoreCase(haystack[start .. end + 1], needle))
++                return start;
++            end += self.skip_table[byte];
++        }
++        return null;
++    }
++
+     /// Return a flattened highlight for the given start and length.
+     ///
+     /// The flattened highlight can be used to render the highlight
+@@ -606,36 +633,50 @@ pub const SlidingWindow = struct {
+         var encoded: std.Io.Writer.Allocating = .init(self.alloc);
+         defer encoded.deinit();
+ 
+-        // Encode the page into the buffer.
+-        const formatter: PageFormatter = formatter: {
+-            var formatter: PageFormatter = .init(page, .{
+-                .emit = .plain,
+-                .unwrap = true,
+-            });
+-            formatter.point_map = .{
+-                .alloc = self.alloc,
+-                .map = &meta.cell_map,
++        const cached = if (self.page_cache) |cache| cache.get(node, page) else null;
++        if (cached) |entry| {
++            encoded.writer.writeAll(entry.bytes) catch return error.OutOfMemory;
++            try meta.cell_map.appendSlice(self.alloc, entry.points);
++        } else {
++            // Encode the page into the buffer.
++            const formatter: PageFormatter = formatter: {
++                var formatter: PageFormatter = .init(page, .{
++                    .emit = .plain,
++                    .unwrap = true,
++                });
++                formatter.point_map = .{
++                    .alloc = self.alloc,
++                    .map = &meta.cell_map,
++                };
++                break :formatter formatter;
+             };
+-            break :formatter formatter;
+-        };
+-        formatter.format(&encoded.writer) catch {
+-            // writer uses anyerror but the only realistic error on
+-            // an ArrayList is out of memory.
+-            return error.OutOfMemory;
+-        };
+-        assert(meta.cell_map.items.len == encoded.written().len);
++            formatter.format(&encoded.writer) catch {
++                // writer uses anyerror but the only realistic error on
++                // an ArrayList is out of memory.
++                return error.OutOfMemory;
++            };
++            assert(meta.cell_map.items.len == encoded.written().len);
++
++            // If the node we're adding isn't soft-wrapped, we add the
++            // trailing newline.
++            if (!last_row_wrapped) {
++                encoded.writer.writeByte('\n') catch return error.OutOfMemory;
++                try meta.cell_map.append(
++                    self.alloc,
++                    meta.cell_map.getLastOrNull() orelse .{
++                        .x = 0,
++                        .y = 0,
++                    },
++                );
++            }
+ 
+-        // If the node we're adding isn't soft-wrapped, we add the
+-        // trailing newline.
+-        if (!last_row_wrapped) {
+-            encoded.writer.writeByte('\n') catch return error.OutOfMemory;
+-            try meta.cell_map.append(
++            if (self.page_cache) |cache| cache.put(
+                 self.alloc,
+-                meta.cell_map.getLastOrNull() orelse .{
+-                    .x = 0,
+-                    .y = 0,
+-                },
+-            );
++                node,
++                page,
++                encoded.written(),
++                meta.cell_map.items,
++            ) catch {};
+         }
+ 
+         // If our written data is empty, then there is nothing to
+@@ -680,6 +721,7 @@ pub const SlidingWindow = struct {
+         assert(new.len == self.needle.len);
+         self.alloc.free(self.needle);
+         self.needle = self.alloc.dupe(u8, new) catch unreachable;
++        buildSkipTable(self.needle, &self.skip_table);
+     }
+ 
+     fn assertIntegrity(self: *const SlidingWindow) void {
+@@ -701,6 +743,73 @@ pub const SlidingWindow = struct {
+     }
+ };
+ 
++/// Optional host-managed cache of canonical forward text and byte-to-cell maps.
++/// The host MUST clear before writes, reset, reflow or any other content change.
++/// Keys are inspected only for live nodes passed by the current page list; old
++/// cached pointers are never dereferenced. Windows own copies of cached data.
++/// Bound retained payload to 32 MiB, independent of configured scrollback size.
++pub const PageCache = struct {
++    const Key = struct { node: *PageList.List.Node, serial: u64 };
++    const Entry = struct {
++        bytes: []u8,
++        points: []point.Coordinate,
++        rows: size.CellCountInt,
++        cols: size.CellCountInt,
++    };
++    enabled: bool = false,
++    dirty: bool = true,
++    entries: std.AutoHashMapUnmanaged(Key, Entry) = .empty,
++    bytes: usize = 0,
++    const limit = 32 * 1024 * 1024;
++
++    pub fn clear(self: *PageCache, alloc: Allocator) void {
++        var it = self.entries.valueIterator();
++        while (it.next()) |entry| {
++            alloc.free(entry.bytes);
++            alloc.free(entry.points);
++        }
++        self.entries.clearRetainingCapacity();
++        self.bytes = 0;
++        self.dirty = true;
++    }
++
++    pub fn deinit(self: *PageCache, alloc: Allocator) void {
++        self.clear(alloc);
++        self.entries.deinit(alloc);
++    }
++
++    fn get(self: *PageCache, node: *PageList.List.Node, page: *const terminal.Page) ?Entry {
++        if (!self.enabled) return null;
++        const entry = self.entries.get(.{ .node = node, .serial = node.serial }) orelse return null;
++        if (entry.rows != page.size.rows or entry.cols != page.size.cols) return null;
++        return entry;
++    }
++
++    fn put(self: *PageCache, alloc: Allocator, node: *PageList.List.Node, page: *const terminal.Page, bytes: []const u8, points: []const point.Coordinate) Allocator.Error!void {
++        if (!self.enabled) return;
++        const size_bytes = bytes.len + points.len * @sizeOf(point.Coordinate);
++        if (size_bytes > limit) return;
++        if (self.bytes + size_bytes > limit or self.entries.count() >= 2048) self.clear(alloc);
++        const entry: Entry = .{
++            .bytes = try alloc.dupe(u8, bytes),
++            .points = undefined,
++            .rows = page.size.rows,
++            .cols = page.size.cols,
++        };
++        var owned = entry;
++        errdefer alloc.free(owned.bytes);
++        owned.points = try alloc.dupe(point.Coordinate, points);
++        errdefer alloc.free(owned.points);
++        const previous = try self.entries.fetchPut(alloc, .{ .node = node, .serial = node.serial }, owned);
++        if (previous) |old| {
++            self.bytes -= old.value.bytes.len + old.value.points.len * @sizeOf(point.Coordinate);
++            alloc.free(old.value.bytes);
++            alloc.free(old.value.points);
++        }
++        self.bytes += size_bytes;
++    }
++};
++
+ test "SlidingWindow empty on init" {
+     const testing = std.testing;
+     const alloc = testing.allocator;
+diff --git a/src/terminal/search/terminal.zig b/src/terminal/search/terminal.zig
+index 19f059c..9e523fa 100644
+--- a/src/terminal/search/terminal.zig
++++ b/src/terminal/search/terminal.zig
+@@ -26,6 +26,7 @@ const log = std.log.scoped(.search_terminal);
+ pub const TerminalSearch = struct {
+     /// Allocator used for all search state.
+     alloc: Allocator,
++    page_cache: ?*@import("sliding_window.zig").PageCache = null,
+ 
+     /// Active viewport search for the active screen.
+     viewport: ViewportSearch,
+@@ -291,10 +292,11 @@ pub const TerminalSearch = struct {
+             var it = t.screens.all.iterator();
+             while (it.next()) |entry| {
+                 if (self.screens.contains(entry.key)) continue;
+-                const screen_search = ScreenSearch.init(
++                const screen_search = ScreenSearch.initCached(
+                     alloc,
+                     entry.value.*,
+                     self.viewport.needle(),
++                    self.page_cache,
+                 ) catch |err| switch (err) {
+                     error.OutOfMemory => {
+                         // OOM is probably going to sink the entire ship but

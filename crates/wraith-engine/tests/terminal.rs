@@ -515,3 +515,61 @@ fn synthetic_bold_never_loses_coverage() {
         );
     }
 }
+
+#[test]
+fn native_search_cache_tracks_mutations_and_wrapped_page_overlap() {
+    let mut c = Core::new(120, 40, 27000).unwrap();
+    let input: String = (0..9000)
+        .map(|n| {
+            format!(
+                "line {n:06} needle-{n} build output 界 e\u{301} {}\r\n",
+                "wrapped contents ".repeat(8)
+            )
+        })
+        .collect();
+    c.write(input.as_bytes());
+    for (needle, expected) in [
+        ("needle-100", 11),
+        ("needle-8700", 1),
+        ("needle-8600 build", 1),
+        ("absent", 0),
+    ] {
+        c.search(needle, 0).unwrap();
+        while c.search("", 1).unwrap()[0] != 2 {}
+        assert_eq!(c.search("", 2).unwrap()[1], expected, "{needle}");
+    }
+    // Changing content must invalidate text cached under earlier needles.
+    c.write(b"\r\nneedle-8700 appended");
+    c.search("needle-8700", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 2);
+    c.resize(73, 30, 9, 18).unwrap();
+    c.search("needle-8700", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 2);
+    c.write(b"\x1bcFRESH ONLY");
+    c.search("needle-8700", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 0);
+    c.search("fresh", 0).unwrap();
+    while c.search("", 1).unwrap()[0] != 2 {}
+    assert_eq!(c.search("", 2).unwrap()[1], 1);
+    assert_eq!(c.selection_text().unwrap(), "FRESH");
+}
+
+#[test]
+fn native_search_survives_page_cache_eviction() {
+    let mut c = Core::new(120, 40, 100000).unwrap();
+    // Encoded UTF-8 plus per-byte coordinates exceeds the 32 MiB cache cap.
+    for n in 0..40000 {
+        c.write(format!("record-{n} {}\r\n", "abcdef ".repeat(27)).as_bytes());
+    }
+    for needle in ["record-12 ", "record-39990 ", "absent"] {
+        c.search(needle, 0).unwrap();
+        while c.search("", 1).unwrap()[0] != 2 {}
+        assert_eq!(
+            c.search("", 2).unwrap()[1],
+            if needle == "absent" { 0 } else { 1 }
+        );
+    }
+}

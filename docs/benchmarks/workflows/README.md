@@ -17,7 +17,7 @@ These medians are point estimates; dense/Pipes samples have substantial variatio
 
 The broader tests also expose gaps:
 
-- Cold native search through 9,000 retained lines takes a median **82.8 ms**, versus **0.7–0.9 ms** on the xterm paths. The native worker yields between bounded search slices using nested zero-delay timers; profiling that scheduling is a priority. Native returns the total match count, while this xterm call seeks the next match without counting/highlighting every result, so this is a public UX comparison rather than identical search work.
+- This frozen build’s native search takes **82.8 ms** over 9,000 retained lines. The later [native search optimization](../native-search/REPORT.md) removes timer clamping and reuses encoded history: its counted-search medians are **0.5 ms** over 9,000 short lines and **4.0 ms** over 90,000. The historical xterm call below seeks the next match without counting all results; the new report separates counted searches, first queries and next-only calls.
 - A 1 MiB public paste plus parsed echo takes **43.2 ms** on compatible, versus **31.9 ms** on upstream xterm and **4.4 ms** on native. Three samples per renderer establish a follow-up target, not a precise regression percentage.
 - At the same 0.473 MiB/s across eight terminals, compatible uses 34.0% of one CPU core, native 29.3%, and WebGL 22.7%. That is about 1.89%, 1.63%, and 1.26% of this machine’s total CPU capacity. Each is one 30-second observation; resource sharing remains a clear target.
 - Native CJK/emoji glyph coverage is unverified. Unicode and bytewise fixtures containing those glyphs are excluded from native speed claims.

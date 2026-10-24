@@ -1,0 +1,279 @@
+{
+  "date": "2026-10-21T12:02:00.036948+00:00",
+  "validatedHead": "cb3e7d5a0451417f4982fef67b41a8a138128625",
+  "sources": {
+    "packages/wraith/src/worker.ts": "2d8565c9ab34953ad8e146618508d71027ac40799b9f6ba54607230733ddada7",
+    "native/bridge.c": "c78c74d8aa31de3fecb3d21fe2790359c7e03d1ed37b5dd8c164b44ee30265de",
+    "native/patches/search-pages.patch": "aee7a5a1b74cc63acecbe35dce64e955e12893d65957e7c7a6be4b0dbe327e16",
+    "native/patches/search-pages.json": "956983f97a719688de08a30315556555dc05b0ce8f29cb149670341f0c6caa43",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+    "scripts/native-search-test.mjs": "94ce81374a090c50121ee93ec4aff9af0318531d0d5038910b8bbe3a39bf97eb",
+    "packages/wraith/src/headless.test.ts": "e93f1c4313b01ba38f149aaf488f52f5f050bd2db88e0f49d239dafc8c6e9a33",
+    "crates/wraith-engine/tests/terminal.rs": "5b488483ca8dfb2937dae9ff26da1a2a28d9555155f8497f397af80efb9b892c"
+  },
+  "commands": [
+    {
+      "command": "npm run build && npm run optimize && npm run build:sdk && npm run build:demo",
+      "result": "passed; optimized Wasm 2465513 bytes"
+    },
+    {
+      "command": "npm run typecheck && npm test && cargo fmt --all --check",
+      "result": "passed; 57 JS/TS tests"
+    },
+    {
+      "command": "npm run test:native",
+      "result": "passed; 11 Rust unit and 38 integration tests"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196 npm run test:native-search",
+      "result": "passed; input before long scan completion, concurrent write/reflow/fence, cancellation, reset, disposal"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196/playground.html npm run test:native-interaction",
+      "result": "passed; search/navigation/history/Unicode/reflow/gestures/keyboard hooks/render observers/disposal"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196/playground.html WRAITH_REPORT_DIR=/private/tmp/wraith-search-browser npm run test:browser",
+      "result": "passed; pixels/input/resize/paste/fenced workloads/disposal"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196 WRAITH_REPORT_DIR=/private/tmp/wraith-search-xterm npm run test:xterm",
+      "result": "passed; compatible API/addons/actual WebGPU pixels/fallback/disposal"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196/playground.html npm run test:native-display",
+      "result": "passed; font/zoom/DPR transitions/pixels/content/history/selection/modes"
+    },
+    {
+      "command": "npm run test:consumer && npm run test:xterm-consumer",
+      "result": "passed; native and aliased installed npm archives in Vite dev and production"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196 WRAITH_REPETITIONS=5 npm run benchmark:search",
+      "result": "passed; 180 records, 2520 query/navigation samples, every count/selection valid"
+    },
+    {
+      "command": "WRAITH_URL=http://127.0.0.1:5196 WRAITH_REPETITIONS=5 WRAITH_SEARCH_MODES=count-only WRAITH_REPORT_DIR=docs/benchmarks/native-search/count-only npm run benchmark:search",
+      "result": "passed; 60 records and 540 count-only samples; every count exact; pinned xterm engine without decoration or selection work compared to native public API"
+    }
+  ],
+  "nativeSearch": {
+    "passed": true,
+    "concurrency": {
+      "events": [
+        {
+          "type": "key",
+          "at": 367.5999999642372
+        },
+        {
+          "type": "search",
+          "at": 422.5
+        }
+      ],
+      "found": {
+        "total": 0,
+        "index": -1
+      }
+    },
+    "mutation": {
+      "found": {
+        "total": 1,
+        "index": 0
+      },
+      "selected": "UPDATED-needle",
+      "missing": {
+        "total": 0,
+        "index": -1
+      },
+      "cancelled": [
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "fulfilled"
+      ],
+      "old": {
+        "total": 0,
+        "index": -1
+      },
+      "fresh": {
+        "total": 1,
+        "index": 0
+      },
+      "disposed": [
+        "rejected"
+      ]
+    }
+  },
+  "browser": {
+    "date": "2026-10-21T11:57:00.518Z",
+    "ghostty": "246f702876b924a1cb7cade1e99274d1470302fc",
+    "wasmSha256": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+    "devicePixelRatio": 1,
+    "fontSizeCssPx": 13,
+    "lineHeight": 1.45,
+    "rendered": {
+      "width": 984,
+      "height": 780,
+      "colors": 844,
+      "bright": 5706
+    },
+    "results": [
+      {
+        "workload": "sparse",
+        "frames": 512,
+        "cols": 80,
+        "rows": 24,
+        "elapsedMs": 43.30000001192093,
+        "fencedFramesPerSecond": 11824.480366259611,
+        "cpuP50Ms": 0,
+        "cpuP95Ms": 0.10000002384185791,
+        "cpuP99Ms": 0.19999998807907104,
+        "inputMiBPerSecond": 0.38992725388009136,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "dense",
+        "frames": 512,
+        "cols": 80,
+        "rows": 24,
+        "elapsedMs": 44.39999997615814,
+        "fencedFramesPerSecond": 11531.531537723718,
+        "cpuP50Ms": 0.09999996423721313,
+        "cpuP95Ms": 0.10000002384185791,
+        "cpuP99Ms": 0.19999998807907104,
+        "inputMiBPerSecond": 25.58081001074508,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "scroll",
+        "frames": 512,
+        "cols": 80,
+        "rows": 24,
+        "elapsedMs": 42.69999998807907,
+        "fencedFramesPerSecond": 11990.6323218487,
+        "cpuP50Ms": 0,
+        "cpuP95Ms": 0.10000002384185791,
+        "cpuP99Ms": 0.19999998807907104,
+        "inputMiBPerSecond": 1.1663861244474099,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "sparse",
+        "frames": 512,
+        "cols": 160,
+        "rows": 50,
+        "elapsedMs": 44.19999998807907,
+        "fencedFramesPerSecond": 11583.710410363996,
+        "cpuP50Ms": 0,
+        "cpuP95Ms": 0.10000002384185791,
+        "cpuP99Ms": 0.10000002384185791,
+        "inputMiBPerSecond": 0.3835410554979562,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "dense",
+        "frames": 512,
+        "cols": 160,
+        "rows": 50,
+        "elapsedMs": 100.39999997615814,
+        "fencedFramesPerSecond": 5099.601594836494,
+        "cpuP50Ms": 0.19999998807907104,
+        "cpuP95Ms": 0.30000001192092896,
+        "cpuP99Ms": 0.30000001192092896,
+        "inputMiBPerSecond": 43.064056649878694,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "scroll",
+        "frames": 512,
+        "cols": 160,
+        "rows": 50,
+        "elapsedMs": 95.70000004768372,
+        "fencedFramesPerSecond": 5350.05224393824,
+        "cpuP50Ms": 0.19999998807907104,
+        "cpuP95Ms": 0.30000001192092896,
+        "cpuP99Ms": 0.30000001192092896,
+        "inputMiBPerSecond": 0.9286017497985457,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+      },
+      {
+        "workload": "dense",
+        "frames": 8192,
+        "cols": 160,
+        "rows": 50,
+        "elapsedMs": 1658.699999988079,
+        "fencedFramesPerSecond": 4938.807499884774,
+        "cpuP50Ms": 0.19999998807907104,
+        "cpuP95Ms": 0.30000001192092896,
+        "cpuP99Ms": 0.30000001192092896,
+        "inputMiBPerSecond": 41.70621606464983,
+        "adapter": "WebGPU adapter (BrowserWebGpu)",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+        "sustained": true
+      }
+    ],
+    "errors": []
+  },
+  "xterm": {
+    "date": "2026-10-21T11:57:03.393Z",
+    "version": "0.2.0",
+    "wasmSha256": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+    "target": "@xterm/xterm 6.0.0",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "pixels": {
+      "width": 810,
+      "height": 681,
+      "colors": 490,
+      "bright": 7160
+    },
+    "checks": [
+      "Rust/Wasm/WebGPU pixels",
+      "buffers, styles, wide/combining cells, history and fragmented UTF-8",
+      "resize/reflow, all scroll and selection methods",
+      "original Serialize and Unicode11 addons",
+      "async CSI, OSC, DCS and ESC parser hooks",
+      "accelerated SGR colors preserve async interception, fallthrough and malformed parameters",
+      "title/bell, DSR replies, paste, input, modes and alternate screen",
+      "original Fit addon, mutable fonts/geometry and atlas reset",
+      "transient presentation retries without discarding the pending frame",
+      "staged frame bounds and uniform validation reject before submission",
+      "Wasm views refresh before packing and cold mid-row growth preserves submitted cells",
+      "retained GPU rows survive scrolling, sparse edits, selection, stamp wrap and invalid sources",
+      "original Search addon with GPU decorations and cleanup",
+      "GPU markers/decorations/contrast/transparency and character joiner fallback",
+      "original Attach addon and disposal",
+      "link provider registration, clear/reset and resource disposal",
+      "real keyboard events, custom key handler, focus/blur",
+      "missing WebGPU preserves a working DOM terminal",
+      "renderer failure releases GPU resources and restores DOM",
+      "disposal during asynchronous GPU initialization"
+    ],
+    "errors": []
+  },
+  "benchmarkSourceHashesMatchRecordedCommits": true,
+  "servedEngineSha256": "30bb87e58af3befb8963d66a926e3a4f1b1a7c1e6c2e17ceb872bcd721045a68",
+  "countOnlyBuild": "d6cd7ba54bbbeafa4e2778a13e10a8ded1ca51e4",
+  "countOnlySourcesMatchRecordedCommit": true
+}

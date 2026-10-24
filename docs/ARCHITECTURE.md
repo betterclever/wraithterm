@@ -93,6 +93,25 @@ Rust borrow until completion. Previously queued animation callbacks are canceled
 or guarded while that borrow is active. This prevents a render callback from
 recursively mutating a borrowed Wasm object.
 
+Native search uses posted worker tasks and a 2 ms CPU budget per slice, entering
+through that same serial command queue. Superseded tasks coalesce; disposal closes
+the task channel. This avoids nested timer clamping while allowing input, writes,
+resize and fences between bounded scan steps.
+
+The pinned Ghostty search patch reuses encoded UTF-8 pages and byte-to-cell maps
+across needles, with a 32 MiB payload limit and at most 2,048 entries per terminal.
+The bridge opts into this host-managed cache and clears it **before every write
+and resize**, including resets, pruning and screen changes carried in VT input.
+That invalidation also supplies active-area dirty tracking. Other C API consumers
+keep caching disabled and conservative active-area rescans by default. Search
+windows own copies; no cached terminal pointer is dereferenced after invalidation.
+The first query after a content change still encodes the history. Entries survive
+clearing the search UI, and are released on the next write/resize or disposal.
+Cache allocation failure falls back to uncached scanning. Per-needle ASCII
+Horspool skip tables are reused across pages; non-ASCII matching stays byte exact.
+Soft-wrap overlap pages belong to the active search frontier so history does not
+count their matches again.
+
 ## Bounds and failures
 
 The grid is limited to 512 per dimension and 65,536 cells, and pixel dimensions

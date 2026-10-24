@@ -74,3 +74,35 @@ Generate the reviewed tables and per-study CSV files with:
 ```sh
 node scripts/summarize-workflows.mjs docs/benchmarks/workflows/baseline/runs.json docs/benchmarks/workflows/stress/runs.json
 ```
+
+## Native search
+
+The focused [search report](benchmarks/native-search/REPORT.md) compares native,
+compatible, upstream DOM and upstream WebGL APIs over 9,000 short lines,
+9,000 wrapped Unicode lines and 90,000 short lines. It records exact match counts,
+selected text, the first query after writing, subsequent new needles, misses and
+warm navigation. Xterm reports all-result counts only with decorations; those
+calls perform extra decoration work. Its separate next-only phase does less work
+than native’s always-counted API. Timings stop at API completion, not presentation.
+
+```sh
+WRAITH_URL=http://127.0.0.1:5196 WRAITH_REPETITIONS=5 npm run benchmark:search
+WRAITH_URL=http://127.0.0.1:5196 WRAITH_REPETITIONS=5 WRAITH_SEARCH_MODES=count-only \
+WRAITH_REPORT_DIR=docs/benchmarks/native-search/count-only npm run benchmark:search
+node scripts/summarize-search.mjs
+WRAITH_URL=http://127.0.0.1:5196 npm run test:native-search
+```
+
+Run the correctness test before timing and keep builds/other tests idle while
+benchmarking. Native’s cache clears before every write or resize, retains at most
+32 MiB of page payload plus metadata/working buffers, and remains allocated after
+clearing the search UI until content changes or disposal. Histories larger than
+the cap remain correct but can evict cached pages. Only the historical faulty
+baseline uses `WRAITH_ALLOW_MISMATCH=1`; every final count is strictly validated.
+
+The optional `count-only` mode uses pinned xterm private engine methods to enumerate
+matches without markers, decorations, selection or a retained result array.
+Native still returns its public count and selected match across the worker.
+Treat this as a separate diagnostic; those internals are not a supported API.
+`WRAITH_SEARCH_MODES` records the selected phases, and `allowMismatch` is preserved
+in configuration for future baseline runs.
