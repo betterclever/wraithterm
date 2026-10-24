@@ -600,10 +600,20 @@ export class XtermRenderer implements Renderer {
     end: [number, number] | undefined,
     column: boolean,
   ): void {
-    this.selectedStart = start;
-    this.selectedEnd = end;
-    this.columnSelection = column;
     this.fallback.handleSelectionChanged(start, end, column);
+    const same = (a: [number, number] | undefined, b: [number, number] | undefined) =>
+      a === undefined ? b === undefined : b !== undefined && a[0] === b[0] && a[1] === b[1];
+    if (
+      same(start, this.selectedStart) &&
+      same(end, this.selectedEnd) &&
+      column === this.columnSelection
+    )
+      return;
+    // SelectionService can reuse/mutate its endpoint arrays. Keep values from
+    // the previous notification so those mutations cannot hide a real change.
+    this.selectedStart = start && [start[0], start[1]];
+    this.selectedEnd = end && [end[0], end[1]];
+    this.columnSelection = column;
     this.invalidate();
   }
   handleCursorMove(): void {

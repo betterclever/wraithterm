@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-21T07:44:33.277Z",
+  "urls": [
+    "http://127.0.0.1:5197",
+    "http://127.0.0.1:5198"
+  ],
+  "checks": [
+    {
+      "label": "one-line public scroll",
+      "beforeBytes": 38400,
+      "afterBytes": 1600,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "five-line public scroll",
+      "beforeBytes": 38400,
+      "afterBytes": 8000,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "selection",
+      "beforeBytes": 40000,
+      "afterBytes": 40000,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "identical selection refresh",
+      "beforeBytes": 40000,
+      "afterBytes": 1600,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "clear selection",
+      "beforeBytes": 38400,
+      "afterBytes": 38400,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "empty selection refresh",
+      "beforeBytes": 38400,
+      "afterBytes": 0,
+      "pixelDifferences": 0
+    },
+    {
+      "label": "scroll after selection clearing",
+      "beforeBytes": 38400,
+      "afterBytes": 1600,
+      "pixelDifferences": 0
+    }
+  ],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "logicalCpus": 18,
+  "grid": [
+    80,
+    24
+  ],
+  "dpr": 1,
+  "build": "20c6c0a849b9f783fa34396a46d0af5cd78d445a",
+  "beforeBuild": "dfd876aabc2165ce50b5a851bd9468e478ca334a",
+  "sources": {
+    "packages/wraith/src/xterm-renderer.ts": "f4fad56bc81476f4f47a085ee7fef10f900014aa4eae530f3800f7033399bbb1",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "0baaa849aa85e847368cbd690bd4c20957ad9736c9c5d2d1066a0b8158b313fa"
+  },
+  "harnessSha256": "a95cbc0510d92eae91219f3ba33dbd4f045d50a73ffe5b0b302cf7143d550675"
+}
