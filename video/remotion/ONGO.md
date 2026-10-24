@@ -19,20 +19,20 @@ level jumps. Centre 4–9 kHz bursts every eighth note are the hi-hat. lrclib's 
 is the 808 and its 14.11 s is "two"; neither marks the words they label. Lyrics are not
 stored.
 
-| Source s                                | Cue               | Picture                                                    |
-| --------------------------------------- | ----------------- | ---------------------------------------------------------- |
-| 0–0.35                                  | "Honorable"       | A line of light on a dark slab, letterboxed                |
-| 0.35–2.18                               | Intro bar 1       | One hero terminal; "Meet the fastest terminal on the web." |
-| 2.18–11.54                              | Bars 2–6          | Same terminal: orbit, macro, low track, crane, chase       |
-| 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3       | Cut on "uh"; camera punch, flare and text on "HUH"         |
-| 11.54–13.65                             | Third "uh-huh"    | Cut to code; typing starts on "HUH"                        |
-| 13.65 / 14.13 / 14.59                   | "One, two, three" | Hard cuts, a line lights per count                         |
-| 15.01–16.84                             | "WE ON GO"        | Letterbox snaps open; pull back from one tile to 16        |
-| 16.84–18.67                             | "we on go"        | Same wall: low angle, side orbit                           |
-| 18.67–22.34                             | "Let 'em know"    | Pull back; xterm.js + WebGL's dark wall powers on beside   |
-| 22.34–24.17                             | DOOM              | "It runs DOOM." in truecolor text cells, 360+ fps          |
-| 24.17–26.00                             | DOOM, Kitty       | Same screen switches to Kitty graphics, 410+ fps           |
-| 26.00–30.00                             | Badge             | Ghost, WRAITH, tagline, URL; music fades out by 30 s       |
+| Source s                                | Cue               | Picture                                                                                                    |
+| --------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| 0–0.35                                  | "Honorable"       | A line of light on a dark slab, letterboxed                                                                |
+| 0.35–2.18                               | Intro bar 1       | A real dev workspace; "Meet the fastest terminal on the web."                                              |
+| 2.18–11.54                              | Bars 2–6          | Same workspace: orbit, macro, low track, crane onto the Kitty chart and preview ("Kitty graphics."), chase |
+| 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3       | Cut on "uh"; camera punch, flare and text on "HUH"                                                         |
+| 11.54–13.65                             | Third "uh-huh"    | Cut to code; typing starts on "HUH"                                                                        |
+| 13.65 / 14.13 / 14.59                   | "One, two, three" | Hard cuts, a line lights per count                                                                         |
+| 15.01–16.84                             | "WE ON GO"        | Letterbox snaps open; pull back from one tile to 16                                                        |
+| 16.84–18.67                             | "we on go"        | Same wall: low angle, side orbit                                                                           |
+| 18.67–22.34                             | "Let 'em know"    | Pull back; xterm.js + WebGL's dark wall powers on beside                                                   |
+| 22.34–24.17                             | DOOM              | "It runs DOOM." in truecolor text cells, 360+ fps                                                          |
+| 24.17–26.00                             | DOOM, Kitty       | Same screen switches to Kitty graphics, 410+ fps                                                           |
+| 26.00–30.00                             | Badge             | Ghost, WRAITH, tagline, URL; music fades out by 30 s                                                       |
 
 Each act has one subject seen from several angles. Subjects change only at the count,
 at GO and before the receipts. Slabs keep their identity across angles, so footage
@@ -67,6 +67,18 @@ Footage comes from [wall-footage.mjs](../capture/wall-footage.mjs), a real-time 
 screencast that keeps each frame's own timestamp. It ran separately from timing.
 During capture the xterm wall produced 42 frames/s and the native wall 60. On-screen
 numbers come from the measurement record, not the capture.
+
+**The workspace.** The intro's hero screen is a realistic developer workspace in one
+200×60 terminal ([capture/work-scene](../capture/work-scene/README.md)): an AI agent
+session with diffs, a live latency chart sent as a PNG via Kitty graphics every frame,
+a live 640×360 preview of the site streamed as Kitty RGBA, an htop-style table and a
+test runner. Headed on the 120 Hz display (5 rotated rounds, 120–122 Hz every run),
+[work-scene.json](../claims/work-scene.json) records native Wraith showing every frame
+at 120.1 frames/s, and 363–409 in max mode while unrelated processes were busy.
+xterm.js and the compatible profile also show 120.1 but skip Kitty graphics and draw no
+chart or preview, so this is not a head-to-head. The footage draws every scene frame
+in native Wraith and screenshots alternate frames after each GPU fence: a smooth
+60 fps clip of Wraith's own output.
 
 **DOOM.** Freedoom 0.13.0's `demo1` ([licence](../licenses/FREEDOOM.md)) runs in
 doomgeneric with Wraith's `doomterm` platform
