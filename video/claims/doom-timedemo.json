@@ -1,0 +1,224 @@
+{
+  "measured": "2026-10-24T14:16:43.666Z",
+  "head": "7289db3a14c4b396ff481b120a10aef9c52242a6",
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "6bfc34a92700b1da4da34ad2e9be869723c6c8d05a067b6dd43da13eb626cde2",
+    "video/capture/doom-player.js": "2c5d9e336a3475891d4f9404749eee7058e75a27e132754fb3d36fa7696691cf",
+    "video/capture/doom-bench.mjs": "8605ba0473f6e3244a3e1f0931d4d00a0dd2cf2e329830375a82562314f2e441",
+    ".cache/doom/text-160x50.ansi": "7fc55ff6c6bb86c793280035deb5ab5ffe73c7665bde7fc540ed890dfecc1a44",
+    ".cache/doom/text-320x100.ansi": "f3d915d61dd60e798ab0252693ff4ddb079d8db57b294f878bd6e30569afb886",
+    ".cache/doom/kitty-640x400.ansi": "5fcb99033d4624a27c9351a864bb4fd5fb1a968f31b4b8552912decc75ae0c72"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "method": {
+    "content": "Freedoom 0.13.0 (freedoom1.wad) demo1, rendered by doomgeneric with the doomterm backend; byte-identical recorded stream per mode",
+    "viewport": "1920x1080 at DPR 2",
+    "mode": "max",
+    "pacing": "timedemo: each frame written once the previous is shown",
+    "shown": "xterm.js and compatible: write callback then a display frame; native: flush(), which waits for the GPU fence",
+    "seconds": 8,
+    "warmup": "first second discarded",
+    "note": "frames shown per second while replaying recorded output; not physical display FPS"
+  },
+  "summary": {
+    "text-160x50 webgl": {
+      "slowest": 26.12904607564851,
+      "fastest": 27.40390791144821
+    },
+    "text-160x50 wraith": {
+      "slowest": 60.13684345848569,
+      "fastest": 60.141997971444745
+    },
+    "text-160x50 native": {
+      "slowest": 363.78184519966794,
+      "fastest": 434.7950292815312
+    },
+    "text-320x100 webgl": {
+      "slowest": 60.13512548387916,
+      "fastest": 60.15832642680187
+    },
+    "text-320x100 wraith": {
+      "slowest": 59.714285714285715,
+      "fastest": 59.88451863708487
+    },
+    "text-320x100 native": {
+      "slowest": 180.30116867154285,
+      "fastest": 204.12830922300535
+    },
+    "kitty-640x400 native": {
+      "slowest": 416.2142081499242,
+      "fastest": 458.4220225424375
+    }
+  },
+  "runs": [
+    {
+      "round": 0,
+      "stream": "text-160x50",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 234,
+      "fps": 27.40390791144821
+    },
+    {
+      "round": 0,
+      "stream": "text-160x50",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.139420604549684
+    },
+    {
+      "round": 0,
+      "stream": "text-160x50",
+      "type": "native",
+      "mode": "max",
+      "frames": 3074,
+      "fps": 377.0592521680774
+    },
+    {
+      "round": 0,
+      "stream": "text-320x100",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.15832642680187
+    },
+    {
+      "round": 0,
+      "stream": "text-320x100",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 479,
+      "fps": 59.88451863708487
+    },
+    {
+      "round": 0,
+      "stream": "text-320x100",
+      "type": "native",
+      "mode": "max",
+      "frames": 1441,
+      "fps": 180.30116867154285
+    },
+    {
+      "round": 0,
+      "stream": "kitty-640x400",
+      "type": "native",
+      "mode": "max",
+      "frames": 3675,
+      "fps": 452.5972912736907
+    },
+    {
+      "round": 1,
+      "stream": "text-160x50",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.13684345848569
+    },
+    {
+      "round": 1,
+      "stream": "text-160x50",
+      "type": "native",
+      "mode": "max",
+      "frames": 3495,
+      "fps": 434.7950292815312
+    },
+    {
+      "round": 1,
+      "stream": "text-160x50",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 232,
+      "fps": 27.084597046091826
+    },
+    {
+      "round": 1,
+      "stream": "text-320x100",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 479,
+      "fps": 59.85628776730487
+    },
+    {
+      "round": 1,
+      "stream": "text-320x100",
+      "type": "native",
+      "mode": "max",
+      "frames": 1524,
+      "fps": 190.6407528524915
+    },
+    {
+      "round": 1,
+      "stream": "text-320x100",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.149947261888194
+    },
+    {
+      "round": 1,
+      "stream": "kitty-640x400",
+      "type": "native",
+      "mode": "max",
+      "frames": 3370,
+      "fps": 416.2142081499242
+    },
+    {
+      "round": 2,
+      "stream": "text-160x50",
+      "type": "native",
+      "mode": "max",
+      "frames": 2910,
+      "fps": 363.78184519966794
+    },
+    {
+      "round": 2,
+      "stream": "text-160x50",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 220,
+      "fps": 26.12904607564851
+    },
+    {
+      "round": 2,
+      "stream": "text-160x50",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.141997971444745
+    },
+    {
+      "round": 2,
+      "stream": "text-320x100",
+      "type": "native",
+      "mode": "max",
+      "frames": 1636,
+      "fps": 204.12830922300535
+    },
+    {
+      "round": 2,
+      "stream": "text-320x100",
+      "type": "webgl",
+      "mode": "max",
+      "frames": 481,
+      "fps": 60.13512548387916
+    },
+    {
+      "round": 2,
+      "stream": "text-320x100",
+      "type": "wraith",
+      "mode": "max",
+      "frames": 478,
+      "fps": 59.714285714285715
+    },
+    {
+      "round": 2,
+      "stream": "kitty-640x400",
+      "type": "native",
+      "mode": "max",
+      "frames": 3771,
+      "fps": 458.4220225424375
+    }
+  ]
+}

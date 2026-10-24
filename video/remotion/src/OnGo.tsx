@@ -15,8 +15,9 @@ import { Vector3 } from 'three';
 import { Browser, type BrowserPose } from './Browser';
 import { Ghost } from './Ghost';
 import wall from '../../claims/wall-comparison.json';
-import comparison from '../../claims/hype-comparison.json';
 import music from '../../claims/ongo-music.json';
+import doomPaced from '../../claims/doom-paced.json';
+import doomMax from '../../claims/doom-timedemo.json';
 
 // "WE ON GO": a car-launch film where the car is a terminal. Source music runs from 0 s
 // to beat 60; every cut sits on the 131-BPM grid or a measured vocal onset.
@@ -30,7 +31,6 @@ const ONE = at(music.cues.countOne),
   GO = at(music.cues.goKickAndVocal);
 // Her "uh-huh" ad-libs: cut on "uh", hit on "HUH".
 const UH = music.cues.uhHuh.map(([uh, huh]) => [at(uh), at(huh)] as const);
-const dense = comparison.groups.find((g) => g.workload === 'complex')!;
 const webglWall = [
   Math.floor(wall.bounds.webglSlowest),
   Math.ceil(wall.bounds.webglFastest),
@@ -88,7 +88,14 @@ const WALLS = (xterm = 0) => [
   }),
   slab('wall-native', NATIVE, [0, -0.12, 0], { width: 4.1, reflection: 0.2 }),
 ];
-const SITE = () => [slab('home', [3.3, 0, 0], [0, -0.42, 0], { width: 5, reflection: 0.25 })];
+// The DOOM act: one screen, first in text cells, then in Kitty graphics.
+const DOOM = (file: string) => [
+  slab(file, [2.5, 0.05, 0], [0, -0.38, 0], { width: 5.6, reflection: 0.25 }),
+];
+const tens = (v: number) => Math.floor(v / 10) * 10;
+const doomTextFps = tens(doomMax.summary['text-160x50 native'].slowest);
+const doomKittyFps = tens(doomMax.summary['kitty-640x400 native'].slowest);
+const xtermDoomFps = Math.round(doomPaced.summary['text-160x50 webgl'].fastest);
 const SIDE_END = orbit(0.7, 4.2, 0.2, NATIVE);
 
 const SHOTS: Shot[] = [
@@ -249,29 +256,30 @@ const SHOTS: Shot[] = [
     },
     slabs: (k, f) => WALLS(ramp(f, beat(40) + 4, beat(40) + 22)),
   },
-  // Act 4: the website.
+  // Act 4: DOOM, in text cells and then in Kitty graphics.
   {
-    name: 'Receipt',
+    name: 'DoomText',
     from: beat(48),
     to: beat(52),
     camera: (k) => ({
-      pos: orbit(mix(-0.45, -0.25, k), 6.6, 0.4, [1.2, 0, 0]),
-      look: [1.2, 0, 0],
+      pos: orbit(mix(-0.5, -0.3, k), 6.7, 0.35, [1.1, 0, 0]),
+      look: [1.1, 0, 0],
       fov: 32,
     }),
-    slabs: SITE,
+    slabs: () => DOOM('doom-text-native'),
   },
   {
-    name: 'Install',
+    name: 'DoomKitty',
     from: beat(52),
     to: beat(56),
     camera: (k) => ({
-      pos: [mix(0.2, 0.6, k), -0.6, 5.8],
-      look: [1.4, 0.2, 0],
-      fov: 33,
-      roll: 0.03,
+      pos: lerp3([-0.1, 0.25, 5.6], [0.7, 0.1, 4.9], inOut(k)),
+      look: [1.7, 0.1, 0],
+      fov: 32,
+      roll: 0.02,
     }),
-    slabs: SITE,
+    slabs: () => DOOM('doom-kitty-native'),
+    sweep: (k) => mix(-1.2, 1.2, Math.min(1, k * 3)),
   },
   {
     name: 'Badge',
@@ -736,49 +744,56 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
         </>
       );
     }
-    case 'Receipt':
+    case 'DoomText':
+    case 'DoomKitty': {
+      const kitty = shot.name === 'DoomKitty';
       return (
         <>
           <Scrim />
-          <div style={{ position: 'absolute', left: 130, top: 300 }}>
-            <Reveal at={s + 6} frame={frame} size={210} color={amber}>
-              {`${dense.cpuHeadline}×`}
+          <div style={{ position: 'absolute', left: 130, top: 250 }}>
+            <Reveal at={s + 4} frame={frame} size={kitty ? 100 : 120}>
+              {kitty ? 'Now in Kitty graphics.' : 'It runs DOOM.'}
             </Reveal>
-            <Reveal at={s + 14} frame={frame} size={58}>
-              less CPU per update.
+            <Reveal
+              at={s + 14}
+              frame={frame}
+              size={26}
+              weight={400}
+              color={muted}
+              font={mono}
+              tracking={0.08}
+              stagger={2}
+              style={{ marginTop: 16 }}
+            >
+              {kitty ? 'REAL PIXELS · 640×400 EVERY FRAME' : 'TRUECOLOR TEXT CELLS · 160×50'}
             </Reveal>
+            <div style={{ marginTop: 44 }}>
+              <Reveal at={s + 30} frame={frame} size={150} color={amber}>
+                {`${kitty ? doomKittyFps : doomTextFps}+ fps`}
+              </Reveal>
+              <Reveal
+                at={s + 38}
+                frame={frame}
+                size={24}
+                weight={400}
+                color={muted}
+                font={mono}
+                tracking={0.3}
+              >
+                TIMEDEMO
+              </Reveal>
+            </div>
           </div>
           <Fine>
-            vs xterm.js DOM · fastest DOM p50 ÷ slowest Wraith p50 · dense 240×80 · M5 Max · Chrome
-            155
+            {kitty
+              ? 'Kitty graphics build · 640×400 RGB per frame, base64-chunked'
+              : `At DOOM's 35 Hz: Wraith 35, xterm.js + WebGL ${xtermDoomFps}`}{' '}
+            · Freedoom demo1 via doomgeneric + doomterm, replayed · frames shown/s, flush waits for
+            the GPU fence · 3 rounds · M5 Max · Chrome 155 · Freedoom © its contributors (BSD)
           </Fine>
         </>
       );
-    case 'Install':
-      return (
-        <>
-          <Scrim />
-          <div style={{ position: 'absolute', left: 130, top: 330 }}>
-            <Reveal at={s + 4} frame={frame} size={92}>
-              Same API.
-            </Reveal>
-            <Reveal at={s + 12} frame={frame} size={92} color={amber}>
-              One import.
-            </Reveal>
-            <div
-              style={{
-                ...mono,
-                fontSize: 40,
-                color: cream,
-                marginTop: 40,
-                opacity: ramp(frame, s + 24, s + 40),
-              }}
-            >
-              <span style={{ color: amber }}>$</span> npm i wraithterm
-            </div>
-          </div>
-        </>
-      );
+    }
     case 'Badge':
       return (
         <div style={{ position: 'absolute', left: 0, right: 0, top: 640, textAlign: 'center' }}>

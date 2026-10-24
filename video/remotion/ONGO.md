@@ -30,7 +30,8 @@ stored.
 | 15.01–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
 | 16.84–18.67   | "we on go"       | Same wall: low angle, side orbit                         |
 | 18.67–22.34   | "Let 'em know"   | Pull back; xterm.js + WebGL's dark wall powers on beside |
-| 22.34–26.00   | Receipts         | The website, two angles: 15× less CPU; same API          |
+| 22.34–24.17   | DOOM             | "It runs DOOM." in truecolor text cells, 360+ fps         |
+| 24.17–26.00   | DOOM, Kitty      | Same screen switches to Kitty graphics, 410+ fps         |
 | 26.00–30.00   | Badge            | Ghost, WRAITH, tagline, URL; music fades out by 30 s     |
 
 Each act has one subject seen from several angles. Subjects change only at the count,
@@ -57,9 +58,31 @@ screencast that keeps each frame's own timestamp. It ran separately from timing.
 During capture the xterm wall produced 42 frames/s and the native wall 60. On-screen
 numbers come from the measurement record, not the capture.
 
-**15× less CPU per update** is the existing dense comparison
-([hype-comparison.json](../claims/hype-comparison.json)): fastest xterm DOM p50 ÷
-slowest Wraith p50.
+**DOOM.** Freedoom 0.13.0's `demo1` ([licence](../licenses/FREEDOOM.md)) runs in
+doomgeneric with Wraith's `doomterm` platform
+([capture/doomterm](../capture/doomterm/doomgeneric_term.c)). `doomterm` is an ordinary
+terminal program: it writes truecolor half-block text or Kitty graphics to stdout and
+reads keys from stdin, so it is playable in a real terminal. A deterministic 35 Hz
+game clock records byte-identical streams: 160×50 and 320×100 text and 640×400 Kitty
+frames. [doom-bench.mjs](../capture/doom-bench.mjs) replays them in each terminal.
+There are 3 rounds in rotating order, 8 s each, at 1920×1080 DPR 2, discarding the
+first second.
+
+- [Timedemo](../claims/doom-timedemo.json): frames shown per second as fast as each
+  terminal takes them. Native Wraith 364–435 (text 160×50), 180–204 (320×100) and
+  416–458 (Kitty 640×400). xterm.js and the compatible profile wait for a display
+  frame per game frame, so they are capped near 60.
+- [At DOOM's 35 Hz](../claims/doom-paced.json): 160×50 text shows 17.8–18.4 game
+  frames/s in xterm.js + WebGL and 35 in Wraith. At 320×100 all three keep up.
+
+Kitty frames require the `feat/kitty-graphics` engine (#26); the film's Kitty shot
+and number come from that build. xterm.js fits its own whole-pixel cells to the
+viewport and draws 1440×1050 against Wraith's 1920×1100 at 160×50, a smaller area. In
+the WebGL addon, live DOOM frames rendered zoomed and speckled. Simple synthetic
+content in the same page rendered correctly, so xterm.js DOOM footage is not used.
+Wraith's footage is a real-time screencast at 35 game frames/s.
+[doom-retime.mjs](../capture/doom-retime.mjs) is kept for terminals a screencast
+would slow: it draws logged frames on their uncaptured timeline.
 
 ## Reproduce
 
