@@ -234,6 +234,7 @@ export class Wraith {
           lineHeight: options.lineHeight ?? 1.35,
           history: options.scrollback ?? 10000,
           imageStorageLimit: options.imageStorageLimit,
+          ligatures: options.ligatures,
           theme: Object.values(terminal.theme).map(packColor),
         },
         [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],

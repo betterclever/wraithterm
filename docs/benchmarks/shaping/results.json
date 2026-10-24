@@ -1,0 +1,183 @@
+{
+  "measured": "2026-10-24T18:38:52.590Z",
+  "head": "40607f0ce3192bfdb97140eff01c601020e4b3c2",
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "8882eda89dd45b0c6e206e4da6ae8924e8ca17a5874757756a979be4d7f6c5c5",
+    "scripts/shaping-benchmark.mjs": "98be31442a7c13709b56ac8086c07851fe2dc7cadf6d6ee55854ff68980f54d8"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "method": "160x50 native terminal, DPR 1, Wraith benchmark(): 2048 frames after 128 warm-up, GPU fence every 32 frames; GPU-completed frames per second, not display FPS",
+  "summary": {
+    "dense ligatures off": [
+      5468.6248331108145,
+      5578.861345772957
+    ],
+    "dense ligatures on": [
+      4087.008581109379,
+      4155.844155869288
+    ],
+    "scroll ligatures off": [
+      5634.112792297112,
+      5833.095984025372
+    ],
+    "scroll ligatures on": [
+      5709.506551506895,
+      5762.521102885911
+    ],
+    "sparse ligatures off": [
+      13589.913736302267,
+      14163.20885185958
+    ],
+    "sparse ligatures on": [
+      14251.91370882064,
+      14463.276836005989
+    ]
+  },
+  "runs": [
+    {
+      "round": 0,
+      "ligatures": false,
+      "workload": "dense",
+      "fps": 5553.145336270471,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.29999999701976776
+    },
+    {
+      "round": 0,
+      "ligatures": false,
+      "workload": "scroll",
+      "fps": 5634.112792297112,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.29999999701976776
+    },
+    {
+      "round": 0,
+      "ligatures": false,
+      "workload": "sparse",
+      "fps": 14163.20885185958,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    },
+    {
+      "round": 0,
+      "ligatures": true,
+      "workload": "dense",
+      "fps": 4112.449799196787,
+      "cpuP50Ms": 0.20000000298023224,
+      "cpuP95Ms": 0.30000000447034836
+    },
+    {
+      "round": 0,
+      "ligatures": true,
+      "workload": "scroll",
+      "fps": 5725.468269451878,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 0,
+      "ligatures": true,
+      "workload": "sparse",
+      "fps": 14251.91370882064,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    },
+    {
+      "round": 1,
+      "ligatures": true,
+      "workload": "dense",
+      "fps": 4087.008581109379,
+      "cpuP50Ms": 0.20000000298023224,
+      "cpuP95Ms": 0.30000000447034836
+    },
+    {
+      "round": 1,
+      "ligatures": true,
+      "workload": "scroll",
+      "fps": 5709.506551506895,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 1,
+      "ligatures": true,
+      "workload": "sparse",
+      "fps": 14463.276836005989,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    },
+    {
+      "round": 1,
+      "ligatures": false,
+      "workload": "dense",
+      "fps": 5468.6248331108145,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.29999999701976776
+    },
+    {
+      "round": 1,
+      "ligatures": false,
+      "workload": "scroll",
+      "fps": 5788.581119203287,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 1,
+      "ligatures": false,
+      "workload": "sparse",
+      "fps": 13589.913736302267,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    },
+    {
+      "round": 2,
+      "ligatures": false,
+      "workload": "dense",
+      "fps": 5578.861345772957,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 2,
+      "ligatures": false,
+      "workload": "scroll",
+      "fps": 5833.095984025372,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 2,
+      "ligatures": false,
+      "workload": "sparse",
+      "fps": 14094.97591147275,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    },
+    {
+      "round": 2,
+      "ligatures": true,
+      "workload": "dense",
+      "fps": 4155.844155869288,
+      "cpuP50Ms": 0.20000000298023224,
+      "cpuP95Ms": 0.30000000447034836
+    },
+    {
+      "round": 2,
+      "ligatures": true,
+      "workload": "scroll",
+      "fps": 5762.521102885911,
+      "cpuP50Ms": 0.19999999552965164,
+      "cpuP95Ms": 0.20000000298023224
+    },
+    {
+      "round": 2,
+      "ligatures": true,
+      "workload": "sparse",
+      "fps": 14251.91370882064,
+      "cpuP50Ms": 0,
+      "cpuP95Ms": 0.10000000149011612
+    }
+  ]
+}

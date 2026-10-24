@@ -58,6 +58,10 @@ pub struct Renderer {
     /// Atlas resets already reflected in packed rows; any other reset (a
     /// font change, say) invalidates every packed glyph reference.
     atlas_resets: u64,
+    /// Glyph words for the row being packed.
+    glyphs: Vec<u32>,
+    /// Cursor cell the packed ligature rows were split for, as (x, y).
+    ligature_cursor: Option<(u32, u32)>,
     pub atlas: Atlas,
     pub images: ImageLayer,
     pub frames: u64,
@@ -303,6 +307,8 @@ impl Renderer {
             pack_stamps: vec![0; rows as usize],
             pack_stamp: 0,
             atlas_resets: 0,
+            glyphs: Vec::new(),
+            ligature_cursor: None,
             atlas,
             images,
             frames: 0,
@@ -528,13 +534,27 @@ impl Renderer {
     fn pack(&mut self, core: &Core) {
         let state = &*core.state;
         let cols = state.cols;
+        // Ligatures split under the cursor: repack the rows it left and entered.
+        let frame = core.frame;
+        let cursor = (self.atlas.ligatures && frame.cursor_visible != 0)
+            .then_some((frame.cursor_x, frame.cursor_y));
+        let mut forced = [usize::MAX; 2];
+        if cursor != self.ligature_cursor {
+            for (slot, at) in forced.iter_mut().zip([self.ligature_cursor, cursor]) {
+                if let Some((_, y)) = at.filter(|&(_, y)| (y as usize) < state.rows) {
+                    *slot = y as usize;
+                    self.packed_versions[y as usize] = 0;
+                }
+            }
+            self.ligature_cursor = cursor;
+        }
         self.pack_stamp = self.pack_stamp.wrapping_add(1);
         for (y, source) in self.row_sources.iter_mut().enumerate() {
             *source = y as u32;
         }
         let (mut shift, mut searched) = (1isize, false);
         for y in 0..state.rows {
-            if !state.dirty[y] {
+            if !state.dirty[y] && !forced.contains(&y) {
                 continue;
             }
             let version = state.versions[y];
@@ -547,7 +567,8 @@ impl Renderer {
                     && self.pack_stamps[r] != self.pack_stamp
             };
             let guess = y as isize + shift;
-            let source = if version == 0 {
+            let cursor_row = cursor.is_some_and(|(_, cy)| cy as usize == y);
+            let source = if version == 0 || cursor_row {
                 None
             } else if guess >= 0 && (guess as usize) < state.rows && usable(guess as usize) {
                 Some(guess as usize)
@@ -565,14 +586,29 @@ impl Renderer {
             } else {
                 self.row_sources[y] = NEW_ROW;
                 let row = &state.cells[y * cols..(y + 1) * cols];
-                for (cell, gpu) in row.iter().zip(&mut self.cells[y * cols..(y + 1) * cols]) {
+                self.glyphs.resize(cols, 0);
+                let at = cursor
+                    .filter(|&(_, cy)| cy as usize == y)
+                    .map(|(x, _)| x as usize);
+                self.atlas.row(row, &mut self.glyphs, at);
+                for ((cell, gpu), &glyph) in row
+                    .iter()
+                    .zip(&mut self.cells[y * cols..(y + 1) * cols])
+                    .zip(&self.glyphs)
+                {
                     *gpu = GpuCell {
                         foreground: cell.foreground,
                         background: cell.background,
                         underline: cell.underline,
                         flags: cell.flags,
-                        glyph: self.atlas.tile(cell),
+                        glyph,
                     };
+                }
+                if cursor_row {
+                    // Split for the cursor: never a copy source for moved rows.
+                    self.packed_versions[y] = 0;
+                    self.pack_stamps[y] = self.pack_stamp;
+                    continue;
                 }
             }
             self.packed_versions[y] = version;

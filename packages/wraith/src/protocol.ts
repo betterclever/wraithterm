@@ -11,6 +11,7 @@ export type Command =
       lineHeight: number;
       history: number;
       imageStorageLimit?: number;
+      ligatures?: boolean;
       theme: number[];
     }
   | { type: 'write'; bytes: Uint8Array; ids: number[] }

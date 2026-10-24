@@ -320,6 +320,13 @@ to keep the key out of terminal input; call `event.preventDefault()` in the hook
 when also replacing the browser action. Dispose the registration to restore
 normal handling.
 
+Set `ligatures: true` for programming-font ligatures (`=>`, `!==`, `->`, `<|>`),
+shaped across cells with HarfRust. The bundled JetBrains Mono includes them. The
+run under the cursor shows its separate characters, as in kitty. Arabic, Indic,
+Thai and other complex scripts are always shaped across cells. Letters join and
+conjuncts form, but text stays in the terminal's left-to-right cell order: there
+is no bidi reordering. Supply a font for these scripts with `fallbackFonts`.
+
 The bundled JetBrains Mono font covers the demo. Supply `font` and `fallbackFonts`
 as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pixels;
 rasterization automatically follows devicePixelRatio changes, including with

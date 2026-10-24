@@ -283,6 +283,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       );
       engine = await created;
       for (const font of command.fonts) engine.add_font(font);
+      if (command.ligatures) engine.set_ligatures(true);
       if (command.imageStorageLimit !== undefined)
         engine.set_image_limit(Math.max(0, Math.floor(command.imageStorageLimit)));
       engine.theme(command.theme[0]!, command.theme[1]!, command.theme[2]!);
