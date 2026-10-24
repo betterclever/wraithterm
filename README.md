@@ -236,6 +236,25 @@ export default defineConfig({ plugins: [wraith()] });
 Other bundlers must preserve the `new URL(..., import.meta.url)` worker and asset
 references; they have not yet been certified.
 
+## Your shell in a tab
+
+```sh
+npx wraithterm serve
+```
+
+This opens your shell in a native Wraith terminal in the browser. Everything that
+runs in a terminal works: vim, htop, `kitten icat`, Kitty graphics apps. Pass a
+command after `--` to run it instead of your shell, and `--open` to launch the
+browser. The PTY needs [node-pty](https://github.com/microsoft/node-pty), a native
+module that the library does not depend on. On first use, `serve` offers to install
+it into `~/.cache/wraithterm`.
+
+The server binds to `127.0.0.1` and prints a URL with a random per-run token. The
+page, its PTY WebSocket and same-origin checks all require it. `--host` exposes a
+shell to your network, so use it only on networks you trust. The PTY runs with
+`TERM=xterm-256color`, `COLORTERM=truecolor` and `TERM_PROGRAM=wraith`. Tested on
+macOS and Linux; Windows ConPTY through node-pty is untested.
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |

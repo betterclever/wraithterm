@@ -49,6 +49,7 @@
     "./css/xterm.css": "./css/xterm.css"
   },
   "files": [
+    "bin",
     "dist",
     "wasm",
     "licenses",
@@ -67,5 +68,8 @@
   "style": "./css/xterm.css",
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "wraithterm": "bin/wraithterm.mjs"
   }
 }
