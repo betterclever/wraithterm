@@ -59,6 +59,17 @@ export interface BenchmarkResult {
 export interface Disposable {
   dispose(): void;
 }
+/** Native Ghostty search uses ASCII-insensitive matching; other UTF-8 bytes match exactly. */
+export interface SearchResult {
+  total: number;
+  /** Newest-to-oldest match index; -1 if nothing is selected. */
+  index: number;
+}
+export interface SelectionPosition {
+  x: number;
+  y: number;
+}
+export type KeyEventHandler = (event: KeyboardEvent) => boolean;
 export class BackpressureError extends Error {
   constructor() {
     super('Wraith input queue is full. Await write() before submitting more input.');

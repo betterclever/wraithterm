@@ -9,6 +9,9 @@ import {
   type Disposable,
   type BenchmarkOptions,
   type BenchmarkResult,
+  type SearchResult,
+  type SelectionPosition,
+  type KeyEventHandler,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
 export * from './types.js';
@@ -105,6 +108,12 @@ export class Wraith {
   private dragging = false;
   private selected = false;
   private anchor: [number, number] = [0, 0];
+  private selectionMode = 0;
+  private clickCount = 0;
+  private lastClick = -Infinity;
+  private clickPoint: [number, number] = [-1, -1];
+  private keyHandlers = new Set<KeyEventHandler>();
+  private interceptedKeys = new Set<string>();
   private composing = false;
   private mirror?: HTMLPreElement;
   private mirrorTimer?: ReturnType<typeof setInterval>;
@@ -226,6 +235,7 @@ export class Wraith {
     }
   }
   private send(command: Command, transfer: Transferable[] = []) {
+    if (command.type !== 'write') this.flushWrites();
     this.worker.postMessage(command, transfer);
   }
   private assertLive() {
@@ -447,6 +457,73 @@ export class Wraith {
       'id'
     >);
   }
+  /** Search toward older matches, wrapping through retained scrollback. */
+  findNext(needle: string): Promise<SearchResult> {
+    return this.find(needle, 1);
+  }
+  /** Search toward newer matches, wrapping through retained scrollback. */
+  findPrevious(needle: string): Promise<SearchResult> {
+    return this.find(needle, -1);
+  }
+  private find(needle: string, direction: number): Promise<SearchResult> {
+    if (typeof needle !== 'string' || this.encoder.encode(needle).byteLength > 4096)
+      return Promise.reject(new RangeError('Search must be a string of at most 4096 UTF-8 bytes'));
+    return this.request<SearchResult>({ type: 'search', needle, direction } as Omit<
+      Extract<Command, { type: 'search' }>,
+      'id'
+    >);
+  }
+  async clearSearch(): Promise<void> {
+    await this.find('', 1);
+  }
+  /** Select inclusive viewport cell endpoints. */
+  select(start: SelectionPosition, end: SelectionPosition, rectangular = false): Promise<void> {
+    return this.selection(start, end, rectangular ? 1 : 0);
+  }
+  selectWord(x: number, y: number): Promise<void> {
+    return this.selection({ x, y }, { x, y }, 2);
+  }
+  selectLine(y: number): Promise<void> {
+    return this.selection({ x: 0, y }, { x: 0, y }, 3);
+  }
+  selectAll(): Promise<void> {
+    return this.selection({ x: 0, y: 0 }, { x: 0, y: 0 }, 4);
+  }
+  clearSelection(): Promise<void> {
+    return this.selection({ x: -1, y: 0 }, { x: 0, y: 0 }, 0);
+  }
+  private async selection(
+    start: SelectionPosition,
+    end: SelectionPosition,
+    mode: number,
+  ): Promise<void> {
+    for (const point of [start, end]) {
+      if (
+        !Number.isInteger(point.x) ||
+        !Number.isInteger(point.y) ||
+        point.x < (start.x === -1 && point === start ? -1 : 0) ||
+        point.x >= this.cols ||
+        point.y < 0 ||
+        point.y >= this.rows
+      )
+        throw new RangeError('Selection must use valid viewport cell coordinates');
+    }
+    await this.request<void>({
+      type: 'selection',
+      x1: start.x,
+      y1: start.y,
+      x2: end.x,
+      y2: end.y,
+      mode,
+    } as Omit<Extract<Command, { type: 'selection' }>, 'id'>);
+    this.selected = start.x !== -1;
+  }
+  /** Return false to keep a key event out of the terminal. Prevent its browser default in the handler if desired. */
+  attachCustomKeyEventHandler(handler: KeyEventHandler): Disposable {
+    this.assertLive();
+    this.keyHandlers.add(handler);
+    return { dispose: () => this.keyHandlers.delete(handler) };
+  }
   async benchmark(options: BenchmarkOptions = {}): Promise<BenchmarkResult> {
     this.flushWrites();
     return this.request<BenchmarkResult>({ type: 'benchmark', options } as Omit<
@@ -495,6 +572,13 @@ export class Wraith {
       (event) => {
         if (this.composing || event.isComposing || event.key === 'Process' || event.key === 'Dead')
           return;
+        this.interceptedKeys.delete(event.code);
+        for (const handler of this.keyHandlers) {
+          if (!handler(event)) {
+            this.interceptedKeys.add(event.code);
+            return;
+          }
+        }
         if (
           (event.metaKey || (event.ctrlKey && event.shiftKey)) &&
           event.key.toLowerCase() === 'c'
@@ -531,6 +615,8 @@ export class Wraith {
     this.input.addEventListener(
       'keyup',
       (event) => {
+        if (this.interceptedKeys.delete(event.code)) return;
+        for (const handler of this.keyHandlers) if (!handler(event)) return;
         if (event.isComposing || event.metaKey) return;
         this.send({
           type: 'key',
@@ -572,6 +658,10 @@ export class Wraith {
       'input',
       (event) => {
         const input = event as InputEvent;
+        if (this.interceptedKeys.size && input.inputType === 'insertText') {
+          this.input.value = '';
+          return;
+        }
         if (
           this.composing ||
           input.inputType === 'insertFromComposition' ||
@@ -600,7 +690,10 @@ export class Wraith {
     );
     this.input.addEventListener(
       'blur',
-      () => this.send({ type: 'focus', focused: false }),
+      () => {
+        this.interceptedKeys.clear();
+        this.send({ type: 'focus', focused: false });
+      },
       options,
     );
     const point = (event: MouseEvent): [number, number] => {
@@ -652,6 +745,19 @@ export class Wraith {
         }
         if (event.button !== 0) return;
         this.anchor = point(event);
+        const sameCell =
+          this.anchor[0] === this.clickPoint[0] && this.anchor[1] === this.clickPoint[1];
+        this.clickCount =
+          sameCell && event.timeStamp - this.lastClick < 400 ? (this.clickCount % 3) + 1 : 1;
+        this.lastClick = event.timeStamp;
+        this.clickPoint = this.anchor;
+        this.selectionMode = event.altKey
+          ? 1
+          : this.clickCount === 2
+            ? 2
+            : this.clickCount === 3
+              ? 3
+              : 0;
         this.dragging = true;
         this.selected = true;
         this.send({
@@ -660,6 +766,7 @@ export class Wraith {
           y1: this.anchor[1],
           x2: this.anchor[0],
           y2: this.anchor[1],
+          mode: this.selectionMode,
         });
       },
       options,
@@ -679,6 +786,7 @@ export class Wraith {
             y1: this.anchor[1],
             x2: end[0],
             y2: end[1],
+            mode: this.selectionMode,
           });
         }
       },
@@ -822,6 +930,8 @@ export class Wraith {
     this.errors.clear();
     this.statistics.clear();
     this.resizes.clear();
+    this.keyHandlers.clear();
+    this.interceptedKeys.clear();
   }
 }
 

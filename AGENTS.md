@@ -13,3 +13,8 @@ Before committing, review the staged diff and file list, run `git diff --cached
 Keep performance claims tied to the workload, hardware, build hash, and raw
 measurements. GPU-completed throughput and display presentation are distinct.
 Keep both the libghostty profile and xterm-compatible profile working.
+
+For feature milestones, create a GitHub issue with concrete acceptance criteria
+before implementation, then open a focused pull request linking that issue after
+validation. Use one issue and PR per logical milestone. Stack dependent PRs on
+their prerequisite branch until it merges. Do not merge or release automatically.

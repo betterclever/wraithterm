@@ -42,6 +42,7 @@ struct WraithBridge {
   GhosttyKeyEvent key_event;
   GhosttyMouseEncoder mouse_encoder;
   GhosttyMouseEvent mouse_event;
+  GhosttySearch search;
   uint32_t cols, height, cw, ch;
   bool held;
   /* Colors the cached rows were resolved with; any change disables reuse. */
@@ -129,6 +130,7 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
 }
 void wraith_bridge_free(WraithBridge* b) {
   if (!b) return;
+  ghostty_search_free(b->search);
   ghostty_mouse_event_free(b->mouse_event); ghostty_mouse_encoder_free(b->mouse_encoder);
   ghostty_key_event_free(b->key_event); ghostty_key_encoder_free(b->key_encoder);
   ghostty_render_state_row_cells_free(b->cells); ghostty_render_state_row_iterator_free(b->rows);
@@ -334,16 +336,93 @@ void wraith_bridge_hold_release(WraithBridge* b) {
   b->held = false;
 }
 int wraith_bridge_select(WraithBridge* b, int32_t x1, int32_t y1, int32_t x2, int32_t y2) {
+  return wraith_bridge_select_mode(b, x1, y1, x2, y2, 0);
+}
+int wraith_bridge_select_mode(WraithBridge* b, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint32_t mode) {
   if (x1 < 0) return ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, NULL);
+  if (mode > 4 || x1 >= b->cols || x2 < 0 || x2 >= b->cols ||
+      y1 < 0 || y2 < 0 || y1 >= b->height || y2 >= b->height) return GHOSTTY_INVALID_VALUE;
+  GhosttySelection selection = GHOSTTY_INIT_SIZED(GhosttySelection);
+  if (mode == 4) {
+    int r = ghostty_terminal_select_all(b->terminal, &selection);
+    if (r == GHOSTTY_NO_VALUE) return ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, NULL);
+    return r ? r : ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, &selection);
+  }
   GhosttyGridRef start = GHOSTTY_INIT_SIZED(GhosttyGridRef), end = GHOSTTY_INIT_SIZED(GhosttyGridRef);
   GhosttyPoint p1 = {.tag = GHOSTTY_POINT_TAG_VIEWPORT, .value = {.coordinate = {x1, y1}}};
   GhosttyPoint p2 = {.tag = GHOSTTY_POINT_TAG_VIEWPORT, .value = {.coordinate = {x2, y2}}};
   int r = ghostty_terminal_grid_ref(b->terminal, p1, &start);
   if (r) return r;
   r = ghostty_terminal_grid_ref(b->terminal, p2, &end); if (r) return r;
-  GhosttySelection selection = GHOSTTY_INIT_SIZED(GhosttySelection);
   selection.start = start; selection.end = end;
+  selection.rectangle = mode == 1;
+  if (mode == 2) {
+    GhosttyTerminalSelectWordBetweenOptions options = GHOSTTY_INIT_SIZED(GhosttyTerminalSelectWordBetweenOptions);
+    GhosttySelection first = GHOSTTY_INIT_SIZED(GhosttySelection), last = GHOSTTY_INIT_SIZED(GhosttySelection);
+    options.start = start; options.end = end;
+    r = ghostty_terminal_select_word_between(b->terminal, &options, &first);
+    if (!r) {
+      options.start = end; options.end = start;
+      r = ghostty_terminal_select_word_between(b->terminal, &options, &last);
+      bool forward = y1 < y2 || (y1 == y2 && x1 <= x2);
+      selection.start = forward ? first.start : first.end;
+      selection.end = forward ? last.end : last.start;
+    }
+  } else if (mode == 3) {
+    GhosttyTerminalSelectLineOptions options = GHOSTTY_INIT_SIZED(GhosttyTerminalSelectLineOptions);
+    GhosttySelection first = GHOSTTY_INIT_SIZED(GhosttySelection), last = GHOSTTY_INIT_SIZED(GhosttySelection);
+    options.ref = start;
+    r = ghostty_terminal_select_line(b->terminal, &options, &first);
+    if (!r) {
+      options.ref = end;
+      r = ghostty_terminal_select_line(b->terminal, &options, &last);
+      bool forward = y1 < y2 || (y1 == y2 && x1 <= x2);
+      selection.start = forward ? first.start : first.end;
+      selection.end = forward ? last.end : last.start;
+    }
+  }
+  if (r == GHOSTTY_NO_VALUE) return ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, NULL);
+  if (r) return r;
   return ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, &selection);
+}
+
+/* Search is lazy and advanced in bounded steps between worker messages.
+ * Results remain inside Ghostty, where pruning/reflow invalidate tracked refs. */
+int wraith_bridge_search(WraithBridge* b, const uint8_t* bytes, size_t len, uint32_t action, uint32_t* output) {
+  if (action > 4 || len > 4096) return GHOSTTY_INVALID_VALUE;
+  if (!b->search) {
+    int r = ghostty_search_new(&allocator, &b->search, b->terminal);
+    if (r) return r;
+  }
+  int r = GHOSTTY_SUCCESS;
+  if (action == 0 || action == 4) {
+    GhosttyString needle = {.ptr = bytes, .len = len};
+    r = ghostty_search_set(b->search, GHOSTTY_SEARCH_OPT_NEEDLE, action == 4 ? NULL : &needle);
+    if (action == 4) ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, NULL);
+  } else if (action == 1) {
+    r = ghostty_search_feed(b->search);
+    GhosttySearchStatus status = GHOSTTY_SEARCH_STATUS_RUNNING;
+    for (int i = 0; !r && i < 8 && status == GHOSTTY_SEARCH_STATUS_RUNNING; i++)
+      r = ghostty_search_tick(b->search, &status);
+  } else {
+    r = ghostty_search_set(b->search, action == 2 ? GHOSTTY_SEARCH_OPT_SELECT_NEXT : GHOSTTY_SEARCH_OPT_SELECT_PREV, NULL);
+    if (r == GHOSTTY_NO_VALUE) r = GHOSTTY_SUCCESS;
+    if (!r) {
+      GhosttySelection selected = GHOSTTY_INIT_SIZED(GhosttySelection);
+      int found = ghostty_search_get(b->search, GHOSTTY_SEARCH_DATA_SELECTED_MATCH, &selected);
+      r = ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SELECTION, found ? NULL : &selected);
+    }
+  }
+  if (r) return r;
+  GhosttySearchStatus status = GHOSTTY_SEARCH_STATUS_COMPLETE;
+  size_t total = 0, index = 0;
+  ghostty_search_get(b->search, GHOSTTY_SEARCH_DATA_STATUS, &status);
+  ghostty_search_get(b->search, GHOSTTY_SEARCH_DATA_TOTAL_MATCHES, &total);
+  int found = ghostty_search_get(b->search, GHOSTTY_SEARCH_DATA_SELECTED_INDEX, &index);
+  output[0] = status;
+  output[1] = total > UINT32_MAX ? UINT32_MAX : (uint32_t)total;
+  output[2] = found ? UINT32_MAX : (uint32_t)index;
+  return GHOSTTY_SUCCESS;
 }
 size_t wraith_bridge_link(WraithBridge* b, uint16_t x, uint16_t y, char* out, size_t cap) {
   GhosttyGridRef ref = GHOSTTY_INIT_SIZED(GhosttyGridRef);

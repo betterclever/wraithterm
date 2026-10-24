@@ -17,6 +17,45 @@ let samples: number[] = [],
 let cursor = '';
 let mouseTracking = false;
 let serial = Promise.resolve();
+let searchGeneration = 0;
+let searchRequest: number | undefined;
+function search(needle: string, direction: number, id: number) {
+  // New searches cancel pending requests, rather than leaving callers hanging.
+  if (searchRequest !== undefined)
+    post({ type: 'result', id: searchRequest, error: 'Search superseded' });
+  const generation = ++searchGeneration;
+  engine!.search(needle, needle ? 0 : 4);
+  if (!needle) {
+    result(id, { total: 0, index: -1 });
+    searchRequest = undefined;
+    schedule();
+    return;
+  }
+  searchRequest = id;
+  const step = () => {
+    if (disposed || generation !== searchGeneration) return;
+    // Enter through the same serial queue as writes, resize and GPU fences.
+    serial = serial
+      .then(() => {
+        if (disposed || generation !== searchGeneration) return;
+        const status = engine!.search('', 1);
+        if (status[0] !== 2) {
+          setTimeout(step, 0);
+          return;
+        }
+        const selected = engine!.search('', direction > 0 ? 2 : 3);
+        searchRequest = undefined;
+        result(id, { total: selected[1]!, index: selected[2] === 0xffffffff ? -1 : selected[2]! });
+        schedule();
+      })
+      .catch((error) => {
+        if (generation !== searchGeneration) return;
+        searchRequest = undefined;
+        post({ type: 'result', id, error: String(error) });
+      });
+  };
+  setTimeout(step, 0);
+}
 const encoder = new TextEncoder(),
   decoder = new TextDecoder();
 function post(reply: Reply, transfers: Transferable[] = []) {
@@ -240,8 +279,13 @@ async function handle(command: Command) {
       schedule();
       break;
     case 'select':
-      engine.select(command.x1, command.y1, command.x2, command.y2);
+    case 'selection':
+      engine.select_mode(command.x1, command.y1, command.x2, command.y2, command.mode ?? 0);
       schedule();
+      if (command.type === 'selection') result(command.id);
+      break;
+    case 'search':
+      search(command.needle, command.direction, command.id);
       break;
     case 'paste': {
       // Sanitize terminal control characters and bracketed-paste terminators.
@@ -292,6 +336,7 @@ async function handle(command: Command) {
       break;
     case 'dispose':
       disposed = true;
+      searchGeneration++;
       clearInterval(blinkTimer);
       clearInterval(statsTimer);
       clearTimeout(holdTimer);

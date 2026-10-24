@@ -223,27 +223,47 @@ references; they have not yet been certified.
 
 ## API contracts
 
-| Method / event                                              | Contract                                                                            |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `Wraith.mount(element, options)`                            | Resolves after engine and pipeline initialization; fits by default.                 |
-| `write(string \| Uint8Array)`                               | Resolves after parsing. Retains caller ownership of input buffers.                  |
-| `flush()`                                                   | Renders pending state and waits for a GPU completion fence.                         |
-| `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                           |
-| `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.     |
-| `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                |
-| `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                    |
-| `paste(text)`                                               | Removes terminal control characters and follows bracketed paste mode.               |
-| `scroll(lines)`                                             | Negative moves toward history; positive moves toward the active area.               |
-| `getText()`                                                 | Plain text for the current viewport, with visual row breaks.                        |
-| `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                          |
-| `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                               |
-| `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility. |
-| `dispose()`                                                 | Rejects outstanding work and releases the worker, DOM, listeners, and engine.       |
+| Method / event                                              | Contract                                                                                                             |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `Wraith.mount(element, options)`                            | Resolves after engine and pipeline initialization; fits by default.                                                  |
+| `write(string \| Uint8Array)`                               | Resolves after parsing. Retains caller ownership of input buffers.                                                   |
+| `flush()`                                                   | Renders pending state and waits for a GPU completion fence.                                                          |
+| `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
+| `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
+| `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
+| `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
+| `paste(text)`                                               | Removes terminal control characters and follows bracketed paste mode.                                                |
+| `scroll(lines)`                                             | Negative moves toward history; positive moves toward the active area.                                                |
+| `getText()`                                                 | Plain text for the current viewport, with visual row breaks.                                                         |
+| `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                                                           |
+| `findNext(needle)` / `findPrevious(needle)`                 | Search older/newer matches across scrollback, wrap around, reveal and select the match. Resolves `{ total, index }`. |
+| `clearSearch()`                                             | Cancel pending search and clear its selection.                                                                       |
+| `select(start, end, rectangular?)`                          | Select inclusive viewport cell endpoints `{ x, y }`; optional block selection.                                       |
+| `selectWord(x, y)`, `selectLine(y)`, `selectAll()`          | Use Ghostty's word, logical-line and complete active-screen/history selection rules.                                 |
+| `clearSelection()`                                          | Remove the current selection.                                                                                        |
+| `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
+| `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
+| `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
+| `dispose()`                                                 | Rejects outstanding work and releases the worker, DOM, listeners, and engine.                                        |
 
 The default maximum unacknowledged input is **8 MiB**. `write()` rejects with
 `BackpressureError` when full. Await writes to regulate a high-throughput producer.
 `write()` resolves before presentation; `flush()` provides the stronger completion
 contract.
+
+Native search matches ASCII letters without case sensitivity; other UTF-8 bytes
+match exactly. It searches literal strings up to 4096 UTF-8 bytes. Results use
+Ghostty's newest-to-oldest indexing (`-1` when no match is selected); search work
+advances between worker commands, allowing input and rendering to proceed. A new
+search rejects a pending request with `Search superseded`. Regular expressions
+and case-sensitive search options are not exposed by this native API.
+
+Double-click selects a word, triple-click selects a logical line, and Alt-drag
+selects a rectangle. Shift overrides application mouse tracking for selection.
+Keyboard hooks run in registration order outside IME composition. Return `false`
+to keep the key out of terminal input; call `event.preventDefault()` in the hook
+when also replacing the browser action. Dispose the registration to restore
+normal handling.
 
 The bundled JetBrains Mono font covers the demo. Supply `font` and `fallbackFonts`
 as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pixels;

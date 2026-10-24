@@ -164,6 +164,21 @@ extern "C" {
     fn wraith_bridge_select(b: *mut c_void, x1: i32, y1: i32, x2: i32, y2: i32) -> i32;
     fn wraith_bridge_link(b: *mut c_void, x: u16, y: u16, output: *mut u8, cap: usize) -> usize;
     fn wraith_bridge_selection_text(b: *mut c_void) -> i32;
+    fn wraith_bridge_select_mode(
+        b: *mut c_void,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        mode: u32,
+    ) -> i32;
+    fn wraith_bridge_search(
+        b: *mut c_void,
+        needle: *const u8,
+        len: usize,
+        action: u32,
+        output: *mut u32,
+    ) -> i32;
 }
 
 fn check(result: i32) -> Result<(), String> {
@@ -318,6 +333,29 @@ impl Core {
     }
     pub fn select(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) -> Result<(), String> {
         check(unsafe { wraith_bridge_select(self.bridge.as_ptr(), x1, y1, x2, y2) })
+    }
+    pub fn select_mode(
+        &mut self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        mode: u32,
+    ) -> Result<(), String> {
+        check(unsafe { wraith_bridge_select_mode(self.bridge.as_ptr(), x1, y1, x2, y2, mode) })
+    }
+    pub fn search(&mut self, needle: &str, action: u32) -> Result<[u32; 3], String> {
+        let mut output = [0; 3];
+        check(unsafe {
+            wraith_bridge_search(
+                self.bridge.as_ptr(),
+                needle.as_ptr(),
+                needle.len(),
+                action,
+                output.as_mut_ptr(),
+            )
+        })?;
+        Ok(output)
     }
     pub fn link(&self, x: u16, y: u16) -> String {
         let mut output = vec![0; 8192];

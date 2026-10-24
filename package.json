@@ -34,7 +34,8 @@
     "benchmark:pipes": "node scripts/pipes-benchmark.mjs",
     "test:retained": "node scripts/retained-rows-test.mjs",
     "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy",
-    "test:input": "node scripts/test-production-input.mjs"
+    "test:input": "node scripts/test-production-input.mjs",
+    "test:native-interaction": "node scripts/native-interaction-test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

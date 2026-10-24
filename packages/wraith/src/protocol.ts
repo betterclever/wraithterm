@@ -25,7 +25,9 @@ export type Command =
       pressed: number;
     }
   | { type: 'scroll'; delta: number }
-  | { type: 'select'; x1: number; y1: number; x2: number; y2: number }
+  | { type: 'select'; x1: number; y1: number; x2: number; y2: number; mode?: number }
+  | { type: 'selection'; x1: number; y1: number; x2: number; y2: number; mode: number; id: number }
+  | { type: 'search'; needle: string; direction: number; id: number }
   | { type: 'paste'; text: string; id: number }
   | { type: 'focus'; focused: boolean }
   | { type: 'text'; selected: boolean; id: number }
