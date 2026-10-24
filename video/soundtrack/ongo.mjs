@@ -1,6 +1,6 @@
-// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0 s through the
-// kick drop-out at beat 60, fading across the breakdown to silence just before the first
-// verse syllable. Two-pass loudness normalization. The recording stays local.
+// Cuts the user-supplied BIA recording for the "WE ON GO" edit: source 0-30 s. One long
+// fade runs from the kick drop-out at beat 60 into the first verse line, reaching
+// silence at 30 s. Two-pass loudness normalization. The recording stays local.
 // Usage: node ongo.mjs '--music=/path/BIA - WE ON GO (Official Audio).mp4'
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
@@ -17,7 +17,8 @@ const BPM = 131,
 const KICK_DROPS_OUT = PHASE + (60 * 60) / BPM;
 // First verse syllable measured at 28.74 s (centre vocal rise and consonant burst).
 const VERSE = 28.74;
-const frames = Math.round((VERSE - 0.02) * FPS);
+const END = 30;
+const frames = END * FPS;
 const duration = frames / FPS;
 const run = (args) => {
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8', maxBuffer: 1e7 });

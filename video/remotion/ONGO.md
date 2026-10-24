@@ -1,14 +1,14 @@
 # WE ON GO
 
-`WraithOnGo` is a 28.717-second (1,723-frame) car-launch film where the car is a
+`WraithOnGo` is a 30-second (1,800-frame) car-launch film where the car is a
 terminal. Features come first, then the count-in launches it, then the receipts.
 Output: `video/wraith-ongo.mp4`. Earlier cuts and exports are unchanged.
 
 ## Music
 
-The user-supplied BIA recording plays from 0 s ("Honorable") through the kick drop-out
-at beat 60 (27.83 s), then fades over the breakdown to silence at 28.72 s, just before
-the first verse syllable at 28.74 s. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
+The user-supplied BIA recording plays from 0 s ("Honorable") from 0 to 30 s. One long fade runs
+from the kick drop-out at beat 60 (27.83 s), through the breakdown and the opening of
+the first verse line (28.74 s), to silence at 30 s. [soundtrack/ongo.mjs](../soundtrack/ongo.mjs) cuts
 and two-pass normalizes it to −14 LUFS. [ongo-music.json](../claims/ongo-music.json)
 keeps the source hash and cue times. Tempo is 131 BPM with the first beat at 0.35 s.
 The ad-libs and vocal doubles are panned wide. Syllable onsets therefore come from
@@ -31,7 +31,7 @@ stored.
 | 16.84–18.67   | "we on go"       | Same wall: low angle, side orbit                         |
 | 18.67–22.34   | "Let 'em know"   | Pull back; xterm.js + WebGL's dark wall powers on beside |
 | 22.34–26.00   | Receipts         | The website, two angles: 15× less CPU; same API          |
-| 26.00–28.72   | Badge            | Ghost, WRAITH, tagline, URL; music fades before the verse |
+| 26.00–30.00   | Badge            | Ghost, WRAITH, tagline, URL; music fades out by 30 s     |
 
 Each act has one subject seen from several angles. Subjects change only at the count,
 at GO and before the receipts. Slabs keep their identity across angles, so footage
