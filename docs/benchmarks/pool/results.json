@@ -1,0 +1,561 @@
+{
+  "measured": "2026-10-24T18:16:12.885Z",
+  "head": "64c1d7ab7c1b8fd863d170f9793766ebade63f61",
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "df8961876d09b79b3bdc7db296fe3f3fb92f539b14b78fa6a01cdb6d91df668d",
+    "packages/wraith/src/pool.ts": "18c9c50464010d5d5792d7dfe0c6d8e889d8809a74adb8964badd71412b0da33",
+    "packages/wraith/src/worker.ts": "d3966630552e4aa08726c45930636f143e3a4025942e88a8c9d537ea6ea1a56f",
+    "demo/pool-bench.js": "ec524e56396b94b0e4d4e60dfc4913ef83f43239cf7bc91385bc608c6407b747",
+    "scripts/pool-benchmark.mjs": "308b69e69c6c2aa3314f87caa1a5d8906062a96431dbfdc559ce88105131b6da"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "headed": true,
+  "method": {
+    "terminals": "80x24 each, in a grid filling 1600x900 at DPR 2",
+    "update": "two colored log lines plus a rewritten status row per update",
+    "pacing": "next update after the previous is processed and a display frame passes; native also waits for flush (GPU fence)",
+    "seconds": 8,
+    "warm": 2,
+    "memory": "summed RSS of the browser and all its processes, sampled mid-measurement",
+    "note": "frames shown per terminal per second; xterm.js WebGL terminals beyond the browser context limit lose their renderer (lostContexts) and stop drawing while their writes still complete"
+  },
+  "summary": {
+    "16 pooled": {
+      "meanFps": [
+        119.94271113159124,
+        119.97474873741449
+      ],
+      "p10Fps": [
+        119.88099404968015,
+        119.95052041026374
+      ],
+      "mountMs": [
+        63.100000001490116,
+        133.79999999701977
+      ],
+      "memoryMiB": [
+        1509,
+        1516
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "16 dedicated": {
+      "meanFps": [
+        119.45576487947145,
+        119.91020209220473
+      ],
+      "p10Fps": [
+        118.63538059584633,
+        119.73054378667926
+      ],
+      "mountMs": [
+        112,
+        156
+      ],
+      "memoryMiB": [
+        1815,
+        1828
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "16 webgl": {
+      "meanFps": [
+        119.99506687812332,
+        120.07396856327115
+      ],
+      "p10Fps": [
+        119.89359443491668,
+        120.07396856327115
+      ],
+      "mountMs": [
+        101.89999999850988,
+        146.20000000298023
+      ],
+      "memoryMiB": [
+        1276,
+        1299
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "64 pooled": {
+      "meanFps": [
+        85.20436703873227,
+        107.9296875
+      ],
+      "p10Fps": [
+        84.87818293182832,
+        107.75
+      ],
+      "mountMs": [
+        193.29999999701977,
+        336.90000000596046
+      ],
+      "memoryMiB": [
+        1606,
+        1673
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "64 dedicated": {
+      "meanFps": [
+        79.98202563301032,
+        94.79674415698032
+      ],
+      "p10Fps": [
+        75.64864020006252,
+        89.86376702912136
+      ],
+      "mountMs": [
+        316.8999999985099,
+        583.0999999940395
+      ],
+      "memoryMiB": [
+        3339,
+        3472
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "64 webgl": {
+      "meanFps": [
+        102.49945315917743,
+        119.96028200871598
+      ],
+      "p10Fps": [
+        102.4935941503656,
+        119.95052041037539
+      ],
+      "mountMs": [
+        369.8999999985099,
+        616.3000000044703
+      ],
+      "memoryMiB": [
+        1504,
+        1535
+      ],
+      "lostContexts": [
+        48,
+        48
+      ]
+    },
+    "128 pooled": {
+      "meanFps": [
+        48.49801145948286,
+        55.32648218140208
+      ],
+      "p10Fps": [
+        48.23733769884507,
+        54.759320934536
+      ],
+      "mountMs": [
+        333.79999999701977,
+        471.8999999985099
+      ],
+      "memoryMiB": [
+        1826,
+        1916
+      ],
+      "lostContexts": [
+        0,
+        0
+      ]
+    },
+    "128 dedicated": {
+      "failed": [
+        "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr",
+        "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr",
+        "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr"
+      ]
+    },
+    "128 webgl": {
+      "meanFps": [
+        56.73005505070275,
+        71.85996469632582
+      ],
+      "p10Fps": [
+        56.67349078745805,
+        71.85703574106473
+      ],
+      "mountMs": [
+        711.0999999940395,
+        1157
+      ],
+      "memoryMiB": [
+        1583,
+        1674
+      ],
+      "lostContexts": [
+        112,
+        112
+      ]
+    }
+  },
+  "runs": [
+    {
+      "round": 0,
+      "count": 16,
+      "type": "pooled",
+      "mountMs": 63.100000001490116,
+      "meanFps": 119.94271113159124,
+      "p10Fps": 119.95052041026374,
+      "minFps": 119.82557195150305,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1509,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "count": 16,
+      "type": "dedicated",
+      "mountMs": 112,
+      "meanFps": 119.91020209220473,
+      "p10Fps": 119.73054378667926,
+      "minFps": 119.60556409587898,
+      "lostContexts": 0,
+      "workers": 16,
+      "memoryMiB": 1815,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "count": 16,
+      "type": "webgl",
+      "mountMs": 101.89999999850988,
+      "meanFps": 120.07396856327115,
+      "p10Fps": 120.07396856327115,
+      "minFps": 120.07396856327115,
+      "lostContexts": 0,
+      "workers": 0,
+      "memoryMiB": 1276,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "count": 64,
+      "type": "pooled",
+      "mountMs": 193.29999999701977,
+      "meanFps": 107.9296875,
+      "p10Fps": 107.75,
+      "minFps": 107.625,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1631,
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "count": 64,
+      "type": "dedicated",
+      "mountMs": 374.80000000447035,
+      "meanFps": 94.79674415698032,
+      "p10Fps": 89.86376702912136,
+      "minFps": 87.98900137482815,
+      "lostContexts": 0,
+      "workers": 64,
+      "memoryMiB": 3456,
+      "displayHz": 119
+    },
+    {
+      "round": 0,
+      "count": 64,
+      "type": "webgl",
+      "mountMs": 369.8999999985099,
+      "meanFps": 119.96028200871598,
+      "p10Fps": 119.95052041037539,
+      "minFps": 119.95052041037539,
+      "lostContexts": 48,
+      "workers": 0,
+      "memoryMiB": 1504,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "count": 128,
+      "type": "pooled",
+      "mountMs": 333.79999999701977,
+      "meanFps": 55.32648218140208,
+      "p10Fps": 54.759320934536,
+      "minFps": 54.38511145206764,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1916,
+      "displayHz": 117
+    },
+    {
+      "round": 0,
+      "count": 128,
+      "type": "dedicated",
+      "failed": "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr",
+      "mountMs": null,
+      "meanFps": 0,
+      "p10Fps": 0,
+      "minFps": 0,
+      "lostContexts": 0,
+      "memoryMiB": 4282,
+      "displayHz": 122
+    },
+    {
+      "round": 0,
+      "count": 128,
+      "type": "webgl",
+      "mountMs": 711.0999999940395,
+      "meanFps": 71.85996469632582,
+      "p10Fps": 71.85703574106473,
+      "minFps": 71.85703574106473,
+      "lostContexts": 112,
+      "workers": 0,
+      "memoryMiB": 1674,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "count": 16,
+      "type": "dedicated",
+      "mountMs": 113.90000000596046,
+      "meanFps": 119.45576487947145,
+      "p10Fps": 118.63538059584633,
+      "minFps": 118.63538059584633,
+      "lostContexts": 0,
+      "workers": 16,
+      "memoryMiB": 1820,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 16,
+      "type": "webgl",
+      "mountMs": 102.89999999850988,
+      "meanFps": 120.05146847546935,
+      "p10Fps": 120.05146847546932,
+      "minFps": 120.05146847546932,
+      "lostContexts": 0,
+      "workers": 0,
+      "memoryMiB": 1285,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 16,
+      "type": "pooled",
+      "mountMs": 89,
+      "meanFps": 119.94902166581436,
+      "p10Fps": 119.94902166581436,
+      "minFps": 119.94902166581436,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1516,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 64,
+      "type": "dedicated",
+      "mountMs": 316.8999999985099,
+      "meanFps": 90.88059864199832,
+      "p10Fps": 87.70946240578084,
+      "minFps": 86.71276396935151,
+      "lostContexts": 0,
+      "workers": 64,
+      "memoryMiB": 3472,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 64,
+      "type": "webgl",
+      "mountMs": 491.30000000447035,
+      "meanFps": 119.28851582607057,
+      "p10Fps": 119.28851582607054,
+      "minFps": 119.28851582607054,
+      "lostContexts": 48,
+      "workers": 0,
+      "memoryMiB": 1535,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 64,
+      "type": "pooled",
+      "mountMs": 235.5,
+      "meanFps": 105.58677804711506,
+      "p10Fps": 105.2158048633998,
+      "minFps": 105.090845475201,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1673,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 128,
+      "type": "dedicated",
+      "failed": "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr",
+      "mountMs": null,
+      "meanFps": 0,
+      "p10Fps": 0,
+      "minFps": 0,
+      "lostContexts": 0,
+      "memoryMiB": 4254,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "count": 128,
+      "type": "webgl",
+      "mountMs": 992.7999999970198,
+      "meanFps": 62.83089428862797,
+      "p10Fps": 62.80748195688465,
+      "minFps": 62.80748195688465,
+      "lostContexts": 112,
+      "workers": 0,
+      "memoryMiB": 1623,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "count": 128,
+      "type": "pooled",
+      "mountMs": 448.6000000014901,
+      "meanFps": 50.737274189316196,
+      "p10Fps": 50.36715662439377,
+      "minFps": 49.993143085103725,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1826,
+      "displayHz": 117
+    },
+    {
+      "round": 2,
+      "count": 16,
+      "type": "webgl",
+      "mountMs": 146.20000000298023,
+      "meanFps": 119.99506687812332,
+      "p10Fps": 119.89359443491668,
+      "minFps": 119.89359443491668,
+      "lostContexts": 0,
+      "workers": 0,
+      "memoryMiB": 1299,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "count": 16,
+      "type": "pooled",
+      "mountMs": 133.79999999701977,
+      "meanFps": 119.97474873741449,
+      "p10Fps": 119.88099404968015,
+      "minFps": 119.88099404968015,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1512,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "count": 16,
+      "type": "dedicated",
+      "mountMs": 156,
+      "meanFps": 119.57342805780036,
+      "p10Fps": 119.11302002703547,
+      "minFps": 118.61359436654476,
+      "lostContexts": 0,
+      "workers": 16,
+      "memoryMiB": 1828,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "count": 64,
+      "type": "webgl",
+      "mountMs": 616.3000000044703,
+      "meanFps": 102.49945315917743,
+      "p10Fps": 102.4935941503656,
+      "minFps": 102.4935941503656,
+      "lostContexts": 48,
+      "workers": 0,
+      "memoryMiB": 1531,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "count": 64,
+      "type": "pooled",
+      "mountMs": 336.90000000596046,
+      "meanFps": 85.20436703873227,
+      "p10Fps": 84.87818293182832,
+      "minFps": 84.75317824415258,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1606,
+      "displayHz": 119
+    },
+    {
+      "round": 2,
+      "count": 64,
+      "type": "dedicated",
+      "mountMs": 583.0999999940395,
+      "meanFps": 79.98202563301032,
+      "p10Fps": 75.64864020006252,
+      "minFps": 75.02344482650828,
+      "lostContexts": 0,
+      "workers": 64,
+      "memoryMiB": 3339,
+      "displayHz": 119
+    },
+    {
+      "round": 2,
+      "count": 128,
+      "type": "webgl",
+      "mountMs": 1157,
+      "meanFps": 56.73005505070275,
+      "p10Fps": 56.67349078745805,
+      "minFps": 56.67349078745805,
+      "lostContexts": 112,
+      "workers": 0,
+      "memoryMiB": 1583,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "count": 128,
+      "type": "pooled",
+      "mountMs": 471.8999999985099,
+      "meanFps": 48.49801145948286,
+      "p10Fps": 48.23733769884507,
+      "minFps": 48.112370502734066,
+      "lostContexts": 0,
+      "workers": 4,
+      "memoryMiB": 1860,
+      "displayHz": 118
+    },
+    {
+      "round": 2,
+      "count": 128,
+      "type": "dedicated",
+      "failed": "page.evaluate: Error: RangeError: WebAssembly.instantiate(): Out of memory: Cannot allocate Wasm memory for new instance\n    at Wraith.receive (http://127.0.0.1:5199/@fs/Users/betterclever/projects/wr",
+      "mountMs": null,
+      "meanFps": 0,
+      "p10Fps": 0,
+      "minFps": 0,
+      "lostContexts": 0,
+      "memoryMiB": 4238,
+      "displayHz": 122
+    }
+  ]
+}

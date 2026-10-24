@@ -1,3 +1,4 @@
+import { dedicatedChannel, WraithPool, type Channel, type WraithPoolOptions } from './pool.js';
 import { KEY_CODES } from './keycodes.js';
 import {
   BackpressureError,
@@ -71,14 +72,19 @@ function validateGrid(cols: number, rows: number) {
 }
 
 /** One independent worker, Wasm instance, and GPU device per terminal. */
+export { WraithPool, type WraithPoolOptions } from './pool.js';
 export class Wraith {
+  /** A pool of shared workers for mounting many terminals; pass it as `pool`. */
+  static pool(options?: WraithPoolOptions): WraithPool {
+    return new WraithPool(options);
+  }
   readonly element: HTMLDivElement;
   readonly canvas: HTMLCanvasElement;
   readonly input: HTMLTextAreaElement;
   readonly ready: Promise<void>;
   cols: number;
   rows: number;
-  private worker: Worker;
+  private worker: Channel;
   private options: WraithOptions;
   private dpr: number;
   private fontBytes?: Uint8Array;
@@ -193,14 +199,11 @@ export class Wraith {
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
-    this.worker = new Worker(new URL('./worker.js', import.meta.url), {
-      type: 'module',
-      name: 'Wraith terminal',
-    });
-    this.worker.onmessage = (event: MessageEvent<Reply>) => this.receive(event.data);
-    this.worker.onerror = (event) => this.fail(new Error(event.message || 'Wraith worker failed'));
-    this.worker.onmessageerror = () =>
-      this.fail(new Error('Wraith worker message could not be decoded'));
+    const handlers = {
+      message: (reply: Reply) => this.receive(reply),
+      fail: (error: Error) => this.fail(error),
+    };
+    this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
     this.bindInput();
   }
   static async mount(host: HTMLElement, options: WraithOptions = {}): Promise<Wraith> {
