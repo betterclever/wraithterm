@@ -5,6 +5,9 @@ import init, { Engine, Headless } from '../packages/wraith/wasm/wraith_engine.js
 import '../packages/wraith/css/xterm.css';
 import { showcase } from './showcase.js';
 import { pipesWorkload } from './pipes-scene.js';
+import { measureWorkflow } from './workflow-bench.js';
+import { Unicode11Addon } from '@xterm/addon-unicode11';
+import * as interactions from './interaction-bench.js';
 const encoder = new TextEncoder();
 const scene = document.querySelector('#scene');
 const status = document.querySelector('#status');
@@ -537,6 +540,81 @@ async function adapterInfo() {
 window.comparison = {
   setup,
   run,
+  async workflow(config) {
+    if (active.terminal && !active.unicode11) {
+      active.terminal.loadAddon(new Unicode11Addon());
+      active.terminal.unicode.activeVersion = '11';
+      active.unicode11 = true;
+    }
+    return measureWorkflow(active, config);
+  },
+  async interactionSetup(type, options) {
+    active?.dispose();
+    active = undefined;
+    return interactions.interactionSetup(
+      type,
+      { WraithTerminal, XtermTerminal, WebglAddon, glFence },
+      await font(),
+      scene,
+      options,
+    );
+  },
+  interactions,
+  async pipesPixelProbe() {
+    const a = active,
+      colors = [];
+    a.parse(a.inputs[7].bytes);
+    a.draw();
+    await a.finish();
+    await nextFrame();
+    let reference;
+    if (a.type === 'ghostty') {
+      reference = new Headless(
+        a.dimensions.device.canvas.width / a.dimensions.device.cell.width,
+        a.dimensions.device.canvas.height / a.dimensions.device.cell.height,
+        0,
+      );
+      reference.write(a.inputs[7].bytes);
+    }
+    const cols = reference
+      ? a.dimensions.device.canvas.width / a.dimensions.device.cell.width
+      : a.terminal.cols;
+    const rows = reference
+      ? a.dimensions.device.canvas.height / a.dimensions.device.cell.height
+      : a.terminal.rows;
+    try {
+      for (let y = 0; y < rows; y++)
+        for (let x = 0; x < cols; x++) {
+          if (reference) {
+            const cell = reference.cell(x, y);
+            invariant(cell[0] === '▀', 'Expected half-block fixture');
+            colors.push([cell[1], cell[2]]);
+          } else {
+            const b = a.terminal.buffer.active,
+              cell = b.getLine(b.viewportY + y).getCell(x);
+            invariant(
+              cell.getChars() === '▀' && cell.isFgRGB() && cell.isBgRGB(),
+              'Expected truecolor half-block fixture',
+            );
+            const pack = (c) => ((c & 255) << 16) | (c & 0xff00) | ((c >>> 16) & 255);
+            colors.push([pack(cell.getFgColor()), pack(cell.getBgColor())]);
+          }
+        }
+    } finally {
+      reference?.free();
+    }
+    const element = a.terminal?.element.querySelector('.xterm-screen') ?? a.canvas;
+    const rect = element.getBoundingClientRect(),
+      sceneRect = scene.getBoundingClientRect();
+    return {
+      colors,
+      cols,
+      cellWidth: a.dimensions.css.cell.width,
+      cellHeight: a.dimensions.css.cell.height,
+      x: rect.left - sceneRect.left,
+      y: rect.top - sceneRect.top,
+    };
+  },
   profile,
   utilization,
   /** Render one fixture on either GPU path for pixel differentials. */
@@ -677,8 +755,8 @@ const params = new URLSearchParams(location.search);
 const config = {
   type: params.get('type') ?? 'wraith',
   workload: params.get('workload') ?? 'complex',
-  cols: 240,
-  rows: 80,
+  cols: Number(params.get('cols') ?? 240),
+  rows: Number(params.get('rows') ?? 80),
   frames: 128,
 };
 const controls = [...document.querySelectorAll('button,select')];

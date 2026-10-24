@@ -18,6 +18,9 @@ export * from './types.js';
 type Listener<T> = (value: T) => void;
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
+  get size() {
+    return this.listeners.size;
+  }
   on(listener: Listener<T>): Disposable {
     this.listeners.add(listener);
     return { dispose: () => this.listeners.delete(listener) };
@@ -105,6 +108,7 @@ export class Wraith {
   private errors = new Signal<Error>();
   private statistics = new Signal<WraithStats>();
   private resizes = new Signal<{ cols: number; rows: number }>();
+  private renders = new Signal<{ frame: number }>();
   private decoder = new TextDecoder();
   private encoder = new TextEncoder();
   private readyResolve!: () => void;
@@ -308,6 +312,9 @@ export class Wraith {
         Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
         break;
       }
+      case 'render':
+        this.renders.emit({ frame: reply.frame });
+        break;
       case 'error':
         this.fail(new Error(reply.error));
         break;
@@ -529,6 +536,23 @@ export class Wraith {
   }
   onResize(listener: Listener<{ cols: number; rows: number }>): Disposable {
     return this.resizes.on(listener);
+  }
+  /** Render submission notification, not a GPU fence or proof of display presentation.
+   * Worker notifications are enabled only while at least one listener exists. */
+  onRender(listener: Listener<{ frame: number }>): Disposable {
+    this.assertLive();
+    const subscription = this.renders.on((value) => listener(value));
+    if (this.renders.size === 1) this.send({ type: 'observe-render', enabled: true });
+    let disposed = false;
+    return {
+      dispose: () => {
+        if (disposed) return;
+        disposed = true;
+        subscription.dispose();
+        if (!this.renders.size && !this.disposed && !this.failed)
+          this.send({ type: 'observe-render', enabled: false });
+      },
+    };
   }
   async paste(text: string): Promise<void> {
     await this.request<void>({ type: 'paste', text } as Omit<
@@ -1023,6 +1047,7 @@ export class Wraith {
     this.errors.clear();
     this.statistics.clear();
     this.resizes.clear();
+    this.renders.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
   }

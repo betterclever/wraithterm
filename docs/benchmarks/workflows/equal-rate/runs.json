@@ -1,0 +1,1267 @@
+{
+  "date": "2026-10-21T07:29:46.047Z",
+  "head": "dfd876aabc2165ce50b5a851bd9468e478ca334a",
+  "dirtyFiles": [
+    "M crates/wraith-engine/src/gpu.rs",
+    " M crates/wraith-engine/src/terminal.wgsl",
+    " M crates/wraith-engine/src/web.rs",
+    " M docs/ARCHITECTURE.md",
+    "M  docs/BENCHMARKS.md",
+    " M docs/TOP_TIER.md",
+    " M docs/XTERM_API.md",
+    " M package.json",
+    " M packages/wraith/docs/ARCHITECTURE.md",
+    "M  packages/wraith/docs/BENCHMARKS.md",
+    " M packages/wraith/docs/TOP_TIER.md",
+    " M packages/wraith/docs/XTERM_API.md",
+    " M packages/wraith/src/xterm-renderer.ts",
+    "AM scripts/summarize-workflows.mjs",
+    "M  scripts/workflow-benchmark.mjs",
+    " M scripts/xterm-browser-test.mjs",
+    "?? docs/benchmarks/workflows/",
+    "?? packages/wraith/src/xterm-contrast.test.ts",
+    "?? packages/wraith/src/xterm-contrast.ts",
+    "?? scripts/gpu-visual-options-test.mjs",
+    "?? scripts/visual-options-benchmark.mjs",
+    "?? video/capture/stream-bench.js"
+  ],
+  "sources": {
+    "packages/wraith/src/xterm-renderer.ts": "15c5b4b9845f897dd5ff41a91e9f1c6f9b7d51a5e44b5674a2e9278990077290",
+    "packages/wraith/src/xterm-input.ts": "fcb5ecdf479a1a8996eb5146d5a77d2ea4a1821e4c974dab4b99793ba5326c1e",
+    "packages/wraith/src/index.ts": "70cfc69ade190263d4bb0e240605e378a0e0ac67ae3e3b8bf9383b0f7872629d",
+    "packages/wraith/src/worker.ts": "d0b4cc32171b49d7cf9c30275957431a755c8abac711a162d2de4f18c2a3d90b",
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "0baaa849aa85e847368cbd690bd4c20957ad9736c9c5d2d1066a0b8158b313fa",
+    "demo/compare.js": "e5ad8db30b5804dce36db8ec11549bfda820774cb194963176a1216d582c424f",
+    "demo/workflow-bench.js": "9e827f02762b8aa157d25586aab623e970d7ab983768ee2b6e6f6fbb816b230f",
+    "demo/interaction-bench.js": "4ded6733c8c4434bc85c5bacc6cc5eb003ab1fe4194d3201911ab114f7dee778",
+    "scripts/workflow-benchmark.mjs": "0172cf1833604c2c2b24e3073f657b2a768426a274d8530f8a3a5faa0168f396"
+  },
+  "cpu": "Apple M5 Max",
+  "logicalCpus": 18,
+  "memoryBytes": 51539607552,
+  "os": "darwin 27.2.0",
+  "xterm": "6.0.0",
+  "webglAddon": "0.19.0",
+  "ghostty": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "config": {
+    "repetitions": 1,
+    "dprs": [
+      1
+    ],
+    "types": [
+      "dom",
+      "webgl",
+      "wraith",
+      "ghostty"
+    ],
+    "cases": [
+      "build-log",
+      "editor",
+      "dashboard",
+      "large-write",
+      "unicode",
+      "bytewise",
+      "progress",
+      "alternate",
+      "erase",
+      "links",
+      "complex",
+      "churn",
+      "append",
+      "showcase",
+      "pipes"
+    ],
+    "phases": [
+      "sustained"
+    ],
+    "minMs": 1000,
+    "frames": 512,
+    "keys": 40,
+    "sustainedMs": 30000,
+    "targetStepsPerSecond": 12,
+    "cols": 160,
+    "rows": 50
+  },
+  "methodology": {
+    "throughput": "Precomputed deterministic ANSI, warmed 32 updates; repeated blocks of 32, GPU-fenced every block. DOM forces layout and has no GPU-completion fence. Grid recorded in config. Legacy complex/churn/append/showcase/pipes use the existing fixed-frame comparison harness. Synchronous core throughput is distinct from worker SDK latency.",
+    "correctness": "Fixed-count replay text hashes compared with upstream DOM; WebGL viewport must match drawing-buffer dimensions. Initial real pixels checked for every renderer/DPR. Unicode11 enabled on xterm workflow cases; native Unicode glyph coverage is not certified by a text-state match.",
+    "latency": "Real Playwright keyboard events; key→onData, echo parse acknowledgement, public onRender notification, then next rAF opportunity. Native onRender is opt-in; notification observes submission, not GPU completion or actual display scanout. Output flood offers ~64KiB every 16ms with a 2MiB queue cap; achieved rates retained.",
+    "memory": "Eight public SDK terminals, 80x24 each, bounded 10000-line histories. Main-page JS heap (excluding native worker heaps and most GPU/Wasm allocations) and isolated Chrome process RSS sampled before/load/after disposal; RSS sums can double-count shared mappings. These are bounded-run observations, not proof of leak absence.",
+    "cpu": "Isolated Chrome process CPU-time deltas / elapsed wall time. 100% means one busy logical CPU; also divided by logical CPU count for machine capacity. Process-set changes invalidate this estimate.",
+    "gpu": "Device-wide Apple GPU driver utilization during sustained runs. Includes other apps and has an undocumented averaging window; cannot be attributed to this terminal process.",
+    "timing": "Headless Chrome with real GPU; no other benchmark runs concurrently. Browser performance.now precision applies. Desktop apps and device thermals are not controlled."
+  },
+  "results": [
+    {
+      "phase": "sustained",
+      "type": "dom",
+      "dpr": 1,
+      "terminals": 8,
+      "targetStepsPerSecond": 12,
+      "iterations": 360,
+      "bytes": 14873600,
+      "elapsedMs": 30001.015457999994,
+      "before": {
+        "at": 1792567793215,
+        "jsUsedBytes": 4889916,
+        "jsTotalBytes": 5586944,
+        "backingStorageBytes": 1688374,
+        "rssBytes": 1093238784
+      },
+      "samples": [
+        {
+          "at": 1792567795298,
+          "jsUsedBytes": 9076704,
+          "jsTotalBytes": 17383424,
+          "backingStorageBytes": 13384716,
+          "rssBytes": 1150910464
+        },
+        {
+          "at": 1792567797532,
+          "jsUsedBytes": 15160548,
+          "jsTotalBytes": 28655616,
+          "backingStorageBytes": 26650636,
+          "rssBytes": 1187659776
+        },
+        {
+          "at": 1792567799777,
+          "jsUsedBytes": 17949496,
+          "jsTotalBytes": 43597824,
+          "backingStorageBytes": 39926796,
+          "rssBytes": 1070972928
+        },
+        {
+          "at": 1792567802025,
+          "jsUsedBytes": 20779880,
+          "jsTotalBytes": 46481408,
+          "backingStorageBytes": 53394764,
+          "rssBytes": 1020788736
+        },
+        {
+          "at": 1792567804283,
+          "jsUsedBytes": 23579824,
+          "jsTotalBytes": 49364992,
+          "backingStorageBytes": 66518028,
+          "rssBytes": 1045512192
+        },
+        {
+          "at": 1792567806523,
+          "jsUsedBytes": 43818352,
+          "jsTotalBytes": 59850752,
+          "backingStorageBytes": 78562188,
+          "rssBytes": 1076297728
+        },
+        {
+          "at": 1792567808787,
+          "jsUsedBytes": 36088452,
+          "jsTotalBytes": 81346560,
+          "backingStorageBytes": 78702156,
+          "rssBytes": 1097908224
+        },
+        {
+          "at": 1792567811021,
+          "jsUsedBytes": 27305788,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78593292,
+          "rssBytes": 1117831168
+        },
+        {
+          "at": 1792567813278,
+          "jsUsedBytes": 40974940,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78619212,
+          "rssBytes": 1131053056
+        },
+        {
+          "at": 1792567815549,
+          "jsUsedBytes": 30386088,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78660684,
+          "rssBytes": 1143685120
+        },
+        {
+          "at": 1792567817776,
+          "jsUsedBytes": 24147588,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78536268,
+          "rssBytes": 1163640832
+        },
+        {
+          "at": 1792567820027,
+          "jsUsedBytes": 43988972,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78676236,
+          "rssBytes": 1171210240
+        },
+        {
+          "at": 1792567822277,
+          "jsUsedBytes": 24623920,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 78588108,
+          "rssBytes": 1171210240
+        }
+      ],
+      "loaded": {
+        "at": 1792567823285,
+        "jsUsedBytes": 30340504,
+        "jsTotalBytes": 80297984,
+        "backingStorageBytes": 78650316,
+        "rssBytes": 1171308544
+      },
+      "disposed": {
+        "at": 1792567824407,
+        "jsUsedBytes": 6191704,
+        "jsTotalBytes": 7946240,
+        "backingStorageBytes": 11007766,
+        "rssBytes": 1028358144
+      },
+      "cpu": {
+        "stable": true,
+        "corePercent": 19.82977878974966,
+        "machinePercent": 1.1016543772083145,
+        "byType": {
+          "browser": 1.1050859277218004,
+          "renderer": 15.514264863854333,
+          "GPU": 3.1512800002504515,
+          "network.mojom.NetworkService": 0.058918005707991994,
+          "storage.mojom.StorageService": 0.0002299922150855072
+        }
+      },
+      "gpu": {
+        "idle": {
+          "at": 1792567793014,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 42,
+              "rendererPercent": 41
+            }
+          ]
+        },
+        "samples": [
+          {
+            "at": 1792567795298,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 38
+              }
+            ]
+          },
+          {
+            "at": 1792567797532,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567799777,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 40,
+                "rendererPercent": 40
+              }
+            ]
+          },
+          {
+            "at": 1792567802025,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 39
+              }
+            ]
+          },
+          {
+            "at": 1792567804283,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567806523,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 42,
+                "rendererPercent": 42
+              }
+            ]
+          },
+          {
+            "at": 1792567808787,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 41,
+                "rendererPercent": 41
+              }
+            ]
+          },
+          {
+            "at": 1792567811021,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 41,
+                "rendererPercent": 40
+              }
+            ]
+          },
+          {
+            "at": 1792567813278,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 42,
+                "rendererPercent": 42
+              }
+            ]
+          },
+          {
+            "at": 1792567815549,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 43,
+                "rendererPercent": 43
+              }
+            ]
+          },
+          {
+            "at": 1792567817776,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 36
+              }
+            ]
+          },
+          {
+            "at": 1792567820027,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 34,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567822277,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 37
+              }
+            ]
+          }
+        ],
+        "after": {
+          "at": 1792567824409,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 35,
+              "rendererPercent": 35
+            }
+          ]
+        }
+      }
+    },
+    {
+      "phase": "sustained",
+      "type": "webgl",
+      "dpr": 1,
+      "terminals": 8,
+      "targetStepsPerSecond": 12,
+      "iterations": 360,
+      "bytes": 14873600,
+      "elapsedMs": 30000.173333000006,
+      "before": {
+        "at": 1792567831109,
+        "jsUsedBytes": 5831152,
+        "jsTotalBytes": 6897664,
+        "backingStorageBytes": 3965823,
+        "rssBytes": 1081131008
+      },
+      "samples": [
+        {
+          "at": 1792567833176,
+          "jsUsedBytes": 10317772,
+          "jsTotalBytes": 17383424,
+          "backingStorageBytes": 15631446,
+          "rssBytes": 1113112576
+        },
+        {
+          "at": 1792567835434,
+          "jsUsedBytes": 11545552,
+          "jsTotalBytes": 29966336,
+          "backingStorageBytes": 28948566,
+          "rssBytes": 1142980608
+        },
+        {
+          "at": 1792567837680,
+          "jsUsedBytes": 16136896,
+          "jsTotalBytes": 31801344,
+          "backingStorageBytes": 42204246,
+          "rssBytes": 1165230080
+        },
+        {
+          "at": 1792567839931,
+          "jsUsedBytes": 18738056,
+          "jsTotalBytes": 43335680,
+          "backingStorageBytes": 55457046,
+          "rssBytes": 1200472064
+        },
+        {
+          "at": 1792567842191,
+          "jsUsedBytes": 27146208,
+          "jsTotalBytes": 46743552,
+          "backingStorageBytes": 68743638,
+          "rssBytes": 1223016448
+        },
+        {
+          "at": 1792567844423,
+          "jsUsedBytes": 28912504,
+          "jsTotalBytes": 53035008,
+          "backingStorageBytes": 80839638,
+          "rssBytes": 1095745536
+        },
+        {
+          "at": 1792567846678,
+          "jsUsedBytes": 29056696,
+          "jsTotalBytes": 54607872,
+          "backingStorageBytes": 80979606,
+          "rssBytes": 1028718592
+        },
+        {
+          "at": 1792567848924,
+          "jsUsedBytes": 29999436,
+          "jsTotalBytes": 55394304,
+          "backingStorageBytes": 81119574,
+          "rssBytes": 1043578880
+        },
+        {
+          "at": 1792567851168,
+          "jsUsedBytes": 27274048,
+          "jsTotalBytes": 67715072,
+          "backingStorageBytes": 80932950,
+          "rssBytes": 1070481408
+        },
+        {
+          "at": 1792567853416,
+          "jsUsedBytes": 41051456,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 81072918,
+          "rssBytes": 1097187328
+        },
+        {
+          "at": 1792567855681,
+          "jsUsedBytes": 29110712,
+          "jsTotalBytes": 80297984,
+          "backingStorageBytes": 81212886,
+          "rssBytes": 1118994432
+        },
+        {
+          "at": 1792567857920,
+          "jsUsedBytes": 42778124,
+          "jsTotalBytes": 81346560,
+          "backingStorageBytes": 81352854,
+          "rssBytes": 1124761600
+        },
+        {
+          "at": 1792567860166,
+          "jsUsedBytes": 30783564,
+          "jsTotalBytes": 82395136,
+          "backingStorageBytes": 81492822,
+          "rssBytes": 1136869376
+        }
+      ],
+      "loaded": {
+        "at": 1792567861189,
+        "jsUsedBytes": 48320892,
+        "jsTotalBytes": 82395136,
+        "backingStorageBytes": 81555030,
+        "rssBytes": 1077182464
+      },
+      "disposed": {
+        "at": 1792567862300,
+        "jsUsedBytes": 6764636,
+        "jsTotalBytes": 10305536,
+        "backingStorageBytes": 11009120,
+        "rssBytes": 1027637248
+      },
+      "cpu": {
+        "stable": true,
+        "corePercent": 22.674012328180698,
+        "machinePercent": 1.2596673515655943,
+        "byType": {
+          "browser": 5.713060324603824,
+          "renderer": 9.127887261197245,
+          "GPU": 7.800811595397455,
+          "network.mojom.NetworkService": 0.026939844347865338,
+          "storage.mojom.StorageService": 0.0053133026343104755
+        }
+      },
+      "gpu": {
+        "idle": {
+          "at": 1792567830932,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 35,
+              "rendererPercent": 35
+            }
+          ]
+        },
+        "samples": [
+          {
+            "at": 1792567833176,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567835434,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567837680,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 37,
+                "rendererPercent": 36
+              }
+            ]
+          },
+          {
+            "at": 1792567839931,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567842191,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567844423,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567846678,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 33,
+                "rendererPercent": 32
+              }
+            ]
+          },
+          {
+            "at": 1792567848924,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 0,
+                "rendererPercent": 0
+              }
+            ]
+          },
+          {
+            "at": 1792567851168,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567853416,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 36
+              }
+            ]
+          },
+          {
+            "at": 1792567855681,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 39
+              }
+            ]
+          },
+          {
+            "at": 1792567857920,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567860166,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 38
+              }
+            ]
+          }
+        ],
+        "after": {
+          "at": 1792567862300,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 38,
+              "rendererPercent": 37
+            }
+          ]
+        }
+      }
+    },
+    {
+      "phase": "sustained",
+      "type": "wraith",
+      "dpr": 1,
+      "terminals": 8,
+      "targetStepsPerSecond": 12,
+      "iterations": 360,
+      "bytes": 14873600,
+      "elapsedMs": 30000.112208000006,
+      "before": {
+        "at": 1792567868172,
+        "jsUsedBytes": 5444288,
+        "jsTotalBytes": 6373376,
+        "backingStorageBytes": 3447404,
+        "rssBytes": 1077919744
+      },
+      "samples": [
+        {
+          "at": 1792567870227,
+          "jsUsedBytes": 11515656,
+          "jsTotalBytes": 17907712,
+          "backingStorageBytes": 15169385,
+          "rssBytes": 1132363776
+        },
+        {
+          "at": 1792567872396,
+          "jsUsedBytes": 16418088,
+          "jsTotalBytes": 28393472,
+          "backingStorageBytes": 27913065,
+          "rssBytes": 1173995520
+        },
+        {
+          "at": 1792567874646,
+          "jsUsedBytes": 21877680,
+          "jsTotalBytes": 37044224,
+          "backingStorageBytes": 41209705,
+          "rssBytes": 1200455680
+        },
+        {
+          "at": 1792567876917,
+          "jsUsedBytes": 19247396,
+          "jsTotalBytes": 48578560,
+          "backingStorageBytes": 54436777,
+          "rssBytes": 1236680704
+        },
+        {
+          "at": 1792567879152,
+          "jsUsedBytes": 24649476,
+          "jsTotalBytes": 51462144,
+          "backingStorageBytes": 67723369,
+          "rssBytes": 1147912192
+        },
+        {
+          "at": 1792567881394,
+          "jsUsedBytes": 33588960,
+          "jsTotalBytes": 53821440,
+          "backingStorageBytes": 80367913,
+          "rssBytes": 1075445760
+        },
+        {
+          "at": 1792567883644,
+          "jsUsedBytes": 25133428,
+          "jsTotalBytes": 66142208,
+          "backingStorageBytes": 80310889,
+          "rssBytes": 1090846720
+        },
+        {
+          "at": 1792567885900,
+          "jsUsedBytes": 41421440,
+          "jsTotalBytes": 72695808,
+          "backingStorageBytes": 80367913,
+          "rssBytes": 1101119488
+        },
+        {
+          "at": 1792567888157,
+          "jsUsedBytes": 23628120,
+          "jsTotalBytes": 81084416,
+          "backingStorageBytes": 80305705,
+          "rssBytes": 1090224128
+        },
+        {
+          "at": 1792567890397,
+          "jsUsedBytes": 35507764,
+          "jsTotalBytes": 81346560,
+          "backingStorageBytes": 80347177,
+          "rssBytes": 1091256320
+        },
+        {
+          "at": 1792567892649,
+          "jsUsedBytes": 22129336,
+          "jsTotalBytes": 82919424,
+          "backingStorageBytes": 80398939,
+          "rssBytes": 1079820288
+        },
+        {
+          "at": 1792567894905,
+          "jsUsedBytes": 34037576,
+          "jsTotalBytes": 82919424,
+          "backingStorageBytes": 80341993,
+          "rssBytes": 1111425024
+        },
+        {
+          "at": 1792567897153,
+          "jsUsedBytes": 44442144,
+          "jsTotalBytes": 83181568,
+          "backingStorageBytes": 80378281,
+          "rssBytes": 1122205696
+        }
+      ],
+      "loaded": {
+        "at": 1792567898232,
+        "jsUsedBytes": 39980148,
+        "jsTotalBytes": 82919424,
+        "backingStorageBytes": 80362729,
+        "rssBytes": 1128579072
+      },
+      "disposed": {
+        "at": 1792567899347,
+        "jsUsedBytes": 6897792,
+        "jsTotalBytes": 8732672,
+        "backingStorageBytes": 11229573,
+        "rssBytes": 1046151168
+      },
+      "cpu": {
+        "stable": true,
+        "corePercent": 34.020239421899156,
+        "machinePercent": 1.8900133012166198,
+        "byType": {
+          "browser": 0.6679541683399561,
+          "renderer": 18.578730510593555,
+          "GPU": 14.743294856145692,
+          "network.mojom.NetworkService": 0.028393227135092305,
+          "storage.mojom.StorageService": 0.0018666596848616855
+        }
+      },
+      "gpu": {
+        "idle": {
+          "at": 1792567868011,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 35,
+              "rendererPercent": 35
+            }
+          ]
+        },
+        "samples": [
+          {
+            "at": 1792567870227,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567872396,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567874646,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567876917,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567879152,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 33,
+                "rendererPercent": 32
+              }
+            ]
+          },
+          {
+            "at": 1792567881394,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567883644,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567885900,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567888157,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 34,
+                "rendererPercent": 33
+              }
+            ]
+          },
+          {
+            "at": 1792567890397,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567892649,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567894905,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 38
+              }
+            ]
+          },
+          {
+            "at": 1792567897153,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 41,
+                "rendererPercent": 41
+              }
+            ]
+          }
+        ],
+        "after": {
+          "at": 1792567899347,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 41,
+              "rendererPercent": 41
+            }
+          ]
+        }
+      }
+    },
+    {
+      "phase": "sustained",
+      "type": "ghostty",
+      "dpr": 1,
+      "terminals": 8,
+      "targetStepsPerSecond": 12,
+      "iterations": 360,
+      "bytes": 14873600,
+      "elapsedMs": 30000.783333,
+      "before": {
+        "at": 1792567905361,
+        "jsUsedBytes": 3555736,
+        "jsTotalBytes": 4538368,
+        "backingStorageBytes": 3468339,
+        "rssBytes": 989593600
+      },
+      "samples": [
+        {
+          "at": 1792567907411,
+          "jsUsedBytes": 4357252,
+          "jsTotalBytes": 5324800,
+          "backingStorageBytes": 3590579,
+          "rssBytes": 1039024128
+        },
+        {
+          "at": 1792567909593,
+          "jsUsedBytes": 4082612,
+          "jsTotalBytes": 5324800,
+          "backingStorageBytes": 3723699,
+          "rssBytes": 1059160064
+        },
+        {
+          "at": 1792567911843,
+          "jsUsedBytes": 4629932,
+          "jsTotalBytes": 5324800,
+          "backingStorageBytes": 3861939,
+          "rssBytes": 1086898176
+        },
+        {
+          "at": 1792567914092,
+          "jsUsedBytes": 4735152,
+          "jsTotalBytes": 6111232,
+          "backingStorageBytes": 4000435,
+          "rssBytes": 1103183872
+        },
+        {
+          "at": 1792567916319,
+          "jsUsedBytes": 4936412,
+          "jsTotalBytes": 7159808,
+          "backingStorageBytes": 4140403,
+          "rssBytes": 1105133568
+        },
+        {
+          "at": 1792567918498,
+          "jsUsedBytes": 5332244,
+          "jsTotalBytes": 6111232,
+          "backingStorageBytes": 4275187,
+          "rssBytes": 1116585984
+        },
+        {
+          "at": 1792567920665,
+          "jsUsedBytes": 5243200,
+          "jsTotalBytes": 6373376,
+          "backingStorageBytes": 4409971,
+          "rssBytes": 1125892096
+        },
+        {
+          "at": 1792567922819,
+          "jsUsedBytes": 5862748,
+          "jsTotalBytes": 8208384,
+          "backingStorageBytes": 4544755,
+          "rssBytes": 1137344512
+        },
+        {
+          "at": 1792567924987,
+          "jsUsedBytes": 6698656,
+          "jsTotalBytes": 10043392,
+          "backingStorageBytes": 4679539,
+          "rssBytes": 1148321792
+        },
+        {
+          "at": 1792567927169,
+          "jsUsedBytes": 4222708,
+          "jsTotalBytes": 10305536,
+          "backingStorageBytes": 3499443,
+          "rssBytes": 1163689984
+        },
+        {
+          "at": 1792567929444,
+          "jsUsedBytes": 5233204,
+          "jsTotalBytes": 10305536,
+          "backingStorageBytes": 3639411,
+          "rssBytes": 1152499712
+        },
+        {
+          "at": 1792567931673,
+          "jsUsedBytes": 5398788,
+          "jsTotalBytes": 10305536,
+          "backingStorageBytes": 3779379,
+          "rssBytes": 1146486784
+        },
+        {
+          "at": 1792567933918,
+          "jsUsedBytes": 5588248,
+          "jsTotalBytes": 10305536,
+          "backingStorageBytes": 3919347,
+          "rssBytes": 1145831424
+        }
+      ],
+      "loaded": {
+        "at": 1792567935429,
+        "jsUsedBytes": 3760100,
+        "jsTotalBytes": 4800512,
+        "backingStorageBytes": 3468339,
+        "rssBytes": 1090846720
+      },
+      "disposed": {
+        "at": 1792567936508,
+        "jsUsedBytes": 3528164,
+        "jsTotalBytes": 4538368,
+        "backingStorageBytes": 1306547,
+        "rssBytes": 993034240
+      },
+      "cpu": {
+        "stable": true,
+        "corePercent": 29.33588734104538,
+        "machinePercent": 1.6297715189469657,
+        "byType": {
+          "browser": 2.681706644356306,
+          "renderer": 13.447452205564048,
+          "GPU": 13.18130582160556,
+          "network.mojom.NetworkService": 0.01727288231937587,
+          "storage.mojom.StorageService": 0.008149787200091402
+        }
+      },
+      "gpu": {
+        "idle": {
+          "at": 1792567905178,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 0,
+              "rendererPercent": 0
+            }
+          ]
+        },
+        "samples": [
+          {
+            "at": 1792567907411,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567909593,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567911844,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 37
+              }
+            ]
+          },
+          {
+            "at": 1792567914092,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567916319,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 37,
+                "rendererPercent": 36
+              }
+            ]
+          },
+          {
+            "at": 1792567918498,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567920665,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 34,
+                "rendererPercent": 33
+              }
+            ]
+          },
+          {
+            "at": 1792567922819,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 39,
+                "rendererPercent": 38
+              }
+            ]
+          },
+          {
+            "at": 1792567924987,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567927169,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 35,
+                "rendererPercent": 34
+              }
+            ]
+          },
+          {
+            "at": 1792567929444,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 38,
+                "rendererPercent": 38
+              }
+            ]
+          },
+          {
+            "at": 1792567931673,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 36,
+                "rendererPercent": 35
+              }
+            ]
+          },
+          {
+            "at": 1792567933918,
+            "devices": [
+              {
+                "name": "AGXAcceleratorG17X",
+                "devicePercent": 32,
+                "rendererPercent": 32
+              }
+            ]
+          }
+        ],
+        "after": {
+          "at": 1792567936508,
+          "devices": [
+            {
+              "name": "AGXAcceleratorG17X",
+              "devicePercent": 35,
+              "rendererPercent": 34
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "adapter": {
+    "webgpu": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": ""
+    },
+    "webgl": {}
+  }
+}
