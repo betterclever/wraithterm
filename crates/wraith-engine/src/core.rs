@@ -22,6 +22,48 @@ pub struct Frame {
     pub held: u32,
 }
 
+/// One visible Kitty graphics placement in viewport pixels; matches the
+/// bridge's `WraithPlacement`. `layer` is 1 below cell backgrounds, 2 below
+/// text and 3 above text. `generation` changes whenever the image's pixels do.
+#[repr(C)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Placement {
+    pub image_id: u32,
+    pub placement_id: u32,
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+    pub width: u32,
+    pub height: u32,
+    pub source_x: u32,
+    pub source_y: u32,
+    pub source_width: u32,
+    pub source_height: u32,
+    pub layer: u32,
+    pub generation: u64,
+}
+/// Decoded pixels borrowed from Ghostty until the terminal is next mutated.
+#[repr(C)]
+struct RawImage {
+    data: *const u8,
+    len: usize,
+    width: u32,
+    height: u32,
+    format: u32,
+    generation: u64,
+}
+pub struct Image<'a> {
+    pub pixels: &'a [u8],
+    pub width: u32,
+    pub height: u32,
+    /// One of the `crate::image` format constants.
+    pub format: u32,
+    pub generation: u64,
+}
+/// Default Kitty image storage per screen. Ghostty evicts the oldest
+/// unplaced images first when a transmission would exceed it.
+pub const DEFAULT_IMAGE_LIMIT: u64 = 64 << 20;
+
 #[derive(Default, Clone, Debug)]
 pub struct Cell {
     pub text: String,
@@ -82,6 +124,10 @@ pub(crate) struct State {
     /// version. Zero is unknown. The renderer keys packed GPU rows by it.
     pub versions: Vec<u64>,
     pub next_version: u64,
+    /// Visible placements in draw order (layer, then z), and those being
+    /// collected during the current update.
+    pub placements: Vec<Placement>,
+    pub staged: Vec<Placement>,
 }
 /// Ghostty's row identity, its raw cells and its selection range. Equal keys
 /// produce equal snapshots: a row id changes when the row is edited in place,
@@ -172,6 +218,9 @@ extern "C" {
         y2: i32,
         mode: u32,
     ) -> i32;
+    fn wraith_bridge_images(b: *mut c_void, generation: *mut u64) -> i32;
+    fn wraith_bridge_image(b: *mut c_void, id: u32, out: *mut RawImage) -> i32;
+    fn wraith_bridge_image_limit(b: *mut c_void, bytes: u64) -> i32;
     fn wraith_bridge_search(
         b: *mut c_void,
         needle: *const u8,
@@ -213,6 +262,8 @@ impl Core {
             reused: 0,
             versions: vec![0; rows.into()],
             next_version: 0,
+            placements: Vec::new(),
+            staged: Vec::new(),
         });
         // Ghostty borrows the stable allocation only for synchronous callbacks
         // and never after bridge_free. StateOwner then releases the allocation.
@@ -220,11 +271,13 @@ impl Core {
             wraith_bridge_new(state.0.as_ptr().cast(), cols, rows, history)
         })
         .ok_or("could not allocate Ghostty terminal")?;
-        Ok(Self {
+        let mut core = Self {
             bridge,
             state,
             frame: Frame::default(),
-        })
+        };
+        core.set_image_limit(DEFAULT_IMAGE_LIMIT)?;
+        Ok(core)
     }
     pub fn write(&mut self, bytes: &[u8]) {
         unsafe { wraith_bridge_write(self.bridge.as_ptr(), bytes.as_ptr(), bytes.len()) }
@@ -260,7 +313,56 @@ impl Core {
         let previous = self.frame;
         let dirty = unsafe { wraith_bridge_update(self.bridge.as_ptr(), &mut self.frame) };
         check(dirty)?;
-        Ok(dirty > 0 || previous != self.frame)
+        let images = self.frame.held == 0 && self.update_placements()?;
+        Ok(dirty > 0 || previous != self.frame || images)
+    }
+    /// Recollect visible placements. Geometry moves with scrolling even when
+    /// storage is unchanged, so this runs every update; a terminal that never
+    /// stored an image returns before iterating.
+    fn update_placements(&mut self) -> Result<bool, String> {
+        self.state.staged.clear();
+        let mut generation = 0;
+        check(unsafe { wraith_bridge_images(self.bridge.as_ptr(), &mut generation) })?;
+        let state = &mut *self.state;
+        state.staged.sort_by_key(|p| (p.layer, p.z));
+        if state.staged == state.placements {
+            return Ok(false);
+        }
+        std::mem::swap(&mut state.staged, &mut state.placements);
+        Ok(true)
+    }
+    /// Visible Kitty graphics placements in draw order.
+    pub fn placements(&self) -> &[Placement] {
+        &self.state.placements
+    }
+    /// Decoded pixels of a stored image, or None while its payload is pending.
+    pub fn image(&self, id: u32) -> Option<Image<'_>> {
+        let mut raw = RawImage {
+            data: std::ptr::null(),
+            len: 0,
+            width: 0,
+            height: 0,
+            format: 0,
+            generation: 0,
+        };
+        let result = unsafe { wraith_bridge_image(self.bridge.as_ptr(), id, &mut raw) };
+        if result != 0 || raw.data.is_null() {
+            return None;
+        }
+        // SAFETY: Ghostty keeps the pixels alive until the terminal is next
+        // mutated, which requires `&mut self` and so ends this borrow.
+        let pixels = unsafe { std::slice::from_raw_parts(raw.data, raw.len) };
+        Some(Image {
+            pixels,
+            width: raw.width,
+            height: raw.height,
+            format: raw.format,
+            generation: raw.generation,
+        })
+    }
+    /// Bytes of decoded image data each screen may store; zero disables Kitty graphics.
+    pub fn set_image_limit(&mut self, bytes: u64) -> Result<(), String> {
+        check(unsafe { wraith_bridge_image_limit(self.bridge.as_ptr(), bytes) })
     }
     pub fn resize(&mut self, cols: u16, rows: u16, cw: u32, ch: u32) -> Result<(), String> {
         dimensions(cols, rows)?;
@@ -632,5 +734,17 @@ pub unsafe extern "C" fn wraith_row_store(
     if key.reusable {
         key.raw
             .extend_from_slice(unsafe { std::slice::from_raw_parts(raw, len) });
+    }
+}
+#[no_mangle]
+/// Collect one visible Kitty graphics placement during an update.
+///
+/// # Safety
+/// `user` must point to the live, uniquely borrowed State and `placement` to a
+/// valid `Placement` for the duration of this call.
+pub unsafe extern "C" fn wraith_placement(user: *mut c_void, placement: *const Placement) {
+    let state = unsafe { &mut *user.cast::<State>() };
+    if let Some(placement) = unsafe { placement.as_ref() } {
+        state.staged.push(*placement);
     }
 }

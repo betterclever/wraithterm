@@ -77,7 +77,6 @@ const zigArgs = [
   '-Demit-lib-vt',
   '-Doptimize=ReleaseFast',
   '-Dstrip=true',
-  '-Dvt-features=-kitty-graphics',
   '--build-file',
   join(ghostty, 'build.zig'),
   '--cache-dir',
