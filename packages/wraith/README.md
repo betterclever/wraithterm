@@ -253,6 +253,11 @@ The default maximum unacknowledged input is **8 MiB**. `write()` rejects with
 `write()` resolves before presentation; `flush()` provides the stronger completion
 contract.
 
+Native `scrollback` is a physical line limit. Ghostty prunes complete internal
+pages, so retention can exceed the configured count by a page; `scrollback: 0`
+disables history. The independent upstream default byte cap is removed when a
+positive line count is configured.
+
 Native search matches ASCII letters without case sensitivity; other UTF-8 bytes
 match exactly. It searches literal strings up to 4096 UTF-8 bytes. Results use
 Ghostty's newest-to-oldest indexing (`-1` when no match is selected); search work

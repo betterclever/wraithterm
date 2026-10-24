@@ -120,7 +120,15 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_XTVERSION, (const void*)on_version);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SIZE, (const void*)on_size);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_SCHEME, (const void*)on_scheme);
-  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &history);
+  /* The SDK's history option is a line count. Ghostty defaults to an
+   * independent 10,000-byte limit; leaving it enabled silently prunes history
+   * long before the requested line count. Zero must use the no-history path. */
+  size_t no_history = 0;
+  if (ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_BYTES,
+                           history ? NULL : &no_history) ||
+      ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &history)) {
+    wraith_bridge_free(b); return NULL;
+  }
   /* Browser hosts have no filesystem. Never enable file/shared-memory images. */
   bool disabled = false;
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_FILE, &disabled);

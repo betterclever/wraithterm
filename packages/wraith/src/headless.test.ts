@@ -10,6 +10,22 @@ beforeAll(async () => {
   });
 });
 describe('the packaged Ghostty + Rust Wasm ABI', () => {
+  it('retains the configured history across many allocated pages', () => {
+    const core = new Headless(120, 40, 10000);
+    try {
+      core.write(
+        encode(
+          '\x1bc' +
+            Array.from({ length: 9000 }, (_, i) => `line ${i} needle-${i} build\r\n`).join(''),
+        ),
+      );
+      core.search('needle-100 build', 0);
+      for (let i = 0; i < 1000; i++) if (core.search('', 1)[0] === 2) break;
+      expect(core.search('', 2)[1]).toBe(1);
+    } finally {
+      core.free();
+    }
+  });
   it('exposes incremental Unicode-aware history search through the packaged Wasm ABI', () => {
     const core = new Headless(12, 3, 100);
     try {
