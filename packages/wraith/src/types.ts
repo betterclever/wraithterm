@@ -25,6 +25,12 @@ export interface WraithOptions {
    */
   imageStorageLimit?: number;
   /**
+   * Programming-font ligatures (`=>`, `!=`, `->`, …) shaped across cells. Off by
+   * default; the word under the cursor shows its separate characters.
+   * Complex scripts (Arabic, Indic, Thai, …) are always shaped across cells.
+   */
+  ligatures?: boolean;
+  /**
    * Share workers with other terminals. Create one with `Wraith.pool()`;
    * without it, each terminal has a dedicated worker.
    */

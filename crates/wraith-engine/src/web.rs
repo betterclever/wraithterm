@@ -200,6 +200,14 @@ impl Engine {
         self.renderer.resize(cols, rows);
         Ok(dimensions)
     }
+    /// Shape operator runs together to form programming-font ligatures.
+    pub fn set_ligatures(&mut self, enabled: bool) {
+        if self.renderer.atlas.ligatures != enabled {
+            self.renderer.atlas.ligatures = enabled;
+            // Cached runs and packed rows reflect the old setting.
+            self.renderer.atlas.reset();
+        }
+    }
     /// Decoded Kitty graphics bytes each screen may store; zero disables them.
     pub fn set_image_limit(&mut self, bytes: f64) -> Result<(), JsValue> {
         self.core

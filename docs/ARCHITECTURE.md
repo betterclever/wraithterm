@@ -104,6 +104,20 @@ reaches every terminal on that device; a worker failure reaches every terminal
 attached to it. Disposing a pooled terminal frees its engine and closes its
 port; the worker stays for its neighbours.
 
+## Run shaping
+
+Packing a row first takes the per-cell path, noting whether any cell is a run
+candidate: an operator character with ligatures on, or a complex-script letter.
+Only rows with candidates are segmented into maximal candidate runs in one style.
+A run is shaped once with HarfRust (left to right, matching the cell order). Each
+glyph starts at its cluster's cell and advances within it, so the grid stays
+exact. The run is rasterized onto one canvas and sliced into one tile per cell;
+ligature glyphs that reach into neighbouring cells land in those cells' slices.
+Cells therefore keep their own tiles, so cursor, selection, decorations and the
+shader are unchanged. Shaped runs are cached by text and style. The run under the
+cursor keeps per-cell glyphs. Rows packed that way are never used as copy sources
+for moved rows, and a cursor move repacks the rows it left and entered.
+
 ## Kitty graphics
 
 Ghostty parses, decodes and stores images; Wraith only draws them. The build

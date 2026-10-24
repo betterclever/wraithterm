@@ -73,6 +73,10 @@ export class Engine {
      * Decoded Kitty graphics bytes each screen may store; zero disables them.
      */
     set_image_limit(bytes: number): void;
+    /**
+     * Shape operator runs together to form programming-font ligatures.
+     */
+    set_ligatures(enabled: boolean): void;
     take_events(): Array<any>;
     text(selected: boolean): string;
     theme(fg: number, bg: number, cursor: number): void;
@@ -154,6 +158,7 @@ export interface InitOutput {
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_select_mode: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly engine_set_image_limit: (a: number, b: number) => [number, number];
+    readonly engine_set_ligatures: (a: number, b: number) => void;
     readonly engine_take_events: (a: number) => any;
     readonly engine_text: (a: number, b: number) => [number, number, number, number];
     readonly engine_theme: (a: number, b: number, c: number, d: number) => void;
@@ -180,10 +185,10 @@ export interface InitOutput {
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__61: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__62: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__63: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__60: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__61: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;
