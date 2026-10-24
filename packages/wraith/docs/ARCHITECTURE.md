@@ -88,6 +88,22 @@ whole-document visibility handling. Intersection delivery is asynchronous, so an
 initial frame or in-flight frame can precede suspension. This is geometry-based;
 it does not detect opacity, visibility:hidden or another window covering a panel.
 
+## Terminal pool
+
+`Wraith.pool()` creates workers lazily up to its size and assigns each new
+terminal to the least-loaded worker over a dedicated `MessagePort`. The worker
+runs one session per port. A session holds the state a dedicated worker keeps:
+engine, canvas, animation-frame scheduling, search tasks, timers and serial
+command queue. All sessions share the worker's single Wasm instance. The
+renderer keeps one WebGPU instance, adapter, device and queue per worker thread,
+creating them on first use and replacing them after device loss. Each terminal
+creates its own surface on that device. Engine creation is serialized per
+worker, so the pipeline validation scopes of concurrently mounting terminals
+cannot interleave on the shared device. A device-wide validation error or loss
+reaches every terminal on that device; a worker failure reaches every terminal
+attached to it. Disposing a pooled terminal frees its engine and closes its
+port; the worker stays for its neighbours.
+
 ## Kitty graphics
 
 Ghostty parses, decodes and stores images; Wraith only draws them. The build
@@ -179,6 +195,7 @@ wait.
 | Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`     |
 | Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`        |
 | Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`          |
+| Shared workers for many terminals            | `packages/wraith/src/pool.ts`            |
 | Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`           |
 
 Performance work should be driven by a recorded workload and percentile evidence.

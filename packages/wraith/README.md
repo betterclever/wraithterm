@@ -182,6 +182,21 @@ terminal.onData((input) => console.log(input));
 terminal.focus();
 ```
 
+Many terminals in one tab share workers through a pool:
+
+```ts
+const pool = Wraith.pool({ workers: 4 });
+const terminals = await Promise.all(panes.map((el) => Wraith.mount(el, { pool })));
+```
+
+Pooled terminals keep their own canvas, engine, scheduling, search and fences,
+but share each worker's thread, Wasm instance and WebGPU device. On an Apple M5
+Max, 128 pooled terminals run in one tab in about 1.9 GiB. 128 dedicated
+terminals run out of memory, and xterm.js + WebGL draws only 16 of them
+([report](docs/benchmarks/pool/REPORT.md)). Heavy output in one pooled
+terminal can delay frames for its worker's neighbours; dispose terminals before
+`pool.dispose()`.
+
 Connect a PTY transport:
 
 ```ts
