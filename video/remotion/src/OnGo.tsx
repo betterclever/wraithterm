@@ -14,7 +14,8 @@ import { useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { Browser, type BrowserPose } from './Browser';
 import { Ghost } from './Ghost';
-import wall from '../../claims/wall-comparison.json';
+// Measured headed on a 120 Hz ProMotion panel; the film itself is 60 fps.
+import wall from '../../claims/wall-comparison-120hz.json';
 import music from '../../claims/ongo-music.json';
 import doomPaced from '../../claims/doom-paced.json';
 import doomMax from '../../claims/doom-timedemo.json';
@@ -31,6 +32,10 @@ const ONE = at(music.cues.countOne),
   GO = at(music.cues.goKickAndVocal);
 // Her "uh-huh" ad-libs: cut on "uh", hit on "HUH".
 const UH = music.cues.uhHuh.map(([uh, huh]) => [at(uh), at(huh)] as const);
+const nativeWall = Math.round(wall.bounds.nativeSlowest);
+const nativeRange = `${wall.bounds.nativeSlowest.toFixed(1)}–${Math.max(
+  ...wall.runs.filter((r) => r.type === 'native').map((r) => r.meanFps),
+).toFixed(1)}`;
 const webglWall = [
   Math.floor(wall.bounds.webglSlowest),
   Math.ceil(wall.bounds.webglFastest),
@@ -694,12 +699,13 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
               16 terminals.
             </Reveal>
             <Reveal at={GO + 42} frame={frame} size={150} color={amber}>
-              60 fps. Each.
+              {`${nativeWall} fps. Each.`}
             </Reveal>
           </div>
           <Fine opacity={ramp(frame, GO + 20, GO + 40)}>
-            Wraith native · 16 × 160×50 truecolor half-block · {wall.workload.measureMs / 1000} s
-            after warm-up · display-paced · M5 Max · Chrome 155
+            Wraith native · 16 × 160×50 truecolor half-block · {nativeRange} frames per terminal per
+            second on a {wall.workload.displayHz} Hz display · 5 rotated rounds · M5 Max · Chrome
+            155 · footage at 60 fps
           </Fine>
         </>
       );
@@ -771,12 +777,13 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
             <div style={{ ...mono, fontSize: 22, color: amber, letterSpacing: '.12em' }}>
               WRAITH
             </div>
-            <div style={{ fontSize: 60, fontWeight: 800, color: amber }}>60 fps</div>
+            <div style={{ fontSize: 60, fontWeight: 800, color: amber }}>{nativeWall} fps</div>
           </div>
           <Fine>
-            16 × 160×50 truecolor tiles · 1920×1080 @2× · 3 rotated rounds · frames shown per
-            terminal per second · Wraith compatible {Math.floor(wall.bounds.compatibleSlowest)}+ /
-            native {Math.floor(wall.bounds.nativeSlowest)}+ · M5 Max · Chrome 155
+            16 × 160×50 truecolor tiles · {wall.workload.viewport} @2× on a{' '}
+            {wall.workload.displayHz} Hz display · 5 rotated rounds · frames shown per terminal per
+            second · Wraith compatible {Math.floor(wall.bounds.compatibleSlowest)}+ / native{' '}
+            {nativeRange} · M5 Max · Chrome 155 · footage at 60 fps
           </Fine>
         </>
       );

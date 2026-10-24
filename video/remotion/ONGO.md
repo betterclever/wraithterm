@@ -19,20 +19,20 @@ level jumps. Centre 4–9 kHz bursts every eighth note are the hi-hat. lrclib's 
 is the 808 and its 14.11 s is "two"; neither marks the words they label. Lyrics are not
 stored.
 
-| Source s      | Cue              | Picture                                                  |
-| ------------- | ---------------- | -------------------------------------------------------- |
-| 0–0.35        | "Honorable"      | A line of light on a dark slab, letterboxed              |
-| 0.35–2.18     | Intro bar 1      | One hero terminal; "Meet the fastest terminal on the web." |
-| 2.18–11.54    | Bars 2–6         | Same terminal: orbit, macro, low track, crane, chase     |
-| 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3 | Cut on "uh"; camera punch, flare and text on "HUH" |
-| 11.54–13.65   | Third "uh-huh"   | Cut to code; typing starts on "HUH"                      |
-| 13.65 / 14.13 / 14.59 | "One, two, three" | Hard cuts, a line lights per count            |
-| 15.01–16.84   | "WE ON GO"       | Letterbox snaps open; pull back from one tile to 16      |
-| 16.84–18.67   | "we on go"       | Same wall: low angle, side orbit                         |
-| 18.67–22.34   | "Let 'em know"   | Pull back; xterm.js + WebGL's dark wall powers on beside |
-| 22.34–24.17   | DOOM             | "It runs DOOM." in truecolor text cells, 360+ fps         |
-| 24.17–26.00   | DOOM, Kitty      | Same screen switches to Kitty graphics, 410+ fps         |
-| 26.00–30.00   | Badge            | Ghost, WRAITH, tagline, URL; music fades out by 30 s     |
+| Source s                                | Cue               | Picture                                                    |
+| --------------------------------------- | ----------------- | ---------------------------------------------------------- |
+| 0–0.35                                  | "Honorable"       | A line of light on a dark slab, letterboxed                |
+| 0.35–2.18                               | Intro bar 1       | One hero terminal; "Meet the fastest terminal on the web." |
+| 2.18–11.54                              | Bars 2–6          | Same terminal: orbit, macro, low track, crane, chase       |
+| 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3       | Cut on "uh"; camera punch, flare and text on "HUH"         |
+| 11.54–13.65                             | Third "uh-huh"    | Cut to code; typing starts on "HUH"                        |
+| 13.65 / 14.13 / 14.59                   | "One, two, three" | Hard cuts, a line lights per count                         |
+| 15.01–16.84                             | "WE ON GO"        | Letterbox snaps open; pull back from one tile to 16        |
+| 16.84–18.67                             | "we on go"        | Same wall: low angle, side orbit                           |
+| 18.67–22.34                             | "Let 'em know"    | Pull back; xterm.js + WebGL's dark wall powers on beside   |
+| 22.34–24.17                             | DOOM              | "It runs DOOM." in truecolor text cells, 360+ fps          |
+| 24.17–26.00                             | DOOM, Kitty       | Same screen switches to Kitty graphics, 410+ fps           |
+| 26.00–30.00                             | Badge             | Ghost, WRAITH, tagline, URL; music fades out by 30 s       |
 
 Each act has one subject seen from several angles. Subjects change only at the count,
 at GO and before the receipts. Slabs keep their identity across angles, so footage
@@ -40,6 +40,16 @@ plays continuously. Text rises from behind a line with a blur-to-sharp settle. O
 the count is a hard cut.
 
 ## Evidence on screen
+
+**At 120 Hz.** The film's wall numbers come from
+[wall-comparison-120hz.json](../claims/wall-comparison-120hz.json): the same workload
+in a headed Chrome window on the M5 Max's built-in 120 Hz ProMotion display,
+1600×900 at DPR 2. There were 5 rounds in rotating order, and the display's
+animation-frame rate was recorded after every run (120–122 Hz). Frames shown per
+terminal per second: xterm.js + WebGL 46.9–48.9, Wraith compatible 101.6–102.6 and
+Wraith native 119.8–120.0. An earlier attempt overlapped unrelated heavy processes and
+gave scattered results, so it was discarded and the machine was quieted. Footage
+remains a 60 fps recording.
 
 **The wall.** [wall-bench.mjs](../capture/wall-bench.mjs) tiles 16 terminals of
 160×50 cells at 1920×1080, DPR 2. Each plays truecolor half-block animation where

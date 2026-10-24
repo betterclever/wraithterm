@@ -15,6 +15,10 @@ const module = '/@fs' + resolve(import.meta.dirname, 'halfblock.js');
 const [cols, rows] = (process.env.GRID ?? '160x50').split('x').map(Number);
 const count = Number(process.env.COUNT ?? 16);
 const dpr = Number(process.env.DPR ?? 2);
+// HEADED=1 runs in a visible window so frames follow the real display (e.g. a
+// 120 Hz ProMotion panel); headless Chrome paces animation frames at 60 Hz.
+const headed = process.env.HEADED === '1';
+const [width, height] = (process.env.VIEWPORT ?? '1920x1080').split('x').map(Number);
 const warmMs = 3000,
   measureMs = 8000;
 const orders = [
@@ -25,15 +29,17 @@ const orders = [
 const browser = await chromium.launch({
   executablePath:
     process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  headless: true,
+  headless: !headed,
+  args: headed ? ['--window-position=0,0'] : [],
   args: ['--enable-unsafe-webgpu'],
 });
 const runs = [];
-let adapter, userAgent;
-for (const [round, order] of orders.entries())
+let adapter, userAgent, displayHz;
+const rounds = Number(process.env.ROUNDS ?? 3);
+for (let round = 0, order = orders[0]; round < rounds; order = orders[++round % 3])
   for (const type of order) {
     const page = await browser.newPage({
-      viewport: { width: 1920, height: 1080 },
+      viewport: { width, height },
       deviceScaleFactor: dpr,
     });
     const errors = [];
@@ -55,10 +61,30 @@ for (const [round, order] of orders.entries())
     }));
     await page.evaluate(() => window.stop());
     userAgent ??= await page.evaluate(() => navigator.userAgent);
+    const runHz = await page.evaluate(
+      () =>
+        new Promise((done) => {
+          let n = 0;
+          const start = performance.now();
+          const tick = () =>
+            ++n && performance.now() - start < 1000
+              ? requestAnimationFrame(tick)
+              : done((n / (performance.now() - start)) * 1000);
+          requestAnimationFrame(tick);
+        }),
+    );
     adapter ??= await page
       .evaluate(async () => {
         const a = await navigator.gpu?.requestAdapter();
-        return a ? { ...a.info } : null;
+        const i = a?.info;
+        return i
+          ? {
+              vendor: i.vendor,
+              architecture: i.architecture,
+              device: i.device,
+              description: i.description,
+            }
+          : null;
       })
       .catch(() => null);
     if (errors.length) throw Error(`${type}: ${errors.join('; ')}`);
@@ -66,8 +92,23 @@ for (const [round, order] of orders.entries())
     const renderers = [result.renderer].flat().map(String);
     if (type === 'wraith' && renderers.some((r) => r !== 'webgpu'))
       throw Error(`Wraith compatible fell back: ${renderers}`);
-    runs.push({ round, type, ...result, renderer: [...new Set(renderers)].join('/') });
-    console.log(round, type, result.meanFps.toFixed(1), result.minTerminalFps.toFixed(1));
+    // The display's idle animation-frame rate right after this run; runs where
+    // it is not the panel's full rate are not comparable.
+    displayHz = Math.min(displayHz ?? Infinity, runHz);
+    runs.push({
+      round,
+      type,
+      ...result,
+      displayHz: Math.round(runHz),
+      renderer: [...new Set(renderers)].join('/'),
+    });
+    console.log(
+      round,
+      type,
+      result.meanFps.toFixed(1),
+      result.minTerminalFps.toFixed(1),
+      Math.round(runHz) + ' Hz',
+    );
     await page.close();
   }
 await browser.close();
@@ -84,7 +125,9 @@ const record = {
     terminals: count,
     grid: `${cols}x${rows}`,
     content: 'alternating raycaster / tunnel, truecolor half-block, every cell recolored per frame',
-    viewport: '1920x1080',
+    viewport: `${width}x${height}`,
+    headed,
+    displayHz: Math.round(displayHz),
     dpr,
     pacing: 'next frame written after the previous write completes and one animation frame',
     nativePacing: 'write() then flush() (waits for render) before the next animation frame',

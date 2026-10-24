@@ -1,0 +1,234 @@
+{
+  "measured": "2026-10-24T15:06:11.959Z",
+  "head": "16c9c5157ce1bf7a7dc815def7531a2eeaca27a4",
+  "workload": {
+    "terminals": 16,
+    "grid": "160x50",
+    "content": "alternating raycaster / tunnel, truecolor half-block, every cell recolored per frame",
+    "viewport": "1600x900",
+    "headed": true,
+    "displayHz": 120,
+    "dpr": 2,
+    "pacing": "next frame written after the previous write completes and one animation frame",
+    "nativePacing": "write() then flush() (waits for render) before the next animation frame",
+    "warmMs": 3000,
+    "measureMs": 8000
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "device": "",
+    "description": ""
+  },
+  "sources": {
+    "video/capture/halfblock.js": "bfba29fc368ff946b75f3473ab5d9a2bb7c72805cb1b496f210fb45f9eb1fc90",
+    "video/capture/raycast.js": "d31e3bdb2cdd79f3cf3f69705c34fe91e0a6b2ddf6c1f23b7dc4a8e93b995806",
+    "video/capture/wall-bench.mjs": "0641f8dc78c3eb78af25c7ae05452c03ac15795fff8e88ca89e6dff1fc18aa39"
+  },
+  "runs": [
+    {
+      "round": 0,
+      "type": "webgl",
+      "meanFps": 48.85762250679792,
+      "minTerminalFps": 48.803015552056166,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "type": "wraith",
+      "meanFps": 102.52912457698433,
+      "minTerminalFps": 102.51223653979667,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 122
+    },
+    {
+      "round": 0,
+      "type": "native",
+      "meanFps": 120.0403024243939,
+      "minTerminalFps": 119.96850826655768,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "type": "wraith",
+      "meanFps": 102.64607085324197,
+      "minTerminalFps": 102.64607085324197,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 122
+    },
+    {
+      "round": 1,
+      "type": "native",
+      "meanFps": 119.9865015186015,
+      "minTerminalFps": 119.98500187476566,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "type": "webgl",
+      "meanFps": 47.25946593762292,
+      "minTerminalFps": 47.189243848562555,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "type": "native",
+      "meanFps": 119.90752311922019,
+      "minTerminalFps": 119.72006998250437,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "type": "webgl",
+      "meanFps": 48.829831041448955,
+      "minTerminalFps": 48.79083580822627,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "type": "wraith",
+      "meanFps": 102.45108444567487,
+      "minTerminalFps": 102.38865234058915,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 3,
+      "type": "webgl",
+      "meanFps": 48.06131875264379,
+      "minTerminalFps": 48.06131875264379,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 3,
+      "type": "wraith",
+      "meanFps": 101.61282268935989,
+      "minTerminalFps": 101.61282268935989,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 122
+    },
+    {
+      "round": 3,
+      "type": "native",
+      "meanFps": 119.93695010995567,
+      "minTerminalFps": 119.85102979401887,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "wraith",
+      "meanFps": 101.629315188214,
+      "minTerminalFps": 101.629315188214,
+      "terminals": 16,
+      "renderer": "webgpu",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    },
+    {
+      "round": 4,
+      "type": "native",
+      "meanFps": 119.83487854853594,
+      "minTerminalFps": 119.82706917228644,
+      "terminals": 16,
+      "renderer": "native",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 120
+    },
+    {
+      "round": 4,
+      "type": "webgl",
+      "meanFps": 46.91438125420235,
+      "minTerminalFps": 46.91379590003805,
+      "terminals": 16,
+      "renderer": "webgl",
+      "frameBytes": {
+        "raycast": 59207,
+        "tunnel": 209595
+      },
+      "displayHz": 121
+    }
+  ],
+  "bounds": {
+    "webglFastest": 48.85762250679792,
+    "webglSlowest": 46.91438125420235,
+    "compatibleSlowest": 101.61282268935989,
+    "nativeSlowest": 119.83487854853594,
+    "nativeSlowestMinTerminal": 119.72006998250437
+  },
+  "limits": "Short synthetic playback on one machine with unrelated desktop apps running. Frames shown per terminal per second as paced by the page; not physical display FPS."
+}
