@@ -24,6 +24,11 @@ export interface WraithOptions {
    * graphics.
    */
   imageStorageLimit?: number;
+  /**
+   * Share workers with other terminals. Create one with `Wraith.pool()`;
+   * without it, each terminal has a dedicated worker.
+   */
+  pool?: import('./pool.js').WraithPool;
 }
 export interface WraithStats {
   frames: number;

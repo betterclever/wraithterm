@@ -69,6 +69,71 @@ pub struct Renderer {
     last_blink: bool,
     pending_present: bool,
 }
+#[derive(Clone)]
+struct SharedGpu {
+    instance: wgpu::Instance,
+    adapter: wgpu::Adapter,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    /// The device's first uncaptured error or loss, seen by every renderer on it.
+    lost: Arc<Mutex<Option<String>>>,
+}
+thread_local! {
+    static GPU: std::cell::RefCell<Option<SharedGpu>> = const { std::cell::RefCell::new(None) };
+}
+/// The worker's shared GPU, created on first use. A lost device is replaced
+/// for later terminals; terminals already on it keep reporting the loss.
+async fn shared_gpu(canvas: &web_sys::OffscreenCanvas) -> Result<SharedGpu, String> {
+    if let Some(gpu) = GPU.with(|g| g.borrow().clone()) {
+        if gpu.lost.lock().unwrap().is_none() {
+            return Ok(gpu);
+        }
+    }
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+    descriptor.backends = wgpu::Backends::BROWSER_WEBGPU;
+    let instance = wgpu::Instance::new(descriptor);
+    let probe = instance
+        .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas.clone()))
+        .map_err(|e| e.to_string())?;
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&probe),
+            force_fallback_adapter: false,
+            ..Default::default()
+        })
+        .await
+        .map_err(|e| format!("WebGPU adapter unavailable: {e}"))?;
+    drop(probe);
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("Wraith WebGPU device"),
+            ..Default::default()
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+    let lost = Arc::new(Mutex::new(None));
+    let errors = lost.clone();
+    device.on_uncaptured_error(Arc::new(move |error| {
+        let mut first = errors.lock().unwrap();
+        if first.is_none() {
+            *first = Some(format!("WebGPU validation: {error}"));
+        }
+    }));
+    let lost_clone = lost.clone();
+    device.set_device_lost_callback(move |reason, message| {
+        *lost_clone.lock().unwrap() = Some(format!("WebGPU device lost ({reason:?}): {message}"));
+    });
+    let gpu = SharedGpu {
+        instance,
+        adapter,
+        device,
+        queue,
+        lost,
+    };
+    GPU.with(|g| *g.borrow_mut() = Some(gpu.clone()));
+    Ok(gpu)
+}
 impl Renderer {
     pub fn row_slots(&self) -> &[u32] {
         &self.retained.slots
@@ -96,21 +161,18 @@ impl Renderer {
         cols: u16,
         rows: u16,
     ) -> Result<Self, String> {
-        let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
-        descriptor.backends = wgpu::Backends::BROWSER_WEBGPU;
-        let instance = wgpu::Instance::new(descriptor);
+        // Terminals in one worker share one instance, adapter, device and queue.
+        let gpu = shared_gpu(&canvas).await?;
+        let SharedGpu {
+            instance,
+            adapter,
+            device,
+            queue,
+            lost,
+        } = gpu;
         let surface = instance
             .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas.clone()))
             .map_err(|e| e.to_string())?;
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-                ..Default::default()
-            })
-            .await
-            .map_err(|e| format!("WebGPU adapter unavailable: {e}"))?;
         let info = adapter.get_info();
         let adapter_name = format!(
             "{} ({:?})",
@@ -121,26 +183,6 @@ impl Renderer {
             },
             info.backend
         );
-        let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                label: Some("Wraith WebGPU device"),
-                ..Default::default()
-            })
-            .await
-            .map_err(|e| e.to_string())?;
-        let lost = Arc::new(Mutex::new(None));
-        let errors = lost.clone();
-        device.on_uncaptured_error(Arc::new(move |error| {
-            let mut first = errors.lock().unwrap();
-            if first.is_none() {
-                *first = Some(format!("WebGPU validation: {error}"));
-            }
-        }));
-        let lost_clone = lost.clone();
-        device.set_device_lost_callback(move |reason, message| {
-            *lost_clone.lock().unwrap() =
-                Some(format!("WebGPU device lost ({reason:?}): {message}"));
-        });
         let width = cols as u32 * atlas.cell_width;
         let height = rows as u32 * atlas.cell_height;
         if width > device.limits().max_texture_dimension_2d
