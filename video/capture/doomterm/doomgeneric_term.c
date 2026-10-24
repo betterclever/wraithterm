@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <poll.h>
 
 static int kitty, demo, cols = 160, rows = 50, scale_c, scale_r;
 static long frames_left = -1;
@@ -69,8 +70,11 @@ void DG_Init(void) {
     tcgetattr(0, &saved);
     struct termios t = saved;
     cfmakeraw(&t);
+    /* Keep newline translation for DOOM's own log output. */
+    t.c_oflag |= OPOST | ONLCR;
     tcsetattr(0, TCSANOW, &t);
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    /* No O_NONBLOCK: on a terminal, stdin and stdout share one file
+     * description, and frames must never be dropped. Keys are polled. */
     raw_mode = 1;
   }
   atexit(restore);
@@ -94,16 +98,22 @@ static void kitty_frame(void) {
   }
   int c = scale_c ? scale_c : cols, r = scale_r ? scale_r : rows;
   char head[160];
+  /* Double-buffer: retransmitting an image ID removes its placement until the
+   * new data completes, so alternate IDs and delete the old one afterwards. */
+  static int id = 1;
+  id = 3 - id;
   puts_("\x1b[H");
   for (size_t i = 0; i < n; i += 4096) {
     int more = i + 4096 < n;
     int len = i ? snprintf(head, sizeof head, "\x1b_Gm=%d;", more)
-                : snprintf(head, sizeof head, "\x1b_Ga=T,f=24,s=%d,v=%d,i=1,q=2,c=%d,r=%d,C=1,m=%d;",
-                           DOOMGENERIC_RESX, DOOMGENERIC_RESY, c, r, more);
+                : snprintf(head, sizeof head, "\x1b_Ga=T,f=24,s=%d,v=%d,i=%d,q=2,c=%d,r=%d,C=1,m=%d;",
+                           DOOMGENERIC_RESX, DOOMGENERIC_RESY, id, c, r, more);
     put(head, (size_t)len);
     put(enc + i, more ? 4096 : n - i);
     puts_("\x1b\\");
   }
+  snprintf(head, sizeof head, "\x1b_Ga=d,d=I,i=%d,q=2\x1b\\", 3 - id);
+  puts_(head);
 }
 static uint32_t sample(int x0, int y0, int x1, int y1) {
   /* Box-average the 640x400 buffer over [x0,x1) x [y0,y1). */
@@ -171,7 +181,8 @@ int DG_GetKey(int* pressed, unsigned char* key) {
   if (!raw_mode) return 0;
   if (!queued_len) {
     unsigned char buf[16];
-    ssize_t n = read(0, buf, sizeof buf);
+    struct pollfd fd = {.fd = 0, .events = POLLIN};
+    ssize_t n = poll(&fd, 1, 0) > 0 ? read(0, buf, sizeof buf) : 0;
     for (ssize_t i = 0; i < n; i++) {
       if (buf[i] == 3) exit(0);
       if (buf[i] == 27 && i + 2 < n && buf[i + 1] == '[') {
