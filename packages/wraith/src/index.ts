@@ -78,6 +78,11 @@ export class Wraith {
   private worker: Worker;
   private options: WraithOptions;
   private dpr: number;
+  private fontBytes?: Uint8Array;
+  private fallbackBytes: Uint8Array[] = [];
+  private displayUpdates = Promise.resolve();
+  private dprQuery?: MediaQueryList;
+  private dprListener?: () => void;
   private cellWidth = 9;
   private cellHeight = 18;
   private pending = new Map<number, Pending>();
@@ -204,6 +209,8 @@ export class Wraith {
         ].map(loadFont),
       );
       const canvas = terminal.canvas.transferControlToOffscreen();
+      terminal.fontBytes = font!.slice();
+      terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
       terminal.send(
         {
           type: 'init',
@@ -227,6 +234,10 @@ export class Wraith {
         terminal.fit();
       }
       if (options.screenReaderMode) terminal.enableMirror();
+      terminal.watchDisplay();
+      window.addEventListener('resize', () => terminal.checkDisplay(), {
+        signal: terminal.abort.signal,
+      });
       return terminal;
     } catch (error) {
       terminal.fail(error instanceof Error ? error : new Error(String(error)));
@@ -301,6 +312,9 @@ export class Wraith {
         this.fail(new Error(reply.error));
         break;
       case 'stats': {
+        // Some browser/display transitions update resolution without delivering
+        // a media-query change event. Reuse the existing stats heartbeat.
+        this.checkDisplay();
         const v = reply.values;
         this.statistics.emit({
           frames: v[0]!,
@@ -334,6 +348,9 @@ export class Wraith {
     this.batchLength = 0;
     this.observer?.disconnect();
     clearInterval(this.mirrorTimer);
+    this.dprQuery?.removeEventListener('change', this.dprListener!);
+    this.fontBytes = undefined;
+    this.fallbackBytes = [];
     this.worker.terminate();
   }
   /** Resolves after bytes have been parsed. Use flush() to wait for rendering. */
@@ -414,6 +431,79 @@ export class Wraith {
   private dimensions() {
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
+    this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
+  }
+  /** Change CSS text size without replacing terminal state or the worker. */
+  setFontSize(fontSize: number): Promise<void> {
+    return this.configureDisplay({ fontSize });
+  }
+  /** Replace supplied OpenType fonts and optionally the text geometry atomically. */
+  setFont(
+    font: string | URL | Uint8Array,
+    options: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'fallbackFonts'> = {},
+  ): Promise<void> {
+    return this.configureDisplay({ ...options, font });
+  }
+  private configureDisplay(
+    changes: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'font' | 'fallbackFonts'>,
+  ): Promise<void> {
+    this.assertLive();
+    const update = this.displayUpdates.then(async () => {
+      this.assertLive();
+      const next = { ...this.options, ...changes };
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const size = (next.fontSize ?? 14) * dpr;
+      const lineHeight = next.lineHeight ?? 1.35;
+      if (
+        !Number.isFinite(size) ||
+        size < 6 ||
+        size > 96 ||
+        !Number.isFinite(lineHeight) ||
+        lineHeight < 1 ||
+        lineHeight > 2
+      )
+        throw new RangeError(
+          'Font size must be 6..96 physical pixels and line height must be 1..2',
+        );
+      const font = changes.font !== undefined ? await loadFont(changes.font) : this.fontBytes!;
+      const fonts =
+        changes.fallbackFonts !== undefined
+          ? await Promise.all(changes.fallbackFonts.map(loadFont))
+          : this.fallbackBytes;
+      this.assertLive();
+      const dimensions = await this.request<number[]>({
+        type: 'font',
+        font,
+        fonts,
+        size,
+        lineHeight,
+      } as Omit<Extract<Command, { type: 'font' }>, 'id'>);
+      this.options = next;
+      this.fontBytes = font;
+      this.fallbackBytes = fonts;
+      this.dpr = dpr;
+      [this.cellWidth, this.cellHeight] = dimensions as [number, number];
+      this.dimensions();
+      if (this.options.fit !== false) this.fit();
+    });
+    // A rejected font must not poison later display changes.
+    this.displayUpdates = update.catch(() => {});
+    return update;
+  }
+  private watchDisplay() {
+    this.dprQuery?.removeEventListener('change', this.dprListener!);
+    if (this.disposed || this.failed) return;
+    this.dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    this.dprListener = () => {
+      this.watchDisplay();
+      if (Math.min(3, window.devicePixelRatio || 1) !== this.dpr)
+        void this.configureDisplay({}).catch((error) => this.errors.emit(error));
+    };
+    this.dprQuery.addEventListener('change', this.dprListener, { once: true });
+  }
+  private checkDisplay() {
+    if (this.disposed || this.failed) return;
+    if (this.dprQuery && !this.dprQuery.matches) this.dprListener?.();
   }
   focus(): void {
     this.input.focus({ preventScroll: true });
@@ -898,6 +988,9 @@ export class Wraith {
     this.disposed = true;
     this.abort.abort();
     this.observer?.disconnect();
+    this.dprQuery?.removeEventListener('change', this.dprListener!);
+    this.fontBytes = undefined;
+    this.fallbackBytes = [];
     clearInterval(this.mirrorTimer);
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();

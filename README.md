@@ -229,6 +229,8 @@ references; they have not yet been certified.
 | `write(string \| Uint8Array)`                               | Resolves after parsing. Retains caller ownership of input buffers.                                                   |
 | `flush()`                                                   | Renders pending state and waits for a GPU completion fence.                                                          |
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
+| `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
+| `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
@@ -267,7 +269,10 @@ normal handling.
 
 The bundled JetBrains Mono font covers the demo. Supply `font` and `fallbackFonts`
 as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pixels;
-rasterization uses devicePixelRatio captured at mount. The accessible text mirror
+rasterization automatically follows devicePixelRatio changes, including with
+`fit: false`. Font sizes must resolve to 6..96 physical pixels at the current
+display scale (capped at 3); line height must be 1..2. Live changes preserve the
+worker, grid, terminal state and scrollback. The accessible text mirror
 is enabled with `screenReaderMode: true`.
 
 ## Architecture and compatibility

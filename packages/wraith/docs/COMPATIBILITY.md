@@ -16,33 +16,34 @@ renderer, input path, effects, fonts, and browser integration.
 
 ## Implemented and verified
 
-| Area                                                                            | Verification                                                                              |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Streaming UTF-8, split CSI/OSC sequences                                        | Every split boundary of a Unicode/SGR fixture; one-byte Wasm writes.                      |
-| Cursor positioning, save/restore, delayed wrap                                  | Native protocol fixtures.                                                                 |
-| Insert/delete/erase, BCE, scrolling margins, origin mode                        | Native fixtures with expected visible contents.                                           |
-| Alternate screen and main-screen restoration                                    | Native and packaged Wasm fixtures.                                                        |
-| Bounded scrollback, viewport scrolling, resize reflow                           | Native contents checks.                                                                   |
-| ANSI indexed and 24-bit color, colon syntax                                     | Exact cell color assertions.                                                              |
-| Bold, synthetic italic, faint, inverse, hidden, blink                           | Core styles and implemented renderer flags; visual sample in Chrome.                      |
-| Single/double/curly/dotted/dashed underlines, underline color, strike, overline | Core style flags and WGSL implementations; underline/strike pixels in demo.               |
-| DEC line drawing                                                                | Expected Unicode box drawing and Chrome sample.                                           |
-| Wide and combining characters                                                   | Cell widths, tail cells, combined clusters, clipboard text fixtures.                      |
-| OSC title and bell                                                              | Native and browser effect paths.                                                          |
-| Device attributes, version, cursor, size, color-scheme reports                  | Registered effects and native fixtures.                                                   |
-| Synchronized output                                                             | Snapshot hold, release, and deadline recovery.                                            |
-| OSC 8 hyperlinks                                                                | Core URI lookup; browser modifier-click handler restricts URL schemes.                    |
-| Selection                                                                       | Real pointer selection in Chrome; Ghostty formatter unwraps soft-wraps.                   |
-| Native history search and navigation                                            | Ghostty incremental search; browser history/Unicode/reflow/wraparound/cancellation tests. |
-| Word, logical-line, block and select-all gestures/APIs                          | Ghostty selection rules, native tests and real Chrome double/triple-click and Alt-drag.   |
-| Custom keyboard event handlers                                                  | Disposable hooks; Chrome verifies intercepted keys emit no terminal bytes.                |
-| Legacy / application arrows and Kitty keyboard disambiguation                   | Packaged Wasm byte-for-byte encoding tests.                                               |
-| SGR mouse encoding, focus reports, bracketed paste                              | Native encoder path; browser paste test and sanitized frame contents.                     |
-| IME commits and preedit placement                                               | Browser composition test; cursor coordinates anchor the input element.                    |
-| Accessible viewport mirror                                                      | Optional role=log mirror, exercised in browser lifecycle test.                            |
-| Input ownership and backpressure                                                | Original buffer survives transfer; oversize write rejects.                                |
-| Multiple instances and disposal                                                 | Browser independent instance test and repeated Wasm allocation plateau test.              |
-| WebGPU rendering                                                                | Chrome pipeline validation and actual screenshot pixel assertions.                        |
+| Area                                                                            | Verification                                                                                        |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Streaming UTF-8, split CSI/OSC sequences                                        | Every split boundary of a Unicode/SGR fixture; one-byte Wasm writes.                                |
+| Cursor positioning, save/restore, delayed wrap                                  | Native protocol fixtures.                                                                           |
+| Insert/delete/erase, BCE, scrolling margins, origin mode                        | Native fixtures with expected visible contents.                                                     |
+| Alternate screen and main-screen restoration                                    | Native and packaged Wasm fixtures.                                                                  |
+| Bounded scrollback, viewport scrolling, resize reflow                           | Native contents checks.                                                                             |
+| ANSI indexed and 24-bit color, colon syntax                                     | Exact cell color assertions.                                                                        |
+| Bold, synthetic italic, faint, inverse, hidden, blink                           | Core styles and implemented renderer flags; visual sample in Chrome.                                |
+| Single/double/curly/dotted/dashed underlines, underline color, strike, overline | Core style flags and WGSL implementations; underline/strike pixels in demo.                         |
+| DEC line drawing                                                                | Expected Unicode box drawing and Chrome sample.                                                     |
+| Wide and combining characters                                                   | Cell widths, tail cells, combined clusters, clipboard text fixtures.                                |
+| OSC title and bell                                                              | Native and browser effect paths.                                                                    |
+| Device attributes, version, cursor, size, color-scheme reports                  | Registered effects and native fixtures.                                                             |
+| Synchronized output                                                             | Snapshot hold, release, and deadline recovery.                                                      |
+| OSC 8 hyperlinks                                                                | Core URI lookup; browser modifier-click handler restricts URL schemes.                              |
+| Selection                                                                       | Real pointer selection in Chrome; Ghostty formatter unwraps soft-wraps.                             |
+| Live native font and display-scale changes                                      | Chrome font/zoom/DPR tests; invalid replacements preserve the existing renderer and terminal state. |
+| Native history search and navigation                                            | Ghostty incremental search; browser history/Unicode/reflow/wraparound/cancellation tests.           |
+| Word, logical-line, block and select-all gestures/APIs                          | Ghostty selection rules, native tests and real Chrome double/triple-click and Alt-drag.             |
+| Custom keyboard event handlers                                                  | Disposable hooks; Chrome verifies intercepted keys emit no terminal bytes.                          |
+| Legacy / application arrows and Kitty keyboard disambiguation                   | Packaged Wasm byte-for-byte encoding tests.                                                         |
+| SGR mouse encoding, focus reports, bracketed paste                              | Native encoder path; browser paste test and sanitized frame contents.                               |
+| IME commits and preedit placement                                               | Browser composition test; cursor coordinates anchor the input element.                              |
+| Accessible viewport mirror                                                      | Optional role=log mirror, exercised in browser lifecycle test.                                      |
+| Input ownership and backpressure                                                | Original buffer survives transfer; oversize write rejects.                                          |
+| Multiple instances and disposal                                                 | Browser independent instance test and repeated Wasm allocation plateau test.                        |
+| WebGPU rendering                                                                | Chrome pipeline validation and actual screenshot pixel assertions.                                  |
 
 The installed default font does not cover every Unicode character. Fonts affect
 visual coverage independently of the terminal model's Unicode support.
@@ -56,7 +57,6 @@ visual coverage independently of the terminal model's Unicode support.
 | Cross-cell ligatures and contextual script runs | Shaping is per Ghostty grapheme cell. Full row-run shaping remains.                 |
 | Bidi behavior                                   | No separate browser bidi layout pipeline.                                           |
 | Native font discovery                           | Explicit bundled / supplied font data; no browser system-font rasterizer.           |
-| Dynamic DPR or font-size changes                | DPR captured at mount. Remount with new settings.                                   |
 | Full screen-reader certification                | Optional text mirror is implemented; assistive-technology auditing remains.         |
 | Native regex / case-sensitive search            | Literal ASCII-insensitive search is exposed; these advanced options remain.         |
 | WebGL/Canvas fallback                           | WebGPU-only; unsupported environments receive an actionable initialization error.   |
