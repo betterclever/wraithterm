@@ -86,13 +86,13 @@ const HERO = (brightness = 1) =>
   slab('work-scene-native', [0, 0, 0], [0, 0, 0], { brightness, reflection: 0.3 });
 // The wall act: Wraith's wall, and xterm's wall dark beside it until "let 'em know".
 const NATIVE: V3 = [2.15, 0.25, 0];
-const WALLS = (xterm = 0) => [
+const WALLS = (xterm = 0, native = 1) => [
   slab('wall-webgl', [-2.15, 0.25, 0], [0, 0.12, 0], {
     width: 4.1,
     reflection: 0.2 * xterm,
     brightness: xterm,
   }),
-  slab('wall-native', NATIVE, [0, -0.12, 0], { width: 4.1, reflection: 0.2 }),
+  slab('wall-native', NATIVE, [0, -0.12, 0], { width: 4.1, reflection: 0.2, brightness: native }),
 ];
 // The DOOM act: one screen, first in text cells, then in Kitty graphics.
 const DOOM = (file: string) => [
@@ -103,6 +103,15 @@ const doomTextFps = tens(doomMax.summary['text-160x50 native'].slowest);
 const doomKittyFps = tens(doomMax.summary['kitty-640x400 native'].slowest);
 const xtermDoomFps = Math.round(doomPaced.summary['text-160x50 webgl'].fastest);
 const SIDE_END = orbit(0.7, 4.2, 0.2, NATIVE);
+
+const STANDBY = (f: number) => {
+  const k = inOut(ramp(f, UH[2][0], GO, (x) => x));
+  return {
+    pos: [NATIVE[0] + mix(0.5, 0.1, k), mix(0.45, 0.3, k), mix(6.6, 4.8, k)] as V3,
+    look: [NATIVE[0], NATIVE[1], 0] as V3,
+    fov: 32,
+  };
+};
 
 const SHOTS: Shot[] = [
   // Act 1: the hero terminal.
@@ -197,15 +206,16 @@ const SHOTS: Shot[] = [
   },
   // The count: one code card.
   {
+    // Standby: Wraith's wall, powered down, before the launch.
     name: 'Code',
     from: UH[2][0],
     to: ONE,
-    camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }),
-    ghost: (k, f) => ({ position: [3.4, 0.2, -5], rotation: [0, 0.4 + f / 200, 0], scale: 0.9 }),
+    camera: (k, f) => STANDBY(f),
+    slabs: () => WALLS(0, 0.07),
   },
-  { name: 'One', from: ONE, to: TWO, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
-  { name: 'Two', from: TWO, to: THREE, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
-  { name: 'Three', from: THREE, to: GO, camera: () => ({ pos: [0, 0, 8], look: [0, 0, 0] }) },
+  { name: 'One', from: ONE, to: TWO, camera: (k, f) => STANDBY(f), slabs: () => WALLS(0, 0.07) },
+  { name: 'Two', from: TWO, to: THREE, camera: (k, f) => STANDBY(f), slabs: () => WALLS(0, 0.07) },
+  { name: 'Three', from: THREE, to: GO, camera: (k, f) => STANDBY(f), slabs: () => WALLS(0, 0.07) },
   // Act 2: Wraith's wall of sixteen.
   {
     // Launch: start inside one tile, rip back to the whole wall.
@@ -479,11 +489,6 @@ const Spec: React.FC<{ frame: number; start: number; n: string; title: string; s
   );
 };
 
-const CODE = [
-  'npm i wraithterm',
-  "import { Terminal } from 'wraithterm/xterm'",
-  'await Wraith.mount(el)',
-];
 // The count: one usage line per beat.
 const USAGE = [
   { label: 'INSTALL', line: 'npm i wraithterm' },
@@ -521,63 +526,6 @@ const UsageLine: React.FC<{ n: number; transform: string }> = ({ n, transform })
     </div>
   </div>
 );
-const TYPE_AT = [UH[2][1], UH[2][1] + 22, UH[2][1] + 46];
-
-const CodeCard: React.FC<{ frame: number; lit: number; transform: string }> = ({
-  frame,
-  lit,
-  transform,
-}) => (
-  <div
-    style={{
-      position: 'absolute',
-      inset: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      perspective: 1600,
-    }}
-  >
-    <div
-      style={{
-        transform,
-        padding: '54px 70px',
-        borderRadius: 26,
-        background: 'linear-gradient(160deg, #1a120c, #0b0806)',
-        border: '1px solid #4a3020',
-        boxShadow: '0 40px 120px #000c, inset 0 1px 0 #ffffff14',
-        ...mono,
-        fontSize: 50,
-        lineHeight: 1.9,
-      }}
-    >
-      {CODE.map((line, i) => {
-        const typed = Math.max(0, Math.min(line.length, Math.floor((frame - TYPE_AT[i]) / 1.1)));
-        const on = lit === i + 1;
-        return (
-          <div
-            key={line}
-            style={{
-              display: 'flex',
-              gap: 34,
-              color: on ? amber : lit > i + 1 ? cream : '#b9a593',
-              textShadow: on ? `0 0 24px ${amber}88` : 'none',
-            }}
-          >
-            <span style={{ color: on ? amber : '#6d5646', width: 30 }}>{i + 1}</span>
-            <span style={{ whiteSpace: 'pre' }}>
-              {line.slice(0, typed)}
-              {typed < line.length && frame >= TYPE_AT[i] ? (
-                <span style={{ color: amber }}>▍</span>
-              ) : null}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
 const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
   const s = shot.from;
   switch (shot.name) {
@@ -660,11 +608,24 @@ const Copy: React.FC<{ shot: Shot; frame: number }> = ({ shot, frame }) => {
       );
     case 'Code':
       return (
-        <CodeCard
-          frame={frame}
-          lit={0}
-          transform={`scale(${mix(1, 1.05, ramp(frame, s, shot.to))})`}
-        />
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 400, textAlign: 'center' }}>
+          <Reveal at={UH[2][1]} frame={frame} size={130}>
+            Three lines.
+          </Reveal>
+          <Reveal
+            at={UH[2][1] + 12}
+            frame={frame}
+            size={28}
+            weight={400}
+            color={muted}
+            font={mono}
+            tracking={0.3}
+            stagger={2}
+            style={{ marginTop: 18 }}
+          >
+            TO NATIVE TERMINAL SPEED
+          </Reveal>
+        </div>
       );
     case 'One':
     case 'Two':

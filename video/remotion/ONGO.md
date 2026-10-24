@@ -25,7 +25,7 @@ stored.
 | 0.35–2.18                               | Intro bar 1       | A real dev workspace; "Meet the fastest terminal on the web."                                              |
 | 2.18–11.54                              | Bars 2–6          | Same workspace: orbit, macro, low track, crane onto the Kitty chart and preview ("Kitty graphics."), chase |
 | 4.22 / 4.47, 7.86 / 8.23, 11.54 / 11.85 | "uh-huh" ×3       | Cut on "uh"; camera punch, flare and text on "HUH"                                                         |
-| 11.54–13.65                             | Third "uh-huh"    | Cut to code; typing starts on "HUH"                                                                        |
+| 11.54–13.65                             | Third "uh-huh"    | Cut to the 16-terminal wall powered down; "Three lines." on "HUH"                                          |
 | 13.65 / 14.13 / 14.59                   | "One, two, three" | Hard cuts, a line lights per count                                                                         |
 | 15.01–16.84                             | "WE ON GO"        | Letterbox snaps open; pull back from one tile to 16                                                        |
 | 16.84–18.67                             | "we on go"        | Same wall: low angle, side orbit                                                                           |
