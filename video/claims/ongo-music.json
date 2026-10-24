@@ -1,0 +1,29 @@
+{
+  "sourceFile": "BIA - WE ON GO (Official Audio).mp4",
+  "sourceSha256": "8aab28c99f1f846152436b014d13051542c6de04c2674b146e2840d6d3027798",
+  "sourceOffsetSeconds": 0,
+  "durationSeconds": 27.833333333333332,
+  "frames": 1670,
+  "bpm": 131,
+  "beatPhaseSeconds": 0.35,
+  "cues": {
+    "countOne": 13.172,
+    "countTwo": 13.451,
+    "countThree": 13.641,
+    "goKickAndVocal": 14.09,
+    "chorusVocalsRise": 15.007,
+    "kickDropsOut": 27.833333333333332
+  },
+  "loudnormFirstPass": {
+    "input_i": "-7.84",
+    "input_tp": "1.53",
+    "input_lra": "2.10",
+    "input_thresh": "-17.84",
+    "output_i": "-13.44",
+    "output_tp": "-3.56",
+    "output_lra": "1.50",
+    "output_thresh": "-23.44",
+    "normalization_type": "dynamic",
+    "target_offset": "-0.56"
+  }
+}

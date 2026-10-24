@@ -4,10 +4,14 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = import.meta.dirname;
+const ongo = process.argv.includes('--ongo');
 const hyped = process.argv.includes('--hyped');
 const flex = hyped || process.argv.includes('--flex');
 const edit = JSON.parse(await readFile(resolve(root, 'flex-edit.json'), 'utf8'));
-const cache = resolve(root, hyped ? '.cache/hyped' : flex ? '.cache/flex' : '.cache');
+const cache = resolve(
+  root,
+  ongo ? '.cache/ongo' : hyped ? '.cache/hyped' : flex ? '.cache/flex' : '.cache',
+);
 await mkdir(cache, { recursive: true });
 const browserExecutable =
   process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -23,7 +27,7 @@ try {
   });
   const composition = await selectComposition({
     serveUrl,
-    id: hyped ? 'WraithHyped' : flex ? 'WraithFlex' : 'WraithHype',
+    id: ongo ? 'WraithOnGo' : hyped ? 'WraithHyped' : flex ? 'WraithFlex' : 'WraithHype',
     puppeteerInstance: browser,
   });
   const errors = [];
@@ -95,11 +99,13 @@ try {
       ...common,
       outputLocation: resolve(
         root,
-        hyped
-          ? '../wraith-hyped.mp4'
-          : flex
-            ? '../wraith-hype-flex.mp4'
-            : '../wraith-hype-remotion.mp4',
+        ongo
+          ? '../wraith-ongo.mp4'
+          : hyped
+            ? '../wraith-hyped.mp4'
+            : flex
+              ? '../wraith-hype-flex.mp4'
+              : '../wraith-hype-remotion.mp4',
       ),
       codec: 'h264',
       crf: 17,

@@ -21,4 +21,7 @@ if (process.argv.includes('--flex')) {
   await copyFile(resolve(video, 'footage/hype-flex-score.wav'), resolve(output, 'flex-music.wav'));
   await copyFile(resolve(video, 'footage/dom.mp4'), resolve(output, 'xterm-dom.mp4'));
 }
+if (process.argv.includes('--ongo'))
+  for (const name of ['wall-webgl', 'wall-native', 'doomish-native', 'doomish-webgl'])
+    await copyFile(resolve(video, `footage/${name}.mp4`), resolve(output, `${name}.mp4`));
 console.log('Prepared local footage, stereo mix and fonts. No media is committed.');
