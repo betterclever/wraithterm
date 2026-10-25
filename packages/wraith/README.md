@@ -236,6 +236,126 @@ export default defineConfig({ plugins: [wraith()] });
 Other bundlers must preserve the `new URL(..., import.meta.url)` worker and asset
 references; they have not yet been certified.
 
+## React, Vue, Svelte and `<wraith-term>`
+
+The package ships bindings for React, Vue 3, Svelte and plain HTML. Each one is a
+thin wrapper around one shared lifecycle controller. React, Vue and Svelte are
+optional peer dependencies and are never bundled. No binding needs a compiler
+plugin: React is written without JSX, Vue uses `defineComponent` + `h`, and the
+Svelte action is plain JavaScript. Importing any binding is safe during server
+rendering; the engine is loaded with `import()` on mount, in its own chunk.
+
+All bindings take the same configuration:
+
+| Field       | Meaning                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `profile`   | `'native'` (default): `Wraith.mount()`. `'xterm'`: the xterm.js-compatible `Terminal` (import `wraithterm/css/xterm.css`).                                         |
+| `options`   | `WraithOptions`, or xterm `ITerminalOptions` with `profile: 'xterm'`. `theme`, `fontSize`, `lineHeight`, `font` and (with `fit: false`) `cols`/`rows` update live. |
+| `src`       | A WebSocket URL (or an open `WebSocket`) connected once mounted, through `connect()` with backpressure. Sockets made from a URL close on unmount.                  |
+| `autoFocus` | Focus the terminal when ready.                                                                                                                                     |
+| events      | `onReady(terminal)`, `onData(string)`, `onBytes(Uint8Array)`, `onTitleChange`, `onBell`, `onResize({cols, rows})`, `onError(Error)`.                               |
+
+Other options (`scrollback`, `pool`, `ligatures`, …) apply at mount; remount to
+change them (a React `key`, a Vue `:key`). A `profile` change remounts by itself.
+Event handlers are read when an event fires, so passing new closures each render
+costs nothing. Give the host an explicit height.
+
+**React** (18 or 19, StrictMode-safe):
+
+```tsx
+import { useRef } from 'react';
+import { Wraith, type WraithHandle } from 'wraithterm/react';
+
+export function Shell() {
+  const term = useRef<WraithHandle>(null);
+  return (
+    <Wraith
+      ref={term}
+      style={{ height: 420 }}
+      options={{ fontSize: 14, theme: { background: '#0e1217' } }}
+      src="wss://your-backend/terminal"
+      onReady={() => term.current?.write('connected\r\n')}
+      onTitleChange={(title) => (document.title = title)}
+    />
+  );
+}
+```
+
+The ref exposes `terminal` (the `Wraith` or `Terminal`, null until ready),
+`ready`, `write()` (queued until ready) and `focus()`. Other props go to the host
+`<div>`. StrictMode's mount → cleanup → mount disposes the discarded terminal as
+soon as its mount settles, exactly once.
+
+**Vue 3**:
+
+```ts
+import { h } from 'vue';
+import { Wraith } from 'wraithterm/vue'; // or app.use(WraithPlugin)
+
+export default {
+  setup: () => () =>
+    h('div', { style: 'height: 420px' }, [
+      h(Wraith, {
+        options: { fontSize: 14 },
+        src: 'wss://your-backend/terminal',
+        onData: (data: string) => console.log(data),
+        onReady: (terminal) => terminal.focus(),
+      }),
+    ]),
+};
+```
+
+In templates: `<Wraith :options="{ fontSize: 14 }" src="wss://…" @data="send" @title-change="setTitle" />`.
+Events are `ready`, `data`, `bytes`, `title-change`, `bell`, `resize`, `error`; a
+template ref exposes `terminal`, `ready`, `write()` and `focus()`.
+
+**Svelte** (an action for any Svelte version, and an attachment for Svelte 5.29+):
+
+```svelte
+<script>
+  import { wraith, terminal } from 'wraithterm/svelte';
+  let fontSize = $state(14);
+</script>
+
+<div style="height: 420px" use:wraith={{ options: { fontSize }, onData: (d) => send(d) }}></div>
+
+<div style="height: 240px" {@attach terminal({ profile: 'xterm', src: 'wss://your-backend/terminal' })}></div>
+```
+
+The action's `update` applies changed parameters to the live terminal; Svelte
+reruns an attachment when its parameters change, which remounts. Pass
+`controller: (c) => …` to get `c.ready`, `c.terminal` and `c.write()`.
+
+**`<wraith-term>`** (any framework, or none):
+
+```html
+<script type="module">
+  import 'wraithterm/element';
+</script>
+<wraith-term src="wss://your-backend/terminal" font-size="14" style="height: 420px"></wraith-term>
+```
+
+Attributes: `profile`, `cols`, `rows`, `font-size`, `line-height`, `scrollback`,
+`theme` (JSON, e.g. `'{"background":"#101820"}'`), `ligatures`, `screen-reader`,
+`fit`, `autofocus`, `src`. Giving `cols` or `rows` turns fitting off unless `fit`
+is present. The `options` property merges anything an attribute cannot carry
+(fonts, a pool). Events are `CustomEvent`s that bubble: `wraith-ready`,
+`wraith-data`, `wraith-bytes`, `wraith-title`, `wraith-bell`, `wraith-resize` and
+`wraith-error`, with the value in `detail`. The element exposes `terminal`,
+`ready`, `write()` and `focus()`. Moving it within the document keeps its
+terminal; removing it disposes the terminal. Its default style is
+`display: block; height: 360px`, at zero specificity.
+
+With Vite, use the `wraith()` plugin above; it excludes every binding subpath from
+dependency prebundling. `npm run test:frameworks` installs the packed archive into
+fresh React (StrictMode), Vue, Svelte and `<wraith-term>` Vite apps, then checks in
+Chrome, under both the dev server and a production build, that each terminal
+renders text and pixels, receives typed input and its title, and that
+unmounting terminates every worker it created. It also checks that the `src`
+attribute round-trips over a real WebSocket, that the xterm profile reaches
+WebGPU, and that a Svelte parameter change updates the terminal without a new
+worker.
+
 ## Your shell in a tab
 
 ```sh
