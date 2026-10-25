@@ -16,6 +16,13 @@ builtin Unicode 6 provider. Upstream performs delayed wrapping and scrolling.
 Unicode11/custom providers, accessibility, insert mode, character sets and
 extended attributes keep the original print action.
 
+With `screenReaderMode` on, xterm's own accessibility tree and live region run
+unchanged. Wraith adds one behavior there: **Escape**, then **Tab** (or
+**Shift+Tab**) moves focus out of the terminal, and the textarea's description
+says so. A plain Tab still goes to the application, and with the option off
+key handling is exactly upstream's. Under `prefers-reduced-motion: reduce`, the
+WebGPU cursor stays in its visible phase instead of blinking.
+
 This profile deliberately uses xterm's semantic core. `Wraith.mount()` remains the
 separate libghostty worker profile. A full xterm API cannot be obtained by renaming
 Ghostty methods: asynchronous parser interception and private addon services have
