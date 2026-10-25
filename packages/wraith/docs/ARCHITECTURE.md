@@ -130,7 +130,10 @@ Placement comes from the main thread. Once per animation frame the pool
 measures each intersecting terminal's element (one `getBoundingClientRect`
 plus `offsetWidth` for the transform scale), intersects it with the element
 and its overflow-clipping ancestors, and posts changed records (id, origin,
-scale, clip, in device pixels) to the owning worker. Unscaled placements are
+scale, clip, in device pixels) to the owning worker. Terminals hidden by
+`visibility: hidden` or `opacity: 0` on the host or an ancestor
+(`checkVisibility`) are placed as hidden, and a host moved to another parent
+after mount has its clipping ancestors recomputed. Unscaled placements are
 rounded to whole device pixels, so they match per-canvas output exactly; a
 CSS-scaled placement samples the atlas with a linear sampler. The vertex
 shaders map terminal pixels to the target through that placement; with a
@@ -147,7 +150,8 @@ meant to cover terminals must stack above them. Placements follow layout one
 animation frame later than the DOM, so a terminal can trail a scroll or pan
 by a frame. Rotation and perspective transforms are not modelled (placement
 is a translation plus uniform scale). Fallback fonts and ligatures are fixed
-when a shared terminal is created. Each worker draws all of its terminals in
+when a shared terminal is created. Partial CSS opacity and filters on a host
+are not applied. Each worker draws all of its terminals in
 one pass, so heavy output in one terminal shares that worker's frame.
 
 ## Run shaping

@@ -32,6 +32,8 @@ interface Tracked {
   worker: number;
   canvas: HTMLCanvasElement;
   element: HTMLElement;
+  /** Ancestors up to the body when `clips` was computed, nearest first. */
+  chain: Element[];
   clips: Element[];
   intersecting: boolean;
   last?: Float32Array;
@@ -40,19 +42,36 @@ const STRIDE = 8;
 const same = (a: Float32Array | undefined, b: Float32Array) =>
   !!a && a.every((value, i) => value === b[i]);
 
-/** Scroll and overflow clipping ancestors, nearest first. */
-function clippingAncestors(element: HTMLElement): Element[] {
+function ancestorChain(element: HTMLElement): Element[] {
   const out: Element[] = [];
-  for (
-    let node = element.parentElement;
-    node && node !== document.body;
-    node = node.parentElement
-  ) {
-    const style = getComputedStyle(node);
-    if (style.overflowX !== 'visible' || style.overflowY !== 'visible') out.push(node);
-  }
+  for (let node = element.parentElement; node && node !== document.body; node = node.parentElement)
+    out.push(node);
   return out;
 }
+/** Scroll and overflow clipping ancestors among `chain`, nearest first. */
+function clippingAncestors(chain: Element[]): Element[] {
+  return chain.filter((node) => {
+    const style = getComputedStyle(node);
+    return style.overflowX !== 'visible' || style.overflowY !== 'visible';
+  });
+}
+/** Whether `element` was moved since `chain` was recorded. */
+function moved(element: HTMLElement, chain: Element[]): boolean {
+  let i = 0;
+  for (let node = element.parentElement; node && node !== document.body; node = node.parentElement)
+    if (chain[i++] !== node) return true;
+  return i !== chain.length;
+}
+// visibility: hidden and opacity: 0 (on the host or an ancestor) hide a
+// terminal's own canvas; the shared surface must skip it too.
+const hiddenByStyle: CheckVisibilityOptions = {
+  checkOpacity: true,
+  checkVisibilityCSS: true,
+  opacityProperty: true,
+  visibilityProperty: true,
+};
+const canCheckVisibility =
+  typeof Element !== 'undefined' && typeof Element.prototype.checkVisibility === 'function';
 
 export class SharedSurfaces {
   private canvases: HTMLCanvasElement[] = [];
@@ -128,12 +147,14 @@ export class SharedSurfaces {
   }
   track(id: number, worker: number, canvas: HTMLCanvasElement, element: HTMLElement) {
     canvas.dataset.wraithSurfaceId = String(id);
+    const chain = ancestorChain(element);
     const t: Tracked = {
       id,
       worker,
       canvas,
       element,
-      clips: clippingAncestors(element),
+      chain,
+      clips: clippingAncestors(chain),
       intersecting: !this.observer,
     };
     this.tracked.set(id, t);
@@ -181,7 +202,17 @@ export class SharedSurfaces {
     for (const t of this.tracked.values()) {
       record.fill(0);
       record[0] = t.id;
-      if (t.intersecting && t.canvas.width > 0) {
+      if (
+        t.intersecting &&
+        t.canvas.width > 0 &&
+        (!canCheckVisibility || t.canvas.checkVisibility(hiddenByStyle))
+      ) {
+        // A host moved into (or out of) a scrolling container after mount
+        // changes which ancestors clip it.
+        if (moved(t.element, t.chain)) {
+          t.chain = ancestorChain(t.element);
+          t.clips = clippingAncestors(t.chain);
+        }
         // The placeholder sits at its element's top-left; one measurement of
         // the element gives position, transform scale and the first clip.
         const e = t.element.getBoundingClientRect();

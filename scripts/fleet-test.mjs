@@ -234,6 +234,34 @@ for (const dpr of [1, 2]) {
     rect: ([x, y]) => [x - 5, 520, 440, 140],
   });
 
+  // visibility: hidden and opacity: 0 on a host hide its own canvas; the shared
+  // surface must not keep drawing it.
+  const blank = async (label, i) => {
+    await settle();
+    const image = pixels(await page.screenshot());
+    const [x, y, w, h] = (await boxes()).shared[i].map((v) => Math.round(v * dpr));
+    assert(
+      region(image, x, y, w, h).every((v) => v === 0),
+      `DPR ${dpr}: shared terminal ${i} still drawn with ${label}`,
+    );
+    checks++;
+  };
+  for (const [property, value] of [
+    ['visibility', 'hidden'],
+    ['opacity', '0'],
+  ]) {
+    await page.evaluate(
+      ([property, value]) => (window.cols.shared[2].element.parentElement.style[property] = value),
+      [property, value],
+    );
+    await blank(`${property}: ${value}`, 2);
+    await page.evaluate(
+      (property) => (window.cols.shared[2].element.parentElement.style[property] = ''),
+      property,
+    );
+  }
+  await compare('visible again', [2]);
+
   // An off-screen shared terminal keeps parsing but submits no GPU work.
   const offscreen = await page.evaluate(async () => {
     const host = document.createElement('div');
@@ -280,6 +308,44 @@ for (const dpr of [1, 2]) {
   }
   await compare('after dispose', [0, 1]);
 
+  // A host moved into a clipping container after mount is clipped by it.
+  await page.evaluate(async () => {
+    const stage = document.getElementById('stage');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:300px;top:700px';
+    stage.append(host);
+    const term = await window.Wraith.mount(host, {
+      cols: 40,
+      rows: 8,
+      fit: false,
+      pool: window.pools.shared,
+    });
+    await term.write('\x1b[48;2;255;255;255m' + ' '.repeat(320));
+    await term.flush();
+    const box = document.createElement('div');
+    box.style.cssText =
+      'position:absolute;left:300px;top:700px;width:40px;height:20px;overflow:hidden';
+    stage.append(box);
+    host.style.cssText = '';
+    box.append(host);
+    window.moved = term;
+  });
+  await settle();
+  {
+    const image = pixels(await page.screenshot());
+    const s = (v) => Math.round(v * dpr);
+    assert(
+      region(image, s(300), s(700), s(40), s(20)).some((v) => v > 200),
+      `DPR ${dpr}: moved shared terminal not drawn inside its new container`,
+    );
+    assert(
+      region(image, s(345), s(700), s(100), s(60)).every((v) => v === 0),
+      `DPR ${dpr}: moved shared terminal drawn outside its new clipping container`,
+    );
+    checks++;
+  }
+  await page.evaluate(() => window.moved.dispose());
+
   await page.waitForTimeout(600);
   const stats = await page.evaluate(() => window.pools.shared.surfaceStats);
   assert(stats.length === 2 && stats.every((s) => s.atlases === 1), 'one shared atlas per worker');
@@ -293,5 +359,5 @@ for (const dpr of [1, 2]) {
 }
 await browser.close();
 console.log(
-  `Fleet surface passed: ${checks} checks at DPR 1 and 2 — shared pixels equal per-canvas pixels after writes, resize, scrollback and container scrolling; scaled placement within tolerance; off-screen terminals submit nothing; disposal clears its area.`,
+  `Fleet surface passed: ${checks} checks at DPR 1 and 2 — shared pixels equal per-canvas pixels after writes, resize, scrollback and container scrolling; scaled placement within tolerance; off-screen terminals submit nothing; disposal clears its area; hidden and moved hosts are honoured.`,
 );
