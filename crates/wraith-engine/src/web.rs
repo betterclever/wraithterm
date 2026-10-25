@@ -336,6 +336,11 @@ impl Engine {
     pub async fn fence(&self) -> Result<(), JsValue> {
         self.renderer.fence().await.map_err(error)
     }
+    /// Calls `done` when the GPU has finished all work submitted so far.
+    /// Unlike `fence`, this returns at once and holds no borrow while waiting.
+    pub fn on_submitted_work_done(&self, done: js_sys::Function) {
+        self.renderer.on_submitted_work_done(done);
+    }
 }
 
 /// Stateless Rust/WebGPU compositor for the xterm-compatible semantic core.
