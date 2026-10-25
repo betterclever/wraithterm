@@ -235,9 +235,16 @@ try {
   results.checks.reducedMotionRenders = (await renders()) - reducedBefore;
   assert(results.checks.reducedMotionRenders <= 2, 'reduced motion: no trail animation');
   assert.equal(await passes(), 0);
+  // Lifting reduced motion restores the requested trail.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await settle(100);
-  assert.equal(await page.evaluate(() => window.fx.effects), null);
+  await page.waitForFunction(() => window.fx.effects !== null);
+  assert.deepEqual(await page.evaluate(() => window.fx.effects), { cursorTrail: true });
+  await shot();
+  const restoredBefore = await renders();
+  await page.evaluate(() => window.fx.write('\x1b[1;30H'));
+  await settle(400);
+  results.checks.restoredTrailRenders = (await renders()) - restoredBefore;
+  assert(results.checks.restoredTrailRenders > 5, 'trail animates after reduced motion lifts');
   assert.deepEqual(await effects(null), { ok: true });
 
   // A bad shader at mount reports through onError and still renders.
@@ -328,6 +335,33 @@ try {
   assert.deepEqual(await xeffects(null), { ok: true });
   assert.equal(sha(await xshot()), sha(xoff), 'xterm effects off are byte-identical');
   assert.equal(await xterm.evaluate(() => window.xfx.renderer), 'webgpu');
+  // Disposing while a rebuild holds the compositor must not throw, and later
+  // calls reject instead of touching freed memory.
+  results.checks.xtermDisposeDuringEffects = await xterm.evaluate(async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const term = new window.compat.Terminal({ cols: 20, rows: 4 });
+    term.open(host);
+    await term.webgpuReady;
+    const pending = term.setEffects({ crt: true, bloom: 1 }).then(
+      () => 'resolved',
+      (e) => e.message,
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    let disposed = 'ok';
+    try {
+      term.dispose();
+    } catch (e) {
+      disposed = e.message;
+    }
+    const later = await term.setEffects({ crt: true }).then(
+      () => 'resolved',
+      (e) => e.message,
+    );
+    return { disposed, pending: await pending, later };
+  });
+  assert.equal(results.checks.xtermDisposeDuringEffects.disposed, 'ok');
+  assert.notEqual(results.checks.xtermDisposeDuringEffects.later, 'resolved');
   assert.deepEqual(xtermErrors, []);
   console.log(JSON.stringify(results, null, 2));
   console.log('Native and xterm GPU effects checks passed.');

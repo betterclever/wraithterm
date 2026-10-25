@@ -124,6 +124,9 @@ export function packEffects(
  */
 export class EffectsController {
   private current: WraithEffects | null = null;
+  /** The last accepted request, kept so reduced motion can be re-evaluated. */
+  private requested: WraithEffects | null = null;
+  private disposed = false;
   private applied?: string;
   private motion?: MediaQueryList;
   private motionListener?: () => void;
@@ -142,6 +145,7 @@ export class EffectsController {
     return this.current;
   }
   set(effects: WraithEffects | null | undefined): Promise<void> {
+    if (this.disposed) return Promise.reject(new Error('Terminal disposed'));
     const next = effects ? { ...effects } : null;
     const run = this.queue.then(() => this.configure(next));
     this.queue = run.catch(() => {});
@@ -151,11 +155,14 @@ export class EffectsController {
     return !!this.motion?.matches;
   }
   private async configure(effects: WraithEffects | null) {
+    if (this.disposed) throw new Error('Terminal disposed');
     if (effects && !this.motion && typeof matchMedia === 'function') {
       this.motion = matchMedia('(prefers-reduced-motion: reduce)');
       this.motionListener = () => {
-        if (!this.current) return;
-        void this.set(this.current).catch((error) => this.report(error));
+        // Re-apply the request, not just what is active: a trail-only request
+        // is inactive under reduced motion and returns when it is lifted.
+        if (!this.requested || this.disposed) return;
+        void this.set(this.requested).catch((error) => this.report(error));
       };
       this.motion.addEventListener('change', this.motionListener);
     }
@@ -166,6 +173,7 @@ export class EffectsController {
       await this.apply(packed);
       this.applied = key;
     }
+    this.requested = effects;
     this.current = packed.active ? effects : null;
     this.trackPointer(packed.active && packed.mouse);
   }
@@ -201,6 +209,8 @@ export class EffectsController {
     target.addEventListener('pointerup', (e) => update(e as PointerEvent, 'up'), { signal });
   }
   dispose() {
+    this.disposed = true;
+    this.requested = null;
     this.pointer?.abort();
     this.pointer = undefined;
     if (this.mouseFrame) cancelAnimationFrame(this.mouseFrame);

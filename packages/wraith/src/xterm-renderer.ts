@@ -264,17 +264,23 @@ export class XtermRenderer implements Renderer {
     return undefined;
   }
   private async applyEffects(params: number[], shader?: string): Promise<void> {
-    if (!(await this.ready) || !this.gpu || this.state !== 'webgpu')
+    if (!(await this.ready) || this.disposed || !this.gpu || this.state !== 'webgpu')
       throw new Error('GPU effects require the WebGPU renderer');
     this.effectsBusy = true;
     cancelAnimationFrame(this.animation);
     this.animation = 0;
+    const gpu = this.gpu;
     try {
-      await this.gpu.set_effects(new Float32Array(params), shader);
+      await gpu.set_effects(new Float32Array(params), shader);
     } finally {
       this.effectsBusy = false;
-      this.invalidate();
+      // dispose() during the rebuild could not free the borrowed compositor.
+      if (this.disposed) {
+        gpu.free();
+        if (this.gpu === gpu) this.gpu = undefined;
+      } else this.invalidate();
     }
+    if (this.disposed) throw new Error('Terminal disposed');
   }
   private setEffectMouse(mouse: number[]): void {
     if (!this.gpu || this.effectsBusy || this.disposed) return;
@@ -900,7 +906,12 @@ export class XtermRenderer implements Renderer {
     this.effects.dispose();
     for (const subscription of this.subscriptions) subscription.dispose();
     this.restoreBackgrounds();
-    this.gpu?.free();
+    // An in-flight setEffects() holds a Rust borrow; it frees the compositor
+    // when the rebuild settles.
+    if (!this.effectsBusy) {
+      this.gpu?.free();
+      this.gpu = undefined;
+    }
     this.canvas.remove();
     this.fallback.dispose();
   }
