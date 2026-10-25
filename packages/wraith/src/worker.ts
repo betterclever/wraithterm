@@ -2,6 +2,7 @@
 import init, { Engine } from '../wasm/wraith_engine.js';
 import type { Command, Reply } from './protocol.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
+import { createCommandTracker } from './worker-commands.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
 let initializing: Promise<unknown> = Promise.resolve();
@@ -97,6 +98,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
   function result(id: number, value?: unknown) {
     post({ type: 'result', id, value });
   }
+  const commands = createCommandTracker(() => engine, post);
   function releaseAbandonedHold() {
     if (!engine || disposed) return;
     if (busy) {
@@ -115,6 +117,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         clearTimeout(holdTimer);
         if (bytes[0]) holdTimer = setTimeout(releaseAbandonedHold, 150);
       }
+      if (kind === 5) commands.event(bytes);
     }
     const mouse = engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9);
     if (mouse !== mouseTracking) {
@@ -143,6 +146,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         post({ type: 'cursor', x, y });
       }
     }
+    commands.update();
     if (engine!.needs_present) schedule();
   }
   function schedule(force = false) {
@@ -403,6 +407,18 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
           scheduled = false;
         }
         break;
+      case 'commands':
+        result(command.id, commands.list());
+        break;
+      case 'command-text':
+        result(command.id, commands.text(command.block, command.input));
+        break;
+      case 'jump-prompt': {
+        const offset = commands.jump(command.direction);
+        if (offset >= 0) schedule();
+        result(command.id, offset >= 0);
+        break;
+      }
       case 'observe-render':
         observeRender = command.enabled;
         break;

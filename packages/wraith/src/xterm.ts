@@ -8,6 +8,17 @@ import { XtermRenderer, type RendererState } from './xterm-renderer.js';
 import { accelerateInput } from './xterm-input.js';
 const XtermTerminal: typeof TerminalApi = RuntimeTerminal;
 export type * from './xterm-api.js';
+export { CommandBlocksAddon } from './xterm-commands.js';
+export {
+  SHELL_INTEGRATION,
+  DEFAULT_COMMAND_COLORS,
+  type CommandBlock,
+  type CommandBlockOptions,
+  type CommandColors,
+  type CommandRows,
+  type CommandState,
+} from './command-types.js';
+export { parseOsc133, type Osc133Step } from './osc133.js';
 /** Complete xterm.js 6.0 public API. Construction/open remain synchronous;
  * WebGPU warms asynchronously while xterm's DOM renderer remains usable. */
 export class Terminal extends XtermTerminal {

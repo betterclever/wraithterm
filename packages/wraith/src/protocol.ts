@@ -1,4 +1,17 @@
 import type { BenchmarkOptions } from './types.js';
+/** A command block as the worker reports it; see command-types.ts. */
+export interface RawCommandBlock {
+  id: number;
+  /** Engine BlockState: 0 prompt, 1 input, 2 running, 3 done. */
+  state: number;
+  exitCode?: number;
+  command: string;
+  /** Prompt, input, output and end screen rows; -1 when unknown or trimmed. */
+  rows: [number, number, number, number];
+  truncated: boolean;
+  startedAt?: number;
+  finishedAt?: number;
+}
 export type Command =
   | {
       type: 'init';
@@ -47,6 +60,9 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  | { type: 'commands'; id: number }
+  | { type: 'command-text'; block: number; input: boolean; id: number }
+  | { type: 'jump-prompt'; direction: number; id: number }
   | { type: 'dispose'; id: number };
 export type Reply =
   | { type: 'ready'; width: number; height: number; adapter: string }
@@ -59,4 +75,7 @@ export type Reply =
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
   | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string }
+  | { type: 'command'; block: RawCommandBlock }
+  /** Gutter extents, five numbers per visible block; see command_marks(). */
+  | { type: 'marks'; marks: number[]; primary: boolean };

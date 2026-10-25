@@ -49,7 +49,10 @@
     "benchmark:bulk-text": "node scripts/bulk-text-benchmark.mjs",
     "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
     "test:native-visibility": "node scripts/native-visibility-test.mjs",
-    "benchmark:visibility": "node scripts/visibility-benchmark.mjs"
+    "benchmark:visibility": "node scripts/visibility-benchmark.mjs",
+    "test:commands": "node scripts/command-blocks-test.mjs",
+    "test:shell-integration": "node scripts/shell-integration-test.mjs",
+    "benchmark:commands": "node scripts/command-blocks-benchmark.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

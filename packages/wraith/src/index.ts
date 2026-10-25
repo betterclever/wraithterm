@@ -15,7 +15,11 @@ import {
   type KeyEventHandler,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
+import { CommandBlocks } from './command-blocks.js';
+import type { CommandBlock } from './command-types.js';
 export * from './types.js';
+export * from './command-types.js';
+export { parseOsc133, type Osc133Step } from './osc133.js';
 type Listener<T> = (value: T) => void;
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
@@ -138,6 +142,9 @@ export class Wraith {
   private mirrorTimer?: ReturnType<typeof setInterval>;
   private preedit: HTMLSpanElement;
   private theme: Required<WraithTheme>;
+  private blocks: CommandBlocks;
+  /** CSS pixels reserved left of the canvas for the command gutter. */
+  private inset = 0;
   private constructor(host: HTMLElement, options: WraithOptions) {
     this.options = options;
     this.dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -205,6 +212,36 @@ export class Wraith {
     };
     this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
     this.bindInput();
+    this.blocks = new CommandBlocks(
+      {
+        element: this.element,
+        canvas: this.canvas,
+        geometry: () => ({
+          cellWidth: this.cellWidth,
+          cellHeight: this.cellHeight,
+          dpr: this.dpr,
+          cols: this.cols,
+          rows: this.rows,
+        }),
+        request: <T>(command: Record<string, unknown> & { type: string }) =>
+          this.request<T>(command as unknown as Omit<Extract<Command, { id: number }>, 'id'>),
+        addKeyHandler: (handler) => this.attachCustomKeyEventHandler(handler),
+        reserve: (pixels) => {
+          // Only a fitted terminal can give up width without clipping columns.
+          if (this.options.fit === false || this.inset) return false;
+          this.inset = pixels;
+          Object.assign(this.element.style, {
+            boxSizing: 'border-box',
+            paddingLeft: `${pixels}px`,
+          });
+          this.fit();
+          return true;
+        },
+        error: (error) =>
+          this.errors.emit(error instanceof Error ? error : new Error(String(error))),
+      },
+      options.commandBlocks,
+    );
   }
   static async mount(host: HTMLElement, options: WraithOptions = {}): Promise<Wraith> {
     if (!navigator.gpu)
@@ -316,7 +353,7 @@ export class Wraith {
         this.mouseTracking = reply.mouse;
         break;
       case 'cursor': {
-        const left = `${(reply.x * this.cellWidth) / this.dpr}px`,
+        const left = `${this.inset + (reply.x * this.cellWidth) / this.dpr}px`,
           top = `${(reply.y * this.cellHeight) / this.dpr}px`;
         Object.assign(this.input.style, { left, top, bottom: 'auto' });
         Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
@@ -327,6 +364,10 @@ export class Wraith {
         break;
       case 'error':
         this.fail(new Error(reply.error));
+        break;
+      case 'command':
+      case 'marks':
+        this.blocks.receive(reply);
         break;
       case 'stats': {
         // Some browser/display transitions update resolution without delivering
@@ -437,7 +478,8 @@ export class Wraith {
   fit(): void {
     if (this.disposed || this.failed) return;
     const rect = this.element.getBoundingClientRect();
-    const cols = Math.min(512, Math.max(1, Math.floor((rect.width * this.dpr) / this.cellWidth)));
+    const width = rect.width - this.inset;
+    const cols = Math.min(512, Math.max(1, Math.floor((width * this.dpr) / this.cellWidth)));
     const rows = Math.min(
       512,
       Math.floor(65536 / cols),
@@ -447,6 +489,7 @@ export class Wraith {
       void this.resize(cols, rows).catch((error) => this.errors.emit(error));
   }
   private dimensions() {
+    this.blocks.draw();
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
     this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
@@ -642,6 +685,32 @@ export class Wraith {
       mode,
     } as Omit<Extract<Command, { type: 'selection' }>, 'id'>);
     this.selected = start.x !== -1;
+  }
+  /**
+   * Shell commands recorded from OSC 133 semantic prompt marks, oldest first
+   * (see SHELL_INTEGRATION). Output text is read lazily with `block.output()`.
+   */
+  commands(): Promise<CommandBlock[]> {
+    this.flushWrites();
+    return this.blocks.commands();
+  }
+  /** Fires when a command finishes (OSC 133;D, or the next prompt). */
+  onCommand(listener: Listener<CommandBlock>): Disposable {
+    return this.blocks.onCommand(listener);
+  }
+  /**
+   * Scroll the previous (-1) or next (1) prompt to the top of the viewport.
+   * Resolves false when there is none. Bound to Cmd+Up/Down on macOS and
+   * Ctrl+Shift+Up/Down elsewhere once a prompt has been seen.
+   */
+  jumpToPrompt(direction: -1 | 1): Promise<boolean> {
+    this.flushWrites();
+    return this.blocks.jumpToPrompt(direction);
+  }
+  /** Copy a command block's output to the clipboard and return it. */
+  copyCommandOutput(id: number): Promise<string> {
+    this.flushWrites();
+    return this.blocks.copyCommandOutput(id);
   }
   /** Return false to keep a key event out of the terminal. Prevent its browser default in the handler if desired. */
   attachCustomKeyEventHandler(handler: KeyEventHandler): Disposable {
@@ -1100,6 +1169,7 @@ export class Wraith {
     this.renders.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
+    this.blocks.dispose();
   }
 }
 
