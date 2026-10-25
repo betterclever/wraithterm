@@ -34,6 +34,12 @@ async function run(name, args, { viewers = 0, paused = false } = {}) {
       slow.socket.pause();
     }
     await wait(500);
+    let peakRss = rss(server.pid);
+    const sampler = setInterval(() => {
+      try {
+        peakRss = Math.max(peakRss, rss(server.pid));
+      } catch {}
+    }, 100);
     const start = performance.now();
     await owner.page.keyboard.press('Enter');
     const times = {};
@@ -43,6 +49,7 @@ async function run(name, args, { viewers = 0, paused = false } = {}) {
         times[i ? `viewer${i}` : 'owner'] = Math.round(performance.now() - start);
       }),
     );
+    clearInterval(sampler);
     const presence = args.length
       ? await owner.page.evaluate(() => window.wraithShare.presence)
       : undefined;
@@ -53,7 +60,7 @@ async function run(name, args, { viewers = 0, paused = false } = {}) {
       pausedSocket: paused,
       ms: times,
       ownerMiBps: +(FLOOD / 1048576 / (times.owner / 1000)).toFixed(1),
-      serverRssBytes: rss(server.pid),
+      serverPeakRssBytes: peakRss,
       lagging: presence?.lagging ?? 0,
     };
     for (const page of [owner, ...guests]) await page.page.close();
@@ -74,6 +81,12 @@ for (let i = 0; i < RUNS; i++) {
 for (let i = 0; i < RUNS; i++) {
   results.push(await run('single-client (no --share)', []));
   results.push(await run('--share=write, owner only', ['--share=write']));
+  results.push(
+    await run('--share=write, owner + paused socket', ['--share=write'], { paused: true }),
+  );
+  results.push(
+    await run('--share=write, owner + 2 viewer pages', ['--share=write'], { viewers: 2 }),
+  );
   results.push(
     await run('--share=write, owner + 2 viewer pages + paused socket', ['--share=write'], {
       viewers: 2,
@@ -101,6 +114,6 @@ mkdirSync(resolve(out, '..'), { recursive: true });
 writeFileSync(out, JSON.stringify(report, null, 2) + '\n');
 for (const r of results)
   console.log(
-    `${r.name}: ${JSON.stringify(r.ms)} owner ${r.ownerMiBps} MiB/s, rss ${(r.serverRssBytes / 1048576).toFixed(0)} MiB, lagging ${r.lagging}`,
+    `${r.name}: ${JSON.stringify(r.ms)} owner ${r.ownerMiBps} MiB/s, peak rss ${(r.serverPeakRssBytes / 1048576).toFixed(0)} MiB, lagging ${r.lagging}`,
   );
 console.log(`generation only: ${generation.join(', ')} ms; wrote ${out}`);

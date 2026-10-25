@@ -559,7 +559,7 @@ function shareSession(term, options, ended) {
     sendItem(client, item);
   };
   term.onData((data) => {
-    const chunk = Buffer.from(data);
+    const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
     replay.write(chunk);
     recorder?.output(chunk);
     for (const client of clients) deliver(client, chunk);

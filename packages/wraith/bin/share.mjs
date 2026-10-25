@@ -59,6 +59,31 @@ export class ModeTracker {
     this.cursorStyle = '';
     this.version++;
   }
+  /** The tracked state, shared between calls until it changes. */
+  snapshot() {
+    if (this.saved?.version !== this.version)
+      this.saved = {
+        version: this.version,
+        modes: new Map(this.modes),
+        alt: this.alt,
+        keypad: this.keypad,
+        cursorStyle: this.cursorStyle,
+        title: this.title,
+      };
+    return this.saved;
+  }
+  static from(snapshot) {
+    const tracker = new ModeTracker();
+    if (snapshot) {
+      tracker.modes = new Map(snapshot.modes);
+      tracker.alt = snapshot.alt;
+      tracker.keypad = snapshot.keypad;
+      tracker.cursorStyle = snapshot.cursorStyle;
+      tracker.title = snapshot.title;
+      tracker.version++;
+    }
+    return tracker;
+  }
   /** Escape sequences that bring a power-on terminal to the tracked state. */
   preamble({ includeAlt = true } = {}) {
     if (includeAlt && this.alt) return '\x1b[?1049h' + this.preamble({ includeAlt: false });
@@ -217,7 +242,7 @@ export class ReplayBuffer {
   constructor({ limit = 2 * 1024 * 1024, cols = 80, rows = 24 } = {}) {
     this.limit = limit;
     this.tracker = new ModeTracker();
-    this.start = { cols, rows, modes: '' };
+    this.start = { cols, rows, state: undefined };
     this.cols = cols;
     this.rows = rows;
     this.entries = [];
@@ -232,7 +257,7 @@ export class ReplayBuffer {
     this.entries.push({ size: [cols, rows] });
   }
   write(chunk) {
-    const modes = this.tracker.preamble();
+    const state = this.tracker.snapshot();
     let reset = -1,
       ris = false,
       resetModes = '';
@@ -246,25 +271,27 @@ export class ReplayBuffer {
       this.bytes = 0;
       this.resets++;
       this.truncated = false;
-      this.start = { cols: this.cols, rows: this.rows, modes: '' };
+      this.start = { cols: this.cols, rows: this.rows, state: undefined };
       const lead = Buffer.from(resetModes + (ris ? '' : '\x1b[H\x1b[2J'), 'utf8');
-      this.append(Buffer.concat([lead, chunk.subarray(reset)]), '');
-    } else this.append(chunk, modes);
+      this.append(Buffer.concat([lead, chunk.subarray(reset)]), undefined);
+    } else this.append(chunk, state);
     this.trim();
   }
-  append(chunk, modes) {
+  // Entries are `{ size }` or `{ buf, start, end, state }`, where `state` is the
+  // tracked state before `buf[start]`. Small writes share 64 KiB blocks.
+  append(chunk, state) {
     if (!chunk.length) return;
     this.bytes += chunk.length;
     const last = this.entries.at(-1);
-    if (last?.buf && last.len + chunk.length <= last.buf.length) {
-      chunk.copy(last.buf, last.len);
-      last.len += chunk.length;
+    if (last?.buf && last.end + chunk.length <= last.buf.length) {
+      chunk.copy(last.buf, last.end);
+      last.end += chunk.length;
     } else if (chunk.length >= BLOCK / 4) {
-      this.entries.push({ buf: Buffer.from(chunk), len: chunk.length, modes });
+      this.entries.push({ buf: chunk, start: 0, end: chunk.length, state });
     } else {
       const buf = Buffer.allocUnsafe(BLOCK);
       chunk.copy(buf);
-      this.entries.push({ buf, len: chunk.length, modes });
+      this.entries.push({ buf, start: 0, end: chunk.length, state });
     }
   }
   trim() {
@@ -278,30 +305,34 @@ export class ReplayBuffer {
         continue;
       }
       const excess = this.bytes - this.limit;
-      if (first.len <= excess) {
-        this.bytes -= first.len;
+      if (first.end - first.start <= excess) {
+        this.bytes -= first.end - first.start;
         this.entries.shift();
         continue;
       }
       // Drop the head of this entry and resume after the next line break so
       // replay does not start inside an escape sequence or UTF-8 character.
-      let cut = excess;
-      const newline = first.buf.subarray(0, first.len).indexOf(0x0a, cut);
+      let cut = first.start + excess;
+      const newline = first.buf.subarray(0, first.end).indexOf(0x0a, cut);
       if (newline >= 0 && newline - cut < 4096) cut = newline + 1;
-      const rest = Buffer.from(first.buf.subarray(cut, first.len));
-      this.bytes -= cut;
-      this.entries[0] = { buf: rest, len: rest.length, modes: first.modes };
+      // Rescan the dropped head so the kept part starts with its own state.
+      const scratch = ModeTracker.from(first.state);
+      scratch.scan(first.buf.subarray(first.start, cut));
+      first.state = scratch.snapshot();
+      this.bytes -= cut - first.start;
+      first.start = cut;
       break;
     }
     const head = this.entries.find((entry) => entry.buf);
-    this.start.modes = head ? head.modes : this.tracker.preamble();
+    this.start.state = head ? head.state : this.tracker.snapshot();
   }
   /** Messages that rebuild the current screen on a fresh terminal, in order. */
   snapshot() {
     const items = [{ size: [this.start.cols, this.start.rows] }];
-    if (this.start.modes) items.push(Buffer.from(this.start.modes, 'utf8'));
+    const modes = this.start.state ? ModeTracker.from(this.start.state).preamble() : '';
+    if (modes) items.push(Buffer.from(modes, 'utf8'));
     for (const entry of this.entries)
-      items.push(entry.size ? { size: entry.size } : entry.buf.subarray(0, entry.len));
+      items.push(entry.size ? { size: entry.size } : entry.buf.subarray(entry.start, entry.end));
     return items;
   }
 }
