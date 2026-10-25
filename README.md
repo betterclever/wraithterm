@@ -321,7 +321,9 @@ included.
 
 Limits: the player needs WebGPU (native profile). Recording works with any
 terminal through `new WraithRecorder({ cols, rows })` and `recorder.output(data)`
-beside your own writes, including the xterm-compatible profile. Input is recorded
+beside your own writes, including the xterm-compatible profile. A recording
+starts empty: start it before the first write, because content already on screen
+and the terminal's theme are not captured (pass `theme` to the player). Input is recorded
 (`record({ input: true })`) but not replayed. asciicast stores text, so invalid
 UTF-8 becomes U+FFFD on export; in-memory recordings keep exact bytes. Saved
 cursors, titles and Kitty images are not snapshot state: verification rejects a
