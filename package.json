@@ -50,7 +50,8 @@
     "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
     "test:native-visibility": "node scripts/native-visibility-test.mjs",
     "benchmark:visibility": "node scripts/visibility-benchmark.mjs",
-    "test:accessibility": "node scripts/accessibility-test.mjs"
+    "test:accessibility": "node scripts/accessibility-test.mjs",
+    "benchmark:accessibility": "node scripts/accessibility-benchmark.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

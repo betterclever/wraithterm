@@ -1,0 +1,948 @@
+{
+  "date": "2026-10-25T18:37:27.747Z",
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18,
+    "os": "darwin 27.2.0"
+  },
+  "chrome": "155.0.8059.85",
+  "headless": true,
+  "builds": [
+    {
+      "name": "baseline",
+      "head": "115106931ce4934db6bc41f4d7939eb80551d248",
+      "sources": {
+        "index.js": "2c79d4f18524f5c0717d9331581564b8750b6f429f053408605d07610c74fed9",
+        "worker.js": "df275b0ba94dcceaf23be70abee12d2679a70c91f88d262739b94af58aca6e82",
+        "wasm": "8882eda89dd45b0c6e206e4da6ae8924e8ca17a5874757756a979be4d7f6c5c5"
+      }
+    },
+    {
+      "name": "branch",
+      "head": "37c75958dbb7a93b59410a0cc6b5ce64a3e74f7d",
+      "dirty": false,
+      "sources": {
+        "index.js": "cc2f857bbc229314d8661bb823926b31a856ca5c4631fd16aa5bb87f8ab2ca1b",
+        "worker.js": "594923cf16a00225491152208f585e4c8ffde1b338fb39bcf3c51f4aee8f146c",
+        "wasm": "8882eda89dd45b0c6e206e4da6ae8924e8ca17a5874757756a979be4d7f6c5c5"
+      }
+    }
+  ],
+  "runnerSha256": "7595f25ceb813b4d71fc1045e39d337b93de30845d90624dfc16abba554389e7",
+  "methodology": "One Chrome, one Vite dev server; both builds load as ES modules into one page per repetition. Each configuration mounts its own visible 160x50 terminal (fit off, 10,000 lines scrollback, 1500x1000 host, stacked without overlap). Every round runs each configuration once in rotated order: (1) bulk: 32 MiB of SGR-colored log lines in 64 KiB chunks, each write awaited (parsed), then flush() (forced render + GPU fence), MiB/s; (2) GPU-fenced benchmark() dense and scroll, 512 frames each. Paired ratios divide each configuration by the reference measured in the same round. After the rounds, (3) stream: 2 s of 40 lines every 16 ms per configuration, counting render submissions (onRender), which are submissions, not display presentation. Screen reader on uses announcements \"always\", so worker sampling, diffing, mirror DOM and live-region updates all run.",
+  "runs": [
+    {
+      "repetition": 0,
+      "round": 0,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 244.0884820858496,
+          "denseFencedFps": 5614.035087535843,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5824.800909730165
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 264.68155499108667,
+          "denseFencedFps": 5541.125541661705,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5446.808510638298
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 260.7986960001855,
+          "denseFencedFps": 5493.56223158399,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5791.855203229387
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "round": 1,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 266.444629455602,
+          "denseFencedFps": 4432.900432900433,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4448.305820679661
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 263.5914332978311,
+          "denseFencedFps": 4890.1623685332015,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4975.7045679736275
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 263.3744855967078,
+          "denseFencedFps": 5114.8851151896815,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4608.460845713746
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "round": 2,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 230.88023089015982,
+          "denseFencedFps": 5009.784735666044,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4714.548802558459
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 235.2941176470588,
+          "denseFencedFps": 4839.31947083575,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4714.548803205349
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 241.3273001345578,
+          "denseFencedFps": 5074.33102051293,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5034.414945771841
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "round": 3,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 222.6861517003225,
+          "denseFencedFps": 3750.915750915751,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3704.7756873296594
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 203.17460317460316,
+          "denseFencedFps": 3775.8112096054983,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3399.734395884887
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 165.6314699767411,
+          "denseFencedFps": 3417.890520762257,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3499.658236571632
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "round": 4,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 92.72674586835977,
+          "denseFencedFps": 2776.5726682474215,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2331.511839771844
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 104.54099967534503,
+          "denseFencedFps": 1714.6684528138655,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2755.6512379344053
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 104.33648516364217,
+          "denseFencedFps": 2605.5979643765904,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2808.5573231397157
+        }
+      }
+    },
+    {
+      "repetition": 0,
+      "round": 5,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 101.07391029405032,
+          "denseFencedFps": 1755.8299040139423,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 1992.2178988326848
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 95.83707697171863,
+          "denseFencedFps": 1794.6021730760838,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2092.3579893492615
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 95.89451603150798,
+          "denseFencedFps": 2165.8206429233956,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 1431.3670673629695
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 0,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 262.72577997358775,
+          "denseFencedFps": 5547.128927589726,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5791.855204205693
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 240.6015037593985,
+          "denseFencedFps": 5614.035087535843,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5727.069351803177
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 259.529602601569,
+          "denseFencedFps": 5583.424209196947,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5676.274944380082
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 1,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 269.13372580652515,
+          "denseFencedFps": 5651.214128407107,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5831.43507992459
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 273.5042735042735,
+          "denseFencedFps": 5589.519651018735,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5844.748858845176
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 273.73823779613684,
+          "denseFencedFps": 5601.750546680645,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5878.300803070539
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 2,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 274.9140893330016,
+          "denseFencedFps": 5607.886089996854,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5919.075144508671
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 273.97260274671663,
+          "denseFencedFps": 5701.5590192876625,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5898.617511723263
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 273.27070880981057,
+          "denseFencedFps": 5541.125540768098,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5858.123570393314
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 3,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 272.1088435167275,
+          "denseFencedFps": 5632.563255956296,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5322.245322904845
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 272.5724020304544,
+          "denseFencedFps": 5695.216908241593,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5772.266065195009
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 272.1088435512066,
+          "denseFencedFps": 5553.145336046099,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5361.2565445026175
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 4,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 256,
+          "denseFencedFps": 5089.463220977491,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 4899.521531100479
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 261.01141926228183,
+          "denseFencedFps": 5004.887585678551,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5069.306930693069
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 247.67801857013825,
+          "denseFencedFps": 5176.94641020367,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5150.905432286702
+        }
+      }
+    },
+    {
+      "repetition": 1,
+      "round": 5,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 237.9182156133829,
+          "denseFencedFps": 5219.164118563798,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5069.306930693069
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 236.51145602886072,
+          "denseFencedFps": 5156.092648694525,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5094.527363184079
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 240.06001500911802,
+          "denseFencedFps": 4890.1623685332015,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5000.0000004365575
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 0,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 113.59602413795335,
+          "denseFencedFps": 2755.6512379344053,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2876.4044943820227
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 111.6149284955262,
+          "denseFencedFps": 2902.494330967686,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3036.773428071466
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 107.09504685515115,
+          "denseFencedFps": 2816.2816282089834,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 2910.744741231669
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 1,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 125.3427340398494,
+          "denseFencedFps": 3150.769230769231,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3139.178417976294
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 126.43224021679025,
+          "denseFencedFps": 3123.8560096484466,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3290.488432002653
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 128.61736334559208,
+          "denseFencedFps": 3049.4341869078257,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3226.2129804057035
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 2,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 132.50517598343686,
+          "denseFencedFps": 3043.9952437034967,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3198.0012493382983
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 132.78008298755188,
+          "denseFencedFps": 3246.670894041371,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3168.316831507878
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 132.83520133328201,
+          "denseFencedFps": 3095.525997748949,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3226.2129804057035
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 3,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 131.57894736680865,
+          "denseFencedFps": 3178.1502173739495,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3292.604501607717
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 133.55592653925675,
+          "denseFencedFps": 3089.921544905198,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3339.8564906063507
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 128.8244766552004,
+          "denseFencedFps": 3190.031152647975,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 3236.409608030055
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 4,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 161.69782719275236,
+          "denseFencedFps": 3917.3680182733383,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5069.306930693069
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 179.97750281516522,
+          "denseFencedFps": 4522.968198356166,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5192.697769076581
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 177.87659810416773,
+          "denseFencedFps": 4514.991181420534,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5272.91452062674
+        }
+      }
+    },
+    {
+      "repetition": 2,
+      "round": 5,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 272.3404255319149,
+          "denseFencedFps": 5583.424209196947,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5547.128927589726
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 266.8890742484252,
+          "denseFencedFps": 5663.7168147194425,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5878.300804076204
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 273.2707087750365,
+          "denseFencedFps": 5632.563255956296,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5885.057471264367
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 0,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 235.1212343967776,
+          "denseFencedFps": 5272.914521435932,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5614.035087535843
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 255.38707103560344,
+          "denseFencedFps": 5441.0201907689,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5505.376344086021
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 258.48142165404147,
+          "denseFencedFps": 5395.152792074208,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5707.9152729430225
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 1,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 269.3602693670266,
+          "denseFencedFps": 5435.244161186854,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5739.910313709571
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 266.2229617238485,
+          "denseFencedFps": 5644.98346177703,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5638.766520008864
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 269.814502543071,
+          "denseFencedFps": 5441.02019163051,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5759.280090567964
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 2,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 268.9075630252101,
+          "denseFencedFps": 5553.145336046099,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5759.28008960261
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 270.7275803995543,
+          "denseFencedFps": 5505.376344086021,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5487.674169521485
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 261.2244897959184,
+          "denseFencedFps": 5446.808510638298,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5614.035087535843
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 3,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 273.5042735042735,
+          "denseFencedFps": 5663.716813785859,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5932.792583189752
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 273.03754268988786,
+          "denseFencedFps": 5682.57491619527,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5831.43507992459
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 275.62446164974784,
+          "denseFencedFps": 5695.216908241593,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5831.43507992459
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 4,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 269.814502543071,
+          "denseFencedFps": 5620.197584519775,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5912.240184147118
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 273.2707087750365,
+          "denseFencedFps": 5607.886089996854,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5891.829688893924
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 268.68178003023905,
+          "denseFencedFps": 5626.373626373626,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5864.833906271232
+        }
+      }
+    },
+    {
+      "repetition": 3,
+      "round": 5,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 271.87765504834107,
+          "denseFencedFps": 5595.628415300546,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5871.559632826851
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 274.44253860751115,
+          "denseFencedFps": 5620.197585439067,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5960.41909155382
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 278.2608695652174,
+          "denseFencedFps": 5746.35241340349,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5851.428571428572
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 0,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 266.0016624840317,
+          "denseFencedFps": 5529.157666852759,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5632.563256879637
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 243.9024390465514,
+          "denseFencedFps": 5571.273123501753,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5831.43507992459
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 262.2950819672131,
+          "denseFencedFps": 5547.128927589726,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5838.084378364893
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 1,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 271.87765504834107,
+          "denseFencedFps": 5553.145336046099,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5919.075144508671
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 275.8620689655172,
+          "denseFencedFps": 5601.750546680645,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5864.833906271232
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 273.27070880981057,
+          "denseFencedFps": 5772.266065195009,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5925.925925517115
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 2,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 271.1864406779661,
+          "denseFencedFps": 5676.274944380082,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5912.240184147118
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 269.5871946014875,
+          "denseFencedFps": 5607.886089996854,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5871.559633830211
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 274.6781115879828,
+          "denseFencedFps": 5651.21412747764,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5778.781038763479
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 3,
+      "order": ["branch/off", "branch/on", "baseline/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 277.5368603714408,
+          "denseFencedFps": 5638.766520008864,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5798.414496231943
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 273.03754265517307,
+          "denseFencedFps": 5714.285714665846,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5981.308411631441
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 275.8620689655172,
+          "denseFencedFps": 5559.174810348917,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5939.675173808566
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 4,
+      "order": ["branch/on", "baseline/off", "branch/off"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 273.97260271176367,
+          "denseFencedFps": 5657.458563535912,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5891.829688893924
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 269.1337258402544,
+          "denseFencedFps": 5651.214128407107,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5946.573751863465
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 278.98866611443594,
+          "denseFencedFps": 5669.98892599001,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5864.833906271232
+        }
+      }
+    },
+    {
+      "repetition": 4,
+      "round": 5,
+      "order": ["baseline/off", "branch/off", "branch/on"],
+      "result": {
+        "baseline/off": {
+          "bulkMiBPerSecond": 280.2101576474638,
+          "denseFencedFps": 5644.98346177703,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5932.792584214149
+        },
+        "branch/off": {
+          "bulkMiBPerSecond": 278.2608695652174,
+          "denseFencedFps": 5676.274944380082,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5851.428571428572
+        },
+        "branch/on": {
+          "bulkMiBPerSecond": 272.80477405582195,
+          "denseFencedFps": 5695.216908241593,
+          "adapter": "WebGPU adapter (BrowserWebGpu)",
+          "scrollFencedFps": 5864.833906271232
+        }
+      }
+    }
+  ],
+  "stream": [
+    {
+      "repetition": 0,
+      "baseline/off": {
+        "renderSubmissions": 109,
+        "longestWriteMs": 2.0999999940395355,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/off": {
+        "renderSubmissions": 111,
+        "longestWriteMs": 0.5999999940395355,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/on": {
+        "renderSubmissions": 113,
+        "longestWriteMs": 0.7000000029802322,
+        "announcements": 4,
+        "mirrorRows": 50,
+        "lastRowOk": true
+      }
+    },
+    {
+      "repetition": 1,
+      "baseline/off": {
+        "renderSubmissions": 115,
+        "longestWriteMs": 0.7999999970197678,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/off": {
+        "renderSubmissions": 110,
+        "longestWriteMs": 0.5999999940395355,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/on": {
+        "renderSubmissions": 108,
+        "longestWriteMs": 0.5,
+        "announcements": 4,
+        "mirrorRows": 50,
+        "lastRowOk": true
+      }
+    },
+    {
+      "repetition": 2,
+      "baseline/off": {
+        "renderSubmissions": 112,
+        "longestWriteMs": 1,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/off": {
+        "renderSubmissions": 112,
+        "longestWriteMs": 0.7000000029802322,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/on": {
+        "renderSubmissions": 116,
+        "longestWriteMs": 1.7000000029802322,
+        "announcements": 2,
+        "mirrorRows": 50,
+        "lastRowOk": true
+      }
+    },
+    {
+      "repetition": 3,
+      "baseline/off": {
+        "renderSubmissions": 112,
+        "longestWriteMs": 1.0999999940395355,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/off": {
+        "renderSubmissions": 112,
+        "longestWriteMs": 0.5,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/on": {
+        "renderSubmissions": 114,
+        "longestWriteMs": 0.699999988079071,
+        "announcements": 4,
+        "mirrorRows": 50,
+        "lastRowOk": true
+      }
+    },
+    {
+      "repetition": 4,
+      "baseline/off": {
+        "renderSubmissions": 110,
+        "longestWriteMs": 0.5999999940395355,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/off": {
+        "renderSubmissions": 109,
+        "longestWriteMs": 0.5,
+        "announcements": 0,
+        "mirrorRows": 0,
+        "lastRowOk": true
+      },
+      "branch/on": {
+        "renderSubmissions": 104,
+        "longestWriteMs": 2.0999999940395355,
+        "announcements": 4,
+        "mirrorRows": 50,
+        "lastRowOk": true
+      }
+    }
+  ],
+  "summary": [
+    {
+      "config": "baseline/off",
+      "samples": 30,
+      "medianBulkMiBPerSecond": 266.22314596981687,
+      "medianDenseFencedFps": 5538.143297221242,
+      "medianScrollFencedFps": 5623.29917220774,
+      "pairedBulkRatioVs_baseline/off": 1,
+      "pairedDenseRatioVs_baseline/off": 1,
+      "pairedScrollRatioVs_baseline/off": 1,
+      "medianStreamRenderSubmissions": 112,
+      "medianStreamLongestWriteMs": 1,
+      "medianAnnouncements": 0
+    },
+    {
+      "config": "branch/off",
+      "samples": 30,
+      "medianBulkMiBPerSecond": 264.1364941444589,
+      "medianDenseFencedFps": 5556.199332581729,
+      "medianScrollFencedFps": 5572.071432047443,
+      "pairedBulkRatioVs_baseline/off": 0.9999985464989891,
+      "pairedDenseRatioVs_baseline/off": 1.006090202718106,
+      "pairedScrollRatioVs_baseline/off": 1.0036291147175582,
+      "medianStreamRenderSubmissions": 111,
+      "medianStreamLongestWriteMs": 0.5999999940395355,
+      "medianAnnouncements": 0
+    },
+    {
+      "config": "branch/on",
+      "samples": 30,
+      "medianBulkMiBPerSecond": 261.75978588156573,
+      "medianDenseFencedFps": 5470.1853711111435,
+      "medianScrollFencedFps": 5692.095108661552,
+      "pairedBulkRatioVs_baseline/off": 1.0020885003640676,
+      "pairedDenseRatioVs_baseline/off": 1.0034942943525182,
+      "pairedScrollRatioVs_baseline/off": 1.0022659928252509,
+      "medianStreamRenderSubmissions": 113,
+      "medianStreamLongestWriteMs": 0.7000000029802322,
+      "medianAnnouncements": 4
+    }
+  ]
+}
