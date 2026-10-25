@@ -220,8 +220,13 @@ per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
 Limits: the shared canvases sit at `z-index: 1` by default
 (`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
 must stack above them. Placement follows layout one animation frame later
-than the DOM. Rotation and perspective transforms are not modelled. Fallback
-fonts and ligatures are fixed when a shared terminal is created.
+than the DOM. Rotation and perspective transforms are not modelled, and partial
+CSS opacity or filters on a host are not applied (`visibility: hidden` and
+`opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
+terminal is created. A worker's terminals with the same fonts share one
+2048×2048 glyph atlas; when together they need more glyphs than it holds, it
+resets and every terminal repacks (one full redraw), so a glyph mix that never
+fits keeps resetting.
 `pool.surfaceStats` reports presented and GPU-completed frames per worker.
 
 Connect a PTY transport:
