@@ -1,0 +1,120 @@
+@import './playground.css';
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 184, 107, 0.06), transparent 60%), var(--bg);
+  touch-action: none;
+}
+.viewport.panning {
+  cursor: grabbing;
+}
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  gap: 6px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.world > .tile {
+  overflow: hidden;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #2a1f19;
+}
+/* Above the shared terminal surfaces (z-index 1 by default). */
+.hud {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(18, 13, 10, 0.88);
+  backdrop-filter: blur(8px);
+  font: 11px var(--mono);
+}
+.hud .mark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 15px var(--sans);
+}
+.hud .mark svg {
+  width: 20px;
+  color: var(--amber);
+}
+.hud .mark b {
+  color: var(--amber);
+}
+.hud .mark span {
+  color: var(--dim);
+  font-weight: 400;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.controls label {
+  display: grid;
+  gap: 4px;
+  color: var(--dim);
+}
+.controls select,
+.controls button {
+  font: 11px var(--mono);
+}
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 0 auto;
+}
+.readout div {
+  display: grid;
+}
+.readout dt {
+  color: var(--faint);
+}
+.readout dd {
+  margin: 0;
+  color: var(--gold);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.hint {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  z-index: 10;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: rgba(18, 13, 10, 0.8);
+  color: var(--dim);
+  font: 11px var(--mono);
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  .readout {
+    margin-left: 0;
+  }
+}

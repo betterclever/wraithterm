@@ -39,6 +39,7 @@
     "test:native-display": "node scripts/native-display-test.mjs",
     "test:native-kitty": "node scripts/native-kitty-test.mjs",
     "test:native-pool": "node scripts/native-pool-test.mjs",
+    "test:fleet": "node scripts/fleet-test.mjs",
     "test:serve": "node scripts/serve-test.mjs",
     "test:native-shaping": "node scripts/native-shaping-test.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",

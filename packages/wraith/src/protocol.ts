@@ -2,7 +2,8 @@ import type { BenchmarkOptions } from './types.js';
 export type Command =
   | {
       type: 'init';
-      canvas: OffscreenCanvas;
+      /** Absent on a shared-surface pool, where the worker owns the canvas. */
+      canvas?: OffscreenCanvas;
       font: Uint8Array;
       fonts: Uint8Array[];
       cols: number;
@@ -60,3 +61,24 @@ export type Reply =
   | { type: 'render'; frame: number }
   | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
   | { type: 'error'; error: string };
+/** Messages a pool sends to its workers directly, outside terminal ports. */
+export type PoolMessage =
+  | { type: 'attach'; port: MessagePort; id: number; shared?: boolean }
+  | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
+  | { type: 'surface-size'; width: number; height: number }
+  /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
+  | { type: 'geometry'; data: Float32Array };
+/** Messages a shared-surface worker sends its pool. */
+export type SurfaceReply =
+  | {
+      type: 'surface-stats';
+      frames: number;
+      completedFrames: number;
+      completedUpdates: number;
+      updates: number;
+      atlases: number;
+      terminals: number;
+      width: number;
+      height: number;
+    }
+  | { type: 'surface-error'; error: string };

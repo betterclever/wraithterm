@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <meta
+      name="description"
+      content="A thousand live Wraith terminals streaming agent logs in one tab, drawn by a few shared WebGPU surfaces."
+    />
+    <title>Fleet · Wraith terminal lab</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/fleet.css" />
+  </head>
+  <body>
+    <div id="viewport" class="viewport" aria-label="Terminal fleet">
+      <div id="world" class="world"></div>
+    </div>
+    <header class="hud" aria-label="Fleet controls">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b> <span>fleet</span></a
+      >
+      <div class="controls">
+        <label
+          >Terminals<select id="count">
+            <option>64</option>
+            <option>256</option>
+            <option selected>1000</option>
+          </select></label
+        >
+        <label
+          >Surface<select id="mode">
+            <option value="shared" selected>Shared · one per worker</option>
+            <option value="canvas">Per-terminal canvases</option>
+          </select></label
+        >
+        <label
+          >Pace<select id="pace">
+            <option value="frame" selected>Every frame</option>
+            <option value="30">30 / s</option>
+            <option value="10">10 / s</option>
+            <option value="0">Paused</option>
+          </select></label
+        >
+        <button id="fit" type="button" title="Fit every terminal (F)">Fit</button>
+        <button id="actual" type="button" title="Actual size (1)">1:1</button>
+      </div>
+      <dl class="readout" id="readout" aria-live="off">
+        <div>
+          <dt>terminals</dt>
+          <dd id="r-terminals">–</dd>
+        </div>
+        <div>
+          <dt>display fps</dt>
+          <dd id="r-fps">–</dd>
+        </div>
+        <div>
+          <dt>updates / s</dt>
+          <dd id="r-updates">–</dd>
+        </div>
+        <div>
+          <dt>per terminal</dt>
+          <dd id="r-per">–</dd>
+        </div>
+        <div>
+          <dt>GPU-completed / s</dt>
+          <dd id="r-gpu">–</dd>
+        </div>
+        <div>
+          <dt>surface frames / s</dt>
+          <dd id="r-surface">–</dd>
+        </div>
+        <div>
+          <dt>long tasks</dt>
+          <dd id="r-long">–</dd>
+        </div>
+        <div>
+          <dt>zoom</dt>
+          <dd id="r-zoom">–</dd>
+        </div>
+      </dl>
+    </header>
+    <p class="hint" id="hint">
+      Scroll to zoom · drag to pan · double-click a terminal to read it · F fits all
+    </p>
+    <script type="module" src="/fleet.js"></script>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import init, { Engine } from '../wasm/wraith_engine.js';
-import type { Command, Reply } from './protocol.js';
+import type { Command, PoolMessage, Reply } from './protocol.js';
+import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
@@ -9,7 +10,11 @@ type Endpoint = { postMessage(reply: Reply, transfers: Transferable[]): void };
 
 /** One terminal: its engine, scheduling, search and fences, replying through
  * `endpoint`. A dedicated worker runs one; a pooled worker runs one per port. */
-function createSession(endpoint: Endpoint, onClose: () => void) {
+function createSession(
+  endpoint: Endpoint,
+  onClose: () => void,
+  shared?: { host: SharedHost; id: number },
+) {
   let engine: Engine | undefined;
   let cols = 80,
     rows = 24;
@@ -122,12 +127,13 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       post({ type: 'modes', mouse });
     }
   }
-  function draw(time: number, force = false) {
+  function draw(time: number, force = false): boolean {
     // A restored canvas may need presentation even when terminal state is clean.
     // Consume this only inside the guarded draw path, including explicit flush.
     force ||= forceNextFrame;
     const start = performance.now();
-    if (engine!.render(time, force)) {
+    const rendered = engine!.render(time, force);
+    if (rendered) {
       forceNextFrame = false;
       renderedFrames++;
       if (observeRender) post({ type: 'render', frame: renderedFrames });
@@ -144,9 +150,32 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       }
     }
     if (engine!.needs_present) schedule();
+    return rendered;
+  }
+  // On a shared surface the worker's host draws staged frames in one pass.
+  const slot: SharedSlot | undefined = shared && {
+    id: shared.id,
+    engine: () => (disposed ? undefined : engine),
+    busy: () => busy,
+    visible: () => visible && !disposed,
+    render(time) {
+      try {
+        return draw(time);
+      } catch (error) {
+        post({ type: 'error', error: String(error) });
+        return false;
+      }
+    },
+  };
+  function present() {
+    if (slot) shared!.host.presentNow(slot);
   }
   function schedule(force = false) {
     forceNextFrame ||= force;
+    if (slot) {
+      if (engine && !disposed && visible && !busy) shared!.host.request(slot);
+      return;
+    }
     if (!engine || scheduled || disposed || !visible || busy) return;
     scheduled = true;
     raf = scope.requestAnimationFrame((time) => {
@@ -222,6 +251,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       for (let i = 0; i < warmup; i++) {
         engine!.write(inputs[i % 64]!);
         engine!.render(performance.now(), true);
+        present();
         if ((i + 1) % 32 === 0) await engine!.fence();
       }
       await engine!.fence();
@@ -231,6 +261,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
           before = performance.now();
         engine!.write(input);
         const rendered = engine!.render(performance.now(), true);
+        present();
         durations.push(performance.now() - before);
         bytes += input.byteLength;
         if (rendered) completed++;
@@ -266,24 +297,39 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       rows = command.rows;
       // Terminals in a pooled worker share one GPU device; initialize them one
       // at a time so their pipeline validation scopes cannot interleave.
+      const surface = shared ? await shared.host.ready : undefined;
       const created = initializing.then(() =>
-        Engine.create(
-          command.canvas,
-          command.font,
-          cols,
-          rows,
-          command.size,
-          command.lineHeight,
-          command.history,
-        ),
+        surface
+          ? Engine.create_shared(
+              surface.context(),
+              command.font,
+              command.fonts,
+              cols,
+              rows,
+              command.size,
+              command.lineHeight,
+              command.history,
+              !!command.ligatures,
+            )
+          : Engine.create(
+              command.canvas!,
+              command.font,
+              cols,
+              rows,
+              command.size,
+              command.lineHeight,
+              command.history,
+            ),
       );
       initializing = created.then(
         () => undefined,
         () => undefined,
       );
       engine = await created;
-      for (const font of command.fonts) engine.add_font(font);
-      if (command.ligatures) engine.set_ligatures(true);
+      if (!surface) {
+        for (const font of command.fonts) engine.add_font(font);
+        if (command.ligatures) engine.set_ligatures(true);
+      }
       if (command.imageStorageLimit !== undefined)
         engine.set_image_limit(Math.max(0, Math.floor(command.imageStorageLimit)));
       engine.theme(command.theme[0]!, command.theme[1]!, command.theme[2]!);
@@ -293,6 +339,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         height: engine.cell_height,
         adapter: engine.adapter,
       });
+      if (slot) shared!.host.register(slot);
       schedule();
       return;
     }
@@ -384,6 +431,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         }
         try {
           draw(performance.now(), true);
+          present();
           await engine.fence();
           result(command.id);
         } finally {
@@ -416,6 +464,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         clearInterval(statsTimer);
         clearTimeout(holdTimer);
         if (scheduled) scope.cancelAnimationFrame(raf);
+        if (slot) shared!.host.unregister(slot);
         engine.free();
         engine = undefined;
         result(command.id);
@@ -438,13 +487,30 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
 // Pooled workers receive one MessagePort per terminal; dedicated workers take
 // commands on the worker scope itself.
 let dedicated: ((command: Command) => void) | undefined;
-scope.onmessage = (event: MessageEvent<Command | { type: 'attach'; port: MessagePort }>) => {
+// A shared-surface pool sends this worker one page-sized canvas first.
+let host: SharedHost | undefined;
+scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
   const message = event.data;
-  if (message.type === 'attach') {
-    const port = message.port;
-    const receive = createSession(port, () => port.close());
-    port.onmessage = (e: MessageEvent<Command>) => receive(e.data);
-    return;
+  switch (message.type) {
+    case 'attach': {
+      const port = message.port;
+      const receive = createSession(
+        port,
+        () => port.close(),
+        message.shared && host ? { host, id: message.id } : undefined,
+      );
+      port.onmessage = (e: MessageEvent<Command>) => receive(e.data);
+      return;
+    }
+    case 'surface':
+      host = new SharedHost(scope, ready, message.canvas, message.width, message.height);
+      return;
+    case 'surface-size':
+      host?.resize(message.width, message.height);
+      return;
+    case 'geometry':
+      host?.geometry(message.data);
+      return;
   }
   dedicated ??= createSession(scope, () => scope.close());
   dedicated(message);
