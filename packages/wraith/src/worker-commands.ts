@@ -21,13 +21,19 @@ export function createCommandTracker(
     primary = true;
   const times = new Map<number, { startedAt?: number; finishedAt?: number }>();
   function raw(item: unknown[]): RawCommandBlock {
-    const id = item[0] as number;
+    const id = item[0] as number,
+      state = item[1] as number;
     const time = times.get(id);
+    let command = item[3] as string;
+    // Without OSC 133;C;cmdline the command is the text typed between B and C.
+    if (!command && state >= RUNNING)
+      command =
+        (engine()!.command_text(id, true) as [string, boolean] | undefined)?.[0].trim() ?? '';
     return {
       id,
-      state: item[1] as number,
+      state,
       exitCode: (item[2] as number | null) ?? undefined,
-      command: item[3] as string,
+      command,
       rows: [item[4], item[5], item[6], item[7]] as [number, number, number, number],
       truncated: item[8] as boolean,
       startedAt: time?.startedAt,

@@ -219,6 +219,10 @@ try {
       osc('A') +
       '$ ',
   );
+  check(
+    'command falls back to the typed text without cmdline',
+    (await page.evaluate(async () => (await window.wraith.commands())[3]?.command)) === 'seq 120',
+  );
   const top = () =>
     page.evaluate(async () => {
       await window.wraith.flush();
