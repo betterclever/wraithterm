@@ -88,7 +88,7 @@ term.write('hello from the other side\r\n');
 import { Wraith } from 'wraithterm';
 
 const term = await Wraith.mount(document.getElementById('terminal')!);
-term.connect(new WebSocket(ptyUrl));
+term.connect(ptyUrl); // the worker opens the socket and parses its output
 ```
 
 ## About this repository
@@ -197,7 +197,34 @@ terminals run out of memory, and xterm.js + WebGL draws only 16 of them
 terminal can delay frames for its worker's neighbours; dispose terminals before
 `pool.dispose()`.
 
-Connect a PTY transport:
+Connect a PTY transport. Given a URL, the terminal's worker opens the WebSocket
+itself: output is parsed there and never crosses the page's main thread, and
+keystrokes, paste and terminal replies are sent from the worker in order.
+
+```ts
+const connection = terminal.connect('wss://your-backend/terminal');
+
+// This control message is a convention for YOUR server, not terminal output.
+// send() is queued until the socket opens and ordered with keystrokes.
+const sendSize = () =>
+  connection.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
+sendSize();
+terminal.onResize(sendSize);
+
+// Resolves after the close and every byte received before it are parsed.
+connection.closed.then(() => terminal.write('\r\n[session ended]\r\n'));
+```
+
+`connect(url, { protocols?, stream? })` accepts `ws:`, `wss:`, `http(s):` or a
+path relative to the page. Where `WebSocketStream` exists (Chrome), the worker
+reads only as fast as it parses, so a slow page pushes back on the server through
+TCP; elsewhere it parses each `WebSocket` message as it arrives. The connection
+has `opened` and `closed` promises, `onOpen`, `onClose` and `onError`, `send()`,
+`close(code?, reason?)` and `dispose()`. Connecting again closes the previous
+worker socket; disposing the terminal closes it too. There is no automatic
+reconnect.
+
+To keep a socket on the page, pass the `WebSocket` itself:
 
 ```ts
 const socket = new WebSocket('wss://your-backend/terminal');
@@ -217,8 +244,8 @@ connection.dispose();
 await terminal.dispose();
 ```
 
-`connect()` sends input as binary WebSocket messages and accepts output as text,
-ArrayBuffer, or Blob, preserving order. Your backend owns PTY creation, geometry,
+Both forms send input as binary WebSocket messages and accept output as text,
+ArrayBuffer, or Blob (page socket only), preserving order. Your backend owns PTY creation, geometry,
 authentication, and transport lifecycle.
 
 For Vite, add the included adapter so dependency prebundling preserves the worker
@@ -265,6 +292,7 @@ macOS and Linux; Windows ConPTY through node-pty is untested.
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
 | `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
 | `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
+| `connect(url, options)`                                     | Worker-owned WebSocket; output parsed off the main thread. `closed` resolves after the last byte is parsed.          |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
