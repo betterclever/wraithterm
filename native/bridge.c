@@ -520,6 +520,198 @@ int wraith_bridge_selection_text(WraithBridge* b) {
   r = ghostty_formatter_format(formatter, writer); ghostty_formatter_free(formatter); return r;
 }
 
+/* Terminal state as VT sequences for replay keyframes.
+ *
+ * Ghostty's VT formatter emits palette, modes and tabstops, then the active
+ * screen's history and viewport, then scrolling region, keyboard modes, working
+ * directory, cursor, style, hyperlink, protection, Kitty keyboard flags and
+ * charsets. Replayed into a reset terminal of the same size, three gaps would
+ * remain, so the bridge splices the output around the content:
+ *  - trailing blank rows are trimmed by the formatter; the bridge appends the
+ *    newlines that put the restored content on the same rows;
+ *  - rows with no text but styled cells (erased with a background colour) are
+ *    formatted as blank; the bridge repaints those viewport rows with ECH;
+ *  - autowrap-off and insert modes would change how content replays; the
+ *    bridge sets them after the content instead of before it.
+ * Inactive screens, saved cursors, titles and Kitty images are not formatter
+ * state, so callers must verify a snapshot before trusting it. */
+typedef struct { uint8_t* p; size_t len, cap; bool failed; } Buf;
+static void buf_put(Buf* o, const void* data, size_t n) {
+  if (o->failed || !n) return;
+  if (o->len + n > o->cap) {
+    size_t cap = o->cap ? o->cap : 4096;
+    while (cap < o->len + n) cap *= 2;
+    uint8_t* next = wraith_alloc(cap, 0);
+    if (!next) { o->failed = true; return; }
+    if (o->len) __builtin_memcpy(next, o->p, o->len);
+    if (o->p) wraith_dealloc(o->p, o->cap, 0);
+    o->p = next; o->cap = cap;
+  }
+  __builtin_memcpy(o->p + o->len, data, n); o->len += n;
+}
+static void buf_str(Buf* o, const char* text) { buf_put(o, text, __builtin_strlen(text)); }
+static void buf_uint(Buf* o, uint64_t value) {
+  char digits[24]; size_t n = 0;
+  do { digits[sizeof digits - 1 - n++] = (char)('0' + value % 10); value /= 10; } while (value);
+  buf_put(o, digits + sizeof digits - n, n);
+}
+static void buf_free(Buf* o) { if (o->p) wraith_dealloc(o->p, o->cap, 0); *o = (Buf){0}; }
+static bool buf_write(void* user, const uint8_t* bytes, size_t len) {
+  Buf* o = user; buf_put(o, bytes, len); return !o->failed;
+}
+static int format_vt(WraithBridge* b, bool extras, Buf* out) {
+  GhosttyFormatterTerminalOptions options = GHOSTTY_INIT_SIZED(GhosttyFormatterTerminalOptions);
+  options.emit = GHOSTTY_FORMATTER_FORMAT_VT; options.unwrap = true; options.trim = false;
+  options.extra.size = sizeof(GhosttyFormatterTerminalExtra);
+  options.extra.screen.size = sizeof(GhosttyFormatterScreenExtra);
+  if (extras) {
+    options.extra.palette = true; options.extra.modes = true; options.extra.scrolling_region = true;
+    options.extra.tabstops = true; options.extra.pwd = true; options.extra.keyboard = true;
+    options.extra.screen.cursor = true; options.extra.screen.style = true;
+    options.extra.screen.hyperlink = true; options.extra.screen.protection = true;
+    options.extra.screen.kitty_keyboard = true; options.extra.screen.charsets = true;
+  }
+  GhosttyFormatter formatter = NULL;
+  int r = ghostty_formatter_terminal_new(&allocator, &formatter, b->terminal, options);
+  if (r) return r;
+  GhosttyWriter writer = {.userdata = out, .write = buf_write};
+  r = ghostty_formatter_format(formatter, writer); ghostty_formatter_free(formatter);
+  return r ? r : out->failed ? GHOSTTY_OUT_OF_MEMORY : GHOSTTY_SUCCESS;
+}
+static bool cell_at(WraithBridge* b, GhosttyPointTag tag, uint16_t x, uint32_t y, GhosttyGridRef* ref,
+                    GhosttyCell* cell) {
+  *ref = GHOSTTY_INIT_SIZED(GhosttyGridRef);
+  GhosttyPoint p = {.tag = tag, .value = {.coordinate = {x, y}}};
+  return !ghostty_terminal_grid_ref(b->terminal, p, ref) && !ghostty_grid_ref_cell(ref, cell);
+}
+static bool row_has_text(WraithBridge* b, GhosttyPointTag tag, uint32_t y) {
+  for (uint16_t x = 0; x < b->cols; x++) {
+    GhosttyGridRef ref; GhosttyCell cell; bool text = false;
+    if (cell_at(b, tag, x, y, &ref, &cell) && !ghostty_cell_get(cell, GHOSTTY_CELL_DATA_HAS_TEXT, &text) && text)
+      return true;
+  }
+  return false;
+}
+static void sgr_color(Buf* o, GhosttyStyleColor c, const char* extended) {
+  if (c.tag == GHOSTTY_STYLE_COLOR_PALETTE) {
+    buf_str(o, ";"); buf_str(o, extended); buf_str(o, ";5;"); buf_uint(o, c.value.palette);
+  } else if (c.tag == GHOSTTY_STYLE_COLOR_RGB) {
+    buf_str(o, ";"); buf_str(o, extended); buf_str(o, ";2;"); buf_uint(o, c.value.rgb.r);
+    buf_str(o, ";"); buf_uint(o, c.value.rgb.g); buf_str(o, ";"); buf_uint(o, c.value.rgb.b);
+  }
+}
+static void sgr(Buf* o, const GhosttyStyle* s) {
+  buf_str(o, "\x1b[0");
+  if (s->bold) buf_str(o, ";1");
+  if (s->faint) buf_str(o, ";2");
+  if (s->italic) buf_str(o, ";3");
+  if (s->underline) { buf_str(o, ";4:"); buf_uint(o, (uint64_t)s->underline); }
+  if (s->blink) buf_str(o, ";5");
+  if (s->inverse) buf_str(o, ";7");
+  if (s->invisible) buf_str(o, ";8");
+  if (s->strikethrough) buf_str(o, ";9");
+  if (s->overline) buf_str(o, ";53");
+  sgr_color(o, s->fg_color, "38");
+  sgr_color(o, s->bg_color, "48");
+  sgr_color(o, s->underline_color, "58");
+  buf_str(o, "m");
+}
+static bool same_style(const GhosttyStyle* a, const GhosttyStyle* c) {
+  return a->fg_color.tag == c->fg_color.tag && a->fg_color.value._padding == c->fg_color.value._padding &&
+         a->bg_color.tag == c->bg_color.tag && a->bg_color.value._padding == c->bg_color.value._padding &&
+         a->underline_color.tag == c->underline_color.tag &&
+         a->underline_color.value._padding == c->underline_color.value._padding &&
+         a->bold == c->bold && a->italic == c->italic && a->faint == c->faint && a->blink == c->blink &&
+         a->inverse == c->inverse && a->invisible == c->invisible &&
+         a->strikethrough == c->strikethrough && a->overline == c->overline && a->underline == c->underline;
+}
+/* The visible style of a cell: its interned style, or the background-only
+ * content Ghostty stores for cells erased with just a background colour. */
+static bool styled_cell(WraithBridge* b, uint16_t x, uint32_t y, GhosttyStyle* style) {
+  GhosttyGridRef ref; GhosttyCell cell; GhosttyCellContentTag tag = 0; bool styled = false;
+  *style = GHOSTTY_INIT_SIZED(GhosttyStyle);
+  if (!cell_at(b, GHOSTTY_POINT_TAG_ACTIVE, x, y, &ref, &cell) ||
+      ghostty_cell_get(cell, GHOSTTY_CELL_DATA_CONTENT_TAG, &tag)) return false;
+  if (tag == GHOSTTY_CELL_CONTENT_BG_COLOR_PALETTE) {
+    GhosttyColorPaletteIndex index = 0;
+    if (ghostty_cell_get(cell, GHOSTTY_CELL_DATA_COLOR_PALETTE, &index)) return false;
+    style->bg_color.tag = GHOSTTY_STYLE_COLOR_PALETTE; style->bg_color.value.palette = index;
+    return true;
+  }
+  if (tag == GHOSTTY_CELL_CONTENT_BG_COLOR_RGB) {
+    GhosttyColorRgb rgb = {0};
+    if (ghostty_cell_get(cell, GHOSTTY_CELL_DATA_COLOR_RGB, &rgb)) return false;
+    style->bg_color.tag = GHOSTTY_STYLE_COLOR_RGB; style->bg_color.value.rgb = rgb;
+    return true;
+  }
+  return !ghostty_cell_get(cell, GHOSTTY_CELL_DATA_HAS_STYLING, &styled) && styled &&
+         !ghostty_grid_ref_style(&ref, style);
+}
+/* Repaint viewport rows that hold styled blank cells but no text. */
+static void repaint_styled_blank_rows(WraithBridge* b, Buf* o) {
+  bool painted = false;
+  for (uint32_t y = 0; y < b->height; y++) {
+    if (row_has_text(b, GHOSTTY_POINT_TAG_ACTIVE, y)) continue;
+    uint16_t x = 0;
+    while (x < b->cols) {
+      GhosttyStyle style, next;
+      if (!styled_cell(b, x, y, &style)) { x++; continue; }
+      uint16_t end = x + 1;
+      while (end < b->cols && styled_cell(b, end, y, &next) && same_style(&style, &next)) end++;
+      buf_str(o, "\x1b["); buf_uint(o, y + 1); buf_str(o, ";"); buf_uint(o, x + 1); buf_str(o, "H");
+      sgr(o, &style);
+      buf_str(o, "\x1b["); buf_uint(o, end - x); buf_str(o, "X");
+      painted = true; x = end;
+    }
+  }
+  if (painted) buf_str(o, "\x1b[0m");
+}
+static const uint8_t* find(const uint8_t* hay, size_t n, const char* needle) {
+  size_t m = __builtin_strlen(needle);
+  for (size_t i = 0; i + m <= n; i++) if (!__builtin_memcmp(hay + i, needle, m)) return hay + i;
+  return NULL;
+}
+int wraith_bridge_snapshot(WraithBridge* b) {
+  Buf full = {0}, content = {0}, out = {0};
+  int r = format_vt(b, true, &full);
+  if (!r) r = format_vt(b, false, &content);
+  /* The tabstop extra always ends the pre-content state with CUP home. */
+  const uint8_t* home = r ? NULL : find(full.p, full.len, "\x1b[H");
+  size_t prefix = home ? (size_t)(home - full.p) + 3 : 0;
+  if (!r && (!home || prefix + content.len > full.len ||
+             (content.len && __builtin_memcmp(full.p + prefix, content.p, content.len))))
+    r = GHOSTTY_INVALID_VALUE;
+  if (!r) {
+    static const char* deferred[] = {"\x1b[?7l", "\x1b[4h"};
+    bool defer[2] = {false, false};
+    size_t at = 0;
+    while (at < prefix) {
+      size_t skip = 0;
+      for (int i = 0; i < 2; i++) {
+        size_t m = __builtin_strlen(deferred[i]);
+        if (at + m <= prefix && !__builtin_memcmp(full.p + at, deferred[i], m)) { defer[i] = true; skip = m; }
+      }
+      if (skip) { at += skip; continue; }
+      buf_put(&out, full.p + at, 1); at++;
+    }
+    buf_put(&out, content.p, content.len);
+    size_t total = 0;
+    ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_TOTAL_ROWS, &total);
+    int64_t last = -1;
+    for (int64_t y = (int64_t)total - 1; y >= 0; y--)
+      if (row_has_text(b, GHOSTTY_POINT_TAG_SCREEN, (uint32_t)y)) { last = y; break; }
+    /* The content leaves the cursor on its last text row, or row 0 if none. */
+    for (int64_t y = (last < 0 ? 0 : last) + 1; y < (int64_t)total; y++) buf_str(&out, "\r\n");
+    repaint_styled_blank_rows(b, &out);
+    for (int i = 0; i < 2; i++) if (defer[i]) buf_str(&out, deferred[i]);
+    buf_put(&out, full.p + prefix + content.len, full.len - prefix - content.len);
+    if (out.failed) r = GHOSTTY_OUT_OF_MEMORY;
+  }
+  if (!r) wraith_emit(b->user, 5, out.p, out.len);
+  buf_free(&full); buf_free(&content); buf_free(&out);
+  return r;
+}
+
 /* Kitty graphics. Storage is per screen; its generation is zero until an image
  * is ever stored, so terminals without images return before any iteration. */
 int wraith_bridge_image_limit(WraithBridge* b, uint64_t bytes) {

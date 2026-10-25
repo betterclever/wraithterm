@@ -37,6 +37,7 @@ void wraith_bridge_hold_release(WraithBridge*);
 int wraith_bridge_select(WraithBridge*, int32_t, int32_t, int32_t, int32_t);
 size_t wraith_bridge_link(WraithBridge*, uint16_t, uint16_t, char*, size_t);
 int wraith_bridge_selection_text(WraithBridge*);
+int wraith_bridge_snapshot(WraithBridge*);
 int wraith_bridge_select_mode(WraithBridge*, int32_t, int32_t, int32_t, int32_t, uint32_t);
 int wraith_bridge_search(WraithBridge*, const uint8_t*, size_t, uint32_t, uint32_t*);
 int wraith_bridge_images(WraithBridge*, uint64_t* generation);

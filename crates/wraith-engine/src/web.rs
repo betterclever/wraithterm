@@ -42,6 +42,14 @@ impl Headless {
     pub fn resize(&mut self, cols: u16, rows: u16) -> Result<(), JsValue> {
         self.core.resize(cols, rows, 9, 18).map_err(error)
     }
+    /// Hash of the visible grid, colours and cursor as hex; see `Core::digest`.
+    pub fn digest(&mut self) -> Result<String, JsValue> {
+        Ok(format!("{:016x}", self.core.digest().map_err(error)?))
+    }
+    /// Terminal state as VT sequences for replay keyframes; see `Core::snapshot`.
+    pub fn snapshot(&mut self) -> Result<Vec<u8>, JsValue> {
+        self.core.snapshot().map_err(error)
+    }
     pub fn key(
         &mut self,
         key: u32,
