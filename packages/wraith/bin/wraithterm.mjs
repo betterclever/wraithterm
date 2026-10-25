@@ -11,6 +11,7 @@ import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { spawnSync, spawn as spawnProcess } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
+import { Worker } from 'node:worker_threads';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(root, 'package.json'));
@@ -257,6 +258,91 @@ function accept(socket, key) {
   };
 }
 
+// node-pty reads a Unix PTY on the event loop, one 1 KiB read per turn: about
+// 95 MB/s on macOS, half the PTY's own ceiling. This thread reads the master
+// itself and posts batches. After output stops it spins for 0.2 ms, then sleeps
+// with backoff up to 4 ms, or 16 ms once idle; input and resume wake it at once.
+const READER = `
+const { parentPort, workerData: { fd, control } } = require('node:worker_threads');
+const { readSync } = require('node:fs');
+const state = new Int32Array(control), buf = Buffer.allocUnsafe(1 << 20);
+let used = 0, idle = 0, last = performance.now(), lastData = 0, woken = 0;
+const post = () => {
+  const out = new Uint8Array(used);
+  out.set(buf.subarray(0, used));
+  parentPort.postMessage(out, [out.buffer]);
+  used = 0;
+  last = performance.now();
+};
+for (;;) {
+  if (Atomics.load(state, 1)) {
+    if (used) post();
+    Atomics.wait(state, 1, 1);
+    continue;
+  }
+  const wake = Atomics.load(state, 0);
+  // Input was written: its echo is due, so poll eagerly again.
+  if (wake !== woken) {
+    woken = wake;
+    idle = 0;
+  }
+  let n;
+  try {
+    n = readSync(fd, buf, used, Math.min(65536, buf.length - used), null);
+  } catch (error) {
+    if (error.code !== 'EAGAIN') break;
+    n = -1;
+  }
+  if (n === 0) break;
+  const now = performance.now();
+  if (n > 0) {
+    used += n;
+    idle = 0;
+    lastData = now;
+  }
+  const quiet = n < 0 && now - lastData > 0.2;
+  if (used && (quiet || now - last > 2 || used > buf.length - 65536)) post();
+  if (quiet) Atomics.wait(state, 0, wake, Math.min(now - lastData > 250 ? 16 : 4, 0.05 * 2 ** idle++));
+}
+if (used) post();
+parentPort.postMessage(null);
+`;
+function readPty(term, onData) {
+  // Unix PTYs only; Windows (ConPTY) keeps node-pty's own reader.
+  if (platform() === 'win32' || typeof term._fd !== 'number' || !term._socket?.pause)
+    return undefined;
+  const control = new SharedArrayBuffer(8);
+  const state = new Int32Array(control);
+  term._socket.pause();
+  // node-pty's socket starts reading on the next tick even while paused; stop
+  // it, keep what it already read, then hand the master to the reader thread.
+  setImmediate(() => {
+    term._socket._handle?.readStop();
+    for (let early; (early = term._socket.read()) !== null;) onData(early);
+    const worker = new Worker(READER, { eval: true, workerData: { fd: term._fd, control } });
+    worker.unref();
+    worker.on('message', (data) => {
+      // EOF or EIO: close node-pty's socket so its exit event fires.
+      if (data === null) term._socket.destroy();
+      else onData(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+    });
+    worker.on('error', () => term._socket.destroy());
+  });
+  const wake = () => {
+    Atomics.add(state, 0, 1);
+    Atomics.notify(state, 0);
+  };
+  return {
+    wake,
+    pause: () => Atomics.store(state, 1, 1),
+    resume: () => {
+      Atomics.store(state, 1, 0);
+      Atomics.notify(state, 1);
+      wake();
+    },
+  };
+}
+
 async function serve(options) {
   const pty = await ensurePty(options.install);
   const token = randomBytes(24).toString('hex');
@@ -346,28 +432,33 @@ async function serve(options) {
       pendingBytes = 0;
       if (!paused && ws.buffered() > 4 << 20) {
         paused = true;
-        term.pause();
+        (reader ?? term).pause();
       }
     };
     ws.onDrain(() => {
       if (paused) {
         paused = false;
-        term.resume();
+        (reader ?? term).resume();
       }
     });
-    term.onData((data) => {
+    const output = (data) => {
       pending.push(Buffer.from(data));
       pendingBytes += data.length;
       if (pendingBytes >= 1 << 20 || (!timer && performance.now() - lastFlush > 5)) flush();
       else timer ??= setTimeout(flush, 2);
-    });
+    };
+    const reader = readPty(term, output);
+    if (!reader) term.onData(output);
     term.onExit(() => {
       flush();
       sessions.delete(term);
       ws.close();
     });
     ws.on('message', (data, binary) => {
-      if (binary) return term.write(data);
+      if (binary) {
+        term.write(data);
+        return reader?.wake();
+      }
       try {
         const message = JSON.parse(data.toString('utf8'));
         if (message.type === 'resize' && message.cols > 0 && message.rows > 0)
