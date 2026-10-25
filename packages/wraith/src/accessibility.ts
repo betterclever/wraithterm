@@ -98,9 +98,21 @@ export class TerminalAccessibility {
       },
       { capture: true, signal },
     );
+    // A Tab press is consumed by the next focus change, so a later programmatic
+    // focus() does not show the ring.
+    document.addEventListener(
+      'focusin',
+      (event) => {
+        if (event.target !== input) this.lastTab = -Infinity;
+      },
+      { capture: true, signal },
+    );
     input.addEventListener(
       'focus',
-      () => this.ring(this.options.focusRing !== false && performance.now() - this.lastTab < 500),
+      () => {
+        this.ring(this.options.focusRing !== false && performance.now() - this.lastTab < 500);
+        this.lastTab = -Infinity;
+      },
       { signal },
     );
     input.addEventListener('blur', () => this.ring(false), { signal });
