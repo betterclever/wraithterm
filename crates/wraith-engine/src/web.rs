@@ -19,6 +19,54 @@ fn events(core: &mut Core) -> js_sys::Array {
     output
 }
 
+fn row(value: Option<u32>) -> JsValue {
+    value.map_or(JsValue::from(-1), JsValue::from)
+}
+/// `[id, state, exit | null, command, promptRow, inputRow, outputRow, endRow,
+/// truncated]` per retained block, oldest first; rows are -1 when unknown.
+fn block(block: crate::commands::BlockInfo) -> js_sys::Array {
+    let item = js_sys::Array::new();
+    item.push(&JsValue::from(block.id));
+    item.push(&JsValue::from(block.state as u32));
+    item.push(&block.exit.map_or(JsValue::NULL, JsValue::from));
+    item.push(&JsValue::from_str(&block.command));
+    item.push(&row(block.prompt_row));
+    item.push(&row(block.input_row));
+    item.push(&row(block.output_row));
+    item.push(&row(block.end_row));
+    item.push(&JsValue::from(block.truncated));
+    item
+}
+fn commands(core: &mut Core) -> js_sys::Array {
+    core.commands()
+        .into_iter()
+        .map(|b| JsValue::from(block(b)))
+        .collect()
+}
+/// `[text, truncated]`, or undefined for an unknown block.
+fn command_text(core: &mut Core, id: u32, input: bool) -> Result<JsValue, JsValue> {
+    Ok(match core.command_text(id, input).map_err(error)? {
+        Some((text, truncated)) => {
+            let item = js_sys::Array::new();
+            item.push(&JsValue::from_str(&text));
+            item.push(&JsValue::from(truncated));
+            item.into()
+        }
+        None => JsValue::UNDEFINED,
+    })
+}
+fn screen(core: &Core) -> Vec<f64> {
+    let s = core.screen();
+    vec![
+        s.total as f64,
+        s.offset as f64,
+        s.len as f64,
+        s.cursor_row as f64,
+        s.cursor_col as f64,
+        s.primary as u32 as f64,
+    ]
+}
+
 /// Headless browser instance for tests, replay, and serverless terminal analysis.
 #[wasm_bindgen]
 pub struct Headless {
@@ -71,6 +119,37 @@ impl Headless {
     }
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
+    }
+    /// OSC 133 command blocks; see `commands.rs`.
+    #[wasm_bindgen(getter)]
+    pub fn has_commands(&self) -> bool {
+        self.core.has_commands()
+    }
+    pub fn commands(&mut self) -> js_sys::Array {
+        commands(&mut self.core)
+    }
+    /// One block in the `commands()` layout, or undefined.
+    pub fn command(&self, id: u32) -> JsValue {
+        self.core
+            .command(id)
+            .map_or(JsValue::UNDEFINED, |b| block(b).into())
+    }
+    pub fn command_text(&mut self, id: u32, input: bool) -> Result<JsValue, JsValue> {
+        command_text(&mut self.core, id, input)
+    }
+    pub fn command_marks(&self) -> Vec<i32> {
+        self.core.command_marks()
+    }
+    /// The new viewport offset, or -1 when there is no prompt in that direction.
+    pub fn jump_to_prompt(&mut self, direction: i32) -> f64 {
+        self.core
+            .jump_to_prompt(direction)
+            .map_or(-1., |offset| offset as f64)
+    }
+    /// Total rows, viewport offset and length, cursor screen row and column,
+    /// and 1 when the primary screen is active.
+    pub fn screen(&self) -> Vec<f64> {
+        screen(&self.core)
     }
     pub fn cell(&mut self, x: u16, y: u16) -> Result<js_sys::Array, JsValue> {
         self.core.update().map_err(error)?;
@@ -281,6 +360,37 @@ impl Engine {
             self.core.update().map_err(error)?;
             Ok(self.core.text(false))
         }
+    }
+    /// OSC 133 command blocks; see `commands.rs`.
+    #[wasm_bindgen(getter)]
+    pub fn has_commands(&self) -> bool {
+        self.core.has_commands()
+    }
+    pub fn commands(&mut self) -> js_sys::Array {
+        commands(&mut self.core)
+    }
+    /// One block in the `commands()` layout, or undefined.
+    pub fn command(&self, id: u32) -> JsValue {
+        self.core
+            .command(id)
+            .map_or(JsValue::UNDEFINED, |b| block(b).into())
+    }
+    pub fn command_text(&mut self, id: u32, input: bool) -> Result<JsValue, JsValue> {
+        command_text(&mut self.core, id, input)
+    }
+    pub fn command_marks(&self) -> Vec<i32> {
+        self.core.command_marks()
+    }
+    /// The new viewport offset, or -1 when there is no prompt in that direction.
+    pub fn jump_to_prompt(&mut self, direction: i32) -> f64 {
+        self.core
+            .jump_to_prompt(direction)
+            .map_or(-1., |offset| offset as f64)
+    }
+    /// Total rows, viewport offset and length, cursor screen row and column,
+    /// and 1 when the primary screen is active.
+    pub fn screen(&self) -> Vec<f64> {
+        screen(&self.core)
     }
     pub fn link(&self, x: u16, y: u16) -> String {
         self.core.link(x, y)
