@@ -339,6 +339,37 @@ try {
   assert.ok(xtermState.rows && xtermStays && xtermLeft && /Escape/.test(xtermHint));
   const blockingXterm = await axe(xterm, 'xterm.html');
 
+  // A reduced-motion change while mount() is still loading its font must not
+  // reach the worker before init (which would reject the mount).
+  const early = await context.newPage();
+  early.on('pageerror', (e) => report.errors.push(e.message));
+  await early.goto(base + '/accessibility.html');
+  await early.waitForFunction(() => window.Wraith);
+  await early.route('**/*.ttf*', async (route) => {
+    await new Promise((r) => setTimeout(r, 800));
+    await route.continue();
+  });
+  await early.evaluate(() => {
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:0;top:0;width:600px;height:300px';
+    document.body.append(host);
+    window.early = window.Wraith.mount(host, { cols: 40, rows: 6, fit: false }).then(
+      async (t) => {
+        await t.write('early\r\n');
+        const text = await t.readText();
+        await t.dispose();
+        return text.includes('early') ? 'mounted' : 'no text';
+      },
+      (error) => `rejected: ${error.message}`,
+    );
+  });
+  await settle(early, 200);
+  await early.emulateMedia({ reducedMotion: 'reduce' });
+  const earlyResult = await early.evaluate(() => window.early);
+  check('preferenceChangeDuringMount', earlyResult);
+  assert.equal(earlyResult, 'mounted');
+  await early.close();
+
   check('axeBlocking', {
     accessibility: blockingLab.length,
     playground: blockingPlayground.length,

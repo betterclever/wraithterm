@@ -22,7 +22,8 @@ export interface AccessibilityHost {
   element: HTMLElement;
   input: HTMLTextAreaElement;
   signal: AbortSignal;
-  send(command: Command): void;
+  /** Deliver a command to the worker; false before `init` or after shutdown. */
+  send(command: Command): boolean;
   /** CSS pixels of one row and of the grid width. */
   geometry(): { rowHeight: number; width: number };
   setForcedTheme(theme: Required<WraithTheme> | undefined): void;
@@ -200,8 +201,9 @@ export class TerminalAccessibility {
     const key = JSON.stringify(config);
     if (key === this.sent) return;
     if (!this.sent && !config.mirror && !config.reducedMotion) return;
-    this.sent = key;
-    this.t.send(config);
+    // Before the engine starts (a preference change during font loading) the
+    // command is not sent; mount calls configure() again once it is running.
+    if (this.t.send(config)) this.sent = key;
   }
   /** Align mirror rows with the canvas after a resize or font change. */
   layout() {

@@ -211,7 +211,10 @@ export class Wraith {
         input: this.input,
         signal: this.abort.signal,
         send: (command) => {
-          if (!this.disposed && !this.failed) this.send(command);
+          // The worker rejects session commands before init, failing the mount.
+          if (!this.started || this.disposed || this.failed) return false;
+          this.send(command);
+          return true;
         },
         geometry: () => ({
           rowHeight: this.cellHeight / this.dpr,
