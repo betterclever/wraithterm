@@ -1,0 +1,450 @@
+{
+ "date": "2026-10-25T21:04:38.581Z",
+ "method": "Fresh Wraith.mount() (160x50, DPR 2, headed Chrome) per sample; mountMs is mount() to resolve. After `delay` ms, a 90-byte coloured prompt line is written and firstContentMs runs from write() to flush() resolving. Variants alternate order per repetition.",
+ "variants": [
+  {
+   "name": "base",
+   "dir": "/Users/betterclever/projects/wraith/.claude/worktrees/wf_bb05e9ea-88f-3/.cache/ab/base"
+  },
+  {
+   "name": "warmup",
+   "dir": "/Users/betterclever/projects/wraith/.claude/worktrees/wf_bb05e9ea-88f-3/.cache/ab/final"
+  }
+ ],
+ "runs": [
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 0,
+   "load": "{ 8.56 8.65 8.26 }",
+   "mountMs": 30.599999994039536,
+   "firstContentMs": 17.200000002980232
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 0,
+   "load": "{ 8.56 8.65 8.26 }",
+   "mountMs": 25.5,
+   "firstContentMs": 20
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 1,
+   "load": "{ 8.56 8.65 8.26 }",
+   "mountMs": 27.399999991059303,
+   "firstContentMs": 19.900000005960464
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 1,
+   "load": "{ 8.56 8.65 8.26 }",
+   "mountMs": 27,
+   "firstContentMs": 19.5
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 2,
+   "load": "{ 8.56 8.65 8.26 }",
+   "mountMs": 35.1000000089407,
+   "firstContentMs": 22.399999991059303
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 2,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 28.799999997019768,
+   "firstContentMs": 21
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 3,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 28.5,
+   "firstContentMs": 20
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 3,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 32.400000005960464,
+   "firstContentMs": 19.5
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 4,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 28.5,
+   "firstContentMs": 20
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 4,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 32.3999999910593,
+   "firstContentMs": 21.600000008940697
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 5,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 30.100000008940697,
+   "firstContentMs": 20.399999991059303
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 5,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 26.600000008940697,
+   "firstContentMs": 21.899999991059303
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 6,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 34.69999998807907,
+   "firstContentMs": 21.900000005960464
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 6,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 28.5,
+   "firstContentMs": 20.5
+  },
+  {
+   "variant": "warmup",
+   "delay": 0,
+   "rep": 7,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 27.700000002980232,
+   "firstContentMs": 19.5
+  },
+  {
+   "variant": "base",
+   "delay": 0,
+   "rep": 7,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 27.399999991059303,
+   "firstContentMs": 20.200000002980232
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 0,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 26,
+   "firstContentMs": 16.5
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 0,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 29.299999997019768,
+   "firstContentMs": 4.5999999940395355
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 1,
+   "load": "{ 8.19 8.57 8.23 }",
+   "mountMs": 31,
+   "firstContentMs": 5.299999997019768
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 1,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 27.299999997019768,
+   "firstContentMs": 14.900000005960464
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 2,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 27.200000002980232,
+   "firstContentMs": 15.300000011920929
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 2,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 29.799999997019768,
+   "firstContentMs": 4.399999991059303
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 3,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.700000002980232,
+   "firstContentMs": 5.700000002980232
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 3,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 27.200000002980232,
+   "firstContentMs": 16.799999997019768
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 4,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.099999994039536,
+   "firstContentMs": 14.900000005960464
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 4,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.5,
+   "firstContentMs": 4.4000000059604645
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 5,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 28.5,
+   "firstContentMs": 5.0999999940395355
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 5,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.900000005960464,
+   "firstContentMs": 14.200000002980232
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 6,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 27.299999997019768,
+   "firstContentMs": 15
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 6,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 30.200000002980232,
+   "firstContentMs": 8.899999991059303
+  },
+  {
+   "variant": "warmup",
+   "delay": 30,
+   "rep": 7,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.80000001192093,
+   "firstContentMs": 4.700000002980232
+  },
+  {
+   "variant": "base",
+   "delay": 30,
+   "rep": 7,
+   "load": "{ 7.86 8.50 8.21 }",
+   "mountMs": 26.799999997019768,
+   "firstContentMs": 14.200000002980232
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 0,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 27.19999998807907,
+   "firstContentMs": 14.5
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 0,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 25.799999997019768,
+   "firstContentMs": 5.200000002980232
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 1,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 26.899999991059303,
+   "firstContentMs": 5.699999988079071
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 1,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 27.200000002980232,
+   "firstContentMs": 15.099999994039536
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 2,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 26.5,
+   "firstContentMs": 14.5
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 2,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 25.799999997019768,
+   "firstContentMs": 4
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 3,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 27.099999994039536,
+   "firstContentMs": 5.4000000059604645
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 3,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 25.5,
+   "firstContentMs": 15.5
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 4,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 25.5,
+   "firstContentMs": 14.799999997019768
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 4,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 26.200000002980232,
+   "firstContentMs": 4
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 5,
+   "load": "{ 7.55 8.42 8.18 }",
+   "mountMs": 26,
+   "firstContentMs": 4.699999988079071
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 5,
+   "load": "{ 7.58 8.42 8.18 }",
+   "mountMs": 26,
+   "firstContentMs": 16.799999997019768
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 6,
+   "load": "{ 7.58 8.42 8.18 }",
+   "mountMs": 29.30000001192093,
+   "firstContentMs": 16
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 6,
+   "load": "{ 7.58 8.42 8.18 }",
+   "mountMs": 29.599999994039536,
+   "firstContentMs": 4.4000000059604645
+  },
+  {
+   "variant": "warmup",
+   "delay": 100,
+   "rep": 7,
+   "load": "{ 7.58 8.42 8.18 }",
+   "mountMs": 25.700000002980232,
+   "firstContentMs": 4.5
+  },
+  {
+   "variant": "base",
+   "delay": 100,
+   "rep": 7,
+   "load": "{ 7.58 8.42 8.18 }",
+   "mountMs": 26.5,
+   "firstContentMs": 14.099999994039536
+  }
+ ],
+ "summary": [
+  {
+   "delay": 0,
+   "variant": "base",
+   "medianMountMs": 29.5,
+   "medianFirstContentMs": 20.1,
+   "minFirstContentMs": 17.2,
+   "maxFirstContentMs": 22.4
+  },
+  {
+   "delay": 0,
+   "variant": "warmup",
+   "medianMountMs": 28.5,
+   "medianFirstContentMs": 20.2,
+   "minFirstContentMs": 19.5,
+   "maxFirstContentMs": 21.6
+  },
+  {
+   "delay": 30,
+   "variant": "base",
+   "medianMountMs": 27.1,
+   "medianFirstContentMs": 15,
+   "minFirstContentMs": 14.2,
+   "maxFirstContentMs": 16.8
+  },
+  {
+   "delay": 30,
+   "variant": "warmup",
+   "medianMountMs": 28.9,
+   "medianFirstContentMs": 4.9,
+   "minFirstContentMs": 4.4,
+   "maxFirstContentMs": 8.9
+  },
+  {
+   "delay": 100,
+   "variant": "base",
+   "medianMountMs": 26.5,
+   "medianFirstContentMs": 14.9,
+   "minFirstContentMs": 14.1,
+   "maxFirstContentMs": 16.8
+  },
+  {
+   "delay": 100,
+   "variant": "warmup",
+   "medianMountMs": 26.1,
+   "medianFirstContentMs": 4.6,
+   "minFirstContentMs": 4,
+   "maxFirstContentMs": 5.7
+  }
+ ]
+}

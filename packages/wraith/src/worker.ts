@@ -1,10 +1,28 @@
 /// <reference lib="webworker" />
-import init, { Engine } from '../wasm/wraith_engine.js';
+import init, { Engine, Headless } from '../wasm/wraith_engine.js';
 import type { Command, Reply } from './protocol.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
 let initializing: Promise<unknown> = Promise.resolve();
+// V8 runs each Wasm function on its baseline compiler first and switches to
+// optimized code only on a later call, after enough work has run. The parser
+// is entered once per write batch, so a terminal's first multi-megabyte burst
+// would parse entirely on baseline code, and its first frame of text would
+// rasterize every glyph on baseline code too. The first terminal in each
+// worker therefore spends idle time after it is ready rasterizing printable
+// ASCII into its atlas and running a scratch parser over a short mixed stream
+// in small calls, in 1 ms steps taken only after 8 ms without commands.
+let warmed = false;
+const warmStream = (() => {
+  let text = '';
+  for (let i = 0; i < 48; i++)
+    text +=
+      `\x1b[38;2;${i * 5};${255 - i * 5};${(i * 37) & 255};48;2;${(i * 11) & 255};${i};${i * 3}m\u2580` +
+      `\x1b[0m\x1b[1;3${i % 8}m line ${i} \u25cf \u00b7 \u2713 \x1b[38;5;${i}m ascii text \x1b[0m` +
+      `\x1b[${(i % 20) + 1};${(i % 70) + 1}H\x1b[K\x1b[2m done\x1b[22m\r\n`;
+  return text;
+})();
 type Endpoint = { postMessage(reply: Reply, transfers: Transferable[]): void };
 
 /** One terminal: its engine, scheduling, search and fences, replying through
@@ -259,6 +277,49 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       schedule();
     }
   }
+  let lastCommand = 0;
+  function warmUp() {
+    if (warmed) return;
+    warmed = true;
+    const tasks = new MessageChannel();
+    const chunk = encoder.encode(warmStream);
+    let glyph = 0,
+      parsed = 0,
+      scratch: Headless | undefined;
+    const finish = () => {
+      scratch?.free();
+      scratch = undefined;
+      tasks.port1.close();
+    };
+    const step = () => {
+      if (disposed || !engine) return finish();
+      // Stay out of the way of active terminals: wait for a quiet moment.
+      const quiet = performance.now() - lastCommand;
+      if (quiet < 8) {
+        setTimeout(() => tasks.port2.postMessage(null), 8 - quiet);
+        return;
+      }
+      const deadline = performance.now() + 1;
+      try {
+        while (performance.now() < deadline) {
+          if (glyph >= 0) glyph = engine.prefill_glyphs(glyph, 4);
+          else if (parsed < 48) {
+            scratch ??= new Headless(80, 24, 200);
+            scratch.write(chunk);
+            if (++parsed % 8 === 0) scratch.text();
+          } else return finish();
+        }
+      } catch {
+        // Warm-up only; real work is unaffected.
+        return finish();
+      }
+      tasks.port2.postMessage(null);
+    };
+    tasks.port1.onmessage = () => {
+      serial = serial.then(step);
+    };
+    tasks.port2.postMessage(null);
+  }
   async function handle(command: Command) {
     if (command.type === 'init') {
       await ready;
@@ -294,6 +355,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         adapter: engine.adapter,
       });
       schedule();
+      warmUp();
       return;
     }
     if (!engine || disposed) throw new Error('Wraith engine is not running');
@@ -424,6 +486,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
     }
   }
   return (command: Command) => {
+    lastCommand = performance.now();
     serial = serial
       .then(() => handle(command))
       .catch((error) => {

@@ -48,6 +48,15 @@ Wasm, changed cells are copied into retained Rust storage; they do not make an
 expensive trip through JavaScript. WebGPU performs its required upload copies.
 This is deliberately not described as an entirely zero-copy pipeline.
 
+V8 first runs each Wasm function on its baseline compiler and swaps in optimized
+code only on a later call. The parser is entered once per write batch, so a new
+terminal's first large burst would parse entirely on baseline code, and its first
+frame of text would rasterize glyphs there too. After the first terminal in a
+worker is ready, the worker rasterizes printable ASCII into that terminal's atlas
+and parses a short mixed stream in a scratch terminal, in 1 ms steps that run
+only after 8 ms without commands. See
+[engine warm-up](benchmarks/engine-warmup/RE5223.md).
+
 ## A frame
 
 1. libghostty-vt parses a streaming byte sequence and updates terminal state.
