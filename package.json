@@ -40,6 +40,7 @@
     "test:native-kitty": "node scripts/native-kitty-test.mjs",
     "test:native-pool": "node scripts/native-pool-test.mjs",
     "test:serve": "node scripts/serve-test.mjs",
+    "benchmark:serve-share": "node scripts/serve-share-benchmark.mjs",
     "test:native-shaping": "node scripts/native-shaping-test.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",
     "test:visual-options": "node scripts/gpu-visual-options-test.mjs",
