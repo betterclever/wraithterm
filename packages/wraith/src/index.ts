@@ -137,6 +137,8 @@ export class Wraith {
   private renders = new Signal<{ frame: number }>();
   /** Output as written, for recorders; only copied while one is attached. */
   private outputs = new Signal<Uint8Array>();
+  /** Resizes in worker order (when sent), for recorders. */
+  private sentResizes = new Signal<{ cols: number; rows: number }>();
   private decoder = new TextDecoder();
   private encoder = new TextEncoder();
   private readyResolve!: () => void;
@@ -446,10 +448,14 @@ export class Wraith {
   async resize(cols: number, rows: number): Promise<void> {
     validateGrid(cols, rows);
     if (cols === this.cols && rows === this.rows) return;
-    await this.request<void>({ type: 'resize', cols, rows } as Omit<
+    const done = this.request<void>({ type: 'resize', cols, rows } as Omit<
       Extract<Command, { type: 'resize' }>,
       'id'
     >);
+    // The worker parses writes made before this resize is acknowledged after
+    // it, so recorders take the resize in send order, not on acknowledgement.
+    this.sentResizes.emit({ cols, rows });
+    await done;
     this.cols = cols;
     this.rows = rows;
     this.dimensions();
@@ -581,7 +587,7 @@ export class Wraith {
     const recorder = new WraithRecorder({ cols: this.cols, rows: this.rows, ...options });
     const subscriptions = [
       this.outputs.on((bytes) => recorder.output(bytes)),
-      this.resizes.on(({ cols, rows }) => recorder.resize(cols, rows)),
+      this.sentResizes.on(({ cols, rows }) => recorder.resize(cols, rows)),
       ...(options.input ? [this.data.on((text) => recorder.input(text))] : []),
     ];
     recorder.onStop(() => subscriptions.forEach((s) => s.dispose()));
@@ -1138,6 +1144,7 @@ export class Wraith {
     this.resizes.clear();
     this.renders.clear();
     this.outputs.clear();
+    this.sentResizes.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
   }

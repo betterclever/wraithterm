@@ -273,6 +273,36 @@ try {
     assert.equal(result.text.trimEnd(), result.expected.trimEnd());
   });
 
+  await check('a write sent before a resize is acknowledged records after it', async () => {
+    const result = await page.evaluate(async () => {
+      const { Wraith } = window.replayLab;
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:0;top:0;width:600px;height:300px';
+      document.body.append(host);
+      const term = await Wraith.mount(host, { cols: 60, rows: 12, fit: false });
+      const recorder = term.record();
+      await term.write('a\r\n');
+      // The worker parses this write after the resize; column 65 only exists at 70 columns.
+      const resized = term.resize(70, 14);
+      await term.write('\x1b[3;65HX');
+      await resized;
+      const recording = recorder.stop();
+      const expected = await term.getText();
+      await term.dispose();
+      host.remove();
+      const playerHost = document.createElement('div');
+      document.body.append(playerHost);
+      const player = await Wraith.player(playerHost, recording, { keyframes: false });
+      await player.seek(player.duration);
+      const text = await player.terminal.getText();
+      await player.dispose();
+      playerHost.remove();
+      return { types: recording.events.map((e) => e.type), expected, text };
+    });
+    assert.deepEqual(result.types, ['output', 'resize', 'output']);
+    assert.equal(result.text, result.expected);
+  });
+
   await check('player disposal releases the terminal and controls', async () => {
     const remaining = await page.evaluate(async () => {
       const player = window.replayLab.player();
