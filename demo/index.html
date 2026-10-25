@@ -56,38 +56,38 @@
       <section id="numbers" class="numbers">
         <div class="section-head">
           <span class="label">01 · CPU per update</span>
-          <h2>Nearly 4× less CPU<br />than xterm WebGL.</h2>
+          <h2>4.6× less CPU<br />than xterm WebGL.</h2>
           <p>
             One dense screen: 240×80 cells rewritten every update, with about 4,800 style changes.
             Lower is better. Bars show milliseconds of CPU for parsing plus redraw.
           </p>
         </div>
         <div class="bars" id="bars">
-          <div class="bar-row" data-ms="37.7">
+          <div class="bar-row" data-ms="20.4">
             <span class="who">xterm.js<small>DOM renderer</small></span>
             <div class="track"><i></i></div>
-            <b>37.7<small>ms</small></b>
+            <b>20.4<small>ms</small></b>
           </div>
-          <div class="bar-row" data-ms="9.8">
+          <div class="bar-row" data-ms="5.1">
             <span class="who">xterm.js<small>+ WebGL addon</small></span>
             <div class="track"><i></i></div>
-            <b>9.8<small>ms</small></b>
+            <b>5.1<small>ms</small></b>
           </div>
-          <div class="bar-row ours" data-ms="3.1">
+          <div class="bar-row ours" data-ms="1.1">
             <span class="who">Wraith<small>native · libghostty</small></span>
             <div class="track"><i></i></div>
-            <b>3.1<small>ms</small></b>
+            <b>1.1<small>ms</small></b>
           </div>
-          <div class="bar-row ours" data-ms="2.5">
+          <div class="bar-row ours" data-ms="1.1">
             <span class="who">Wraith<small>xterm-compatible</small></span>
             <div class="track"><i></i></div>
-            <b>2.5<small>ms</small></b>
+            <b>1.1<small>ms</small></b>
           </div>
         </div>
         <div class="stats">
           <div>
-            <strong>0.6<small>ms</small></strong
-            ><span>Wraith redraw of the full screen, versus 8.8 ms for xterm WebGL</span>
+            <strong>0.3<small>ms</small></strong
+            ><span>Wraith redraw of the full screen, versus 3.9 ms for xterm WebGL</span>
           </div>
           <div>
             <strong>20<small>bytes</small></strong
@@ -98,15 +98,15 @@
             ><span>uploaded when one cell changes; unchanged and scrolled rows are reused</span>
           </div>
           <div>
-            <strong>4.2→2.5<small>ms</small></strong
+            <strong>4.2→1.1<small>ms</small></strong
             ><span>compatible path, from the first recorded build to this one</span>
           </div>
         </div>
         <p class="receipt">
-          Medians from interleaved runs, 10 Oct 2026: Chrome 155, Apple M5 Max, hardware WebGPU,
-          Wraith build c6a77bd, xterm 6.0 with WebGL addon 0.19. GPU-completed updates, not display
-          frames. Native figures drive the engine directly, without the worker hop. Your machine
-          will differ, so race it yourself below.
+          Medians of six interleaved runs, 25 Oct 2026: Chrome 155, Apple M5 Max, hardware WebGPU,
+          Wraith 0.5.0 (build 1151069), xterm 6.0 with WebGL addon 0.19. GPU-completed updates, not
+          display frames. Native figures drive the engine directly, without the worker hop. Your
+          machine will differ, so race it yourself below.
         </p>
       </section>
 
