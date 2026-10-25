@@ -154,7 +154,8 @@ try {
     const size = () => socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
     size();
     term.onResize(size);
-    socket.closed.then(ended);
+    // A failed or disposed terminal also resolves closed; it cannot be written.
+    socket.closed.then(ended).catch(() => {});
   }
   term.focus();
 } catch (error) {

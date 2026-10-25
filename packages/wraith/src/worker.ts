@@ -123,6 +123,14 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
   function post(reply: Reply, transfers: Transferable[] = []) {
     endpoint.postMessage(reply, transfers);
   }
+  /** The page fails the terminal on any reported error. A pooled worker
+   * outlives that terminal, so drop its socket here rather than keep reading
+   * (and keep the remote session alive) for a page that has gone. */
+  function fatal(error: unknown) {
+    link?.close(1000, 'Terminal failed');
+    link = undefined;
+    post({ type: 'error', error: String(error) });
+  }
   /** Engine output: replies, keys, paste. The worker socket sends it first. */
   function output(bytes: Uint8Array) {
     link?.send(bytes);
@@ -144,7 +152,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         drain();
         schedule();
       })
-      .catch((error) => post({ type: 'error', error: String(error) }));
+      .catch(fatal);
     return serial;
   }
   function openLink(id: number, url: string, protocols: string[], stream: boolean) {
@@ -331,7 +339,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
       try {
         draw(time);
       } catch (error) {
-        post({ type: 'error', error: String(error) });
+        fatal(error);
       }
     });
   }
@@ -611,7 +619,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         if (command.type === 'write')
           post({ type: 'written', ids: command.ids, error: String(error) });
         else if ('id' in command) post({ type: 'result', id: command.id, error: String(error) });
-        else post({ type: 'error', error: String(error) });
+        else fatal(error);
       });
   };
 }
