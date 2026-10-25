@@ -55,7 +55,7 @@ frame of text would rasterize glyphs there too. After the first terminal in a
 worker is ready, the worker rasterizes printable ASCII into that terminal's atlas
 and parses a short mixed stream in a scratch terminal, in 1 ms steps that run
 only after 8 ms without commands. See
-[engine warm-up](benchmarks/engine-warmup/RE5223.md).
+[engine warm-up](benchmarks/engine-warmup/REPORT.md).
 
 ## A frame
 

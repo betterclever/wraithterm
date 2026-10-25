@@ -15,9 +15,16 @@ straight into `term.write()` in 64 KiB chunks, awaiting every 64th write, then
 `flush()`. Time runs from the first write to `flush()` resolving: parsing plus
 coalesced rendering, with no PTY and no WebSocket. It also records how long
 `mount()` takes, and a SHA-256 of `getText()` after each run. Every build gave the
-same digest on every workload.
+same digest on every workload. On the Kitty workload the screen holds only an
+image, so its digest is that of empty text and does not check the image.
 
-Workloads, as in the [native Ghostty comparison](../ghostty-native/):
+The harness waits 500 ms after `mount()` (and after the workload is fetched)
+before the timed write, so the idle warm-up below has finished by then. The cold
+gains therefore apply to a burst that starts some time after `mount()`; a burst
+written immediately after `mount()` gets none of the glyph warm-up (see the 0 ms
+row under time to first content).
+
+Workloads, the same four used for the native Ghostty comparison:
 
 | File            |      Bytes | Contents                                                           | SHA-256 (prefix) |
 | --------------- | ---------: | ------------------------------------------------------------------ | ---------------- |
