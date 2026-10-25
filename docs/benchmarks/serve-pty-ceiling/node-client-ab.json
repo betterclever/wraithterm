@@ -1,0 +1,213 @@
+{
+ "method": "serve + probe.py with a Node WebSocket client that answers CPR (no browser); serve CPU time and RSS from ps at the end; alternating pr57/ring, 5 pairs",
+ "builds": {
+  "pr57": "a7849e2 (origin/perf/serve-coalesce, packages/wraith/bin/wraithterm.mjs)",
+  "ring": "1f48fa6 (perf/serve-pty-ceiling, packages/wraith/bin/wraithterm.mjs)"
+ },
+ "summary": {
+  "pr57": {
+   "logs.ansi": {
+    "median": 193.2,
+    "min": 125.7,
+    "max": 202.5,
+    "n": 5
+   },
+   "ascii.txt": {
+    "median": 192.9,
+    "min": 129.3,
+    "max": 202,
+    "n": 5
+   },
+   "doomtext30.ansi": {
+    "median": 185.1,
+    "min": 138.8,
+    "max": 224,
+    "n": 5
+   },
+   "kitty60.ansi": {
+    "median": 187.9,
+    "min": 166.5,
+    "max": 200.4,
+    "n": 5
+   }
+  },
+  "ring": {
+   "logs.ansi": {
+    "median": 256.6,
+    "min": 181.1,
+    "max": 296.6,
+    "n": 5
+   },
+   "ascii.txt": {
+    "median": 291.2,
+    "min": 226.7,
+    "max": 317,
+    "n": 5
+   },
+   "doomtext30.ansi": {
+    "median": 278,
+    "min": 224.7,
+    "max": 321.9,
+    "n": 5
+   },
+   "kitty60.ansi": {
+    "median": 265,
+    "min": 234.5,
+    "max": 282,
+    "n": 5
+   }
+  }
+ },
+ "runs": [
+  {
+   "variant": "pr57",
+   "pair": 1,
+   "load": "{ 11.69 10.25 9.62 }",
+   "serveCpuTime": "0:01.30",
+   "serveRssMB": 152,
+   "messages": 276,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 202.5,
+    "ascii.txt": 202,
+    "doomtext30.ansi": 204.1,
+    "kitty60.ansi": 200.4
+   }
+  },
+  {
+   "variant": "ring",
+   "pair": 1,
+   "load": "{ 11.24 10.18 9.60 }",
+   "serveCpuTime": "0:00.92",
+   "serveRssMB": 80,
+   "messages": 341,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 271.7,
+    "ascii.txt": 317,
+    "doomtext30.ansi": 321.9,
+    "kitty60.ansi": 234.5
+   }
+  },
+  {
+   "variant": "pr57",
+   "pair": 2,
+   "load": "{ 11.24 10.18 9.60 }",
+   "serveCpuTime": "0:01.39",
+   "serveRssMB": 164,
+   "messages": 306,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 189,
+    "ascii.txt": 174.2,
+    "doomtext30.ansi": 185.1,
+    "kitty60.ansi": 187.9
+   }
+  },
+  {
+   "variant": "ring",
+   "pair": 2,
+   "load": "{ 10.50 10.04 9.55 }",
+   "serveCpuTime": "0:00.97",
+   "serveRssMB": 80,
+   "messages": 351,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 256.6,
+    "ascii.txt": 295.7,
+    "doomtext30.ansi": 224.7,
+    "kitty60.ansi": 265
+   }
+  },
+  {
+   "variant": "pr57",
+   "pair": 3,
+   "load": "{ 10.30 10.01 9.55 }",
+   "serveCpuTime": "0:01.36",
+   "serveRssMB": 165,
+   "messages": 297,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 194.7,
+    "ascii.txt": 197,
+    "doomtext30.ansi": 224,
+    "kitty60.ansi": 166.5
+   }
+  },
+  {
+   "variant": "ring",
+   "pair": 3,
+   "load": "{ 10.30 10.01 9.55 }",
+   "serveCpuTime": "0:01.07",
+   "serveRssMB": 80,
+   "messages": 393,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 210.5,
+    "ascii.txt": 226.7,
+    "doomtext30.ansi": 281.2,
+    "kitty60.ansi": 252.9
+   }
+  },
+  {
+   "variant": "pr57",
+   "pair": 4,
+   "load": "{ 9.87 9.93 9.52 }",
+   "serveCpuTime": "0:01.36",
+   "serveRssMB": 157,
+   "messages": 292,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 193.2,
+    "ascii.txt": 192.9,
+    "doomtext30.ansi": 185.1,
+    "kitty60.ansi": 191.5
+   }
+  },
+  {
+   "variant": "ring",
+   "pair": 4,
+   "load": "{ 9.87 9.93 9.52 }",
+   "serveCpuTime": "0:00.88",
+   "serveRssMB": 80,
+   "messages": 326,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 296.6,
+    "ascii.txt": 291.2,
+    "doomtext30.ansi": 278,
+    "kitty60.ansi": 282
+   }
+  },
+  {
+   "variant": "pr57",
+   "pair": 5,
+   "load": "{ 9.48 9.84 9.49 }",
+   "serveCpuTime": "0:01.79",
+   "serveRssMB": 188,
+   "messages": 405,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 125.7,
+    "ascii.txt": 129.3,
+    "doomtext30.ansi": 138.8,
+    "kitty60.ansi": 169
+   }
+  },
+  {
+   "variant": "ring",
+   "pair": 5,
+   "load": "{ 9.28 9.80 9.48 }",
+   "serveCpuTime": "0:01.07",
+   "serveRssMB": 80,
+   "messages": 399,
+   "bytes": 218551620,
+   "MBps": {
+    "logs.ansi": 181.1,
+    "ascii.txt": 261.8,
+    "doomtext30.ansi": 245.3,
+    "kitty60.ansi": 277.7
+   }
+  }
+ ]
+}
