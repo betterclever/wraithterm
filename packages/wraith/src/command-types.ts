@@ -113,17 +113,30 @@ if [[ $- == *i* && -z $WRAITH_SHELL_INTEGRATION ]]; then
     local code=$?
     [[ -n $_wraith_ran ]] && printf '\e]133;D;%s\a' "$code"
     _wraith_ran=
+    _wraith_last=$(HISTTIMEFORMAT= history 1)
     printf '\e]133;A\a'
   }
   # PS0 runs command substitutions in a subshell; this only prints the mark.
   _wraith_preexec() {
-    local cmd out= i c LC_ALL=C
-    cmd=$(HISTTIMEFORMAT= history 1 | sed 's/^ *[0-9]* *//')
+    local line cmd out= i c LC_ALL=C
+    line=$(HISTTIMEFORMAT= history 1)
+    # A command kept out of history (HISTCONTROL=ignorespace, HISTIGNORE)
+    # leaves it unchanged. Send no cmdline: the terminal uses the typed text.
+    if [[ $line == "$_wraith_last" ]]; then
+      printf '\e]133;C\a'
+      return
+    fi
+    # Strip the history number ("  42* cmd") without touching later lines.
+    cmd=${'$'}{line#"${'$'}{line%%[0-9]*}"}
+    cmd=${'$'}{cmd#"${'$'}{cmd%%[!0-9]*}"}
+    cmd=${'$'}{cmd#\*}
+    cmd=${'$'}{cmd#"${'$'}{cmd%%[! ]*}"}
     for (( i = 0; i < ${'$'}{#cmd}; i++ )); do
       c=${'$'}{cmd:i:1}
       case $c in
         [A-Za-z0-9._~/-]) out+=$c ;;
-        *) printf -v c '%%%02X' "'$c"; out+=$c ;;
+        # The mask keeps the byte where libc maps raw bytes elsewhere (musl).
+        *) printf -v c '%d' "'$c"; printf -v c '%%%02X' $(( c & 255 )); out+=$c ;;
       esac
     done
     printf '\e]133;C;cmdline_url=%s\a' "$out"

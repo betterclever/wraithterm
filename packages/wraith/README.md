@@ -303,8 +303,10 @@ working. The alternate screen (vim, htop) never produces blocks.
 file. zsh and bash (4.4+, for `PS0`) need them. fish 4.0 and later emit OSC 133
 themselves, so the fish snippet only acts on fish 3.x. On macOS, the zsh snippet
 was tested under a real PTY (`npm run test:shell-integration`), and so were
-fish 4.9's own marks. The bash snippet has only been syntax-checked, with
-macOS's bash 3.2.
+fish 4.9's own marks. macOS ships bash 3.2, so the test only syntax-checks the
+bash snippet there; it was run by hand under a PTY with bash 5.2 in Docker
+(Alpine and Debian), including `HISTCONTROL=ignoreboth`. A command kept out of
+history is sent without a cmdline, so its typed text is used.
 
 The xterm-compatible profile has the same API as an addon:
 
