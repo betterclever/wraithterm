@@ -118,7 +118,7 @@ try {
       'Terminal input',
     );
     assert.match(
-      await page.evaluate(() => window.t.element.querySelector('pre').textContent),
+      await page.evaluate(() => window.t.element.querySelector('.wraith-a11y-screen').textContent),
       /-needle/,
     );
     checks.push(

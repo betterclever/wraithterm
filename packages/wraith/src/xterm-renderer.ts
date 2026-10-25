@@ -149,13 +149,17 @@ export class XtermRenderer implements Renderer {
         this.invalidate();
       }),
     );
+    const reduceMotion =
+      typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
     this.timer = setInterval(() => {
       if (
         !this.disposed &&
         this.state === 'webgpu' &&
         (core.coreService.decPrivateModes.cursorBlink ?? terminal.options.cursorBlink)
       ) {
-        this.blink = !this.blink;
+        // Reduced motion holds the cursor in its visible phase.
+        if (reduceMotion?.matches && this.blink) return;
+        this.blink = reduceMotion?.matches || !this.blink;
         this.invalidate(false);
       }
     }, 600);

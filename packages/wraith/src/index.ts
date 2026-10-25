@@ -1,5 +1,6 @@
 import { dedicatedChannel, WraithPool, type Channel, type WraithPoolOptions } from './pool.js';
 import { KEY_CODES } from './keycodes.js';
+import { TerminalAccessibility } from './accessibility.js';
 import {
   BackpressureError,
   packColor,
@@ -13,6 +14,8 @@ import {
   type SearchResult,
   type SelectionPosition,
   type KeyEventHandler,
+  type ReadTextOptions,
+  type WraithAccessibilityOptions,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
 export * from './types.js';
@@ -134,10 +137,14 @@ export class Wraith {
   private keyHandlers = new Set<KeyEventHandler>();
   private interceptedKeys = new Set<string>();
   private composing = false;
-  private mirror?: HTMLPreElement;
-  private mirrorTimer?: ReturnType<typeof setInterval>;
   private preedit: HTMLSpanElement;
   private theme: Required<WraithTheme>;
+  /** System colors while forced-colors mode is active; overrides `theme`. */
+  private forcedTheme?: Required<WraithTheme>;
+  private started = false;
+  private hostPaused: boolean;
+  private a11y: TerminalAccessibility;
+  private announcements = new Signal<string>();
   private constructor(host: HTMLElement, options: WraithOptions) {
     this.options = options;
     this.dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -166,13 +173,10 @@ export class Wraith {
       overflow: 'hidden',
       background: this.theme.background,
     });
-    this.element.setAttribute('role', 'group');
-    this.element.setAttribute('aria-label', 'Wraith terminal');
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('aria-hidden', 'true');
     Object.assign(this.canvas.style, { display: 'block', touchAction: 'none', userSelect: 'none' });
     this.input = document.createElement('textarea');
-    this.input.setAttribute('aria-label', 'Terminal input');
     this.input.setAttribute('autocapitalize', 'off');
     this.input.setAttribute('autocomplete', 'off');
     this.input.spellcheck = false;
@@ -199,6 +203,28 @@ export class Wraith {
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
+    this.hostPaused = !!options.paused;
+    this.a11y = new TerminalAccessibility(
+      {
+        host,
+        element: this.element,
+        input: this.input,
+        signal: this.abort.signal,
+        send: (command) => {
+          if (!this.disposed && !this.failed) this.send(command);
+        },
+        geometry: () => ({
+          rowHeight: this.cellHeight / this.dpr,
+          width: (this.cols * this.cellWidth) / this.dpr,
+        }),
+        setForcedTheme: (theme) => {
+          this.forcedTheme = theme;
+          this.applyTheme();
+        },
+        announced: (text) => this.announcements.emit(text),
+      },
+      options.accessibility,
+    );
     const handlers = {
       message: (reply: Reply) => this.receive(reply),
       fail: (error: Error) => this.fail(error),
@@ -235,10 +261,11 @@ export class Wraith {
           history: options.scrollback ?? 10000,
           imageStorageLimit: options.imageStorageLimit,
           ligatures: options.ligatures,
-          theme: Object.values(terminal.theme).map(packColor),
+          theme: Object.values(terminal.forcedTheme ?? terminal.theme).map(packColor),
         },
         [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
+      terminal.started = true;
       await terminal.ready;
       terminal.dimensions();
       terminal.watchVisibility();
@@ -247,7 +274,8 @@ export class Wraith {
         terminal.observer.observe(host);
         terminal.fit();
       }
-      if (options.screenReaderMode) terminal.enableMirror();
+      terminal.a11y.setScreenReaderMode(!!options.screenReaderMode);
+      terminal.a11y.configure();
       terminal.watchDisplay();
       window.addEventListener('resize', () => terminal.checkDisplay(), {
         signal: terminal.abort.signal,
@@ -325,6 +353,9 @@ export class Wraith {
       case 'render':
         this.renders.emit({ frame: reply.frame });
         break;
+      case 'a11y':
+        this.a11y.receive(reply);
+        break;
       case 'error':
         this.fail(new Error(reply.error));
         break;
@@ -365,7 +396,6 @@ export class Wraith {
     this.batchLength = 0;
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
-    clearInterval(this.mirrorTimer);
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
@@ -450,6 +480,7 @@ export class Wraith {
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
     this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
+    this.a11y.layout();
   }
   /** Change CSS text size without replacing terminal state or the worker. */
   setFontSize(fontSize: number): Promise<void> {
@@ -659,10 +690,74 @@ export class Wraith {
   setTheme(theme: WraithTheme): void {
     this.assertLive();
     const next = { ...this.theme, ...theme };
-    const colors = Object.values(next).map(packColor);
+    Object.values(next).forEach(packColor);
     this.theme = next;
-    this.element.style.background = next.background;
-    this.send({ type: 'theme', colors });
+    this.applyTheme();
+  }
+  private applyTheme() {
+    const theme = this.forcedTheme ?? this.theme;
+    this.element.style.background = theme.background;
+    this.preedit.style.background = theme.background;
+    this.preedit.style.color = theme.foreground;
+    // Before init the engine takes the effective theme with its other settings.
+    if (this.started && !this.disposed && !this.failed)
+      this.send({ type: 'theme', colors: Object.values(theme).map(packColor) });
+  }
+  /**
+   * Plain text of the visible screen (default), or of retained scrollback plus
+   * the screen with soft-wrapped lines joined (`scope: 'all'`). Reading `all`
+   * clears an active selection. It never changes the viewport or focus.
+   */
+  async readText(options: ReadTextOptions = {}): Promise<string> {
+    const scope = options.scope ?? 'screen';
+    if (scope !== 'screen' && scope !== 'all') throw new RangeError('scope must be screen or all');
+    this.flushWrites();
+    const text = await this.request<string>({ type: 'read', scope } as Omit<
+      Extract<Command, { type: 'read' }>,
+      'id'
+    >);
+    if (scope === 'all') this.selected = false;
+    const last = options.lastLines;
+    if (last === undefined) return text;
+    if (!Number.isInteger(last) || last < 0) throw new RangeError('lastLines must be a count');
+    return last === 0 ? '' : text.split('\n').slice(-last).join('\n');
+  }
+  /** Stop painting (an inactive pane). Parsing, replies and accessibility
+   * continue; `resume()` paints the latest state once, without replaying output. */
+  pause(): void {
+    this.hostPaused = true;
+    this.updateVisibility();
+  }
+  resume(): void {
+    this.hostPaused = false;
+    this.updateVisibility();
+  }
+  /** Whether painting is paused by `pause()`. Offscreen and hidden-document
+   * pausing is automatic and independent. */
+  get paused(): boolean {
+    return this.hostPaused;
+  }
+  get screenReaderMode(): boolean {
+    return this.a11y.enabled;
+  }
+  /** Add or remove the accessible mirror and output announcements at runtime. */
+  setScreenReaderMode(enabled: boolean): void {
+    this.assertLive();
+    this.a11y.setScreenReaderMode(enabled);
+  }
+  /** Change accessibility options without remounting. */
+  setAccessibility(options: WraithAccessibilityOptions): void {
+    this.assertLive();
+    this.a11y.update(options);
+  }
+  /** Speak a host message (for example "Connection lost") through the
+   * terminal's live region. Requires screen reader mode. */
+  announce(text: string): void {
+    this.a11y.announce(String(text));
+  }
+  /** Text placed in the live region: output summaries and `announce()` calls. */
+  onAnnounce(listener: Listener<string>): Disposable {
+    return this.announcements.on(listener);
   }
   connect(socket: WebSocket): Disposable {
     // Messages are written in order and batched across the worker boundary.
@@ -1031,30 +1126,10 @@ export class Wraith {
   }
   private updateVisibility() {
     if (!this.visibilityReady || this.disposed || this.failed) return;
-    const visible = !document.hidden && this.intersectsViewport;
+    const visible = !this.hostPaused && !document.hidden && this.intersectsViewport;
     if (visible === this.workerVisible) return;
     this.workerVisible = visible;
     this.send({ type: 'visibility', visible });
-  }
-  private enableMirror() {
-    this.mirror = document.createElement('pre');
-    this.mirror.setAttribute('role', 'log');
-    this.mirror.setAttribute('aria-live', 'polite');
-    Object.assign(this.mirror.style, {
-      position: 'absolute',
-      width: '1px',
-      height: '1px',
-      overflow: 'hidden',
-      clipPath: 'inset(50%)',
-    });
-    this.element.append(this.mirror);
-    this.mirrorTimer = setInterval(() => {
-      void this.getText()
-        .then((text) => {
-          if (this.mirror && this.mirror.textContent !== text) this.mirror.textContent = text;
-        })
-        .catch(() => {});
-    }, 250);
   }
   async dispose(): Promise<void> {
     if (this.disposed) return;
@@ -1065,7 +1140,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
-    clearInterval(this.mirrorTimer);
+    this.a11y.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
     this.batchIds = [];
@@ -1098,6 +1173,7 @@ export class Wraith {
     this.statistics.clear();
     this.resizes.clear();
     this.renders.clear();
+    this.announcements.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
   }

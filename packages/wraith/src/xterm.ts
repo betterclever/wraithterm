@@ -6,6 +6,7 @@ import type {
 } from './xterm-api.js';
 import { XtermRenderer, type RendererState } from './xterm-renderer.js';
 import { accelerateInput } from './xterm-input.js';
+import { installKeyboardExit } from './xterm-accessibility.js';
 const XtermTerminal: typeof TerminalApi = RuntimeTerminal;
 export type * from './xterm-api.js';
 /** Complete xterm.js 6.0 public API. Construction/open remain synchronous;
@@ -13,6 +14,7 @@ export type * from './xterm-api.js';
 export class Terminal extends XtermTerminal {
   private wraithRenderer: XtermRenderer | undefined;
   private wraithDisposed = false;
+  private wraithExit: { dispose(): void } | undefined;
   constructor(options?: ITerminalOptions & ITerminalInitOnlyOptions) {
     super(options);
     accelerateInput(this);
@@ -35,9 +37,11 @@ export class Terminal extends XtermTerminal {
     super.open(parent);
     if (!this.wraithRenderer && !this.wraithDisposed)
       this.wraithRenderer = XtermRenderer.install(this);
+    if (!this.wraithExit && !this.wraithDisposed) this.wraithExit = installKeyboardExit(this);
   }
   override dispose(): void {
     this.wraithDisposed = true;
+    this.wraithExit?.dispose();
     super.dispose();
   }
 }

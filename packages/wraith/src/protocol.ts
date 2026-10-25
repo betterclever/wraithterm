@@ -47,6 +47,16 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  | {
+      type: 'a11y';
+      mirror: boolean;
+      announce: boolean;
+      interval: number;
+      maxLines: number;
+      maxCharacters: number;
+      reducedMotion: boolean;
+    }
+  | { type: 'read'; scope: 'screen' | 'all'; id: number }
   | { type: 'dispose'; id: number };
 export type Reply =
   | { type: 'ready'; width: number; height: number; adapter: string }
@@ -59,4 +69,11 @@ export type Reply =
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
   | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string }
+  | {
+      type: 'a11y';
+      rows: number;
+      patch: [number, string][];
+      cursor: number;
+      announce?: string;
+    };
