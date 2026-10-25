@@ -171,6 +171,10 @@ impl Commands {
                     let block = self.blocks.back_mut().unwrap();
                     block.prompt = mark;
                     block.input = None;
+                    // Every mark the block had is replaced, so rows lost
+                    // before the redraw (a reset, a cleared screen) no longer
+                    // belong to it.
+                    block.trimmed = false;
                     block.state = BlockState::Prompt;
                 }
                 _ => {
@@ -309,16 +313,42 @@ impl Core {
             primary: out[5] != 0,
         }
     }
-    /// Release references whose rows were all trimmed, keeping the metadata.
+    /// Whether the rows of the block at `index` were erased in place. Erasing
+    /// scrollback (`ESC [ 3 J`, sent by `clear`) moves the tracked references
+    /// on erased rows to the screen origin without reporting them as gone. A
+    /// finished block always contains its prompt or output, so one whose
+    /// exclusive end is the origin can only have been erased.
+    fn erased(&self, index: usize) -> bool {
+        let blocks = &self.state.commands.blocks;
+        let block = &blocks[index];
+        if block.state != BlockState::Done && index + 1 == blocks.len() {
+            return false;
+        }
+        let end = match &block.end {
+            Some(end) => end.point(SCREEN),
+            None => blocks
+                .get(index + 1)
+                .and_then(|next| next.first())
+                .and_then(|m| m.point(SCREEN)),
+        };
+        end == Some((0, 0))
+    }
+    /// Release references whose rows were trimmed or erased, keeping the
+    /// metadata.
     fn release_trimmed(&mut self) {
-        for block in self.state.commands.blocks.iter_mut() {
+        let erased: Vec<bool> = (0..self.state.commands.blocks.len())
+            .map(|i| self.erased(i))
+            .collect();
+        for (block, erased) in self.state.commands.blocks.iter_mut().zip(erased) {
             let lost = |m: &mut Option<Mark>| {
-                if m.as_ref().is_some_and(|m| m.point(SCREEN).is_none()) {
+                let gone = m.as_ref().is_some_and(|m| match m.point(SCREEN) {
+                    None => true,
+                    Some(point) => erased && point == (0, 0),
+                });
+                if gone {
                     *m = None;
-                    true
-                } else {
-                    false
                 }
+                gone
             };
             let mut trimmed = lost(&mut block.prompt);
             trimmed |= lost(&mut block.input);
@@ -334,14 +364,24 @@ impl Core {
     /// One block by id, searching from the newest. Costs one block's marks,
     /// unlike `commands()`, so hosts can report each completion cheaply.
     pub fn command(&self, id: u32) -> Option<BlockInfo> {
-        let block = self
-            .state
-            .commands
-            .blocks
-            .iter()
-            .rev()
-            .find(|b| b.id == id)?;
+        let blocks = &self.state.commands.blocks;
+        let index = blocks.iter().rposition(|b| b.id == id)?;
+        let block = &blocks[index];
         let mut info = info(block);
+        if self.erased(index) {
+            for row in [
+                &mut info.prompt_row,
+                &mut info.input_row,
+                &mut info.output_row,
+                &mut info.end_row,
+            ] {
+                // Erased references sit at the origin; see `erased`.
+                if *row == Some(0) {
+                    *row = None;
+                    info.truncated = true;
+                }
+            }
+        }
         let lost = |m: &Option<Mark>, row: Option<u32>| m.is_some() && row.is_none();
         info.truncated |= lost(&block.prompt, info.prompt_row)
             || lost(&block.input, info.input_row)
@@ -482,6 +522,7 @@ impl Core {
     /// viewport row. Past the newest prompt, return to the bottom. Returns the
     /// new viewport offset, or None when there is no prompt to move to.
     pub fn jump_to_prompt(&mut self, direction: i32) -> Option<u64> {
+        self.release_trimmed();
         let screen = self.screen();
         if !screen.primary || self.state.commands.blocks.is_empty() {
             return None;

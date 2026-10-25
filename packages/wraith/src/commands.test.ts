@@ -155,6 +155,22 @@ describe('native engine command blocks (packaged Wasm)', () => {
       core.free();
     }
   });
+  it('reports blocks erased by clear as truncated', () => {
+    const core = new Headless(20, 5, 100);
+    try {
+      core.write(encode(SESSION + '\x1b[H\x1b[2J\x1b[3J'));
+      core.write(encode('\x1b]133;A\x07$ \x1b]133;B\x07ls\r\n\x1b]133;C\x07a\r\n\x1b]133;D;0\x07'));
+      const list = blocks(core);
+      expect(list.slice(0, 2).map((b) => [b.slice(4, 8), b[8]])).toEqual([
+        [[-1, -1, -1, -1], true],
+        [[-1, -1, -1, -1], true],
+      ]);
+      expect(list[2]![8]).toBe(false);
+      expect(core.command_text(list[2]![0] as number, false)).toEqual(['a', false]);
+    } finally {
+      core.free();
+    }
+  });
 });
 
 describe('xterm-compatible CommandBlocksAddon', () => {

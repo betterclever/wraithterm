@@ -225,3 +225,54 @@ fn repeated_output_start_belongs_to_the_running_command() {
     assert_eq!(blocks[0].exit, Some(0));
     assert_eq!(c.command_text(blocks[0].id, false).unwrap().unwrap().0, "a");
 }
+
+#[test]
+fn clearing_scrollback_reports_erased_blocks_as_truncated() {
+    let mut c = term(20, 5, 100);
+    c.write(SESSION.as_bytes());
+    // What `clear` sends: home, erase the screen into scrollback, erase that.
+    c.write(b"\x1b[H\x1b[2J\x1b[3J");
+    c.write(b"\x1b]133;A\x07$ \x1b]133;B\x07ls\r\n\x1b]133;C\x07a\r\n\x1b]133;D;0\x07");
+    c.write(b"\x1b]133;A\x07$ ");
+    // Ghostty moves references on erased rows to the origin; the single-block
+    // lookup used for completions must see them as gone too.
+    let first = c.command(1).unwrap();
+    assert!(first.truncated, "{first:?}");
+    assert_eq!(first.prompt_row, None);
+    let blocks = c.commands();
+    // The prompt pending during the clear was redrawn and became `ls`.
+    assert_eq!(blocks.len(), 4);
+    for block in &blocks[..2] {
+        assert!(block.truncated, "{block:?}");
+        assert_eq!(
+            (block.prompt_row, block.output_row, block.end_row),
+            (None, None, None)
+        );
+    }
+    assert_eq!(blocks[2].command, "");
+    assert!(!blocks[2].truncated, "{:?}", blocks[2]);
+    assert_eq!(blocks[2].prompt_row, Some(0));
+    assert_eq!(
+        c.command_text(blocks[2].id, false).unwrap().unwrap(),
+        ("a".to_string(), false)
+    );
+    assert_eq!(
+        c.command_text(blocks[0].id, false).unwrap().unwrap(),
+        (String::new(), true)
+    );
+    // No erased prompt is left to jump back to.
+    assert_eq!(c.jump_to_prompt(-1), None);
+}
+
+#[test]
+fn a_reset_does_not_truncate_the_next_command() {
+    let mut c = term(20, 5, 100);
+    c.write(SESSION.as_bytes());
+    c.write(b"\x1bc");
+    c.write(b"\x1b]133;A\x07$ \x1b]133;B\x07ls\r\n\x1b]133;C\x07a\r\n\x1b]133;D;0\x07");
+    let blocks = c.commands();
+    assert!(blocks[..2].iter().all(|b| b.truncated), "{blocks:?}");
+    let last = blocks.last().unwrap();
+    assert_eq!(last.exit, Some(0));
+    assert!(!last.truncated, "{last:?}");
+}

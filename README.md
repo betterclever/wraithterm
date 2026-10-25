@@ -279,7 +279,8 @@ rows, truncated, output() }`. In the native profile, libghostty-vt parses the
 marks, and the engine pins each one with a Ghostty tracked grid reference. The
 marks follow scrolling, scrollback pruning and resize/reflow. When a block's rows
 are trimmed from the scrollback, it reports `truncated: true`, and `output()`
-returns only the retained tail (or `''`). `rows` are buffer rows: 0 is the oldest
+returns only the retained tail (or `''`). Blocks erased with the
+scrollback (`clear`, `ESC [ 3 J`) report `truncated: true` the same way. `rows` are buffer rows: 0 is the oldest
 retained row, and -1 means a mark was not sent or was trimmed. `command` comes
 from `OSC 133;C;cmdline_url=…` (or `cmdline=`) when the shell sends it.
 Otherwise it is the text typed between the B and C marks. Timestamps record

@@ -147,7 +147,9 @@ libghostty-vt parses OSC 133 and reports each step through its semantic-prompt
 callback after updating the screen. On the primary screen, the bridge creates a
 Ghostty tracked grid reference at the cursor for every step. Rust owns the
 references, so the marks move with scrolling, page pruning and reflow, and
-report no value once their rows are trimmed. Output text is formatted by
+report no value once their rows are trimmed. Erasing the scrollback moves
+references on erased rows to the screen origin instead, so a finished block
+whose end resolves to the origin is treated as erased. Output text is formatted by
 Ghostty between the C mark and the D mark (or the next prompt, or the cursor).
 The worker posts gutter extents only after the first block exists, and only
 when they change. Computing them walks from the newest block and stops at the

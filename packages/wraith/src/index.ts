@@ -702,7 +702,7 @@ export class Wraith {
   /**
    * Scroll the previous (-1) or next (1) prompt to the top of the viewport.
    * Resolves false when there is none. Bound to Cmd+Up/Down on macOS and
-   * Ctrl+Shift+Up/Down elsewhere once a prompt has been seen.
+   * Ctrl+Shift+Up/Down elsewhere once the first command has run.
    */
   jumpToPrompt(direction: -1 | 1): Promise<boolean> {
     this.flushWrites();
