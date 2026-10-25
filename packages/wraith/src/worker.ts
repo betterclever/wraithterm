@@ -36,7 +36,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
   // sooner. Busier output stays on animation frames: mixing in off-phase
   // frames there delayed later frames in measurement (see
   // docs/benchmarks/input-latency). `immediate` is switchable for A/B runs.
-  let immediate = false;
+  let immediate = true;
   const IDLE_FRAMES = 2;
   // When the last frame was rendered, and the display's frame interval as
   // estimated from consecutive animation frames.

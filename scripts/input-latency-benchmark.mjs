@@ -47,7 +47,7 @@ const report = resolve(
 const VARIANTS = {
   // Baseline: every frame waits for the worker's next animation frame.
   frame: { immediate: false },
-  // A write to an idle terminal renders at once.
+  // Shipped default: a write to an idle terminal renders at once.
   immediate: { immediate: true },
 };
 for (const v of variants) if (!VARIANTS[v]) throw new Error(`Unknown variant ${v}`);
