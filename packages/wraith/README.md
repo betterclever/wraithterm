@@ -197,6 +197,33 @@ terminals run out of memory, and xterm.js + WebGL draws only 16 of them
 terminal can delay frames for its worker's neighbours; dispose terminals before
 `pool.dispose()`.
 
+For hundreds or thousands of terminals, let each worker draw all of its
+terminals into one shared WebGPU surface:
+
+```ts
+const pool = Wraith.pool({ workers: 4, surface: 'shared' });
+const terminal = await Wraith.mount(host, { pool }); // same API as before
+```
+
+Each worker owns one page-sized canvas layered above the page
+(`pointer-events: none`), one device, one compiled pipeline and one glyph atlas
+per font configuration. Each terminal is drawn at its host's on-screen
+rectangle, clipped to scrolling ancestors. Only terminals with new content are
+redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
+focus, selection and accessibility. Shared and per-canvas output are
+pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
+120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
+per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
+119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+[`demo/fleet.html`](demo/fleet.html).
+
+Limits: the shared canvases sit at `z-index: 1` by default
+(`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
+must stack above them. Placement follows layout one animation frame later
+than the DOM. Rotation and perspective transforms are not modelled. Fallback
+fonts and ligatures are fixed when a shared terminal is created.
+`pool.surfaceStats` reports presented and GPU-completed frames per worker.
+
 Connect a PTY transport:
 
 ```ts
