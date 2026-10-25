@@ -397,6 +397,16 @@ int wraith_bridge_mode(WraithBridge* b, uint16_t mode) {
   ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_MODE, &config);
   return config.value;
 }
+/* Update the render snapshot even inside a synchronized update, without
+ * releasing it: replay verification reads parsed content, not the held frame. */
+int wraith_bridge_update_content(WraithBridge* b, WraithFrame* frame) {
+  bool held = b->held;
+  b->held = false;
+  int result = wraith_bridge_update(b, frame);
+  b->held = held;
+  frame->held = held;
+  return result;
+}
 void wraith_bridge_hold_release(WraithBridge* b) {
   GhosttyTerminalModeConfig config = {.mode = ghostty_mode_new(2026, false), .value = false};
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_MODE, &config);

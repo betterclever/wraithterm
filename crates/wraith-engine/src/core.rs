@@ -214,6 +214,7 @@ extern "C" {
     fn wraith_bridge_link(b: *mut c_void, x: u16, y: u16, output: *mut u8, cap: usize) -> usize;
     fn wraith_bridge_selection_text(b: *mut c_void) -> i32;
     fn wraith_bridge_snapshot(b: *mut c_void) -> i32;
+    fn wraith_bridge_update_content(b: *mut c_void, frame: *mut Frame) -> i32;
     fn wraith_bridge_select_mode(
         b: *mut c_void,
         x1: i32,
@@ -515,11 +516,14 @@ impl Core {
         });
         result.map(|_| output)
     }
-    /// FNV-1a hash of the visible grid as drawn: grapheme text, resolved
-    /// colours and flags of every cell, plus the cursor. Replay verification
-    /// compares it where plain text would miss colour or attribute changes.
+    /// FNV-1a hash of the visible grid: grapheme text, resolved colours and
+    /// flags of every cell, plus the cursor. Replay verification compares it
+    /// where plain text would miss colour or attribute changes.
     pub fn digest(&mut self) -> Result<u64, String> {
-        self.update()?;
+        // Parsed content, also inside a synchronized update (which keeps
+        // showing the previous frame and stays in effect).
+        self.state.stamp = self.state.stamp.wrapping_add(1);
+        check(unsafe { wraith_bridge_update_content(self.bridge.as_ptr(), &mut self.frame) })?;
         let mut hash = 0xcbf2_9ce4_8422_2325u64;
         let mut mix = |bytes: &[u8]| {
             for byte in bytes {

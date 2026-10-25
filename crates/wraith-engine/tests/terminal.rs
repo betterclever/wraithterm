@@ -232,6 +232,21 @@ fn synchronized_output_holds_the_previous_snapshot() {
     assert_eq!(text(&mut c), "new");
 }
 #[test]
+fn digests_read_content_inside_synchronized_output_without_releasing_it() {
+    let mut a = term(10, 2);
+    let mut b = term(10, 2);
+    a.write(b"old");
+    b.write(b"old");
+    let before = a.digest().unwrap();
+    a.write(b"\x1b[?2026h\rnew");
+    b.write(b"\rnew");
+    assert_ne!(a.digest().unwrap(), before);
+    assert_eq!(a.digest().unwrap(), b.digest().unwrap());
+    assert!(a.mode(2026));
+    a.update().unwrap();
+    assert_eq!(a.frame().held, 1);
+}
+#[test]
 fn abandoned_synchronized_output_can_be_recovered() {
     let mut c = term(10, 2);
     c.write(b"\x1b[?2026hheld");
