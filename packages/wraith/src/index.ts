@@ -367,7 +367,8 @@ export class Wraith {
         break;
       case 'command':
       case 'marks':
-        this.blocks.receive(reply);
+        // Replies can still arrive while dispose() waits for the worker.
+        if (!this.disposed && !this.failed) this.blocks.receive(reply);
         break;
       case 'stats': {
         // Some browser/display transitions update resolution without delivering
@@ -1129,6 +1130,7 @@ export class Wraith {
     if (this.disposed) return;
     this.disposed = true;
     this.abort.abort();
+    this.blocks.dispose();
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
     this.dprQuery?.removeEventListener('change', this.dprListener!);
@@ -1169,7 +1171,6 @@ export class Wraith {
     this.renders.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
-    this.blocks.dispose();
   }
 }
 

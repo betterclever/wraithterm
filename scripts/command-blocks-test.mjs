@@ -50,8 +50,29 @@ async function open(params) {
   });
   await page.goto(`${base}/commands.html?static=1&${params}`);
   await page.waitForFunction(() => window.wraith, null, { timeout: 30000 });
+  await settled(page, 0);
   return page;
 }
+/** Columns that fit the terminal element after `inset` CSS pixels. */
+const fittedCols = (page, inset) =>
+  page.evaluate((inset) => {
+    const t = window.wraith;
+    const canvas = t.element.querySelector('canvas:not(.wraith-command-gutter)');
+    const cell = canvas.getBoundingClientRect().width / t.cols;
+    return Math.floor((t.element.getBoundingClientRect().width - inset) / cell + 1e-6);
+  }, inset);
+/** mount() resolves before its first fit's resize does; wait for it. */
+const settled = (page, inset) =>
+  page.waitForFunction(
+    (inset) => {
+      const t = window.wraith;
+      const canvas = t.element.querySelector('canvas:not(.wraith-command-gutter)');
+      const cell = canvas.getBoundingClientRect().width / t.cols;
+      return t.cols === Math.floor((t.element.getBoundingClientRect().width - inset) / cell + 1e-6);
+    },
+    inset,
+    { timeout: 10000 },
+  );
 /** RGB at a CSS point inside the terminal element. */
 async function colorAt(page, x, y) {
   const png = await page.screenshot({ clip: { x, y, width: 1, height: 1 } });
@@ -142,9 +163,13 @@ try {
     geometry.canvasLeft - geometry.left >= 6,
     geometry,
   );
-  check('fit accounts for the reserved space', geometry.cols <= colsBefore, {
+  await settled(page, 6);
+  const colsAfter = await page.evaluate(() => window.wraith.cols);
+  const expected = await fittedCols(page, 6);
+  check('fit accounts for the reserved space', colsAfter === expected && colsAfter <= colsBefore, {
     before: colsBefore,
-    after: geometry.cols,
+    after: colsAfter,
+    expected,
   });
   const rowY = (row) => geometry.top + (row + 0.5) * geometry.cell;
   const gx = geometry.left + 3;
@@ -282,6 +307,25 @@ try {
     trimmed,
   );
   await small.context().close();
+
+  // Dispose while the worker is still reporting the first block: late
+  // replies must not try to bind keys or build a gutter on a dead terminal.
+  const disposing = await open('scrollback=100');
+  await disposing.evaluate(
+    async (data) => {
+      const t = window.wraith;
+      t.write(data).catch(() => {});
+      t.flush().catch(() => {});
+      await t.dispose();
+      await new Promise((r) => setTimeout(r, 300));
+    },
+    session([{ cmd: 'false', out: ['x'], exit: 1 }]),
+  );
+  check(
+    'dispose during the first block leaves no gutter',
+    await disposing.evaluate(() => !document.querySelector('.wraith-command-gutter')),
+  );
+  await disposing.context().close();
   check('no page errors', errors.length === 0, errors);
   console.log(
     JSON.stringify({ passed: checks.length, checks: checks.map((c) => c.name) }, null, 2),

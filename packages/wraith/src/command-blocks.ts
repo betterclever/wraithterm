@@ -68,6 +68,7 @@ export class CommandBlocks {
   private colors: CommandColors;
   private options: Required<Omit<CommandBlockOptions, 'colors'>>;
   private keys?: Disposable;
+  private disposed = false;
   constructor(
     private host: CommandHost,
     options: CommandBlockOptions | false = {},
@@ -82,6 +83,7 @@ export class CommandBlocks {
     this.colors = { ...DEFAULT_COMMAND_COLORS, ...o.colors };
   }
   receive(reply: Extract<Reply, { type: 'command' | 'marks' }>) {
+    if (this.disposed) return;
     if (reply.type === 'command') {
       const block = publicBlock(reply.block, this.host);
       for (const listener of this.listeners) {
@@ -267,6 +269,8 @@ export class CommandBlocks {
     return text[0];
   }
   dispose() {
+    this.disposed = true;
+    this.hovered = -1;
     this.abort.abort();
     this.keys?.dispose();
     this.overlay?.remove();
