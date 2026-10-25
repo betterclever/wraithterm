@@ -49,6 +49,9 @@
     "benchmark:bulk-text": "node scripts/bulk-text-benchmark.mjs",
     "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
     "test:native-visibility": "node scripts/native-visibility-test.mjs",
+    "test:replay": "node scripts/replay-browser-test.mjs",
+    "benchmark:replay": "node scripts/replay-benchmark.mjs",
+    "record:sample": "node scripts/record-sample.mjs",
     "benchmark:visibility": "node scripts/visibility-benchmark.mjs"
   },
   "devDependencies": {
