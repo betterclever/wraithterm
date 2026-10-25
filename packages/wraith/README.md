@@ -255,6 +255,63 @@ shell to your network, so use it only on networks you trust. The PTY runs with
 `TERM=xterm-256color`, `COLORTERM=truecolor` and `TERM_PROGRAM=wraith`. Tested on
 macOS and Linux; Windows ConPTY through node-pty is untested.
 
+## GPU effects
+
+Shader effects run on the GPU as post-process passes over the terminal image.
+They are off by default. With none enabled the renderer draws exactly as without
+them: no extra passes, textures or pipelines.
+
+```ts
+const terminal = await Wraith.mount(element, {
+  effects: { crt: true, bloom: 0.6, cursorTrail: true },
+});
+
+// Change or remove them at runtime; null turns everything off.
+await terminal.setEffects({ crt: { curvature: 0.3, scanlines: 0.6 }, bloom: { intensity: 1 } });
+await terminal.setEffects(null);
+```
+
+- `crt`: barrel curvature, scanlines, vignette and chromatic aberration, each
+  0..1 (`true` uses 0.5, 0.5, 0.5, 0.35).
+- `bloom`: an intensity (0..4), `true` (0.6), or `{ intensity, threshold, spread }`.
+  Two half-resolution blur passes.
+- `cursorTrail`: the cursor glides to its new cell with a short trail (`{ duration }`
+  in ms, default 120). Frames are requested only while it moves. It is off while
+  the user prefers reduced motion.
+- `shader`: your WGSL, in the spirit of Ghostty's `custom-shader`:
+
+```wgsl
+fn mainImage(fragCoord: vec2<f32>) -> vec4<f32> {
+    let uv = fragCoord / iResolution.xy;
+    let c = textureSample(iChannel0, iChannel0Sampler, uv);
+    let glow = 0.6 + 0.4 * smoothstep(400.0, 0.0, distance(fragCoord, iCurrentCursor.xy));
+    return vec4<f32>(c.rgb * glow, c.a);
+}
+```
+
+`fragCoord` is in physical pixels from the top-left. Available: `iResolution`,
+`iTime`, `iTimeDelta`, `iFrame`, `iMouse` (xy follows the pointer, zw is the last
+press, negated after release), `iCurrentCursor` and `iPreviousCursor` (x, y, w, h
+in pixels), `iCurrentCursorColor`, `iTimeCursorChange` (`iTime` of the last
+move), and the terminal image as `iChannel0` with `iChannel0Sampler`. A shader
+that reads `iTime`, `iTimeDelta` or `iFrame` redraws every display frame, unless
+you set `animate: false` or the user prefers reduced motion. Static effects
+request no idle frames.
+
+An invalid shader makes `setEffects()` reject with the compiler's messages,
+using the line numbers of your source (`3:5: expected ';' …`). It also emits
+`onError`. The previous effects stay, and the terminal keeps running. If a
+shader passed to `mount()` fails, the terminal mounts without effects and
+reports the error through `onError`. The xterm-compatible `Terminal` has the same
+`setEffects()` as a Wraith extension.
+
+On an Apple M5 Max (headless Chrome 155, 160x50 at DPR 2), a GPU-bound update
+took 0.077 ms with effects off. CRT added 0.028 ms, bloom 0.059 ms, a custom
+shader about 0.025 ms, and every built-in plus a shader 0.095 ms. These are
+GPU-completed updates, not display frames
+([report](docs/benchmarks/gpu-effects/REPORT.md)). Try them in the effects
+lab: `npm run dev`, then open `/effects.html`.
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |
@@ -279,6 +336,7 @@ macOS and Linux; Windows ConPTY through node-pty is untested.
 | `clearSelection()`                                          | Remove the current selection.                                                                                        |
 | `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
 | `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
+| `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
 | `dispose()`                                                 | Rejects outstanding work and releases the worker, DOM, listeners, and engine.                                        |
 
