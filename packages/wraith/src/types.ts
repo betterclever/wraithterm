@@ -55,7 +55,8 @@ export interface WraithAccessibilityOptions {
   inputLabel?: string;
   /**
    * Which terminals speak new output while `screenReaderMode` is on: only the
-   * one whose input has focus (default), every visible one, or none.
+   * one whose input has focus (default), every one while the page is visible
+   * (including offscreen and paused terminals), or none.
    */
   announcements?: 'focused' | 'always' | false;
   /** Minimum milliseconds between announcements. Defaults to 500. */
