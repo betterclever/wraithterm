@@ -127,6 +127,9 @@ function element<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+/** Run a seek without awaiting it; failures already reach `onError`. */
+const quiet = (promise: Promise<unknown>) => void promise.catch(() => {});
+
 /** Writes in bounded chunks so long replays stay under the input backpressure limit. */
 const CHUNK = 2 * 1024 * 1024;
 
@@ -312,7 +315,7 @@ export class WraithPlayer {
   play(): void {
     this.assertLive();
     if (this.isPlaying) return;
-    if (this.position >= this.duration) void this.seek(0);
+    if (this.position >= this.duration) quiet(this.seek(0));
     this.isPlaying = true;
     this.anchor();
     this.render();
@@ -454,7 +457,7 @@ export class WraithPlayer {
     this.render();
     if (ended) {
       if (this.loop && this.duration > 0) {
-        void this.seek(0);
+        quiet(this.seek(0));
         this.frame = requestAnimationFrame(this.tick);
       } else {
         this.pause();
@@ -552,7 +555,7 @@ export class WraithPlayer {
         this.pause();
         this.element.classList.add('wraith-player-scrubbing');
         showTip(event);
-        void this.seek(timeAt(event)).catch(() => {});
+        quiet(this.seek(timeAt(event)));
       },
       { signal },
     );
@@ -562,7 +565,7 @@ export class WraithPlayer {
         showTip(event);
         // Every move applies the exact state at that time; seeks coalesce so
         // the screen tracks the latest position.
-        if (scrubbing) void this.seek(timeAt(event)).catch(() => {});
+        if (scrubbing) quiet(this.seek(timeAt(event)));
       },
       { signal },
     );
@@ -596,22 +599,22 @@ export class WraithPlayer {
             this.toggle();
             break;
           case 'ArrowLeft':
-            void this.seek(this.position - (event.shiftKey ? tenth : 5));
+            quiet(this.seek(this.position - (event.shiftKey ? tenth : 5)));
             break;
           case 'ArrowRight':
-            void this.seek(this.position + (event.shiftKey ? tenth : 5));
+            quiet(this.seek(this.position + (event.shiftKey ? tenth : 5)));
             break;
           case 'Home':
-            void this.seek(0);
+            quiet(this.seek(0));
             break;
           case 'End':
-            void this.seek(this.duration);
+            quiet(this.seek(this.duration));
             break;
           case ',':
-            void this.step(-1);
+            quiet(this.step(-1));
             break;
           case '.':
-            void this.step(1);
+            quiet(this.step(1));
             break;
           case '<':
             this.speed = [...SPEEDS].reverse().find((s) => s < this.rate - 1e-9) ?? SPEEDS[0]!;
@@ -620,13 +623,13 @@ export class WraithPlayer {
             this.speed = SPEEDS.find((s) => s > this.rate + 1e-9) ?? SPEEDS.at(-1)!;
             break;
           case '[':
-            void this.previousMarker();
+            quiet(this.previousMarker());
             break;
           case ']':
-            void this.nextMarker();
+            quiet(this.nextMarker());
             break;
           default:
-            if (/^[0-9]$/.test(event.key)) void this.seek(Number(event.key) * tenth);
+            if (/^[0-9]$/.test(event.key)) quiet(this.seek(Number(event.key) * tenth));
             else handled = false;
         }
         if (handled) {
