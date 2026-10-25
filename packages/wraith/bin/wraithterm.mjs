@@ -184,9 +184,14 @@ function accept(socket, key) {
     parts = [],
     partOpcode = 0,
     closed = false;
-  const send = (opcode, data) => {
-    if (closed) return;
-    const length = data.length;
+  // data is a Buffer or an array of Buffers sent as one message. Large payloads
+  // go to the kernel in one writev beside the header instead of being copied.
+  // done runs once the socket has taken the message (at once if closed).
+  const send = (opcode, data, done) => {
+    if (closed) return done?.();
+    const parts = Array.isArray(data) ? data : [data];
+    let length = 0;
+    for (const part of parts) length += part.length;
     const head =
       length < 126
         ? Buffer.from([0x80 | opcode, length])
@@ -200,7 +205,15 @@ function accept(socket, key) {
                 return b;
               })(),
             ]);
-    socket.write(Buffer.concat([head, data]));
+    if (length < 16384) {
+      socket.write(Buffer.concat([head, ...parts], head.length + length), done);
+      return;
+    }
+    socket.cork();
+    socket.write(head);
+    for (let i = 0; i < parts.length; i++)
+      socket.write(parts[i], i === parts.length - 1 ? done : undefined);
+    socket.uncork();
   };
   const close = () => {
     if (closed) return;
@@ -251,44 +264,57 @@ function accept(socket, key) {
   socket.on('error', () => socket.destroy());
   return {
     on: (event, fn) => (handlers[event] = fn),
-    send: (data, binary) => send(binary ? 2 : 1, Buffer.isBuffer(data) ? data : Buffer.from(data)),
+    send: (data, binary, done) =>
+      send(
+        binary ? 2 : 1,
+        Buffer.isBuffer(data) || Array.isArray(data) ? data : Buffer.from(data),
+        done,
+      ),
     close,
+    closed: () => closed,
     buffered: () => socket.writableLength,
     onDrain: (fn) => socket.on('drain', fn),
   };
 }
 
 // node-pty reads a Unix PTY on the event loop, one 1 KiB read per turn: about
-// 95 MB/s on macOS, half the PTY's own ceiling. This thread reads the master
-// itself and posts batches. After output stops it spins for 0.2 ms, then sleeps
-// with backoff up to 4 ms, or 16 ms once idle; input and resume wake it at once.
+// 95 MB/s on macOS. Instead a thread polls the non-blocking master and reads
+// straight into a shared ring buffer, which the main thread hands to the socket
+// as views: no copies or allocations between the PTY and the kernel. Every empty
+// poll throws EAGAIN, and a stack trace for each capped the thread near 190 MB/s,
+// so traces are off. After output stops the thread spins for 0.2 ms, then sleeps
+// with backoff up to 4 ms, or 16 ms once idle; input wakes it at once. A full
+// ring (the socket is backed up) blocks the thread and so the PTY.
+const RING = 4 << 20;
+// Shared Int32 slots: input wakes, bytes written by the reader (head), bytes
+// released by the main thread (tail), and the doorbell (1 while the main
+// thread has been told data is waiting). Counters wrap; differences do not.
+const WAKE = 0,
+  HEAD = 1,
+  TAIL = 2,
+  BELL = 3;
 const READER = `
-const { parentPort, workerData: { fd, control } } = require('node:worker_threads');
+Error.stackTraceLimit = 0;
+const { parentPort, workerData: { fd, control, ring } } = require('node:worker_threads');
 const { readSync } = require('node:fs');
-const state = new Int32Array(control), buf = Buffer.allocUnsafe(1 << 20);
-let used = 0, idle = 0, last = performance.now(), lastData = 0, woken = 0;
-const post = () => {
-  const out = new Uint8Array(used);
-  out.set(buf.subarray(0, used));
-  parentPort.postMessage(out, [out.buffer]);
-  used = 0;
-  last = performance.now();
-};
+const state = new Int32Array(control), buf = Buffer.from(ring), size = buf.length;
+let head = 0, idle = 0, lastData = 0, woken = 0;
 for (;;) {
-  if (Atomics.load(state, 1)) {
-    if (used) post();
-    Atomics.wait(state, 1, 1);
+  const tail = Atomics.load(state, ${TAIL}), free = size - ((head - tail) | 0);
+  if (!free) {
+    Atomics.wait(state, ${TAIL}, tail, 100);
     continue;
   }
-  const wake = Atomics.load(state, 0);
+  const wake = Atomics.load(state, ${WAKE});
   // Input was written: its echo is due, so poll eagerly again.
   if (wake !== woken) {
     woken = wake;
     idle = 0;
   }
+  const at = head & (size - 1);
   let n;
   try {
-    n = readSync(fd, buf, used, Math.min(65536, buf.length - used), null);
+    n = readSync(fd, buf, at, Math.min(free, size - at, 65536), null);
   } catch (error) {
     if (error.code !== 'EAGAIN') break;
     n = -1;
@@ -296,50 +322,89 @@ for (;;) {
   if (n === 0) break;
   const now = performance.now();
   if (n > 0) {
-    used += n;
+    head = (head + n) | 0;
+    Atomics.store(state, ${HEAD}, head);
+    if (Atomics.compareExchange(state, ${BELL}, 0, 1) === 0) parentPort.postMessage(0);
     idle = 0;
     lastData = now;
-  }
-  const quiet = n < 0 && now - lastData > 0.2;
-  if (used && (quiet || now - last > 2 || used > buf.length - 65536)) post();
-  if (quiet) Atomics.wait(state, 0, wake, Math.min(now - lastData > 250 ? 16 : 4, 0.05 * 2 ** idle++));
+  } else if (now - lastData > 0.2)
+    Atomics.wait(state, ${WAKE}, wake, Math.min(now - lastData > 250 ? 16 : 4, 0.05 * 2 ** idle++));
 }
-if (used) post();
 parentPort.postMessage(null);
 `;
-function readPty(term, onData) {
+// Output is sent as it is read at the start of a burst, keeping echo immediate,
+// then batched every 2 ms into messages of up to the whole ring. sink.send(parts,
+// done) sends one message and calls done once the socket has taken it.
+function readPty(term, sink) {
   // Unix PTYs only; Windows (ConPTY) keeps node-pty's own reader.
   if (platform() === 'win32' || typeof term._fd !== 'number' || !term._socket?.pause)
     return undefined;
-  const control = new SharedArrayBuffer(8);
+  const control = new SharedArrayBuffer(16),
+    ring = new SharedArrayBuffer(RING);
   const state = new Int32Array(control);
+  let sent = 0,
+    released = 0,
+    timer,
+    lastSend = 0,
+    ended = false;
+  const drain = (force) => {
+    clearTimeout(timer);
+    timer = undefined;
+    const length = (Atomics.load(state, HEAD) - sent) | 0;
+    if (!length) {
+      // Idle: ask to be told about the next byte, then recheck for a race.
+      Atomics.store(state, BELL, 0);
+      if (Atomics.load(state, HEAD) !== sent) timer = setTimeout(drain, 2);
+      return;
+    }
+    // Backed up: leave the bytes in the ring until the socket drains.
+    if (!force && sink.blocked()) return;
+    const at = sent & (RING - 1),
+      first = Math.min(length, RING - at);
+    const parts = [Buffer.from(ring, at, first)];
+    if (length > first) parts.push(Buffer.from(ring, 0, length - first));
+    sent = (sent + length) | 0;
+    lastSend = performance.now();
+    sink.send(parts, () => {
+      released = (released + length) | 0;
+      Atomics.store(state, TAIL, released);
+      Atomics.notify(state, TAIL);
+    });
+    if (!ended) timer = setTimeout(drain, 2);
+  };
+  sink.onDrain(() => !ended && !timer && drain());
   term._socket.pause();
   // node-pty's socket starts reading on the next tick even while paused; stop
-  // it, keep what it already read, then hand the master to the reader thread.
+  // it, send what it already read, then hand the master to the reader thread.
   setImmediate(() => {
     term._socket._handle?.readStop();
-    for (let early; (early = term._socket.read()) !== null;) onData(early);
-    const worker = new Worker(READER, { eval: true, workerData: { fd: term._fd, control } });
+    for (let early; (early = term._socket.read()) !== null;) sink.send([early], () => {});
+    const worker = new Worker(READER, {
+      eval: true,
+      workerData: { fd: term._fd, control, ring },
+    });
     worker.unref();
     worker.on('message', (data) => {
-      // EOF or EIO: close node-pty's socket so its exit event fires.
-      if (data === null) term._socket.destroy();
-      else onData(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+      if (data === null) {
+        // EOF or EIO: send the rest, then close node-pty's socket so its exit
+        // event fires.
+        ended = true;
+        drain(true);
+        term._socket.destroy();
+      } else if (!timer) {
+        if (performance.now() - lastSend > 5) drain();
+        else timer = setTimeout(drain, 2);
+      }
     });
     worker.on('error', () => term._socket.destroy());
   });
-  const wake = () => {
-    Atomics.add(state, 0, 1);
-    Atomics.notify(state, 0);
-  };
   return {
-    wake,
-    pause: () => Atomics.store(state, 1, 1),
-    resume: () => {
-      Atomics.store(state, 1, 0);
-      Atomics.notify(state, 1);
-      wake();
+    wake: () => {
+      Atomics.add(state, WAKE, 1);
+      Atomics.notify(state, WAKE);
     },
+    // The socket closed: release whatever is queued so the thread reads on to EOF.
+    close: () => drain(true),
   };
 }
 
@@ -397,6 +462,7 @@ async function serve(options) {
       socket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
       return;
     }
+    socket.setNoDelay(true);
     const ws = accept(socket, req.headers['sec-websocket-key']);
     const term = pty.spawn(shell[0], shell.slice(1), {
       name: 'xterm-256color',
@@ -413,10 +479,11 @@ async function serve(options) {
       },
     });
     sessions.add(term);
-    // node-pty delivers PTY output 1 KiB per event-loop turn. Sending each read
-    // as its own message caps output near 40 MB/s, so after the first chunk of a
-    // burst (sent at once, keeping echo immediate) output is batched for 2 ms.
-    // The PTY pauses while the socket is backed up instead of buffering unboundedly.
+    // Where node-pty reads the PTY (Windows), it delivers output 1 KiB per
+    // event-loop turn. Sending each read as its own message caps output near
+    // 40 MB/s, so after the first chunk of a burst (sent at once, keeping echo
+    // immediate) output is batched for 2 ms. The PTY pauses while the socket is
+    // backed up instead of buffering unboundedly.
     let pending = [],
       pendingBytes = 0,
       timer,
@@ -432,13 +499,13 @@ async function serve(options) {
       pendingBytes = 0;
       if (!paused && ws.buffered() > 4 << 20) {
         paused = true;
-        (reader ?? term).pause();
+        term.pause();
       }
     };
     ws.onDrain(() => {
       if (paused) {
         paused = false;
-        (reader ?? term).resume();
+        term.resume();
       }
     });
     const output = (data) => {
@@ -447,7 +514,11 @@ async function serve(options) {
       if (pendingBytes >= 1 << 20 || (!timer && performance.now() - lastFlush > 5)) flush();
       else timer ??= setTimeout(flush, 2);
     };
-    const reader = readPty(term, output);
+    const reader = readPty(term, {
+      send: (parts, done) => ws.send(parts, true, done),
+      blocked: () => !ws.closed() && ws.buffered() > 4 << 20,
+      onDrain: (fn) => ws.onDrain(fn),
+    });
     if (!reader) term.onData(output);
     term.onExit(() => {
       flush();
@@ -466,6 +537,7 @@ async function serve(options) {
       } catch {}
     });
     ws.on('close', () => {
+      reader?.close();
       if (sessions.has(term)) {
         sessions.delete(term);
         term.kill();
