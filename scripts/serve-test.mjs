@@ -3,8 +3,9 @@
 // `--share=write --record` shares one PTY with an owner, a collaborator, a
 // late-joining viewer, a read-only raw socket and a socket that stops reading.
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { connect } from 'node:net';
 import { join } from 'node:path';
 import { launch, open as openPage, poll, rawClient, startServer, wait } from './serve-helpers.mjs';
 
@@ -32,6 +33,20 @@ const open = (link, viewport) => openPage(browser, errors, link, viewport);
       ws.onerror = () => done(true);
     });
     assert(socketRefused, 'WebSocket with a wrong token is refused');
+    // Malformed input without a token is refused and does not stop the server.
+    assert.equal((await fetch(`${base.origin}/%E0%A4%A`)).status, 400);
+    const nullOrigin = await new Promise((done) => {
+      const socket = connect(Number(base.port), base.hostname);
+      let reply = '';
+      socket.on('data', (chunk) => (reply += chunk));
+      socket.on('close', () => done(reply));
+      socket.on('error', () => done(reply));
+      socket.write(
+        `GET /pty?token=${base.searchParams.get('token')} HTTP/1.1\r\nHost: ${base.host}\r\nOrigin: null\r\n` +
+          'Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGVzdA==\r\nSec-WebSocket-Version: 13\r\n\r\n',
+      );
+    });
+    assert.match(nullOrigin, /^HTTP\/1.1 403/, 'Origin: null is refused');
 
     const owner = await open(link);
     await owner.until((t) => /cols=\d+/.test(t), 'tput output');
@@ -59,6 +74,8 @@ const open = (link, viewport) => openPage(browser, errors, link, viewport);
 const FLOOD = 48 * 1024 * 1024;
 const dir = mkdtempSync(join(tmpdir(), 'wraith-serve-'));
 const cast = join(dir, 'session.cast');
+// A pre-existing, world-readable file is tightened to 0600 when recording starts.
+writeFileSync(cast, '', { mode: 0o644 });
 {
   const script = [
     'echo before-join-$((6*7))',
@@ -177,6 +194,7 @@ const cast = join(dir, 'session.cast');
       .split('\n')
       .map((line) => JSON.parse(line));
     assert.equal(header.version, 2);
+    if (process.platform !== 'win32') assert.equal(statSync(cast).mode & 0o777, 0o600);
     assert(Number.isInteger(header.width) && Number.isInteger(header.height));
     let last = 0,
       recorded = '';

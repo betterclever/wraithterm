@@ -9,6 +9,8 @@ import {
   chmodSync,
   createWriteStream,
   existsSync,
+  fchmodSync,
+  openSync,
   readdirSync,
   readFileSync,
   statSync,
@@ -349,6 +351,9 @@ function accept(socket, key) {
 
 // Shared sessions: queued bytes per client before it stops receiving live output
 // and is resynced from the replay buffer once its socket drains.
+// PTY sizes from the page: whole cells, 1..512, so `0.5` or `2**32` cannot
+// reach node-pty as 0.
+const clampSize = (value) => Math.max(1, Math.min(512, Math.floor(value) || 1));
 const CLIENT_LIMIT = 4 * 1024 * 1024;
 const REPLAY_LIMIT = 2 * 1024 * 1024;
 
@@ -392,8 +397,16 @@ async function serve(options) {
   const session = shared ? shareSession(spawnTerm(), options, (code) => stop(code)) : undefined;
   if (session) sessions.add(session.term);
   const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://local');
-    const path = decodeURIComponent(url.pathname);
+    // Malformed input from anyone who can reach the port must not stop the
+    // server, which in shared mode would end the session for every client.
+    let url, path;
+    try {
+      url = new URL(req.url, 'http://local');
+      path = decodeURIComponent(url.pathname);
+    } catch {
+      res.writeHead(400).end();
+      return;
+    }
     if (path === '/') {
       const role = roleFor(url.searchParams.get('token'));
       if (!role) {
@@ -420,10 +433,20 @@ async function serve(options) {
     res.writeHead(404).end();
   });
   server.on('upgrade', (req, socket) => {
-    const url = new URL(req.url, 'http://local');
     // Only this page may connect: right path, token and same-origin browser.
+    // `Origin: null` or a malformed URL is refused, never thrown.
+    const tryUrl = (value, base) => {
+      try {
+        return new URL(value, base);
+      } catch {}
+    };
+    const url = tryUrl(req.url, 'http://local');
     const origin = req.headers.origin;
-    const sameOrigin = !origin || new URL(origin).host === req.headers.host;
+    const sameOrigin = !origin || tryUrl(origin)?.host === req.headers.host;
+    if (!url) {
+      socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+      return;
+    }
     const role = roleFor(url.searchParams.get('token'));
     if (
       url.pathname !== '/pty' ||
@@ -448,7 +471,7 @@ async function serve(options) {
       try {
         const message = JSON.parse(data.toString('utf8'));
         if (message.type === 'resize' && message.cols > 0 && message.rows > 0)
-          term.resize(Math.min(512, message.cols | 0), Math.min(512, message.rows | 0));
+          term.resize(clampSize(message.cols), clampSize(message.rows));
       } catch {}
     });
     ws.on('close', () => {
@@ -517,7 +540,11 @@ function shareSession(term, options, ended) {
   const clients = new Set();
   let recorder;
   if (options.record) {
-    const stream = createWriteStream(resolve(options.record), { mode: 0o600 });
+    // `mode` only applies when the file is created; tighten an existing file
+    // too, since the recording holds everything the command prints.
+    const fd = openSync(resolve(options.record), 'w', 0o600);
+    fchmodSync(fd, 0o600);
+    const stream = createWriteStream(null, { fd });
     stream.on('error', (error) => console.error(`wraithterm: recording failed: ${error.message}`));
     recorder = new AsciicastWriter(stream, {
       cols: 80,
@@ -592,7 +619,7 @@ function shareSession(term, options, ended) {
         try {
           const message = JSON.parse(data.toString('utf8'));
           if (message.type === 'resize' && message.cols > 0 && message.rows > 0)
-            resize(Math.min(512, message.cols | 0), Math.min(512, message.rows | 0));
+            resize(clampSize(message.cols), clampSize(message.rows));
         } catch {}
       });
       ws.on('close', () => {
