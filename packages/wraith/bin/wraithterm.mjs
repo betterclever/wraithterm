@@ -252,6 +252,8 @@ function accept(socket, key) {
     on: (event, fn) => (handlers[event] = fn),
     send: (data, binary) => send(binary ? 2 : 1, Buffer.isBuffer(data) ? data : Buffer.from(data)),
     close,
+    buffered: () => socket.writableLength,
+    onDrain: (fn) => socket.on('drain', fn),
   };
 }
 
@@ -325,8 +327,42 @@ async function serve(options) {
       },
     });
     sessions.add(term);
-    term.onData((data) => ws.send(Buffer.from(data), true));
+    // node-pty delivers PTY output 1 KiB per event-loop turn. Sending each read
+    // as its own message caps output near 40 MB/s, so after the first chunk of a
+    // burst (sent at once, keeping echo immediate) output is batched for 2 ms.
+    // The PTY pauses while the socket is backed up instead of buffering unboundedly.
+    let pending = [],
+      pendingBytes = 0,
+      timer,
+      lastFlush = 0,
+      paused = false;
+    const flush = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      lastFlush = performance.now();
+      if (!pending.length) return;
+      ws.send(pending.length === 1 ? pending[0] : Buffer.concat(pending, pendingBytes), true);
+      pending = [];
+      pendingBytes = 0;
+      if (!paused && ws.buffered() > 4 << 20) {
+        paused = true;
+        term.pause();
+      }
+    };
+    ws.onDrain(() => {
+      if (paused) {
+        paused = false;
+        term.resume();
+      }
+    });
+    term.onData((data) => {
+      pending.push(Buffer.from(data));
+      pendingBytes += data.length;
+      if (pendingBytes >= 1 << 20 || (!timer && performance.now() - lastFlush > 5)) flush();
+      else timer ??= setTimeout(flush, 2);
+    });
     term.onExit(() => {
+      flush();
       sessions.delete(term);
       ws.close();
     });
