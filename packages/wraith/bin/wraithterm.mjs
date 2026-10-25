@@ -289,17 +289,20 @@ const RING = 4 << 20;
 // Shared Int32 slots: input wakes, bytes written by the reader (head), bytes
 // released by the main thread (tail), and the doorbell (1 while the main
 // thread has been told data is waiting). Counters wrap; differences do not.
+// STOP asks the thread to exit and DONE says it has.
 const WAKE = 0,
   HEAD = 1,
   TAIL = 2,
-  BELL = 3;
+  BELL = 3,
+  STOP = 4,
+  DONE = 5;
 const READER = `
 Error.stackTraceLimit = 0;
 const { parentPort, workerData: { fd, control, ring } } = require('node:worker_threads');
 const { readSync } = require('node:fs');
 const state = new Int32Array(control), buf = Buffer.from(ring), size = buf.length;
 let head = 0, idle = 0, lastData = 0, woken = 0;
-for (;;) {
+while (!Atomics.load(state, ${STOP})) {
   const tail = Atomics.load(state, ${TAIL}), free = size - ((head - tail) | 0);
   if (!free) {
     Atomics.wait(state, ${TAIL}, tail, 100);
@@ -330,6 +333,8 @@ for (;;) {
   } else if (now - lastData > 0.2)
     Atomics.wait(state, ${WAKE}, wake, Math.min(now - lastData > 250 ? 16 : 4, 0.05 * 2 ** idle++));
 }
+Atomics.store(state, ${DONE}, 1);
+Atomics.notify(state, ${DONE});
 parentPort.postMessage(null);
 `;
 // Output is sent as it is read at the start of a burst, keeping echo immediate,
@@ -339,14 +344,15 @@ function readPty(term, sink) {
   // Unix PTYs only; Windows (ConPTY) keeps node-pty's own reader.
   if (platform() === 'win32' || typeof term._fd !== 'number' || !term._socket?.pause)
     return undefined;
-  const control = new SharedArrayBuffer(16),
+  const control = new SharedArrayBuffer(24),
     ring = new SharedArrayBuffer(RING);
   const state = new Int32Array(control);
   let sent = 0,
     released = 0,
     timer,
     lastSend = 0,
-    ended = false;
+    ended = false,
+    running = false;
   const drain = (force) => {
     clearTimeout(timer);
     timer = undefined;
@@ -373,19 +379,42 @@ function readPty(term, sink) {
     if (!ended) timer = setTimeout(drain, 2);
   };
   sink.onDrain(() => !ended && !timer && drain());
-  term._socket.pause();
+  // node-pty closes the master when its socket is destroyed, including 200 ms
+  // after the child exits while another process still holds the slave open (on
+  // Linux the master then never reads EIO). A thread still polling that fd
+  // number would read whichever file reuses it, such as the next session's PTY.
+  // So the thread stops before the fd closes, and what it read is sent first.
+  const socket = term._socket,
+    destroy = socket._destroy;
+  socket._destroy = function (error, callback) {
+    if (running) {
+      running = false;
+      Atomics.store(state, STOP, 1);
+      Atomics.notify(state, WAKE);
+      Atomics.notify(state, TAIL);
+      // The thread never blocks in read(), so it stops within one poll.
+      Atomics.wait(state, DONE, 0, 1000);
+    }
+    ended = true;
+    drain(true);
+    return destroy.call(this, error, callback);
+  };
+  socket.pause();
   // node-pty's socket starts reading on the next tick even while paused; stop
   // it, send what it already read, then hand the master to the reader thread.
   setImmediate(() => {
+    if (socket.destroyed) return;
     term._socket._handle?.readStop();
     for (let early; (early = term._socket.read()) !== null;) sink.send([early], () => {});
     const worker = new Worker(READER, {
       eval: true,
       workerData: { fd: term._fd, control, ring },
     });
+    running = true;
     worker.unref();
     worker.on('message', (data) => {
       if (data === null) {
+        running = false;
         // EOF or EIO: send the rest, then close node-pty's socket so its exit
         // event fires.
         ended = true;
@@ -396,7 +425,10 @@ function readPty(term, sink) {
         else timer = setTimeout(drain, 2);
       }
     });
-    worker.on('error', () => term._socket.destroy());
+    worker.on('error', () => {
+      running = false;
+      term._socket.destroy();
+    });
   });
   return {
     wake: () => {
