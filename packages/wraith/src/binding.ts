@@ -113,6 +113,8 @@ export class WraithController {
   private subscriptions: Disposable[] = [];
   private link?: { source: WraithBindingConfig['src']; dispose(): void };
   private updates = Promise.resolve();
+  /** Native only: whether `Wraith.mount()` installed its resize observer. */
+  private readonly fitting: boolean;
 
   constructor(
     readonly host: HTMLElement,
@@ -123,6 +125,7 @@ export class WraithController {
     this.config = this.applied = config;
     this.events = events;
     this.profile = profileOf(config);
+    this.fitting = (config.options as WraithOptions | undefined)?.fit !== false;
     this.ready = this.start();
     this.ready.catch(() => {});
   }
@@ -158,8 +161,12 @@ export class WraithController {
     this.terminal = terminal;
     this.subscribe(terminal);
     this.connect(this.config.src);
-    // Changes made while mounting.
-    await this.apply(this.config);
+    // Changes made while mounting, queued with any update() that races them.
+    const pending = this.updates.then(() => this.apply(this.config));
+    this.updates = pending.catch(() => {});
+    await pending;
+    // dispose() during that await already released the terminal.
+    if (this.disposed) throw new WraithDisposedError();
     if (this.config.autoFocus) terminal.focus();
     this.events.onReady?.(terminal);
     return terminal;
@@ -298,11 +305,12 @@ export class WraithController {
         );
       } else if (changed.has('fontSize') && next.fontSize !== undefined)
         await t.setFontSize(next.fontSize);
-      if ((changed.has('cols') || changed.has('rows')) && next.fit === false)
-        await t.resize(next.cols ?? t.cols, next.rows ?? t.rows);
-      if (changed.has('fit') && next.fit !== false) t.fit();
+      // A terminal mounted with fitting keeps its resize observer, which would
+      // undo an explicit grid size, so cols/rows are live only without fitting.
+      const grid = changed.has('cols') || changed.has('rows');
+      if (grid && !this.fitting) await t.resize(next.cols ?? t.cols, next.rows ?? t.rows);
       const ignored = [...changed].filter(
-        (key) => !NATIVE_LIVE.has(key) && !['cols', 'rows', 'fit'].includes(key),
+        (key) => !NATIVE_LIVE.has(key) && !(!this.fitting && (key === 'cols' || key === 'rows')),
       );
       if (ignored.length)
         console.warn(

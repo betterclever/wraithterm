@@ -247,13 +247,13 @@ rendering; the engine is loaded with `import()` on mount, in its own chunk.
 
 All bindings take the same configuration:
 
-| Field       | Meaning                                                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `profile`   | `'native'` (default): `Wraith.mount()`. `'xterm'`: the xterm.js-compatible `Terminal` (import `wraithterm/css/xterm.css`).                                         |
-| `options`   | `WraithOptions`, or xterm `ITerminalOptions` with `profile: 'xterm'`. `theme`, `fontSize`, `lineHeight`, `font` and (with `fit: false`) `cols`/`rows` update live. |
-| `src`       | A WebSocket URL (or an open `WebSocket`) connected once mounted, through `connect()` with backpressure. Sockets made from a URL close on unmount.                  |
-| `autoFocus` | Focus the terminal when ready.                                                                                                                                     |
-| events      | `onReady(terminal)`, `onData(string)`, `onBytes(Uint8Array)`, `onTitleChange`, `onBell`, `onResize({cols, rows})`, `onError(Error)`.                               |
+| Field       | Meaning                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `profile`   | `'native'` (default): `Wraith.mount()`. `'xterm'`: the xterm.js-compatible `Terminal` (import `wraithterm/css/xterm.css`).                                                                                                |
+| `options`   | `WraithOptions`, or xterm `ITerminalOptions` with `profile: 'xterm'`. `theme`, `fontSize`, `lineHeight`, `font` and, for a terminal mounted with `fit: false`, `cols`/`rows` update live; `fit` itself is fixed at mount. |
+| `src`       | A WebSocket URL (or an open `WebSocket`) connected once mounted, through `connect()` with backpressure. Sockets made from a URL close on unmount.                                                                         |
+| `autoFocus` | Focus the terminal when ready.                                                                                                                                                                                            |
+| events      | `onReady(terminal)`, `onData(string)`, `onBytes(Uint8Array)`, `onTitleChange`, `onBell`, `onResize({cols, rows})`, `onError(Error)`.                                                                                      |
 
 Other options (`scrollback`, `pool`, `ligatures`, …) apply at mount; remount to
 change them (a React `key`, a Vue `:key`). A `profile` change remounts by itself.
@@ -337,8 +337,8 @@ reruns an attachment when its parameters change, which remounts. Pass
 
 Attributes: `profile`, `cols`, `rows`, `font-size`, `line-height`, `scrollback`,
 `theme` (JSON, e.g. `'{"background":"#101820"}'`), `ligatures`, `screen-reader`,
-`fit`, `autofocus`, `src`. Giving `cols` or `rows` turns fitting off unless `fit`
-is present. The `options` property merges anything an attribute cannot carry
+`fit`, `autofocus`, `src`. Giving `cols` or `rows` at mount turns fitting off unless
+`fit` is present; adding them to a fitting terminal later only logs a warning. The `options` property merges anything an attribute cannot carry
 (fonts, a pool). Events are `CustomEvent`s that bubble: `wraith-ready`,
 `wraith-data`, `wraith-bytes`, `wraith-title`, `wraith-bell`, `wraith-resize` and
 `wraith-error`, with the value in `detail`. The element exposes `terminal`,

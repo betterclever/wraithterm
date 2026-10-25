@@ -45,7 +45,7 @@ export interface WraithExposed {
  * `<Wraith :options="{ fontSize: 14 }" src="ws://…" @data="…" @title-change="…" />`
  *
  * Events: `ready`, `data`, `bytes`, `title-change`, `bell`, `resize`, `error`.
- * Theme, font size, line height and (with `fit: false`) grid size update live;
+ * Theme, font size, line height and (when mounted with `fit: false`) grid size update live;
  * a `profile` change remounts.
  */
 export const Wraith = defineComponent({

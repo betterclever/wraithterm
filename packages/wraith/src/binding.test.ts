@@ -191,16 +191,52 @@ describe('WraithController', () => {
     // Deeply equal options are a no-op.
     await controller.update({ options: { fontSize: 15, theme: { background: '#000000' } } });
     expect(terminal.calls).toEqual([]);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Mounted fitting: the resize observer owns the grid, so cols/rows and fit warn.
     await controller.update({
       options: { fontSize: 15, theme: { background: '#000000' }, fit: false, cols: 100 },
     });
-    expect(terminal.calls).toEqual([['resize', 100, 24]]);
-    terminal.calls.length = 0;
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(terminal.calls).toEqual([]);
+    expect(warn.mock.calls[0]![0]).toContain('fit, cols');
     await controller.update({ options: { scrollback: 5 } });
-    expect(warn.mock.calls[0]![0]).toContain('scrollback');
+    expect(warn.mock.calls[1]![0]).toContain('scrollback');
     warn.mockRestore();
     await controller.dispose();
+  });
+
+  it('resizes live only when mounted without fitting', async () => {
+    const terminal = fakeNative();
+    const controller = new WraithController(
+      host,
+      { options: { fit: false, cols: 80, rows: 24 } },
+      {},
+      runtimeFor(async () => terminal),
+    );
+    await controller.ready;
+    await controller.update({ options: { fit: false, cols: 100, rows: 24 } });
+    expect(terminal.calls).toEqual([['resize', 100, 24]]);
+    await controller.dispose();
+  });
+
+  it('rejects ready and skips onReady when disposed while mount-time updates run', async () => {
+    const terminal = fakeNative();
+    const font = deferred<undefined>();
+    terminal.setFontSize = async () => font.promise;
+    const onReady = vi.fn();
+    const controller = new WraithController(
+      host,
+      { options: { fontSize: 13 } },
+      { onReady },
+      runtimeFor(async () => terminal),
+    );
+    void controller.update({ options: { fontSize: 15 } });
+    await vi.waitFor(() => expect(controller.terminal).toBe(terminal));
+    const disposed = controller.dispose();
+    font.resolve(undefined);
+    await expect(controller.ready).rejects.toBeInstanceOf(WraithDisposedError);
+    await disposed;
+    expect(onReady).not.toHaveBeenCalled();
+    expect(terminal.disposed).toBe(1);
   });
 
   it('connects a WebSocket URL with backpressure and closes only sockets it created', async () => {
