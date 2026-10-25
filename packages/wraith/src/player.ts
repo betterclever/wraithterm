@@ -4,8 +4,10 @@
  * (see replay.ts); until they arrive, or where none verified, a seek replays
  * from the start, which is always exact.
  */
-import { Wraith } from './index.js';
-import { loadRecording, type Recording, type RecordingSource } from './recording.js';
+// Type-only imports of the SDK entry: Wraith.player() passes the class in, so
+// this lazily loaded module never imports its importer (see index.ts).
+import type { Wraith } from './index.js';
+import type { Recording } from './recording.js';
 import {
   ReplayCursor,
   Timeline,
@@ -205,13 +207,13 @@ export class WraithPlayer {
     this.cursor = new ReplayCursor(timeline, chunked);
   }
 
-  /** Prefer `Wraith.player()`. */
+  /** @internal Use `Wraith.player()`. */
   static async create(
+    WraithClass: typeof Wraith,
     host: HTMLElement,
-    source: RecordingSource,
+    recording: Recording,
     options: PlayerOptions = {},
   ): Promise<WraithPlayer> {
-    const recording = await loadRecording(source);
     const timeline = Timeline.from(recording, { idleTimeLimit: options.idleTimeLimit });
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
@@ -242,7 +244,7 @@ export class WraithPlayer {
     host.append(root);
     let terminal: Wraith;
     try {
-      terminal = await Wraith.mount(screen, {
+      terminal = await WraithClass.mount(screen, {
         fontSize: options.fontSize,
         lineHeight: options.lineHeight,
         font: options.font,

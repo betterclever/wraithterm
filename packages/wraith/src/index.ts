@@ -15,7 +15,7 @@ import {
   type KeyEventHandler,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
-import { WraithRecorder, type RecordingSource } from './recording.js';
+import { loadRecording, WraithRecorder, type RecordingSource } from './recording.js';
 import type { PlayerOptions, WraithPlayer } from './player.js';
 export * from './types.js';
 export * from './recording.js';
@@ -91,8 +91,14 @@ export class Wraith {
     source: RecordingSource,
     options?: PlayerOptions,
   ): Promise<WraithPlayer> {
-    const { WraithPlayer } = await import('./player.js');
-    return WraithPlayer.create(host, source, options);
+    // The player chunk must not import this module back: an application that
+    // awaits this at its top level is still evaluating, and a bundle that put
+    // Wraith in the application's chunk would wait on itself forever.
+    const [{ WraithPlayer }, recording] = await Promise.all([
+      import('./player.js'),
+      loadRecording(source),
+    ]);
+    return WraithPlayer.create(Wraith, host, recording, options);
   }
   readonly element: HTMLDivElement;
   readonly canvas: HTMLCanvasElement;
