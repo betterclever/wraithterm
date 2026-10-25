@@ -20,13 +20,13 @@ try:
         data = open(path, 'rb').read()
         for r in range(reps):
             os.write(fd, b'\x1b[0m\x1b[2J\x1b[H'); barrier()
-            t = time.perf_counter()
+            wall, t = time.time(), time.perf_counter()
             view = memoryview(data)
             for i in range(0, len(view), 65536):
                 os.write(fd, view[i:i + 65536])
             barrier()
             dt = time.perf_counter() - t
-            results.append({'file': os.path.basename(path), 'rep': r, 'bytes': len(data), 'seconds': dt, 'MBps': len(data) / dt / 1e6})
+            results.append({'file': os.path.basename(path), 'rep': r, 'bytes': len(data), 'seconds': dt, 'MBps': len(data) / dt / 1e6, 'start': wall, 'end': wall + dt})
 finally:
     os.write(fd, b'\x1b[0m\x1b[2J\x1b[H\x1b_Ga=d\x1b\\')
     termios.tcsetattr(fd, termios.TCSADRAIN, old)
