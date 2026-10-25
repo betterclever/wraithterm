@@ -141,6 +141,20 @@ backgrounds, cells whose background equals the default become transparent and
 the pass clears to that color. Textures unused for 600 presented frames, or
 beyond 256 MiB, are released.
 
+## Command blocks
+
+libghostty-vt parses OSC 133 and reports each step through its semantic-prompt
+callback after updating the screen. On the primary screen, the bridge creates a
+Ghostty tracked grid reference at the cursor for every step. Rust owns the
+references, so the marks move with scrolling, page pruning and reflow, and
+report no value once their rows are trimmed. Output text is formatted by
+Ghostty between the C mark and the D mark (or the next prompt, or the cursor).
+The worker posts gutter extents only after the first block exists, and only
+when they change. Computing them walks from the newest block and stops at the
+first block that lies entirely above the viewport. Tracked references add
+bookkeeping to page operations, so Wraith caps the retained blocks at 1,000
+(at most four references each). Terminals without OSC 133 hold none.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This
