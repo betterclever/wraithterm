@@ -1,0 +1,624 @@
+{
+  "measured": "2026-10-25T04:16:37.672Z",
+  "head": "92f6c8f5bb8c9db7b29acf16b4be41115776d119",
+  "versions": {
+    "@wterm/dom": "0.5.5",
+    "@wterm/ghostty": "0.5.5",
+    "@xterm/xterm": "6.0.0",
+    "@xterm/addon-webgl": "0.19.0",
+    "wraithterm": "0.5.0"
+  },
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "8882eda89dd45b0c6e206e4da6ae8924e8ca17a5874757756a979be4d7f6c5c5",
+    "demo/rival-bench.js": "0ec4e681037be5bc95a8eff72eed74acb49163181ef80c16c7a81be5b94373a9",
+    "scripts/rival-benchmark.mjs": "53a3b1d6d8adc5a2b08fd8417de866d7059cfbbf64f3628eb54cb08f3f36ca32"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "headed": true,
+  "scenarios": {
+    "single": {
+      "count": 1,
+      "cols": 160,
+      "rows": 50,
+      "workload": "halfblock",
+      "types": [
+        "wraith",
+        "wterm",
+        "wterm-ghostty",
+        "webgl"
+      ]
+    },
+    "wall": {
+      "count": 16,
+      "cols": 80,
+      "rows": 24,
+      "workload": "halfblock",
+      "types": [
+        "wraith",
+        "wterm",
+        "wterm-ghostty",
+        "webgl"
+      ]
+    },
+    "agents": {
+      "count": 64,
+      "cols": 80,
+      "rows": 24,
+      "workload": "logs",
+      "types": [
+        "wraith",
+        "wterm",
+        "wterm-ghostty",
+        "webgl"
+      ]
+    },
+    "doom": {
+      "count": 1,
+      "cols": 160,
+      "rows": 45,
+      "workload": "recorded doomterm Kitty stream (640x400 RGB, Freedoom demo1)",
+      "types": [
+        "wraith",
+        "wterm-ghostty"
+      ]
+    }
+  },
+  "method": "1600x900 window at DPR 2; each terminal writes its next update after the previous one is processed and a display frame passes. Wraith and xterm.js frames are their render callbacks (capped by updates written); wterm frames are completed write-and-frame cycles, because it renders on the main thread in its own animation frame. Wraith uses a 4-worker pool when several terminals share the page.",
+  "summary": {
+    "single wraith": {
+      "fps": [
+        119.98200269955038,
+        120.00949086510938
+      ],
+      "lostContexts": 0
+    },
+    "single wterm": {
+      "fps": [
+        24.14733628606011,
+        25.230970074293232
+      ],
+      "lostContexts": 0
+    },
+    "single wterm-ghostty": {
+      "fps": [
+        23.606820864398212,
+        23.65077368222418
+      ],
+      "lostContexts": 0
+    },
+    "single webgl": {
+      "fps": [
+        119.98500187476566,
+        120.09347546266866
+      ],
+      "lostContexts": 0
+    },
+    "wall wraith": {
+      "fps": [
+        119.90675393788622,
+        119.96425134050773
+      ],
+      "lostContexts": 0
+    },
+    "wall wterm": {
+      "fps": [
+        6.089873546036241,
+        6.172450714870566
+      ],
+      "lostContexts": 0
+    },
+    "wall wterm-ghostty": {
+      "fps": [
+        4.836730841827105,
+        5.039166985097438
+      ],
+      "lostContexts": 0
+    },
+    "wall webgl": {
+      "fps": [
+        117.92040372750586,
+        120.00450016871167
+      ],
+      "lostContexts": 0
+    },
+    "agents wraith": {
+      "fps": [
+        98.30197166206199,
+        115.03256647553398
+      ],
+      "lostContexts": 0
+    },
+    "agents wterm": {
+      "fps": [
+        10.288855606664484,
+        11.854235409682952
+      ],
+      "lostContexts": 0
+    },
+    "agents wterm-ghostty": {
+      "fps": [
+        10.536086094872983,
+        11.417373202593584
+      ],
+      "lostContexts": 0
+    },
+    "agents webgl": {
+      "fps": [
+        115.10989954899121,
+        119.9951751318084
+      ],
+      "lostContexts": 48
+    },
+    "doom wraith": {
+      "fps": [
+        115.34472201045077,
+        119.88760536996566
+      ],
+      "lostContexts": 0
+    },
+    "doom wterm-ghostty": {
+      "fps": [
+        12.95646376593556,
+        29.82904697449352
+      ],
+      "lostContexts": 0
+    }
+  },
+  "runs": [
+    {
+      "round": 0,
+      "scenario": "single",
+      "type": "wraith",
+      "mountMs": 50.099999994039536,
+      "meanFps": 120.00949086510938,
+      "p10Fps": 120.00949086510938,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "single",
+      "type": "wterm",
+      "mountMs": 7.199999995529652,
+      "meanFps": 24.81949458483291,
+      "p10Fps": 24.81949458483291,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 122
+    },
+    {
+      "round": 0,
+      "scenario": "single",
+      "type": "wterm-ghostty",
+      "mountMs": 8.899999998509884,
+      "meanFps": 23.65077368222418,
+      "p10Fps": 23.65077368222418,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "scenario": "single",
+      "type": "webgl",
+      "mountMs": 13.600000001490116,
+      "meanFps": 119.98500187476566,
+      "p10Fps": 119.98500187476566,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "scenario": "wall",
+      "type": "wraith",
+      "mountMs": 90.20000000298023,
+      "meanFps": 119.96425134050773,
+      "p10Fps": 119.87050485600092,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "wall",
+      "type": "wterm",
+      "mountMs": 19.100000001490116,
+      "meanFps": 6.172450714870566,
+      "p10Fps": 6.172450714870568,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "scenario": "wall",
+      "type": "wterm-ghostty",
+      "mountMs": 22.80000000447035,
+      "meanFps": 4.963221257855609,
+      "p10Fps": 4.96322125785561,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 0,
+      "scenario": "wall",
+      "type": "webgl",
+      "mountMs": 96.60000000149012,
+      "meanFps": 117.92040372750586,
+      "p10Fps": 117.9204037275059,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "agents",
+      "type": "wraith",
+      "mountMs": 172.89999999850988,
+      "meanFps": 109.00709374725014,
+      "p10Fps": 107.06130445088539,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "agents",
+      "type": "wterm",
+      "mountMs": 86.79999999701977,
+      "meanFps": 10.698637037602298,
+      "p10Fps": 10.645173554349423,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 0,
+      "scenario": "agents",
+      "type": "wterm-ghostty",
+      "failed": "page.evaluate: Execution context was destroyed, most likely because of a navigation.",
+      "displayHz": 119
+    },
+    {
+      "round": 0,
+      "scenario": "agents",
+      "type": "webgl",
+      "mountMs": 369.80000000447035,
+      "meanFps": 115.10989954899121,
+      "p10Fps": 115.06890390936563,
+      "lostContexts": 48,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "doom",
+      "type": "wraith",
+      "mountMs": 55.399999998509884,
+      "meanFps": 115.34472201045077,
+      "p10Fps": 115.34472201045077,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 0,
+      "scenario": "doom",
+      "type": "wterm-ghostty",
+      "mountMs": 12.299999997019768,
+      "meanFps": 12.95646376593556,
+      "p10Fps": 12.95646376593556,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "single",
+      "type": "wterm",
+      "mountMs": 6.800000004470348,
+      "meanFps": 24.14733628606011,
+      "p10Fps": 24.14733628606011,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "single",
+      "type": "wterm-ghostty",
+      "mountMs": 8.099999994039536,
+      "meanFps": 23.622838761564537,
+      "p10Fps": 23.622838761564537,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "single",
+      "type": "webgl",
+      "mountMs": 15.300000004470348,
+      "meanFps": 120.09347546266866,
+      "p10Fps": 120.09347546266866,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "single",
+      "type": "wraith",
+      "mountMs": 47.599999994039536,
+      "meanFps": 119.98200269955038,
+      "p10Fps": 119.98200269955038,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "scenario": "wall",
+      "type": "wterm",
+      "mountMs": 20.69999999552965,
+      "meanFps": 6.089873546036241,
+      "p10Fps": 6.081954334662982,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 1,
+      "scenario": "wall",
+      "type": "wterm-ghostty",
+      "mountMs": 25.5,
+      "meanFps": 4.836730841827105,
+      "p10Fps": 4.781678620863219,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 1,
+      "scenario": "wall",
+      "type": "webgl",
+      "mountMs": 106.89999999850988,
+      "meanFps": 120.00450016871167,
+      "p10Fps": 120.00450016871162,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "wall",
+      "type": "wraith",
+      "mountMs": 102.20000000298023,
+      "meanFps": 119.95762341094493,
+      "p10Fps": 120.00450016882338,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 1,
+      "scenario": "agents",
+      "type": "wterm",
+      "mountMs": 97.79999999701977,
+      "meanFps": 10.288855606664484,
+      "p10Fps": 10.277105866725403,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 1,
+      "scenario": "agents",
+      "type": "wterm-ghostty",
+      "mountMs": 89.19999999552965,
+      "meanFps": 10.536086094872983,
+      "p10Fps": 10.536086094872978,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "agents",
+      "type": "webgl",
+      "failed": "page.evaluate: Execution context was destroyed, most likely because of a navigation.",
+      "displayHz": 0
+    },
+    {
+      "round": 1,
+      "scenario": "agents",
+      "type": "wraith",
+      "mountMs": 189.40000000596046,
+      "meanFps": 98.30197166206199,
+      "p10Fps": 96.45900492292571,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "doom",
+      "type": "wterm-ghostty",
+      "mountMs": 7.899999998509884,
+      "meanFps": 21.22502292052086,
+      "p10Fps": 21.22502292052086,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 1,
+      "scenario": "doom",
+      "type": "wraith",
+      "mountMs": 50.100000001490116,
+      "meanFps": 119.88760536996566,
+      "p10Fps": 119.88760536996566,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "single",
+      "type": "wterm-ghostty",
+      "mountMs": 9.300000004470348,
+      "meanFps": 23.606820864398212,
+      "p10Fps": 23.606820864398212,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "scenario": "single",
+      "type": "webgl",
+      "mountMs": 14.800000004470348,
+      "meanFps": 120.08597205905845,
+      "p10Fps": 120.08597205905845,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "single",
+      "type": "wraith",
+      "mountMs": 46.399999998509884,
+      "meanFps": 119.98350226841575,
+      "p10Fps": 119.98350226841575,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "single",
+      "type": "wterm",
+      "mountMs": 6.300000004470348,
+      "meanFps": 25.230970074293232,
+      "p10Fps": 25.230970074293232,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "scenario": "wall",
+      "type": "wterm-ghostty",
+      "mountMs": 23.399999998509884,
+      "meanFps": 5.039166985097438,
+      "p10Fps": 4.967520061138709,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 2,
+      "scenario": "wall",
+      "type": "webgl",
+      "mountMs": 96.59999999403954,
+      "meanFps": 119.99850001883918,
+      "p10Fps": 119.99850001883917,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "scenario": "wall",
+      "type": "wraith",
+      "mountMs": 95.10000000149012,
+      "meanFps": 119.90675393788622,
+      "p10Fps": 119.91456087544326,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "wall",
+      "type": "wterm",
+      "mountMs": 19.200000002980232,
+      "meanFps": 6.172037422034006,
+      "p10Fps": 6.063756063752709,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 121
+    },
+    {
+      "round": 2,
+      "scenario": "agents",
+      "type": "wterm-ghostty",
+      "mountMs": 84.5,
+      "meanFps": 11.417373202593584,
+      "p10Fps": 11.371964317298794,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 2,
+      "scenario": "agents",
+      "type": "webgl",
+      "mountMs": 356.6000000014901,
+      "meanFps": 119.9951751318084,
+      "p10Fps": 119.9190546381416,
+      "lostContexts": 48,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "agents",
+      "type": "wraith",
+      "mountMs": 175.5,
+      "meanFps": 115.03256647553398,
+      "p10Fps": 114.65397729397357,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "agents",
+      "type": "wterm",
+      "mountMs": 80.79999999701977,
+      "meanFps": 11.854235409682952,
+      "p10Fps": 11.83849273317608,
+      "lostContexts": 0,
+      "fontSize": 6,
+      "displayHz": 122
+    },
+    {
+      "round": 2,
+      "scenario": "doom",
+      "type": "wraith",
+      "mountMs": 47.399999998509884,
+      "meanFps": 119.85702144673834,
+      "p10Fps": 119.85702144673834,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 120
+    },
+    {
+      "round": 2,
+      "scenario": "doom",
+      "type": "wterm-ghostty",
+      "mountMs": 8.100000001490116,
+      "meanFps": 29.82904697449352,
+      "p10Fps": 29.82904697449352,
+      "lostContexts": 0,
+      "fontSize": 8.33,
+      "displayHz": 121
+    }
+  ]
+}
