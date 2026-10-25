@@ -15,7 +15,14 @@ import {
   type KeyEventHandler,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
+import { EffectsController, type WraithEffects } from './effects.js';
 export * from './types.js';
+export type {
+  WraithEffects,
+  WraithCrtOptions,
+  WraithBloomOptions,
+  WraithCursorTrailOptions,
+} from './effects.js';
 type Listener<T> = (value: T) => void;
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
@@ -138,6 +145,7 @@ export class Wraith {
   private mirrorTimer?: ReturnType<typeof setInterval>;
   private preedit: HTMLSpanElement;
   private theme: Required<WraithTheme>;
+  private effectsController: EffectsController;
   private constructor(host: HTMLElement, options: WraithOptions) {
     this.options = options;
     this.dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -205,6 +213,19 @@ export class Wraith {
     };
     this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
     this.bindInput();
+    this.effectsController = new EffectsController(
+      this.canvas,
+      () => this.dpr,
+      ({ params, shader }) =>
+        this.request<void>({ type: 'effects', params, shader } as Omit<
+          Extract<Command, { type: 'effects' }>,
+          'id'
+        >),
+      (mouse) => {
+        if (!this.disposed && !this.failed) this.send({ type: 'effect-mouse', mouse });
+      },
+      (error) => this.errors.emit(error),
+    );
   }
   static async mount(host: HTMLElement, options: WraithOptions = {}): Promise<Wraith> {
     if (!navigator.gpu)
@@ -248,6 +269,12 @@ export class Wraith {
         terminal.fit();
       }
       if (options.screenReaderMode) terminal.enableMirror();
+      if (options.effects)
+        // An invalid custom shader must not fail the mount: report it once the
+        // caller can subscribe, and keep rendering without effects.
+        await terminal.effectsController
+          .set(options.effects)
+          .catch((error) => setTimeout(() => terminal.errors.emit(error), 0));
       terminal.watchDisplay();
       window.addEventListener('resize', () => terminal.checkDisplay(), {
         signal: terminal.abort.signal,
@@ -348,6 +375,7 @@ export class Wraith {
           renderP99Ms: percentile(reply.samples, 0.99),
           activeFps: reply.fps,
           adapter: reply.adapter,
+          effectPasses: reply.effectPasses,
         });
         break;
       }
@@ -369,6 +397,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.effectsController.dispose();
     this.worker.terminate();
   }
   /** Resolves after bytes have been parsed. Use flush() to wait for rendering. */
@@ -655,6 +684,26 @@ export class Wraith {
       Extract<Command, { type: 'benchmark' }>,
       'id'
     >);
+  }
+  /** The effects currently applied, or null when none are enabled. */
+  get effects(): WraithEffects | null {
+    return this.effectsController.effects;
+  }
+  /**
+   * Replace GPU post-process effects; pass `null` or `{}` to turn them off,
+   * which removes every extra pass and texture. Rejects (and emits `onError`)
+   * with the compiler's messages for an invalid custom shader, keeping the
+   * previous effects; the terminal keeps running.
+   */
+  async setEffects(effects: WraithEffects | null): Promise<void> {
+    this.assertLive();
+    try {
+      await this.effectsController.set(effects);
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      if (!this.failed && !this.disposed) this.errors.emit(failure);
+      throw failure;
+    }
   }
   setTheme(theme: WraithTheme): void {
     this.assertLive();
@@ -1066,6 +1115,7 @@ export class Wraith {
     this.fontBytes = undefined;
     this.fallbackBytes = [];
     clearInterval(this.mirrorTimer);
+    this.effectsController.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
     this.batchIds = [];

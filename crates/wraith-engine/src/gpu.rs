@@ -1,5 +1,7 @@
 use crate::{
     core::Core,
+    effect_state::Settings,
+    effects::{self, Effects},
     images::ImageLayer,
     retained::{RetainedRows, NEW_ROW},
     text::{Atlas, ATLAS_SIZE},
@@ -22,7 +24,7 @@ pub const CELL_WORDS: usize = CELL_BYTES / 4;
 const _: () = assert!(CELL_BYTES == 20);
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-struct Uniforms {
+pub(crate) struct Uniforms {
     view: [f32; 4],
     grid: [u32; 4],
     theme: [u32; 4],
@@ -72,6 +74,12 @@ pub struct Renderer {
     pub lost: Arc<Mutex<Option<String>>>,
     last_blink: bool,
     pending_present: bool,
+    /// Opt-in post-processing. `None` (the default) adds no passes, textures
+    /// or pipelines: the terminal pass draws straight to the surface.
+    effects: Option<Box<Effects>>,
+    /// The last terminal uniforms, kept only while effects are on so an
+    /// animation can redraw the retained scene without new cell data.
+    effect_uniforms: Option<Uniforms>,
 }
 #[derive(Clone)]
 struct SharedGpu {
@@ -143,7 +151,70 @@ impl Renderer {
         &self.retained.slots
     }
     pub fn needs_present(&self) -> bool {
-        self.pending_present
+        self.pending_present || self.effects_due()
+    }
+    /// An effect animation needs another frame even though no cells changed.
+    pub fn effects_due(&self) -> bool {
+        self.effects.as_ref().is_some_and(|fx| {
+            let now = effects::now();
+            fx.wants_post(now) || fx.scene_stale(now, self.config.width, self.config.height)
+        })
+    }
+    /// Replace the post-process stage. Pipelines are built and validated
+    /// before anything changes; a shader error leaves the current effects.
+    pub async fn set_effects(
+        &mut self,
+        params: &[f32],
+        shader: Option<String>,
+    ) -> Result<(), String> {
+        let settings = Settings::parse(params)?;
+        if !settings.composite() && shader.is_none() {
+            // Off: drop every effect resource and return to the direct path.
+            self.effects = None;
+            self.effect_uniforms = None;
+            self.pending_present = true;
+            return Ok(());
+        }
+        let mut next = Effects::new(
+            &self.device,
+            self.config.format,
+            settings,
+            shader.as_deref(),
+        )
+        .await?;
+        if let Some(previous) = &self.effects {
+            next.inherit(previous);
+        }
+        self.effects = Some(Box::new(next));
+        self.pending_present = true;
+        Ok(())
+    }
+    pub fn set_effect_mouse(&mut self, mouse: [f32; 4]) {
+        if let Some(fx) = &mut self.effects {
+            fx.set_mouse(mouse);
+        }
+    }
+    /// Passes the last frame's post-processing encoded (zero with effects off).
+    pub fn effect_passes(&self) -> u32 {
+        self.effects.as_ref().map_or(0, |fx| fx.passes)
+    }
+    /// Advance effect animations without new terminal content. Returns
+    /// whether a frame was presented.
+    pub fn animate(&mut self) -> Result<bool, String> {
+        let Some(fx) = &self.effects else {
+            return Ok(false);
+        };
+        let now = effects::now();
+        if fx.scene_stale(now, self.config.width, self.config.height) {
+            return match self.effect_uniforms {
+                Some(uniforms) => self.present(uniforms),
+                None => Ok(false),
+            };
+        }
+        if !fx.wants_post(now) {
+            return Ok(false);
+        }
+        self.present_post(now)
     }
     pub async fn new(
         canvas: web_sys::OffscreenCanvas,
@@ -319,6 +390,8 @@ impl Renderer {
             lost,
             last_blink: true,
             pending_present: true,
+            effects: None,
+            effect_uniforms: None,
         })
     }
     fn bind(
@@ -431,7 +504,12 @@ impl Renderer {
             && !core.state.dirty.iter().any(|d| *d)
             && (!blinking || blink == self.last_blink)
         {
-            return Ok(false);
+            // Effects may still animate over the retained scene.
+            return if self.effects.is_some() {
+                self.animate()
+            } else {
+                Ok(false)
+            };
         }
         // A miss with no free atlas slot resets the atlas; every visible row
         // is then repacked once so no stale glyph reference is drawn.
@@ -629,6 +707,23 @@ impl Renderer {
         }
         // Dense identity frames bypass row indirection in the vertex shader.
         uniforms.grid[3] |= u32::from(!self.retained.identity) << 20;
+        let now = if let Some(fx) = &mut self.effects {
+            self.effect_uniforms = Some(uniforms);
+            let now = effects::now();
+            fx.observe(
+                uniforms.grid,
+                uniforms.theme,
+                [uniforms.view[2], uniforms.view[3]],
+                now,
+            );
+            // The animated cursor stands in for the native one while it moves.
+            if fx.hide_cursor(now) {
+                uniforms.grid[3] &= !1;
+            }
+            now
+        } else {
+            0.
+        };
         self.queue
             .write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniforms));
         // An acquired surface can be temporarily unavailable. Retain the need
@@ -652,11 +747,18 @@ impl Renderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Wraith frame"),
             });
+        if let Some(fx) = &mut self.effects {
+            fx.scene(&self.device, self.config.width, self.config.height);
+        }
         {
+            let target = match &self.effects {
+                Some(fx) => fx.scene_view(),
+                None => &view,
+            };
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Wraith backgrounds + glyphs"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view: target,
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -687,10 +789,47 @@ impl Renderer {
             pass.draw(6..12, 0..self.cell_count as u32);
             self.images.draw(&mut pass, 3);
         }
+        if let Some(fx) = &mut self.effects {
+            let hid = fx.hide_cursor(now);
+            fx.scene_drawn(hid);
+            fx.post(&self.queue, &mut encoder, &view, now);
+        }
         self.queue.submit([encoder.finish()]);
         self.queue.present(texture);
         self.frames += 1;
         self.pending_present = false;
+        Ok(true)
+    }
+    /// Run only the post passes over the retained scene texture.
+    fn present_post(&mut self, now: f64) -> Result<bool, String> {
+        if let Some(error) = &*self.lost.lock().unwrap() {
+            return Err(error.clone());
+        }
+        let texture = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(t)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
+            wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
+                return Ok(false)
+            }
+            wgpu::CurrentSurfaceTexture::Outdated => {
+                self.surface.configure(&self.device, &self.config);
+                return Ok(false);
+            }
+            status => return Err(format!("WebGPU surface failure: {status:?}")),
+        };
+        let Some(fx) = &mut self.effects else {
+            return Ok(false);
+        };
+        let view = texture.texture.create_view(&Default::default());
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Wraith effect frame"),
+            });
+        fx.post(&self.queue, &mut encoder, &view, now);
+        self.queue.submit([encoder.finish()]);
+        self.queue.present(texture);
+        self.frames += 1;
         Ok(true)
     }
     fn clear_color(&self, rgb: u32) -> wgpu::Color {

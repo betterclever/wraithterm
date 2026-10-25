@@ -6,8 +6,15 @@ import type {
 } from './xterm-api.js';
 import { XtermRenderer, type RendererState } from './xterm-renderer.js';
 import { accelerateInput } from './xterm-input.js';
+import type { WraithEffects } from './effects.js';
 const XtermTerminal: typeof TerminalApi = RuntimeTerminal;
 export type * from './xterm-api.js';
+export type {
+  WraithEffects,
+  WraithCrtOptions,
+  WraithBloomOptions,
+  WraithCursorTrailOptions,
+} from './effects.js';
 /** Complete xterm.js 6.0 public API. Construction/open remain synchronous;
  * WebGPU warms asynchronously while xterm's DOM renderer remains usable. */
 export class Terminal extends XtermTerminal {
@@ -30,6 +37,16 @@ export class Terminal extends XtermTerminal {
   }
   get rendererFallbackReason(): string | undefined {
     return this.wraithRenderer?.reason;
+  }
+  /**
+   * Wraith extension (not part of xterm.js): GPU post-process effects, the
+   * same as `Wraith.mount({ effects })`. Call after `open()`. Rejects when the
+   * WebGPU renderer is unavailable or a custom shader fails to compile; the
+   * previous effects stay in place.
+   */
+  setEffects(effects: WraithEffects | null): Promise<void> {
+    if (!this.wraithRenderer) return Promise.reject(new Error('Call open() before setEffects()'));
+    return this.wraithRenderer.effects.set(effects);
   }
   override open(parent: HTMLElement): void {
     super.open(parent);

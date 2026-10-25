@@ -41,6 +41,7 @@
     "test:native-pool": "node scripts/native-pool-test.mjs",
     "test:serve": "node scripts/serve-test.mjs",
     "test:native-shaping": "node scripts/native-shaping-test.mjs",
+    "test:native-effects": "node scripts/native-effects-test.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",
     "test:visual-options": "node scripts/gpu-visual-options-test.mjs",
     "benchmark:visual-options": "node scripts/visual-options-benchmark.mjs",
