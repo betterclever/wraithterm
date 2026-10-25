@@ -255,6 +255,57 @@ shell to your network, so use it only on networks you trust. The PTY runs with
 `TERM=xterm-256color`, `COLORTERM=truecolor` and `TERM_PROGRAM=wraith`. Tested on
 macOS and Linux; Windows ConPTY through node-pty is untested.
 
+### Share a terminal
+
+```sh
+npx wraithterm serve --share                     # owner link + read-only viewer link
+npx wraithterm serve --share=write               # adds a collaborator link that can type
+npx wraithterm serve --share --record demo.cast  # also records asciicast v2
+```
+
+With `--share` (or `--record`), every link attaches to one PTY and sees the same
+output. Each role has its own random per-run token, compared in constant time:
+
+| Link         | Sees output | Types | Sets the size |
+| ------------ | ----------- | ----- | ------------- |
+| Owner        | yes         | yes   | yes           |
+| Collaborator | yes         | yes   | no            |
+| Viewer       | yes         | no    | no            |
+
+The server drops viewer input and resize messages, so read-only does not
+depend on the page. Viewers and collaborators render at the owner's grid,
+scaled down to fit their window or letterboxed. Every page shows how many
+owners, collaborators and viewers are connected. The session ends when the
+command exits. Without `--share` or `--record`, each tab still gets its own
+PTY.
+
+- **Late joiners** get a replay of the current screen. The server keeps the
+  output since the last full reset (`ESC c`, or cursor home followed by erase
+  display outside the alternate screen), along with owner resizes, and restores
+  tracked modes (DEC private modes such as cursor keys, mouse reporting and
+  bracketed paste; keypad; cursor style; title). The replay is capped at
+  2 MiB. If more output arrives with no reset, the oldest output is dropped and
+  replay resumes at a line boundary with the modes in effect there. A
+  full-screen app that has redrawn only part of its screen since then can look
+  incomplete until it redraws.
+- **Backpressure** is per client. The PTY never waits for viewers. A client
+  with more than 4 MiB queued stops receiving live output and shows as
+  "resyncing". When its socket drains, it gets a terminal reset and the replay,
+  so it skips ahead to the current screen. In the
+  [burst benchmark](docs/benchmarks/serve-share/README.md), a socket that never
+  read did not slow the owner's 48 MiB burst.
+- **`--record <file>`** writes [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/):
+  output (`"o"`) and owner resizes (`"r"`). Keystrokes are not recorded. The
+  file is created with mode 0600. It does contain everything the command
+  prints, so treat it like a terminal log.
+
+Links bound to `127.0.0.1` work on that machine only. To share with someone
+else, forward the port (`ssh -L 7681:127.0.0.1:7681 host`) or put the server
+behind an HTTPS proxy or tunnel. Browsers expose WebGPU only in secure
+contexts, so a plain `http://` LAN address cannot render Wraith. `--host`
+prints the same warning as before: anyone with the owner or collaborator link
+can type into your shell.
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |
