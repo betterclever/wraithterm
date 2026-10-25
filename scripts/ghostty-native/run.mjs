@@ -2,6 +2,9 @@
 // Chrome. Both run probe.py through a real PTY, which writes each workload and
 // then a cursor-position query: the reply proves every earlier byte was parsed.
 // FILES=a.ansi,b.ansi ROUNDS=3 node scripts/ghostty-native/run.mjs
+// PORT picks serve's port, SERVE_BIN a serve script (default this checkout's),
+// and ONLY=wraith or ONLY=ghostty runs one side. The page records when each
+// WebSocket message arrives, so the result shows whether the browser kept up.
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -60,11 +63,12 @@ async function ghostty(out) {
   }
 }
 async function wraith(out) {
-  const port = 7790;
+  const port = Number(process.env.PORT ?? 7790);
   const serve = spawn(
     'node',
     [
-      (process.env.SERVE_REPO ?? repo) + '/packages/wraith/bin/wraithterm.mjs',
+      process.env.SERVE_BIN ??
+        (process.env.SERVE_REPO ?? repo) + '/packages/wraith/bin/wraithterm.mjs',
       'serve',
       '--port',
       String(port),
@@ -97,19 +101,50 @@ async function wraith(out) {
       deviceScaleFactor: 2,
     });
     page.on('pageerror', (e) => console.error('pageerror', e.message));
+    // Arrival times of output messages, as [ms, bytes] pairs.
+    await page.addInitScript(() => {
+      const Socket = window.WebSocket;
+      window.__arrivals = [];
+      window.WebSocket = class extends Socket {
+        constructor(...args) {
+          super(...args);
+          this.addEventListener('message', (e) =>
+            window.__arrivals.push([performance.now(), e.data.byteLength ?? e.data.length]),
+          );
+        }
+      };
+    });
     await page.goto(link);
     const result = await waitFile(out, 30 * 60e3);
     result.userAgent = await page.evaluate(() => navigator.userAgent);
+    result.arrival = arrivals(await page.evaluate(() => window.__arrivals), result.results);
     return result;
   } finally {
     await browser.close();
     serve.kill();
   }
 }
+// Splits the message log by each workload's size and reports the window in which
+// its bytes arrived in the page, against the probe's total time.
+function arrivals(log, results) {
+  const out = [];
+  let i = 0;
+  for (const r of results) {
+    while (i < log.length && log[i][1] < 4096) i++;
+    let bytes = 0;
+    const start = i;
+    while (i < log.length && bytes < r.bytes * 0.99) bytes += log[i++][1];
+    if (i === start) break;
+    const ms = log[i - 1][0] - log[start][0];
+    out.push({ file: r.file, messages: i - start, ms, totalMs: r.seconds * 1e3 });
+  }
+  return out;
+}
+const only = process.env.ONLY;
 const runs = [];
 for (let round = 0; round < rounds; round++) {
   const order = round % 2 ? ['wraith', 'ghostty'] : ['ghostty', 'wraith'];
-  for (const name of order) {
+  for (const name of order.filter((n) => !only || n === only)) {
     const out = `${process.env.TMPDIR ?? '/tmp/'}ghostty-native-${name}-${round}.json`;
     rmSync(out, { force: true });
     const loadBefore = load();
@@ -120,6 +155,10 @@ for (let round = 0; round < rounds; round++) {
       round,
       r.cols + 'x' + r.rows,
       r.results.map((x) => `${x.file} ${x.MBps.toFixed(1)} MB/s`).join(', '),
+      r.arrival
+        ? '| in page ' +
+            r.arrival.map((a) => `${a.ms.toFixed(0)}/${a.totalMs.toFixed(0)} ms`).join(', ')
+        : '',
     );
     await sleep(2000);
   }
