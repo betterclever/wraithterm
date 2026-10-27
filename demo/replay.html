@@ -97,8 +97,74 @@
   <body>
     <header class="nav">
       <a class="mark" href="/" aria-label="Wraith home"
-        ><svg viewBox="0 0 36 36" aria-hidden="true">
-          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        ><svg viewBox="0 8 96 88" aria-hidden="true">
+          <defs>
+            <linearGradient id="wraith-g-replay" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffb86b" />
+              <stop offset="0.55" stop-color="#ff7f6e" />
+              <stop offset="1" stop-color="#d9bbff" />
+            </linearGradient>
+            <mask id="wraith-m-replay">
+              <rect width="100" height="100" fill="#fff" />
+              <g transform="translate(7,0) skewX(-10)">
+                <path
+                  d="M43,34 L51,42 L43,50"
+                  fill="none"
+                  stroke="#000"
+                  stroke-width="6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <rect x="57" y="46" width="16" height="6" rx="3" fill="#000" />
+              </g>
+            </mask>
+          </defs>
+          <g mask="url(#wraith-m-replay)">
+            <path
+              transform="translate(7,0) skewX(-10)"
+              d="M32,80 L32,40 A28,28 0 0 1 88,40 L88,80 Q83.33,89 78.67,80 Q74,71 69.33,80 Q64.67,89 60,80 Q55.33,71 50.67,80 Q46,89 41.33,80 Q36.67,71 32,80 Z"
+              fill="url(#wraith-g-replay)"
+            />
+          </g>
+          <rect x="14" y="30" width="16" height="6" rx="3" fill="url(#wraith-g-replay)" />
+          <rect
+            x="2"
+            y="30"
+            width="8"
+            height="6"
+            rx="3"
+            fill="url(#wraith-g-replay)"
+            opacity="0.4"
+          />
+          <rect x="8" y="44" width="22" height="6" rx="3" fill="url(#wraith-g-replay)" />
+          <rect
+            x="0"
+            y="44"
+            width="4"
+            height="6"
+            rx="2"
+            fill="url(#wraith-g-replay)"
+            opacity="0.3"
+          />
+          <rect x="16" y="58" width="14" height="6" rx="3" fill="url(#wraith-g-replay)" />
+          <rect
+            x="4"
+            y="58"
+            width="8"
+            height="6"
+            rx="3"
+            fill="url(#wraith-g-replay)"
+            opacity="0.4"
+          />
+          <rect
+            x="10"
+            y="72"
+            width="18"
+            height="6"
+            rx="3"
+            fill="url(#wraith-g-replay)"
+            opacity="0.8"
+          /></svg
         >wraith<b>_</b></a
       >
       <nav>
