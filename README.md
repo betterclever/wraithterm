@@ -544,6 +544,75 @@ GPU-completed updates, not display frames
 ([report](docs/benchmarks/gpu-effects/REPORT.md)). Try them in the effects
 lab: `npm run dev`, then open `/effects.html`.
 
+## Command blocks
+
+Shells can mark prompts, commands, output and exit codes with OSC 133 semantic
+prompt sequences. Wraith turns those marks into command blocks, like Warp, in the
+browser:
+
+```ts
+import { Wraith, SHELL_INTEGRATION } from 'wraithterm';
+
+const term = await Wraith.mount(el);
+term.onCommand((block) => console.log(block.command, block.exitCode, block.durationMs));
+
+const blocks = await term.commands(); // oldest first
+const failed = blocks.filter((b) => b.exitCode);
+await failed.at(-1)?.output(); // output text, read lazily
+await term.jumpToPrompt(-1); // previous prompt to the top of the viewport
+await term.copyCommandOutput(blocks[0].id);
+```
+
+Each block has `{ id, command, state, exitCode, startedAt, finishedAt, durationMs,
+rows, truncated, output() }`. In the native profile, libghostty-vt parses the
+marks, and the engine pins each one with a Ghostty tracked grid reference. The
+marks follow scrolling, scrollback pruning and resize/reflow. When a block's rows
+are trimmed from the scrollback, it reports `truncated: true`, and `output()`
+returns only the retained tail (or `''`). Blocks erased with the
+scrollback (`clear`, `ESC [ 3 J`) report `truncated: true` the same way. `rows` are buffer rows: 0 is the oldest
+retained row, and -1 means a mark was not sent or was trimmed. `command` comes
+from `OSC 133;C;cmdline_url=…` (or `cmdline=`) when the shell sends it.
+Otherwise it is the text typed between the B and C marks. Timestamps record
+when the worker parsed the C and D marks, so they measure the command only as
+precisely as output batching allows. Wraith keeps the newest 1,000 blocks.
+
+When the first block arrives, a fitted terminal reserves 6 CSS pixels left of
+the canvas. That space holds a gutter bar per block: green for exit 0, red for
+a failure, amber while running and gray without an exit code. The bar moves with
+the scrollback. Hovering over a finished block shows a **Copy output** button.
+<kbd>Cmd</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> on macOS, or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> elsewhere, jumps between
+prompts outside the alternate screen. Before the first OSC 133 mark there is no
+DOM, listener, Ghostty reference or per-frame work. With `fit: false`, the bar
+overlays column 0. Use `commandBlocks: { gutter, copyButton, keyBindings, colors }`
+to configure the UI, or `commandBlocks: false` to disable it; the API keeps
+working. The alternate screen (vim, htop) never produces blocks.
+
+`SHELL_INTEGRATION.zsh`, `.bash` and `.fish` are snippets for the shell's startup
+file. zsh and bash (4.4+, for `PS0`) need them. fish 4.0 and later emit OSC 133
+themselves, so the fish snippet only acts on fish 3.x. On macOS, the zsh snippet
+was tested under a real PTY (`npm run test:shell-integration`), and so were
+fish 4.9's own marks. macOS ships bash 3.2, so the test only syntax-checks the
+bash snippet there; it was run by hand under a PTY with bash 5.2 in Docker
+(Alpine and Debian), including `HISTCONTROL=ignoreboth`. A command kept out of
+history is sent without a cmdline, so its typed text is used.
+
+The xterm-compatible profile has the same API as an addon:
+
+```ts
+import { Terminal, CommandBlocksAddon } from 'wraithterm/xterm';
+
+const blocks = new CommandBlocksAddon();
+term.loadAddon(blocks);
+blocks.onCommand((block) => console.log(block.command, block.exitCode));
+```
+
+It uses `registerOscHandler(133)`, xterm markers and decorations. Mark columns
+are not re-mapped on reflow, so output can be off by a few characters after a
+resize. The native profile does not have this limit. [The demo](demo/commands.html)
+plays a scripted coding-agent session. Measured cost:
+[docs/benchmarks/command-blocks](docs/benchmarks/command-blocks/README.md).
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |
@@ -571,6 +640,10 @@ lab: `npm run dev`, then open `/effects.html`.
 | `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
 | `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
+| `commands()`                                                | OSC 133 command blocks, oldest first; `block.output()` reads text lazily.                                            |
+| `onCommand(listener)`                                       | Fires when a command finishes (OSC 133;D, or the next prompt).                                                       |
+| `jumpToPrompt(-1 \| 1)`                                     | Scroll the previous/next prompt to the viewport top; resolves false when there is none.                              |
+| `copyCommandOutput(id)`                                     | Copy a block's output to the clipboard and resolve with it.                                                          |
 | `dispose()`                                                 | Rejects outstanding work and releases the worker, DOM, listeners, and engine.                                        |
 
 The default maximum unacknowledged input is **8 MiB**. `write()` rejects with

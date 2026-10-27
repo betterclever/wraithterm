@@ -36,6 +36,12 @@ export interface WraithOptions {
    */
   pool?: import('./pool.js').WraithPool;
   /**
+   * OSC 133 command blocks: gutter marks, a copy-output button and
+   * jump-to-prompt keys. On by default; inert until a shell sends OSC 133.
+   * `false` disables the gutter, button and keys (the API still works).
+   */
+  commandBlocks?: import('./command-types.js').CommandBlockOptions | false;
+  /**
    * GPU post-process effects: CRT, bloom, cursor trail and custom WGSL
    * shaders. Off by default. Change them later with `setEffects()`.
    */

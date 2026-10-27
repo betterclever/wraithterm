@@ -16,6 +16,7 @@ export default defineConfig({
         compare: 'demo/compare.html',
         pipes: 'demo/pipes.html',
         ghost: 'demo/ghost.html',
+        commands: 'demo/commands.html',
         element: 'demo/element.html',
         fleet: 'demo/fleet.html',
       },

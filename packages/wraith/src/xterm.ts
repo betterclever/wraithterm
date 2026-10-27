@@ -9,6 +9,17 @@ import { accelerateInput } from './xterm-input.js';
 import type { WraithEffects } from './effects.js';
 const XtermTerminal: typeof TerminalApi = RuntimeTerminal;
 export type * from './xterm-api.js';
+export { CommandBlocksAddon } from './xterm-commands.js';
+export {
+  SHELL_INTEGRATION,
+  DEFAULT_COMMAND_COLORS,
+  type CommandBlock,
+  type CommandBlockOptions,
+  type CommandColors,
+  type CommandRows,
+  type CommandState,
+} from './command-types.js';
+export { parseOsc133, type Osc133Step } from './osc133.js';
 export type {
   WraithEffects,
   WraithCrtOptions,

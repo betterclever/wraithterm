@@ -61,6 +61,13 @@ export class Engine {
     [Symbol.dispose](): void;
     add_font(bytes: Uint8Array): void;
     /**
+     * One block in the `commands()` layout, or undefined.
+     */
+    command(id: number): any;
+    command_marks(): Int32Array;
+    command_text(id: number, input: boolean): any;
+    commands(): Array<any>;
+    /**
      * Construct and validate the entire new atlas before changing live state.
      */
     configure_font(font: Uint8Array, fallbacks: Array<any>, size: number, line_height: number): Uint32Array;
@@ -82,6 +89,10 @@ export class Engine {
      * Kitty graphics textures uploaded and their bytes, for diagnostics.
      */
     image_uploads(): number;
+    /**
+     * The new viewport offset, or -1 when there is no prompt in that direction.
+     */
+    jump_to_prompt(direction: number): number;
     key(key: number, mods: number, action: number, text: string, unshifted: number): void;
     link(x: number, y: number): string;
     metrics(): Float64Array;
@@ -101,6 +112,11 @@ export class Engine {
     release_hold(): void;
     render(time: number, force: boolean): boolean;
     resize(cols: number, rows: number): void;
+    /**
+     * Total rows, viewport offset and length, cursor screen row and column,
+     * and 1 when the primary screen is active.
+     */
+    screen(): Float64Array;
     scroll(delta: number): void;
     search(needle: string, action: number): Uint32Array;
     select(x1: number, y1: number, x2: number, y2: number): void;
@@ -141,6 +157,10 @@ export class Engine {
      * Post-process passes in the last effect frame; zero with effects off.
      */
     readonly effect_passes: number;
+    /**
+     * OSC 133 command blocks; see `commands.rs`.
+     */
+    readonly has_commands: boolean;
     readonly needs_present: boolean;
     readonly row_map_upload_bytes: bigint;
 }
@@ -152,16 +172,36 @@ export class Headless {
     free(): void;
     [Symbol.dispose](): void;
     cell(x: number, y: number): Array<any>;
+    /**
+     * One block in the `commands()` layout, or undefined.
+     */
+    command(id: number): any;
+    command_marks(): Int32Array;
+    command_text(id: number, input: boolean): any;
+    commands(): Array<any>;
+    /**
+     * The new viewport offset, or -1 when there is no prompt in that direction.
+     */
+    jump_to_prompt(direction: number): number;
     key(key: number, mods: number, action: number, text: string, unshifted: number): void;
     mode(mode: number): boolean;
     constructor(cols: number, rows: number, history: number);
     release_hold(): void;
     resize(cols: number, rows: number): void;
+    /**
+     * Total rows, viewport offset and length, cursor screen row and column,
+     * and 1 when the primary screen is active.
+     */
+    screen(): Float64Array;
     scroll(delta: number): void;
     search(needle: string, action: number): Uint32Array;
     take_events(): Array<any>;
     text(): string;
     write(data: Uint8Array): void;
+    /**
+     * OSC 133 command blocks; see `commands.rs`.
+     */
+    readonly has_commands: boolean;
 }
 
 /**
@@ -261,6 +301,10 @@ export interface InitOutput {
     readonly engine_cell_height: (a: number) => number;
     readonly engine_cell_upload_bytes: (a: number) => bigint;
     readonly engine_cell_width: (a: number) => number;
+    readonly engine_command: (a: number, b: number) => any;
+    readonly engine_command_marks: (a: number) => [number, number];
+    readonly engine_command_text: (a: number, b: number, c: number) => [number, number, number];
+    readonly engine_commands: (a: number) => any;
     readonly engine_configure_font: (a: number, b: number, c: number, d: any, e: number, f: number) => [number, number, number, number];
     readonly engine_create: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => any;
     readonly engine_create_shared: (a: number, b: number, c: number, d: any, e: number, f: number, g: number, h: number, i: number, j: number) => any;
@@ -270,8 +314,10 @@ export interface InitOutput {
     readonly engine_drawable: (a: number) => number;
     readonly engine_effect_passes: (a: number) => number;
     readonly engine_fence: (a: number) => any;
+    readonly engine_has_commands: (a: number) => number;
     readonly engine_image_upload_bytes: (a: number) => number;
     readonly engine_image_uploads: (a: number) => number;
+    readonly engine_jump_to_prompt: (a: number, b: number) => number;
     readonly engine_key: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_link: (a: number, b: number, c: number) => [number, number];
     readonly engine_metrics: (a: number) => [number, number];
@@ -284,6 +330,7 @@ export interface InitOutput {
     readonly engine_render: (a: number, b: number, c: number) => [number, number, number];
     readonly engine_resize: (a: number, b: number, c: number) => [number, number];
     readonly engine_row_map_upload_bytes: (a: number) => bigint;
+    readonly engine_screen: (a: number) => [number, number];
     readonly engine_scroll: (a: number, b: number) => void;
     readonly engine_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
@@ -297,11 +344,18 @@ export interface InitOutput {
     readonly engine_theme: (a: number, b: number, c: number, d: number) => void;
     readonly engine_write: (a: number, b: number, c: number) => void;
     readonly headless_cell: (a: number, b: number, c: number) => [number, number, number];
+    readonly headless_command: (a: number, b: number) => any;
+    readonly headless_command_marks: (a: number) => [number, number];
+    readonly headless_command_text: (a: number, b: number, c: number) => [number, number, number];
+    readonly headless_commands: (a: number) => any;
+    readonly headless_has_commands: (a: number) => number;
+    readonly headless_jump_to_prompt: (a: number, b: number) => number;
     readonly headless_key: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly headless_mode: (a: number, b: number) => number;
     readonly headless_new: (a: number, b: number, c: number) => [number, number, number];
     readonly headless_release_hold: (a: number) => void;
     readonly headless_resize: (a: number, b: number, c: number) => [number, number];
+    readonly headless_screen: (a: number) => [number, number];
     readonly headless_scroll: (a: number, b: number) => void;
     readonly headless_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly headless_take_events: (a: number) => any;
@@ -323,6 +377,7 @@ export interface InitOutput {
     readonly wraith_row: (a: number, b: number) => void;
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
+    readonly wraith_semantic: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => void;
     readonly surface_height: (a: number) => number;
     readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly surface_unpresented: (a: number) => number;
@@ -330,11 +385,11 @@ export interface InitOutput {
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__85: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__88: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__89: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__102: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__103: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__99: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__87: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__101: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

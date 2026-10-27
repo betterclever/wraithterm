@@ -56,6 +56,9 @@
     "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
     "test:native-visibility": "node scripts/native-visibility-test.mjs",
     "benchmark:visibility": "node scripts/visibility-benchmark.mjs",
+    "test:commands": "node scripts/command-blocks-test.mjs",
+    "test:shell-integration": "node scripts/shell-integration-test.mjs",
+    "benchmark:commands": "node scripts/command-blocks-benchmark.mjs",
     "test:frameworks": "node scripts/framework-consumer-test.mjs",
     "benchmark:input-latency": "node scripts/input-latency-benchmark.mjs"
   },
