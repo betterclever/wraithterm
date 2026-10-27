@@ -48,23 +48,44 @@ const open = (link, viewport) => openPage(browser, errors, link, viewport);
     });
     assert.match(nullOrigin, /^HTTP\/1.1 403/, 'Origin: null is refused');
 
-    const owner = await open(link);
-    await owner.until((t) => /cols=\d+/.test(t), 'tput output');
-    await owner.page.keyboard.type('typed-through-pty');
-    await owner.page.keyboard.press('Enter');
-    await owner.until((t) => t.split('typed-through-pty').length > 2, 'echo from cat');
-    const screen = await owner.read();
-    const [cols, rows] = await owner.grid();
-    assert.match(screen, /serve-marker-42/);
-    assert.match(screen, /term=xterm-256color program=wraith/);
-    // The page sent its fitted size; the PTY reports the same grid.
-    assert.match(screen, new RegExp(`cols=${cols} rows=${rows}`));
-    const shot = await owner.page.screenshot();
-    assert(shot.length > 10000, 'rendered pixels');
-    await owner.page.close();
-    console.log(
-      `serve passed: PTY output, TERM/TERM_PROGRAM, ${cols}x${rows} resize round-trip, typed input echoed, wrong-token page and socket refused.`,
-    );
+    console.log('serve passed: wrong-token page and socket refused.');
+
+    // The default page lets the worker own the socket; ?transport=page bridges a
+    // page-owned WebSocket. Each load spawns its own PTY session.
+    for (const transport of ['worker', 'page']) {
+      const owner = await open(transport === 'page' ? `${link}&transport=page` : link);
+      await owner.until((t) => /cols=\d+/.test(t), 'tput output');
+      if (transport === 'worker')
+        assert.equal(await owner.page.evaluate(() => window.wraithSocket.transport), 'stream');
+      await owner.page.keyboard.type('typed-through-pty');
+      await owner.page.keyboard.press('Enter');
+      await owner.until((t) => t.split('typed-through-pty').length > 2, 'echo from cat');
+      const screen = await owner.read();
+      const [cols, rows] = await owner.grid();
+      assert.match(screen, /serve-marker-42/);
+      assert.match(screen, /term=xterm-256color program=wraith/);
+      // The page sent its fitted size; the PTY reports the same grid.
+      assert.match(screen, new RegExp(`cols=${cols} rows=${rows}`));
+      const shot = await owner.page.screenshot();
+      assert(shot.length > 10000, 'rendered pixels');
+      // End the session: cat echoes the last line, then exits on Ctrl-D. The
+      // notice must follow every byte of output.
+      await owner.page.keyboard.type('last-line');
+      await owner.page.keyboard.press('Enter');
+      await owner.until((t) => t.split('last-line').length > 2, 'last line echoed');
+      await owner.page.keyboard.press('Control+D');
+      await owner.until((t) => t.includes('[session ended]'), 'session ended notice');
+      const final = await owner.read();
+      assert(final.lastIndexOf('last-line') < final.indexOf('[session ended]'), final);
+      if (transport === 'worker') {
+        const closed = await owner.page.evaluate(() => window.wraithSocket.closed);
+        assert.equal(closed.wasClean, true);
+      }
+      await owner.page.close();
+      console.log(
+        `serve (${transport} socket) passed: PTY output, TERM/TERM_PROGRAM, ${cols}x${rows} resize round-trip, typed input echoed, [session ended] after the final output.`,
+      );
+    }
   } finally {
     server.kill('SIGINT');
   }

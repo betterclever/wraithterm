@@ -22,6 +22,7 @@ import { spawnSync, spawn as spawnProcess } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import { AsciicastWriter, ReplayBuffer } from './share.mjs';
+import { Worker } from 'node:worker_threads';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(root, 'package.json'));
@@ -161,13 +162,17 @@ try {
   });
   window.wraith = term;
   term.onTitleChange((title) => (document.title = title || 'Wraith'));
-  const socket = new WebSocket(\`\${location.protocol === 'https:' ? 'wss' : 'ws'}://\${location.host}/pty?token=${token}\`);
-  socket.binaryType = 'arraybuffer';
-  const size = () => role === 'owner' && socket.readyState === 1 && socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-  socket.addEventListener('open', size);
-  term.onResize(size);
-  if (!shared) term.connect(socket);
-  else {
+  const ended = () => term.write('\\r\\n\\x1b[2m[session ended]\\x1b[0m\\r\\n');
+  const url = '/pty?token=${token}';
+  if (shared) {
+    // Shared sessions carry JSON control messages (hello, size, presence,
+    // reset) beside output, and guests follow the owner's grid, so the page
+    // keeps the socket.
+    const socket = new WebSocket(new URL(url, location.href.replace(/^http/, 'ws')));
+    socket.binaryType = 'arraybuffer';
+    const size = () => role === 'owner' && socket.readyState === 1 && socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    socket.addEventListener('open', size);
+    term.onResize(size);
     const state = (window.wraithShare = { role, presence: null, cols: term.cols, rows: term.rows, resets: 0, scale: 1 });
     // Guests render at the owner's grid: scale down to fit, letterbox otherwise.
     const layout = () => {
@@ -227,8 +232,27 @@ try {
     });
     if (role !== 'viewer')
       term.onBytes((bytes) => socket.readyState === 1 && socket.send(bytes));
+    socket.addEventListener('close', ended);
+  } else if (new URLSearchParams(location.search).get('transport') === 'page') {
+    // Otherwise the worker owns the socket: PTY output is parsed without
+    // touching this thread. ?transport=page keeps a page-owned socket to compare.
+    const socket = new WebSocket(new URL(url, location.href.replace(/^http/, 'ws')));
+    socket.binaryType = 'arraybuffer';
+    const size = () => socket.readyState === 1 && socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    socket.addEventListener('open', size);
+    term.onResize(size);
+    term.connect(socket);
+    socket.addEventListener('close', ended);
+  } else {
+    const socket = term.connect(url);
+    window.wraithSocket = socket;
+    // Sent once open, ordered with keystrokes.
+    const size = () => socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    size();
+    term.onResize(size);
+    // A failed or disposed terminal also resolves closed; it cannot be written.
+    socket.closed.then(ended).catch(() => {});
   }
-  socket.addEventListener('close', () => term.write('\\r\\n\\x1b[2m[session ended]\\x1b[0m\\r\\n'));
   term.focus();
 } catch (error) {
   fail(String(error.message ?? error));
@@ -271,9 +295,14 @@ function accept(socket, key) {
     parts = [],
     partOpcode = 0,
     closed = false;
-  const send = (opcode, data) => {
-    if (closed) return;
-    const length = data.length;
+  // data is a Buffer or an array of Buffers sent as one message. Large payloads
+  // go to the kernel in one writev beside the header instead of being copied.
+  // done runs once the socket has taken the message (at once if closed).
+  const send = (opcode, data, done) => {
+    if (closed) return done?.();
+    const parts = Array.isArray(data) ? data : [data];
+    let length = 0;
+    for (const part of parts) length += part.length;
     const head =
       length < 126
         ? Buffer.from([0x80 | opcode, length])
@@ -287,7 +316,15 @@ function accept(socket, key) {
                 return b;
               })(),
             ]);
-    socket.write(Buffer.concat([head, data]));
+    if (length < 16384) {
+      socket.write(Buffer.concat([head, ...parts], head.length + length), done);
+      return;
+    }
+    socket.cork();
+    socket.write(head);
+    for (let i = 0; i < parts.length; i++)
+      socket.write(parts[i], i === parts.length - 1 ? done : undefined);
+    socket.uncork();
   };
   const close = () => {
     if (closed) return;
@@ -338,14 +375,180 @@ function accept(socket, key) {
   socket.on('error', () => socket.destroy());
   return {
     on: (event, fn) => (handlers[event] = fn),
-    send: (data, binary) => send(binary ? 2 : 1, Buffer.isBuffer(data) ? data : Buffer.from(data)),
+    send: (data, binary, done) =>
+      send(
+        binary ? 2 : 1,
+        Buffer.isBuffer(data) || Array.isArray(data) ? data : Buffer.from(data),
+        done,
+      ),
     close,
-    // Bytes queued in user space because the peer is not reading fast enough.
+    closed: () => closed,
     buffered: () => socket.writableLength,
-    onDrain: (fn) => socket.once('drain', fn),
-    get closed() {
-      return closed;
+    onDrain: (fn) => socket.on('drain', fn),
+    onceDrain: (fn) => socket.once('drain', fn),
+  };
+}
+
+// node-pty reads a Unix PTY on the event loop, one 1 KiB read per turn: about
+// 95 MB/s on macOS. Instead a thread polls the non-blocking master and reads
+// straight into a shared ring buffer, which the main thread hands to the socket
+// as views: no copies or allocations between the PTY and the kernel. Every empty
+// poll throws EAGAIN, and a stack trace for each capped the thread near 190 MB/s,
+// so traces are off. After output stops the thread spins for 0.2 ms, then sleeps
+// with backoff up to 4 ms, or 16 ms once idle; input wakes it at once. A full
+// ring (the socket is backed up) blocks the thread and so the PTY.
+const RING = 4 << 20;
+// Shared Int32 slots: input wakes, bytes written by the reader (head), bytes
+// released by the main thread (tail), and the doorbell (1 while the main
+// thread has been told data is waiting). Counters wrap; differences do not.
+// STOP asks the thread to exit and DONE says it has.
+const WAKE = 0,
+  HEAD = 1,
+  TAIL = 2,
+  BELL = 3,
+  STOP = 4,
+  DONE = 5;
+const READER = `
+Error.stackTraceLimit = 0;
+const { parentPort, workerData: { fd, control, ring } } = require('node:worker_threads');
+const { readSync } = require('node:fs');
+const state = new Int32Array(control), buf = Buffer.from(ring), size = buf.length;
+let head = 0, idle = 0, lastData = 0, woken = 0;
+while (!Atomics.load(state, ${STOP})) {
+  const tail = Atomics.load(state, ${TAIL}), free = size - ((head - tail) | 0);
+  if (!free) {
+    Atomics.wait(state, ${TAIL}, tail, 100);
+    continue;
+  }
+  const wake = Atomics.load(state, ${WAKE});
+  // Input was written: its echo is due, so poll eagerly again.
+  if (wake !== woken) {
+    woken = wake;
+    idle = 0;
+  }
+  const at = head & (size - 1);
+  let n;
+  try {
+    n = readSync(fd, buf, at, Math.min(free, size - at, 65536), null);
+  } catch (error) {
+    if (error.code !== 'EAGAIN') break;
+    n = -1;
+  }
+  if (n === 0) break;
+  const now = performance.now();
+  if (n > 0) {
+    head = (head + n) | 0;
+    Atomics.store(state, ${HEAD}, head);
+    if (Atomics.compareExchange(state, ${BELL}, 0, 1) === 0) parentPort.postMessage(0);
+    idle = 0;
+    lastData = now;
+  } else if (now - lastData > 0.2)
+    Atomics.wait(state, ${WAKE}, wake, Math.min(now - lastData > 250 ? 16 : 4, 0.05 * 2 ** idle++));
+}
+Atomics.store(state, ${DONE}, 1);
+Atomics.notify(state, ${DONE});
+parentPort.postMessage(null);
+`;
+// Output is sent as it is read at the start of a burst, keeping echo immediate,
+// then batched every 2 ms into messages of up to the whole ring. sink.send(parts,
+// done) sends one message and calls done once the socket has taken it.
+function readPty(term, sink) {
+  // Unix PTYs only; Windows (ConPTY) keeps node-pty's own reader.
+  if (platform() === 'win32' || typeof term._fd !== 'number' || !term._socket?.pause)
+    return undefined;
+  const control = new SharedArrayBuffer(24),
+    ring = new SharedArrayBuffer(RING);
+  const state = new Int32Array(control);
+  let sent = 0,
+    released = 0,
+    timer,
+    lastSend = 0,
+    ended = false,
+    running = false;
+  const drain = (force) => {
+    clearTimeout(timer);
+    timer = undefined;
+    const length = (Atomics.load(state, HEAD) - sent) | 0;
+    if (!length) {
+      // Idle: ask to be told about the next byte, then recheck for a race.
+      Atomics.store(state, BELL, 0);
+      if (Atomics.load(state, HEAD) !== sent) timer = setTimeout(drain, 2);
+      return;
+    }
+    // Backed up: leave the bytes in the ring until the socket drains.
+    if (!force && sink.blocked()) return;
+    const at = sent & (RING - 1),
+      first = Math.min(length, RING - at);
+    const parts = [Buffer.from(ring, at, first)];
+    if (length > first) parts.push(Buffer.from(ring, 0, length - first));
+    sent = (sent + length) | 0;
+    lastSend = performance.now();
+    sink.send(parts, () => {
+      released = (released + length) | 0;
+      Atomics.store(state, TAIL, released);
+      Atomics.notify(state, TAIL);
+    });
+    if (!ended) timer = setTimeout(drain, 2);
+  };
+  sink.onDrain(() => !ended && !timer && drain());
+  // node-pty closes the master when its socket is destroyed, including 200 ms
+  // after the child exits while another process still holds the slave open (on
+  // Linux the master then never reads EIO). A thread still polling that fd
+  // number would read whichever file reuses it, such as the next session's PTY.
+  // So the thread stops before the fd closes, and what it read is sent first.
+  const socket = term._socket,
+    destroy = socket._destroy;
+  socket._destroy = function (error, callback) {
+    if (running) {
+      running = false;
+      Atomics.store(state, STOP, 1);
+      Atomics.notify(state, WAKE);
+      Atomics.notify(state, TAIL);
+      // The thread never blocks in read(), so it stops within one poll.
+      Atomics.wait(state, DONE, 0, 1000);
+    }
+    ended = true;
+    drain(true);
+    return destroy.call(this, error, callback);
+  };
+  socket.pause();
+  // node-pty's socket starts reading on the next tick even while paused; stop
+  // it, send what it already read, then hand the master to the reader thread.
+  setImmediate(() => {
+    if (socket.destroyed) return;
+    term._socket._handle?.readStop();
+    for (let early; (early = term._socket.read()) !== null;) sink.send([early], () => {});
+    const worker = new Worker(READER, {
+      eval: true,
+      workerData: { fd: term._fd, control, ring },
+    });
+    running = true;
+    worker.unref();
+    worker.on('message', (data) => {
+      if (data === null) {
+        running = false;
+        // EOF or EIO: send the rest, then close node-pty's socket so its exit
+        // event fires.
+        ended = true;
+        drain(true);
+        term._socket.destroy();
+      } else if (!timer) {
+        if (performance.now() - lastSend > 5) drain();
+        else timer = setTimeout(drain, 2);
+      }
+    });
+    worker.on('error', () => {
+      running = false;
+      term._socket.destroy();
+    });
+  });
+  return {
+    wake: () => {
+      Atomics.add(state, WAKE, 1);
+      Atomics.notify(state, WAKE);
     },
+    // The socket closed: release whatever is queued so the thread reads on to EOF.
+    close: () => drain(true),
   };
 }
 
@@ -457,17 +660,62 @@ async function serve(options) {
       socket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
       return;
     }
+    socket.setNoDelay(true);
     const ws = accept(socket, req.headers['sec-websocket-key']);
     if (session) return session.join(ws, role);
     const term = spawnTerm();
     sessions.add(term);
-    term.onData((data) => ws.send(Buffer.from(data), true));
+    // Where node-pty reads the PTY (Windows), it delivers output 1 KiB per
+    // event-loop turn. Sending each read as its own message caps output near
+    // 40 MB/s, so after the first chunk of a burst (sent at once, keeping echo
+    // immediate) output is batched for 2 ms. The PTY pauses while the socket is
+    // backed up instead of buffering unboundedly.
+    let pending = [],
+      pendingBytes = 0,
+      timer,
+      lastFlush = 0,
+      paused = false;
+    const flush = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      lastFlush = performance.now();
+      if (!pending.length) return;
+      ws.send(pending.length === 1 ? pending[0] : Buffer.concat(pending, pendingBytes), true);
+      pending = [];
+      pendingBytes = 0;
+      if (!paused && ws.buffered() > 4 << 20) {
+        paused = true;
+        term.pause();
+      }
+    };
+    ws.onDrain(() => {
+      if (paused) {
+        paused = false;
+        term.resume();
+      }
+    });
+    const output = (data) => {
+      pending.push(Buffer.from(data));
+      pendingBytes += data.length;
+      if (pendingBytes >= 1 << 20 || (!timer && performance.now() - lastFlush > 5)) flush();
+      else timer ??= setTimeout(flush, 2);
+    };
+    const reader = readPty(term, {
+      send: (parts, done) => ws.send(parts, true, done),
+      blocked: () => !ws.closed() && ws.buffered() > 4 << 20,
+      onDrain: (fn) => ws.onDrain(fn),
+    });
+    if (!reader) term.onData(output);
     term.onExit(() => {
+      flush();
       sessions.delete(term);
       ws.close();
     });
     ws.on('message', (data, binary) => {
-      if (binary) return term.write(data);
+      if (binary) {
+        term.write(data);
+        return reader?.wake();
+      }
       try {
         const message = JSON.parse(data.toString('utf8'));
         if (message.type === 'resize' && message.cols > 0 && message.rows > 0)
@@ -475,6 +723,7 @@ async function serve(options) {
       } catch {}
     });
     ws.on('close', () => {
+      reader?.close();
       if (sessions.has(term)) {
         sessions.delete(term);
         term.kill();
@@ -569,12 +818,12 @@ function shareSession(term, options, ended) {
     for (const item of replay.snapshot()) sendItem(client, item);
   };
   const deliver = (client, item) => {
-    if (client.stalled || client.ws.closed) return;
+    if (client.stalled || client.ws.closed()) return;
     if (client.ws.buffered() > CLIENT_LIMIT) {
       client.stalled = true;
       client.drops++;
-      client.ws.onDrain(() => {
-        if (client.ws.closed || !clients.has(client)) return;
+      client.ws.onceDrain(() => {
+        if (client.ws.closed() || !clients.has(client)) return;
         client.stalled = false;
         client.ws.send(JSON.stringify({ type: 'reset' }));
         sendReplay(client);

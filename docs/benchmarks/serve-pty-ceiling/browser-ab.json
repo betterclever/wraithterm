@@ -1,0 +1,843 @@
+{
+ "method": "scripts/ghostty-native/run.mjs ONLY=wraith ROUNDS=1 PORT=6221 VW=1374 VH=980, one invocation per variant, alternating pr57/ring for 6 pairs; headed Chrome, DPR 2, 160x50",
+ "builds": {
+  "pr57": "a7849e2 (origin/perf/serve-coalesce, packages/wraith/bin/wraithterm.mjs)",
+  "ring": "1f48fa6 (perf/serve-pty-ceiling, packages/wraith/bin/wraithterm.mjs)"
+ },
+ "summary": {
+  "pr57": {
+   "logs.ansi": {
+    "median": 118.8,
+    "min": 84.5,
+    "max": 132.2,
+    "n": 6
+   },
+   "ascii.txt": {
+    "median": 112.7,
+    "min": 87.5,
+    "max": 127.5,
+    "n": 6
+   },
+   "doomtext30.ansi": {
+    "median": 116.9,
+    "min": 62.3,
+    "max": 134.5,
+    "n": 6
+   },
+   "kitty60.ansi": {
+    "median": 134.4,
+    "min": 69.6,
+    "max": 151.5,
+    "n": 6
+   }
+  },
+  "ring": {
+   "logs.ansi": {
+    "median": 161.6,
+    "min": 37.8,
+    "max": 179.1,
+    "n": 6
+   },
+   "ascii.txt": {
+    "median": 130.1,
+    "min": 32.8,
+    "max": 167.5,
+    "n": 6
+   },
+   "doomtext30.ansi": {
+    "median": 130.2,
+    "min": 88.9,
+    "max": 165.0,
+    "n": 6
+   },
+   "kitty60.ansi": {
+    "median": 163.1,
+    "min": 127.1,
+    "max": 196.8,
+    "n": 6
+   }
+  }
+ },
+ "runs": [
+  {
+   "variant": "pr57",
+   "pair": 1,
+   "loadBefore": "{ 8.94 8.98 9.12 }",
+   "loadAfter": "{ 8.94 8.98 9.12 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.6373210409947205,
+     "MBps": 100.42046768157803
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.7313595840096241,
+     "MBps": 87.50812240556871
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.48143729199364316,
+     "MBps": 62.31341131836567
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.8702229170012288,
+     "MBps": 69.58163456400275
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 160,
+     "ms": 623.4000000059605,
+     "totalMs": 637.3210409947205
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 187,
+     "ms": 741.8999999910593,
+     "totalMs": 731.3595840096241
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 120,
+     "ms": 476.79999999701977,
+     "totalMs": 481.43729199364316
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 218,
+     "ms": 869,
+     "totalMs": 870.2229170012288
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 1,
+   "loadBefore": "{ 8.94 8.98 9.12 }",
+   "loadAfter": "{ 8.86 8.97 9.12 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.367658000002848,
+     "MBps": 174.0750289657895
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.3820588339876849,
+     "MBps": 167.51321604583794
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.18179504199360963,
+     "MBps": 165.02100206371165
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.3077007079991745,
+     "MBps": 196.78710976564426
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 152,
+     "ms": 360.1000000089407,
+     "totalMs": 367.658000002848
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 162,
+     "ms": 388.40000000596046,
+     "totalMs": 382.0588339876849
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 77,
+     "ms": 180.70000000298023,
+     "totalMs": 181.79504199360963
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 132,
+     "ms": 310.59999999403954,
+     "totalMs": 307.7007079991745
+    }
+   ]
+  },
+  {
+   "variant": "pr57",
+   "pair": 2,
+   "loadBefore": "{ 11.12 9.43 9.28 }",
+   "loadAfter": "{ 11.11 9.46 9.29 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.7569817079929635,
+     "MBps": 84.54639831349122
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.5291419580025831,
+     "MBps": 120.95034807216624
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.23769429099047557,
+     "MBps": 126.21253911900688
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.4473308330052532,
+     "MBps": 135.36185867896324
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 194,
+     "ms": 749,
+     "totalMs": 756.9817079929635
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 132,
+     "ms": 537.9000000059605,
+     "totalMs": 529.1419580025831
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 58,
+     "ms": 232.59999999403954,
+     "totalMs": 237.69429099047557
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 110,
+     "ms": 445.70000000298023,
+     "totalMs": 447.3308330052532
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 2,
+   "loadBefore": "{ 11.11 9.46 9.29 }",
+   "loadAfter": "{ 12.72 9.87 9.44 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 1.693125207995763,
+     "MBps": 37.799967006433086
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 1.9511474169994472,
+     "MBps": 32.80116276320199
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.2785846670012688,
+     "MBps": 107.68719012042168
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.4764662500092527,
+     "MBps": 127.08462141615303
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 674,
+     "ms": 1678.8999999910593,
+     "totalMs": 1693.125207995763
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 752,
+     "ms": 1965.2999999970198,
+     "totalMs": 1951.1474169994472
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 119,
+     "ms": 280,
+     "totalMs": 278.5846670012688
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 206,
+     "ms": 478.1000000089407,
+     "totalMs": 476.4662500092527
+    }
+   ]
+  },
+  {
+   "variant": "pr57",
+   "pair": 3,
+   "loadBefore": "{ 12.72 9.87 9.44 }",
+   "loadAfter": "{ 12.02 9.77 9.40 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.4849972079973668,
+     "MBps": 131.95968130263438
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.6121485829935409,
+     "MBps": 104.54962369924377
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.29632479199790396,
+     "MBps": 101.2402634208622
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.6896019170089858,
+     "MBps": 87.80650329777286
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 121,
+     "ms": 475.79999999701977,
+     "totalMs": 484.9972079973668
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 155,
+     "ms": 613.2999999970198,
+     "totalMs": 612.1485829935409
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 72,
+     "ms": 288.70000000298023,
+     "totalMs": 296.32479199790396
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 187,
+     "ms": 699.1999999880791,
+     "totalMs": 689.6019170089858
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 3,
+   "loadBefore": "{ 12.26 9.86 9.44 }",
+   "loadAfter": "{ 11.76 9.79 9.42 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.4168698330031475,
+     "MBps": 153.52532597271625
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.657340749996365,
+     "MBps": 97.36183859034132
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.3375219170120545,
+     "MBps": 88.88311688194328
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.47488520899787545,
+     "MBps": 127.50772576761997
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 169,
+     "ms": 407.5,
+     "totalMs": 416.8698330031475
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 276,
+     "ms": 663.5,
+     "totalMs": 657.340749996365
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 140,
+     "ms": 336.09999999403954,
+     "totalMs": 337.5219170120545
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 204,
+     "ms": 481.3999999910593,
+     "totalMs": 474.88520899787545
+    }
+   ]
+  },
+  {
+   "variant": "pr57",
+   "pair": 4,
+   "loadBefore": "{ 11.76 9.79 9.42 }",
+   "loadAfter": "{ 11.78 9.83 9.43 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.5767257499974221,
+     "MBps": 110.97142272611562
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.6779689999966649,
+     "MBps": 94.39945484279492
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.26902037499530707,
+     "MBps": 111.51571698063142
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.4538662499981001,
+     "MBps": 133.41272456423775
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 144,
+     "ms": 563,
+     "totalMs": 576.7257499974221
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 171,
+     "ms": 683,
+     "totalMs": 677.9689999966649
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 69,
+     "ms": 269.8999999910593,
+     "totalMs": 269.02037499530707
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 114,
+     "ms": 451.8999999910593,
+     "totalMs": 453.8662499981001
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 4,
+   "loadBefore": "{ 11.78 9.83 9.43 }",
+   "loadAfter": "{ 11.31 9.76 9.41 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.3573189159942558,
+     "MBps": 179.1119197311929
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.45816525000554975,
+     "MBps": 139.6873813525246
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.1925102910026908,
+     "MBps": 155.83582489925527
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.34516875000554137,
+     "MBps": 175.42588371348188
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 147,
+     "ms": 347.59999999403954,
+     "totalMs": 357.3189159942558
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 193,
+     "ms": 471.5,
+     "totalMs": 458.16525000554975
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 81,
+     "ms": 193.1000000089407,
+     "totalMs": 192.5102910026908
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 145,
+     "ms": 346.79999999701977,
+     "totalMs": 345.16875000554137
+    }
+   ]
+  },
+  {
+   "variant": "pr57",
+   "pair": 5,
+   "loadBefore": "{ 10.81 9.69 9.39 }",
+   "loadAfter": "{ 10.74 9.69 9.39 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.48425070800294634,
+     "MBps": 132.16310465282913
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.5176376659946982,
+     "MBps": 123.63842163034462
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.24519104199134745,
+     "MBps": 122.35357277472914
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.40994429199781734,
+     "MBps": 147.7067352368999
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 118,
+     "ms": 472.29999999701977,
+     "totalMs": 484.25070800294634
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 130,
+     "ms": 519.4000000059605,
+     "totalMs": 517.6376659946982
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 63,
+     "ms": 246.29999999701977,
+     "totalMs": 245.19104199134745
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 104,
+     "ms": 411.70000000298023,
+     "totalMs": 409.94429199781734
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 5,
+   "loadBefore": "{ 10.74 9.69 9.39 }",
+   "loadAfter": "{ 10.36 9.63 9.37 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.4444323330098996,
+     "MBps": 144.00409746645147
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.5311475829948904,
+     "MBps": 120.49363688927052
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.24966145800135564,
+     "MBps": 120.16272051025635
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.39414175000274554,
+     "MBps": 153.6288226242924
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 182,
+     "ms": 435.29999999701977,
+     "totalMs": 444.4323330098996
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 223,
+     "ms": 533.3999999910593,
+     "totalMs": 531.1475829948904
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 104,
+     "ms": 249.90000000596046,
+     "totalMs": 249.66145800135564
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 171,
+     "ms": 397.1000000089407,
+     "totalMs": 394.14175000274554
+    }
+   ]
+  },
+  {
+   "variant": "pr57",
+   "pair": 6,
+   "loadBefore": "{ 9.77 9.52 9.33 }",
+   "loadAfter": "{ 9.77 9.52 9.33 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.5054570419888478,
+     "MBps": 126.61823198302987
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.5017815419996623,
+     "MBps": 127.54535319285036
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.22300312499282882,
+     "MBps": 134.52726279492595
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.3996612499904586,
+     "MBps": 151.5071401128971
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 124,
+     "ms": 493.59999999403954,
+     "totalMs": 505.4570419888478
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 125,
+     "ms": 505.20000000298023,
+     "totalMs": 501.7815419996623
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 57,
+     "ms": 222.40000000596046,
+     "totalMs": 223.00312499282882
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 100,
+     "ms": 398.90000000596046,
+     "totalMs": 399.6612499904586
+    }
+   ]
+  },
+  {
+   "variant": "ring",
+   "pair": 6,
+   "loadBefore": "{ 9.23 9.41 9.29 }",
+   "loadAfter": "{ 9.37 9.44 9.30 }",
+   "cols": 160,
+   "rows": 50,
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.37735183400218375,
+     "MBps": 169.60319583243268
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.42748029199719895,
+     "MBps": 149.71427969460487
+    },
+    {
+     "file": "doomtext30.ansi",
+     "rep": 0,
+     "bytes": 30000000,
+     "seconds": 0.21401962501113303,
+     "MBps": 140.17406113312944
+    },
+    {
+     "file": "kitty60.ansi",
+     "rep": 0,
+     "bytes": 60551533,
+     "seconds": 0.3510487499879673,
+     "MBps": 172.48753343253748
+    }
+   ],
+   "arrival": [
+    {
+     "file": "logs.ansi",
+     "messages": 153,
+     "ms": 371.59999999403954,
+     "totalMs": 377.35183400218375
+    },
+    {
+     "file": "ascii.txt",
+     "messages": 176,
+     "ms": 427.8999999910593,
+     "totalMs": 427.48029199719895
+    },
+    {
+     "file": "doomtext30.ansi",
+     "messages": 91,
+     "ms": 217,
+     "totalMs": 214.01962501113303
+    },
+    {
+     "file": "kitty60.ansi",
+     "messages": 152,
+     "ms": 355.70000000298023,
+     "totalMs": 351.0487499879673
+    }
+   ]
+  }
+ ]
+}

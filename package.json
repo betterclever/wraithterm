@@ -39,8 +39,11 @@
     "test:native-display": "node scripts/native-display-test.mjs",
     "test:native-kitty": "node scripts/native-kitty-test.mjs",
     "test:native-pool": "node scripts/native-pool-test.mjs",
+    "test:fleet": "node scripts/fleet-test.mjs",
+    "benchmark:fleet": "node scripts/fleet-benchmark.mjs",
     "test:serve": "node scripts/serve-test.mjs",
     "benchmark:serve-share": "node scripts/serve-share-benchmark.mjs",
+    "test:worker-socket": "node scripts/worker-socket-test.mjs",
     "test:native-shaping": "node scripts/native-shaping-test.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",
     "test:visual-options": "node scripts/gpu-visual-options-test.mjs",
@@ -50,11 +53,15 @@
     "benchmark:bulk-text": "node scripts/bulk-text-benchmark.mjs",
     "profile:bulk-text": "node scripts/profile-bulk-text.mjs",
     "test:native-visibility": "node scripts/native-visibility-test.mjs",
-    "benchmark:visibility": "node scripts/visibility-benchmark.mjs"
+    "benchmark:visibility": "node scripts/visibility-benchmark.mjs",
+    "test:frameworks": "node scripts/framework-consumer-test.mjs",
+    "benchmark:input-latency": "node scripts/input-latency-benchmark.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@webgpu/types": "^0.1.64",
     "@wterm/core": "^0.5.5",
     "@wterm/dom": "^0.5.5",
@@ -68,8 +75,11 @@
     "@xterm/xterm": "6.0.0",
     "node-pty": "^1.1.0",
     "prettier": "^3.9.9",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^5.9.3",
     "vite": "^7.1.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "vue": "^3.5.44"
   }
 }
