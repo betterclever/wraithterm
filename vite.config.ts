@@ -11,6 +11,7 @@ export default defineConfig({
         main: 'demo/index.html',
         playground: 'demo/playground.html',
         kitty: 'demo/kitty.html',
+        effects: 'demo/effects.html',
         xterm: 'demo/xterm.html',
         compare: 'demo/compare.html',
         pipes: 'demo/pipes.html',

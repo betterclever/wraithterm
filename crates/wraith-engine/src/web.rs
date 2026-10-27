@@ -467,6 +467,28 @@ impl Engine {
     pub async fn fence(&self) -> Result<(), JsValue> {
         self.renderer.fence().await.map_err(error)
     }
+    /// Replace post-process effects (see `effect_state::Settings::parse`).
+    /// Rejects with compiler messages and keeps the previous effects when a
+    /// custom shader is invalid. Call only while rendering is paused.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        self.renderer
+            .set_effects(&params, shader)
+            .await
+            .map_err(error)
+    }
+    /// Shadertoy `iMouse` in physical pixels.
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        self.renderer.set_effect_mouse([x, y, z, w]);
+    }
+    /// Post-process passes in the last effect frame; zero with effects off.
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.renderer.effect_passes()
+    }
     /// Calls `done` when the GPU has finished all work submitted so far.
     /// Unlike `fence`, this returns at once and holds no borrow while waiting.
     pub fn on_submitted_work_done(&self, done: js_sys::Function) {
@@ -621,5 +643,32 @@ impl Compositor {
     #[wasm_bindgen(getter)]
     pub fn frames(&self) -> u64 {
         self.renderer.frames
+    }
+    /// See `Engine::set_effects`. Call only while rendering is paused.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        self.renderer
+            .set_effects(&params, shader)
+            .await
+            .map_err(error)
+    }
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        self.renderer.set_effect_mouse([x, y, z, w]);
+    }
+    /// An effect animation wants another display frame.
+    #[wasm_bindgen(getter)]
+    pub fn animating(&self) -> bool {
+        self.renderer.effects_due()
+    }
+    /// Advance effect animations over the last submitted frame.
+    pub fn animate(&mut self) -> Result<bool, JsValue> {
+        self.renderer.animate().map_err(error)
+    }
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.renderer.effect_passes()
     }
 }

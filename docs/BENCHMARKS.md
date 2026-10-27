@@ -130,3 +130,18 @@ node scripts/summarize-visibility.mjs
 ```
 
 For before/after runs provide WRAITH_BEFORE_URL, WRAITH_BEFORE_SOURCE_ROOT and WRAITH_BEFORE_HASH. WRAITH_SETTLE_MS and WRAITH_STEPS configure a longer control; the recorded follow-up uses 5000 ms, 180 batches and visible-only mode. The summarizer expects both the retained matrix and that control. The report includes reproduction commands, source fingerprints, equal-state checks and observer limits.
+
+## GPU effects
+
+The [GPU effects report](benchmarks/gpu-effects/REPORT.md) measures what each
+opt-in post-process effect costs a 160x50 terminal at DPR 2 in headless Chrome.
+It counts GPU-completed updates per second through `benchmark()`, not display
+frames. A GPU-bound update took 0.077 ms with effects off. CRT added 0.028 ms,
+bloom 0.059 ms, and all built-ins plus a custom shader 0.095 ms. Static
+effects request zero idle frames. With effects off, pixels hash the same as on
+`origin/main`.
+
+```sh
+WRAITH_URL=http://127.0.0.1:5173 npm run test:native-effects
+WRAITH_URL=http://127.0.0.1:5173 npm run benchmark:effects
+```

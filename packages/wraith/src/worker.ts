@@ -430,6 +430,7 @@ function createSession(
         samples: [...samples],
         fps: frameTimes.filter((t) => t > performance.now() - 1000).length,
         adapter: engine.adapter,
+        effectPasses: engine.effect_passes,
       });
   }, 500);
 
@@ -748,6 +749,38 @@ function createSession(
         break;
       case 'observe-render':
         observeRender = command.enabled;
+        break;
+      case 'effects':
+        // Pipeline validation awaits the GPU while holding the engine borrow;
+        // pause frames exactly as a fence does.
+        busy = true;
+        if (scheduled) {
+          scope.cancelAnimationFrame(raf);
+          scheduled = false;
+        }
+        try {
+          await engine.set_effects(new Float32Array(command.params), command.shader);
+          result(command.id);
+        } catch (error) {
+          // Compiler messages pass through unprefixed; the terminal keeps running.
+          post({
+            type: 'result',
+            id: command.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        } finally {
+          busy = false;
+          schedule(true);
+        }
+        break;
+      case 'effect-mouse':
+        engine.set_effect_mouse(
+          command.mouse[0]!,
+          command.mouse[1]!,
+          command.mouse[2]!,
+          command.mouse[3]!,
+        );
+        schedule();
         break;
       case 'trace':
         if (command.enabled !== undefined) tracing = command.enabled;

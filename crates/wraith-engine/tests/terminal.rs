@@ -282,6 +282,7 @@ fn shaders_validate_and_buffer_layout_matches() {
     for source in [
         include_str!("../src/terminal.wgsl"),
         include_str!("../src/image.wgsl"),
+        include_str!("../src/effects.wgsl"),
     ] {
         let module = naga::front::wgsl::parse_str(source).unwrap();
         naga::valid::Validator::new(
@@ -291,6 +292,35 @@ fn shaders_validate_and_buffer_layout_matches() {
         .validate(&module)
         .unwrap();
     }
+}
+#[test]
+fn custom_shader_prelude_accepts_gallery_shaders() {
+    // Custom shaders are the user's source followed by the prelude, exactly
+    // as the renderer assembles them.
+    let prelude = include_str!("../src/shader_prelude.wgsl");
+    let identity = "fn mainImage(fragCoord: vec2<f32>) -> vec4<f32> {\n    return textureSample(iChannel0, iChannel0Sampler, fragCoord / iResolution.xy);\n}\n";
+    for (name, source) in [
+        ("identity", identity),
+        ("amber", include_str!("../../../demo/effects/amber.wgsl")),
+        ("ripple", include_str!("../../../demo/effects/ripple.wgsl")),
+        (
+            "spotlight",
+            include_str!("../../../demo/effects/spotlight.wgsl"),
+        ),
+        ("glitch", include_str!("../../../demo/effects/glitch.wgsl")),
+    ] {
+        let code = format!("{source}\n{prelude}");
+        let module = naga::front::wgsl::parse_str(&code)
+            .unwrap_or_else(|e| panic!("{name}: {}", e.emit_to_string(&code)));
+        naga::valid::Validator::new(
+            naga::valid::ValidationFlags::all(),
+            naga::valid::Capabilities::empty(),
+        )
+        .validate(&module)
+        .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+    }
+    // Without mainImage the module is rejected, which surfaces as an error.
+    assert!(naga::front::wgsl::parse_str(prelude).is_err());
 }
 #[test]
 fn font_rasterization_and_warm_cache() {

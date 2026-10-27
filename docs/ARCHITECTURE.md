@@ -203,6 +203,45 @@ backgrounds, cells whose background equals the default become transparent and
 the pass clears to that color. Textures unused for 600 presented frames, or
 beyond 256 MiB, are released.
 
+## GPU effects
+
+Effects are opt-in and live in `effects.rs`, `effects.wgsl` and
+`shader_prelude.wgsl`. The renderer holds `Option<Effects>`. While it is `None`
+the frame is exactly the path above: one pass, straight to the surface, with no
+effect textures, pipelines or uniform writes.
+
+With effects on, the terminal pass (images included) targets an offscreen scene
+texture in the surface format. Then, in one command buffer: bloom runs two
+half-resolution separable Gaussian passes (a bright-pass with a soft knee, then
+the vertical blur). One composite pass applies CRT curvature, chromatic
+aberration, the bloom add, the cursor trail, scanlines and vignette. A custom
+shader runs last over the composite output, or over the scene when no built-in
+is on. Every effect pipeline uses one explicit bind group layout (uniforms,
+source texture, linear sampler, glow texture), so a user shader may use any
+subset of those bindings.
+
+A custom shader is the user's WGSL followed by the prelude. The prelude declares
+the uniforms, `iChannel0`/`iChannel0Sampler` and an entry point that calls
+`mainImage`. Because the user's source comes first, compiler line numbers are the
+user's. Pipelines are created inside a validation error scope that is popped
+before anything changes. Errors are formatted from `getCompilationInfo()` as
+`line:column: message` and reject `setEffects()`; the previous effects stay.
+Errors outside the scope still reach the device's uncaptured-error handler, as
+before. A shader that hangs the GPU can still lose the device.
+
+The renderer tracks the cursor from each frame's uniforms. With a trail, a move
+starts an eased head and a slower tail from their current positions. While they
+travel, the native cursor is hidden in the scene and the composite draws the
+swept box between them. When the trail settles, the scene is redrawn once with
+the native cursor, matching the frame without effects. `needs_present` stays
+true only while the trail travels, an `iTime` shader animates, or the mouse
+moved for an `iMouse` shader. Those frames reuse the retained scene texture
+and run only the post passes. The SDK turns the trail off while
+`prefers-reduced-motion: reduce` matches, and forwards pointer positions only
+when the shader reads `iMouse`. The xterm-compatible compositor shares the same
+`Renderer`. Its `animate()` is driven by `requestAnimationFrame` only while
+`animating` is true.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This

@@ -8,6 +8,10 @@ export class Compositor {
     private constructor();
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * Advance effect animations over the last submitted frame.
+     */
+    animate(): boolean;
     configure(cols: number, rows: number, width: number, height: number): void;
     static create(canvas: OffscreenCanvas): Promise<Compositor>;
     /**
@@ -26,9 +30,19 @@ export class Compositor {
      * the same offsets in staging) and present with the staged uniforms.
      */
     render_staged(cells: number, start: number): boolean;
+    set_effect_mouse(x: number, y: number, z: number, w: number): void;
+    /**
+     * See `Engine::set_effects`. Call only while rendering is paused.
+     */
+    set_effects(params: Float32Array, shader?: string | null): Promise<void>;
     set_transparency(enabled: boolean): void;
     upload(x: number, y: number, width: number, height: number, pixels: Uint8Array): void;
+    /**
+     * An effect animation wants another display frame.
+     */
+    readonly animating: boolean;
     readonly cell_upload_bytes: bigint;
+    readonly effect_passes: number;
     readonly frames: bigint;
     readonly row_map_upload_bytes: bigint;
     readonly row_slots: Uint32Array;
@@ -92,6 +106,16 @@ export class Engine {
     select(x1: number, y1: number, x2: number, y2: number): void;
     select_mode(x1: number, y1: number, x2: number, y2: number, mode: number): void;
     /**
+     * Shadertoy `iMouse` in physical pixels.
+     */
+    set_effect_mouse(x: number, y: number, z: number, w: number): void;
+    /**
+     * Replace post-process effects (see `effect_state::Settings::parse`).
+     * Rejects with compiler messages and keeps the previous effects when a
+     * custom shader is invalid. Call only while rendering is paused.
+     */
+    set_effects(params: Float32Array, shader?: string | null): Promise<void>;
+    /**
      * Decoded Kitty graphics bytes each screen may store; zero disables them.
      */
     set_image_limit(bytes: number): void;
@@ -113,6 +137,10 @@ export class Engine {
      * Whether a staged frame referencing the current atlas is ready to draw.
      */
     readonly drawable: boolean;
+    /**
+     * Post-process passes in the last effect frame; zero with effects off.
+     */
+    readonly effect_passes: number;
     readonly needs_present: boolean;
     readonly row_map_upload_bytes: bigint;
 }
@@ -209,9 +237,12 @@ export interface InitOutput {
     readonly __wbg_headless_free: (a: number, b: number) => void;
     readonly __wbg_surface_free: (a: number, b: number) => void;
     readonly __wbg_surfacecontext_free: (a: number, b: number) => void;
+    readonly compositor_animate: (a: number) => [number, number, number];
+    readonly compositor_animating: (a: number) => number;
     readonly compositor_cell_upload_bytes: (a: number) => bigint;
     readonly compositor_configure: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly compositor_create: (a: any) => any;
+    readonly compositor_effect_passes: (a: number) => number;
     readonly compositor_fence: (a: number) => any;
     readonly compositor_frames: (a: number) => bigint;
     readonly compositor_render: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
@@ -219,6 +250,8 @@ export interface InitOutput {
     readonly compositor_render_staged: (a: number, b: number, c: number) => [number, number, number];
     readonly compositor_row_map_upload_bytes: (a: number) => bigint;
     readonly compositor_row_slots: (a: number) => [number, number];
+    readonly compositor_set_effect_mouse: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly compositor_set_effects: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly compositor_set_transparency: (a: number, b: number) => void;
     readonly compositor_staging_ptr: (a: number) => number;
     readonly compositor_staging_words: (a: number) => number;
@@ -235,6 +268,7 @@ export interface InitOutput {
     readonly engine_cursor_y: (a: number) => number;
     readonly engine_draw: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => number;
     readonly engine_drawable: (a: number) => number;
+    readonly engine_effect_passes: (a: number) => number;
     readonly engine_fence: (a: number) => any;
     readonly engine_image_upload_bytes: (a: number) => number;
     readonly engine_image_uploads: (a: number) => number;
@@ -254,6 +288,8 @@ export interface InitOutput {
     readonly engine_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_select_mode: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly engine_set_effect_mouse: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly engine_set_effects: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly engine_set_image_limit: (a: number, b: number) => [number, number];
     readonly engine_set_ligatures: (a: number, b: number) => [number, number];
     readonly engine_take_events: (a: number) => any;
@@ -279,7 +315,6 @@ export interface InitOutput {
     readonly surface_create: (a: any, b: number, c: number) => any;
     readonly surface_end: (a: number, b: number) => [number, number, number];
     readonly surface_frames: (a: number) => number;
-    readonly surface_height: (a: number) => number;
     readonly wraith_alloc: (a: number, b: number) => number;
     readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
@@ -288,16 +323,18 @@ export interface InitOutput {
     readonly wraith_row: (a: number, b: number) => void;
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
+    readonly surface_height: (a: number) => number;
     readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly surface_unpresented: (a: number) => number;
     readonly surface_width: (a: number) => number;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__79: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__80: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__85: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__88: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__89: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__78: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__87: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;
