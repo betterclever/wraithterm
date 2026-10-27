@@ -308,6 +308,21 @@ fn custom_shader_prelude_accepts_gallery_shaders() {
             include_str!("../../../demo/effects/spotlight.wgsl"),
         ),
         ("glitch", include_str!("../../../demo/effects/glitch.wgsl")),
+        (
+            "synthwave",
+            include_str!("../../../demo/effects/synthwave.wgsl"),
+        ),
+        ("rain", include_str!("../../../demo/effects/rain.wgsl")),
+        (
+            "shockwave",
+            include_str!("../../../demo/effects/shockwave.wgsl"),
+        ),
+        (
+            "hologram",
+            include_str!("../../../demo/effects/hologram.wgsl"),
+        ),
+        ("warp", include_str!("../../../demo/effects/warp.wgsl")),
+        ("matrix", include_str!("../../../demo/effects/matrix.wgsl")),
     ] {
         let code = format!("{source}\n{prelude}");
         let module = naga::front::wgsl::parse_str(&code)
