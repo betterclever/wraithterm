@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Wraith Accessibility Lab</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/playground.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
+      <nav aria-label="Site">
+        <a href="/">Home</a><a href="/playground.html">Native lab</a
+        ><a href="/xterm.html">xterm.js lab</a
+        ><a href="/accessibility.html" aria-current="page">Accessibility lab</a
+        ><a class="keep" href="https://github.com/betterclever/wraithterm">GitHub</a>
+      </nav>
+    </header>
+    <main class="page">
+      <section class="intro">
+        <div>
+          <h1>Accessibility lab: <em>a GPU terminal a screen reader can read.</em></h1>
+          <p id="terminal-help">
+            Screen reader mode keeps an accessible row mirror and announces new output politely.
+            Press <kbd>Escape</kbd>, then <kbd>Tab</kbd> to leave the terminal. Type
+            <code>help</code> for commands.
+          </p>
+        </div>
+        <p id="status" class="status" role="status"><i></i> Initializing WebGPU</p>
+      </section>
+      <section class="window" aria-labelledby="terminal-heading">
+        <div class="titlebar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <h2 id="terminal-heading" class="title">Demo shell</h2>
+          <span id="grid" class="tag">— × —</span>
+        </div>
+        <div class="screen">
+          <div id="terminal" aria-label="Demo shell" aria-describedby="terminal-help"></div>
+        </div>
+      </section>
+      <aside class="side">
+        <section class="panel" aria-labelledby="controls-heading">
+          <h2 id="controls-heading">Controls</h2>
+          <div class="buttons">
+            <label><input id="screen-reader" type="checkbox" checked /> Screen reader mode</label>
+            <label for="announce">Announcements</label>
+            <select id="announce">
+              <option value="focused">While focused</option>
+              <option value="always">Always</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+          <div class="row">
+            <button id="pause" type="button" aria-pressed="false">Pause painting</button>
+            <button id="burst" type="button">10 MB burst</button>
+          </div>
+          <div class="row">
+            <button id="read-screen" type="button">Read screen</button>
+            <button id="read-all" type="button">Read all output</button>
+          </div>
+        </section>
+        <section class="panel" aria-labelledby="reader-heading">
+          <h2 id="reader-heading">Output reader</h2>
+          <textarea
+            id="reader"
+            readonly
+            rows="8"
+            aria-labelledby="reader-heading"
+            placeholder="Use Read screen or Read all output"
+          ></textarea>
+        </section>
+        <section class="panel" aria-labelledby="log-heading">
+          <h2 id="log-heading">Announced</h2>
+          <ol id="announced" class="note"></ol>
+        </section>
+      </aside>
+    </main>
+    <script type="module" src="/accessibility.ts"></script>
+  </body>
+</html>

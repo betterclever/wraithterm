@@ -630,6 +630,89 @@ resize. The native profile does not have this limit. [The demo](demo/commands.ht
 plays a scripted coding-agent session. Measured cost:
 [docs/benchmarks/command-blocks](docs/benchmarks/command-blocks/README.md).
 
+## Accessibility
+
+```ts
+const terminal = await Wraith.mount(host, {
+  screenReaderMode: true,
+  accessibility: { announcements: 'focused' }, // 'always' | false
+});
+```
+
+The text is painted on a GPU canvas, so Wraith exposes a separate accessible
+copy of the screen. `screenReaderMode` (off by default, and switchable later
+with `setScreenReaderMode()`) adds:
+
+- **A row mirror.** It is a list with one item per viewport row, over the
+  canvas at opacity 0, so a screen reader's highlight lands on the painted
+  line. The worker sends only the rows that changed, at most every 100 ms
+  while output changes, and nothing while the screen is idle. It keeps
+  updating while painting is paused.
+- **Polite output announcements** in a `role="log"` live region:
+  - At most one every 500 ms (`announceInterval`).
+  - A row is spoken once it settles, so progress bars and spinners speak
+    their final text instead of every frame.
+  - Repeated text is not spoken again.
+  - Typing echo on the cursor row is left to the screen reader's own key echo.
+  - A burst over 20 rows or 4,000 characters (`maxAnnouncementLines` /
+    `maxAnnouncementCharacters`) becomes one "Output is arriving quickly"
+    notice. When output settles, "Output settled." follows with the last
+    two rows; no partial output is spoken. Under a measured 10 MB burst the
+    live region received exactly those 2 announcements, 505.6 ms apart.
+  - By default only the terminal whose input has focus speaks. Use
+    `announce(text)` for your own messages and `onAnnounce()` to observe
+    what is spoken.
+
+These work in both screen reader mode and normal mode:
+
+- **Keyboard exit.** Press **Escape**, then **Tab** to move focus to the next
+  control, or **Escape**, then **Shift+Tab** to move backward. A plain Tab still
+  goes to the application. The input's description states this.
+  `accessibility.keyboardExit: false` turns it off.
+- **Names.** The terminal is a labelled `group`. The host's `aria-label`,
+  `aria-labelledby` and `aria-describedby` pass to the input; `label`,
+  `inputLabel` and `role` override them. A focus ring appears when focus
+  arrives by Tab.
+- **Display preferences.** In forced-colors (high contrast) mode, the default
+  foreground, background and cursor use system colors.
+  `prefers-reduced-motion` stops cursor and text blinking. Both follow live
+  changes.
+- **`readText({ scope, lastLines })`** returns the visible screen, or retained
+  scrollback plus the screen with soft wraps joined (`scope: 'all'`), for an
+  accessible reader view.
+- **`pause()` / `resume()`** stop painting for an inactive pane. Parsing,
+  replies and the mirror continue, and resuming paints the latest state once.
+  Offscreen and hidden-document pausing remain automatic.
+
+The xterm.js profile keeps xterm.js's own accessibility tree and live region
+under `screenReaderMode`. It adds the same Escape-then-Tab exit and its
+description while that option is on, and stops the GPU cursor blinking under
+reduced motion.
+
+How it compares with wterm (`@wterm/dom` 0.5.5, from its source and README):
+
+|                      | wterm                                                                                      | Wraith native                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Screen text          | The DOM it paints is the text: native browser selection and page find work on mounted rows | GPU canvas plus an accessible row mirror; selection and find go through the API (`getText(true)`, `findNext`) |
+| Input                | Native labelled textarea; host labels synced                                               | Same                                                                                                          |
+| Keyboard exit        | Escape, then Tab / Shift+Tab                                                               | Same, configurable; also in the xterm.js profile                                                              |
+| Output announcements | Opt-in; changed rows every 500 ms; after a burst, paused until the next input              | Opt-in; rows spoken once settled, de-duplicated, echo suppressed; resumes by itself with a summary            |
+| Reading history      | `readText()` over all retained output, with `AbortSignal`; selection unchanged             | `readText({ scope: 'all', lastLines })`; no `AbortSignal`; clears an active selection                         |
+| Inactive panes       | `setRenderingPaused()`                                                                     | `pause()` / `resume()`, plus automatic offscreen pausing                                                      |
+| Forced colors        | DOM text follows system colors; block and box glyphs adapt                                 | Default colors follow system colors; colors an application sets keep their values                             |
+| Reduced motion       | No handling found                                                                          | Cursor and SGR blink stop                                                                                     |
+
+wterm's DOM rendering remains a real advantage for native selection and page
+find. With screen reader mode off, Wraith's throughput is unchanged against
+`main`. With it on, the cost was below what the benchmarks could resolve
+(paired median 1.002× bulk throughput), and one worker sample costs about
+0.2 ms at 160×50. Raw data:
+[docs/benchmarks/accessibility](docs/benchmarks/accessibility/README.md).
+`npm run test:accessibility` runs axe-core (zero violations on the demo pages
+with screen reader mode on) and checks the browser's accessibility tree. Try it at
+**http://127.0.0.1:5173/accessibility.html** with `npm run dev`. It has not yet been tested
+with VoiceOver, NVDA or JAWS by a person.
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |
@@ -648,6 +731,10 @@ plays a scripted coding-agent session. Measured cost:
 | `scroll(lines)`                                             | Negative moves toward history; positive moves toward the active area.                                                |
 | `getText()`                                                 | Plain text for the current viewport, with visual row breaks.                                                         |
 | `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                                                           |
+| `readText({ scope?, lastLines? })`                          | Visible screen (default) or `'all'` retained output with soft wraps joined; `'all'` clears an active selection.      |
+| `pause()` / `resume()` / `paused`                           | Stop and restart painting; parsing, replies and the accessible mirror continue.                                      |
+| `setScreenReaderMode(on)` / `setAccessibility(options)`     | Add or remove the mirror and announcements; change labels, announcements or preferences without remounting.          |
+| `announce(text)` / `onAnnounce(listener)`                   | Speak a host message through the live region; observe every announcement.                                            |
 | `findNext(needle)` / `findPrevious(needle)`                 | Search older/newer matches across scrollback, wrap around, reveal and select the match. Resolves `{ total, index }`. |
 | `clearSearch()`                                             | Cancel pending search and clear its selection.                                                                       |
 | `select(start, end, rectangular?)`                          | Select inclusive viewport cell endpoints `{ x, y }`; optional block selection.                                       |
@@ -713,8 +800,8 @@ as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pix
 rasterization automatically follows devicePixelRatio changes, including with
 `fit: false`. Font sizes must resolve to 6..96 physical pixels at the current
 display scale (capped at 3); line height must be 1..2. Live changes preserve the
-worker, grid, terminal state and scrollback. The accessible text mirror
-is enabled with `screenReaderMode: true`.
+worker, grid, terminal state and scrollback. Screen reader support is
+described under [Accessibility](#accessibility).
 
 ## Architecture and compatibility
 
