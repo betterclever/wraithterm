@@ -1,4 +1,17 @@
 import type { BenchmarkOptions } from './types.js';
+/** A command block as the worker reports it; see command-types.ts. */
+export interface RawCommandBlock {
+  id: number;
+  /** Engine BlockState: 0 prompt, 1 input, 2 running, 3 done. */
+  state: number;
+  exitCode?: number;
+  command: string;
+  /** Prompt, input, output and end screen rows; -1 when unknown or trimmed. */
+  rows: [number, number, number, number];
+  truncated: boolean;
+  startedAt?: number;
+  finishedAt?: number;
+}
 export type Command =
   | {
       type: 'init';
@@ -52,6 +65,11 @@ export type Command =
    * animation frame, as if a worker-side source produced them; `null` stops.
    * Resolves with the number of chunks parsed so far. */
   | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
+  | { type: 'commands'; id: number }
+  | { type: 'command-text'; block: number; input: boolean; id: number }
+  | { type: 'jump-prompt'; direction: number; id: number }
+  | { type: 'effects'; params: number[]; shader?: string; id: number }
+  | { type: 'effect-mouse'; mouse: number[] }
   /** Internal: latency tracing and the immediate-frame switch (benchmarks only). */
   | { type: 'trace'; enabled?: boolean; immediate?: boolean }
   | { type: 'socket-open'; link: number; url: string; protocols: string[]; stream: boolean }
@@ -75,8 +93,18 @@ export type Reply =
       time: number;
       info?: string;
     }
-  | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
+  | {
+      type: 'stats';
+      values: number[];
+      samples: number[];
+      fps: number;
+      adapter: string;
+      effectPasses: number;
+    }
   | { type: 'error'; error: string }
+  | { type: 'command'; block: RawCommandBlock }
+  /** Gutter extents, five numbers per visible block; see command_marks(). */
+  | { type: 'marks'; marks: number[]; primary: boolean }
   | {
       type: 'socket';
       link: number;
@@ -89,10 +117,10 @@ export type Reply =
     };
 /** Messages a pool sends to its workers on the worker scope. */
 export type PoolMessage =
-  /** A pooled terminal joins the worker; its commands arrive in `commands`. */
+  /** A pooled terminal joins the worker; its commands arrive in `batch`. */
   | { type: 'attach'; id: number; shared?: boolean }
   /** Commands for the worker's terminals, in order, batched per task. */
-  | { type: 'commands'; items: [id: number, command: Command][] }
+  | { type: 'batch'; items: [id: number, command: Command][] }
   | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
   | { type: 'surface-size'; width: number; height: number }
   /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */

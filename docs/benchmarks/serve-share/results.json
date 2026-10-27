@@ -1,0 +1,206 @@
+{
+  "date": "2026-10-25T18:30:50.762Z",
+  "build": "3a2e31a",
+  "dirty": false,
+  "chrome": "155.0.8059.85",
+  "headless": true,
+  "node": "v24.14.1",
+  "os": "darwin 27.2.0",
+  "cpu": "Apple M5 Max",
+  "floodBytes": 50331648,
+  "generationOnlyMs": [1677, 1618, 1628],
+  "runs": [
+    {
+      "name": "single-client (no --share)",
+      "args": [],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3009
+      },
+      "ownerMiBps": 16,
+      "serverPeakRssBytes": 79151104,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner only",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3217
+      },
+      "ownerMiBps": 14.9,
+      "serverPeakRssBytes": 118046720,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + paused socket",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": true,
+      "ms": {
+        "owner": 3392
+      },
+      "ownerMiBps": 14.2,
+      "serverPeakRssBytes": 113770496,
+      "lagging": 1
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": false,
+      "ms": {
+        "viewer2": 5969,
+        "viewer1": 5979,
+        "owner": 5979
+      },
+      "ownerMiBps": 8,
+      "serverPeakRssBytes": 109166592,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages + paused socket",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": true,
+      "ms": {
+        "viewer1": 5178,
+        "viewer2": 5178,
+        "owner": 5178
+      },
+      "ownerMiBps": 9.3,
+      "serverPeakRssBytes": 126713856,
+      "lagging": 1
+    },
+    {
+      "name": "single-client (no --share)",
+      "args": [],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3222
+      },
+      "ownerMiBps": 14.9,
+      "serverPeakRssBytes": 129449984,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner only",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3166
+      },
+      "ownerMiBps": 15.2,
+      "serverPeakRssBytes": 118603776,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + paused socket",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": true,
+      "ms": {
+        "owner": 3315
+      },
+      "ownerMiBps": 14.5,
+      "serverPeakRssBytes": 114016256,
+      "lagging": 1
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 6127,
+        "viewer2": 6127,
+        "viewer1": 6140
+      },
+      "ownerMiBps": 7.8,
+      "serverPeakRssBytes": 107675648,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages + paused socket",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": true,
+      "ms": {
+        "viewer1": 5167,
+        "viewer2": 5192,
+        "owner": 5192
+      },
+      "ownerMiBps": 9.2,
+      "serverPeakRssBytes": 131825664,
+      "lagging": 1
+    },
+    {
+      "name": "single-client (no --share)",
+      "args": [],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3697
+      },
+      "ownerMiBps": 13,
+      "serverPeakRssBytes": 106463232,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner only",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": false,
+      "ms": {
+        "owner": 3321
+      },
+      "ownerMiBps": 14.5,
+      "serverPeakRssBytes": 120995840,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + paused socket",
+      "args": ["--share=write"],
+      "viewers": 0,
+      "pausedSocket": true,
+      "ms": {
+        "owner": 3167
+      },
+      "ownerMiBps": 15.2,
+      "serverPeakRssBytes": 112820224,
+      "lagging": 1
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": false,
+      "ms": {
+        "viewer2": 4777,
+        "owner": 4778,
+        "viewer1": 4778
+      },
+      "ownerMiBps": 10,
+      "serverPeakRssBytes": 112312320,
+      "lagging": 0
+    },
+    {
+      "name": "--share=write, owner + 2 viewer pages + paused socket",
+      "args": ["--share=write"],
+      "viewers": 2,
+      "pausedSocket": true,
+      "ms": {
+        "viewer1": 4673,
+        "owner": 4686,
+        "viewer2": 4686
+      },
+      "ownerMiBps": 10.2,
+      "serverPeakRssBytes": 133906432,
+      "lagging": 1
+    }
+  ]
+}

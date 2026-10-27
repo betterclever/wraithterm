@@ -4,6 +4,7 @@ import { MessageBatch, nextTask } from './batch.js';
 import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
+import { createCommandTracker } from './worker-commands.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
 let initializing: Promise<unknown> = Promise.resolve();
@@ -359,6 +360,7 @@ function createSession(
   function result(id: number, value?: unknown) {
     post({ type: 'result', id, value });
   }
+  const commands = createCommandTracker(() => engine, post);
   function releaseAbandonedHold() {
     if (!engine || disposed) return;
     if (busy) {
@@ -377,6 +379,7 @@ function createSession(
         clearTimeout(holdTimer);
         if (bytes[0]) holdTimer = setTimeout(releaseAbandonedHold, 150);
       }
+      if (kind === 5) commands.event(bytes);
     }
     const mouse = engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9);
     if (mouse !== mouseTracking) {
@@ -413,6 +416,7 @@ function createSession(
         post({ type: 'cursor', x, y });
       }
     }
+    commands.update();
     if (engine!.needs_present) schedule();
     return rendered;
   }
@@ -467,6 +471,7 @@ function createSession(
         samples: [...samples],
         fps: frameTimes.filter((t) => t > performance.now() - 1000).length,
         adapter: engine.adapter,
+        effectPasses: engine.effect_passes,
       });
   }, 500);
 
@@ -783,6 +788,18 @@ function createSession(
           scheduled = false;
         }
         break;
+      case 'commands':
+        result(command.id, commands.list());
+        break;
+      case 'command-text':
+        result(command.id, commands.text(command.block, command.input));
+        break;
+      case 'jump-prompt': {
+        const offset = commands.jump(command.direction);
+        if (offset >= 0) schedule();
+        result(command.id, offset >= 0);
+        break;
+      }
       case 'observe-render':
         observeRender = command.enabled;
         break;
@@ -793,6 +810,38 @@ function createSession(
           if (feedChunks.length) startFeeding(feedStep);
         }
         result(command.id, fed);
+        break;
+      case 'effects':
+        // Pipeline validation awaits the GPU while holding the engine borrow;
+        // pause frames exactly as a fence does.
+        busy = true;
+        if (scheduled) {
+          scope.cancelAnimationFrame(raf);
+          scheduled = false;
+        }
+        try {
+          await engine.set_effects(new Float32Array(command.params), command.shader);
+          result(command.id);
+        } catch (error) {
+          // Compiler messages pass through unprefixed; the terminal keeps running.
+          post({
+            type: 'result',
+            id: command.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        } finally {
+          busy = false;
+          schedule(true);
+        }
+        break;
+      case 'effect-mouse':
+        engine.set_effect_mouse(
+          command.mouse[0]!,
+          command.mouse[1]!,
+          command.mouse[2]!,
+          command.mouse[3]!,
+        );
+        schedule();
         break;
       case 'trace':
         if (command.enabled !== undefined) tracing = command.enabled;
@@ -879,7 +928,7 @@ scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
       );
       return;
     }
-    case 'commands':
+    case 'batch':
       for (const [id, command] of message.items) sessions.get(id)?.(command);
       return;
     case 'surface':

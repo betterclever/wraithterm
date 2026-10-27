@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Wraith Command Blocks</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/playground.css" />
+    <style>
+      .side,
+      .side .panel,
+      .block > div {
+        min-width: 0;
+      }
+      .blocks {
+        display: grid;
+        gap: 6px;
+        max-height: 340px;
+        overflow: auto;
+      }
+      .blocks:empty::before {
+        content: 'Waiting for the first command…';
+        font: 12px var(--mono);
+        color: var(--faint);
+      }
+      .block {
+        display: grid;
+        grid-template-columns: 10px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: var(--raised);
+        font: 12px var(--mono);
+      }
+      .block i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .block code {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--text);
+      }
+      .block small {
+        display: block;
+        color: var(--faint);
+      }
+      .block button {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .tabs button {
+        flex: 1;
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+      pre.snippet {
+        max-height: 220px;
+        margin: 0;
+        overflow: auto;
+        padding: 10px;
+        border-radius: 10px;
+        background: var(--raised);
+        font: 11px/1.5 var(--mono);
+        color: var(--dim);
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
+      <nav>
+        <a href="/">Home</a><a href="/playground.html">Native lab</a
+        ><a href="/commands.html" aria-current="page">Command blocks</a
+        ><a href="/xterm.html">xterm.js lab</a
+        ><a class="keep" href="https://github.com/betterclever/wraithterm">GitHub</a>
+      </nav>
+    </header>
+    <main class="page">
+      <section class="intro">
+        <div>
+          <h1>Command blocks: <em>output as data.</em></h1>
+          <p>
+            Shells mark prompts, commands and exit codes with OSC 133. Wraith pins each mark in
+            Ghostty's scrollback, so every command becomes a block you can list, copy and jump
+            between. The blocks follow scrolling, reflow and trimming. Hover over a block to copy
+            it. <kbd>⌘↑</kbd>/<kbd>⌘↓</kbd> (or <kbd>Ctrl+Shift+↑/↓</kbd>) jumps between prompts.
+          </p>
+        </div>
+        <div id="status" class="status"><i></i> Initializing WebGPU</div>
+      </section>
+      <section class="window">
+        <div class="titlebar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span id="title" class="title">agent session · fake, scripted</span>
+          <span id="count" class="tag">0 blocks</span>
+        </div>
+        <div class="screen"><div id="terminal"></div></div>
+        <div class="foot">
+          A scripted coding agent runs real-looking commands with OSC 133 marks. Gutter: green
+          succeeded · red failed · amber running.
+        </div>
+      </section>
+      <aside class="side">
+        <section class="panel">
+          <h2>Blocks</h2>
+          <div id="blocks" class="blocks"></div>
+          <div class="row">
+            <button id="prev">↑ Prompt</button><button id="next">↓ Prompt</button>
+          </div>
+          <div class="row">
+            <button id="replay" class="primary">Replay session</button>
+            <button id="failed">Copy last failure</button>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Shell integration</h2>
+          <div class="tabs">
+            <button data-shell="zsh" class="on">zsh</button><button data-shell="bash">bash</button
+            ><button data-shell="fish">fish</button>
+          </div>
+          <pre id="snippet" class="snippet"></pre>
+          <div class="row"><button id="copy-snippet">Copy snippet</button></div>
+        </section>
+        <section class="panel">
+          <h2>Use it</h2>
+          <pre
+            class="code"
+          ><span class="k">const</span> term = <span class="k">await</span> Wraith.<span class="f">mount</span>(el);
+term.<span class="f">onCommand</span>((b) =&gt;
+  <span class="f">log</span>(b.command, b.exitCode, b.durationMs));
+<span class="k">const</span> [last] = (<span class="k">await</span> term.<span class="f">commands</span>()).<span class="f">slice</span>(-<span class="s">1</span>);
+<span class="k">await</span> last.<span class="f">output</span>(); <span class="c">// lazy text</span></pre>
+        </section>
+      </aside>
+    </main>
+    <script type="module" src="/commands.ts"></script>
+  </body>
+</html>

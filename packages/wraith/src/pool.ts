@@ -110,13 +110,13 @@ export class WraithPool {
       };
       const commands = new MessageBatch<[number, Command]>((items, transfers) => {
         try {
-          worker.postMessage({ type: 'commands', items } satisfies PoolMessage, transfers);
+          worker.postMessage({ type: 'batch', items } satisfies PoolMessage, transfers);
         } catch {
           // One uncloneable command must not take its neighbours down: resend
           // individually and fail only the terminals whose command was refused.
           for (const item of items)
             try {
-              worker.postMessage({ type: 'commands', items: [item] } satisfies PoolMessage, [
+              worker.postMessage({ type: 'batch', items: [item] } satisfies PoolMessage, [
                 ...transfers.filter((t) => isTransferOf(item[1], t)),
               ]);
             } catch (error) {
