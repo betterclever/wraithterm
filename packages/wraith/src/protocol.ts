@@ -2,7 +2,8 @@ import type { BenchmarkOptions } from './types.js';
 export type Command =
   | {
       type: 'init';
-      canvas: OffscreenCanvas;
+      /** Absent on a shared-surface pool, where the worker owns the canvas. */
+      canvas?: OffscreenCanvas;
       font: Uint8Array;
       fonts: Uint8Array[];
       cols: number;
@@ -49,6 +50,11 @@ export type Command =
   | { type: 'observe-render'; enabled: boolean }
   | { type: 'effects'; params: number[]; shader?: string; id: number }
   | { type: 'effect-mouse'; mouse: number[] }
+  /** Internal: latency tracing and the immediate-frame switch (benchmarks only). */
+  | { type: 'trace'; enabled?: boolean; immediate?: boolean }
+  | { type: 'socket-open'; link: number; url: string; protocols: string[]; stream: boolean }
+  | { type: 'socket-send'; link: number; data: string | Uint8Array }
+  | { type: 'socket-close'; link: number; code?: number; reason?: string }
   | { type: 'dispose'; id: number };
 export type Reply =
   | { type: 'ready'; width: number; height: number; adapter: string }
@@ -60,6 +66,13 @@ export type Reply =
   | { type: 'modes'; mouse: boolean }
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
+  /** Internal latency trace stage; `time` is performance.timeOrigin + now(). */
+  | {
+      type: 'trace';
+      stage: 'key' | 'parsed' | 'submit' | 'gpu' | 'frame';
+      time: number;
+      info?: string;
+    }
   | {
       type: 'stats';
       values: number[];
@@ -68,4 +81,35 @@ export type Reply =
       adapter: string;
       effectPasses: number;
     }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string }
+  | {
+      type: 'socket';
+      link: number;
+      event: 'open' | 'error' | 'close';
+      transport?: 'stream' | 'events';
+      code?: number;
+      reason?: string;
+      wasClean?: boolean;
+      error?: string;
+    };
+/** Messages a pool sends to its workers directly, outside terminal ports. */
+export type PoolMessage =
+  | { type: 'attach'; port: MessagePort; id: number; shared?: boolean }
+  | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
+  | { type: 'surface-size'; width: number; height: number }
+  /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
+  | { type: 'geometry'; data: Float32Array };
+/** Messages a shared-surface worker sends its pool. */
+export type SurfaceReply =
+  | {
+      type: 'surface-stats';
+      frames: number;
+      completedFrames: number;
+      completedUpdates: number;
+      updates: number;
+      atlases: number;
+      terminals: number;
+      width: number;
+      height: number;
+    }
+  | { type: 'surface-error'; error: string };

@@ -1,0 +1,113 @@
+--- a/src/simd/base64.zig
++++ b/src/simd/base64.zig
+@@ -1,4 +1,5 @@
+ const std = @import("std");
++const builtin = @import("builtin");
+ const options = @import("build_options");
+ const assert = @import("../quirks.zig").inlineAssert;
+ const base64_scalar = @import("base64_scalar.zig");
+@@ -44,13 +45,69 @@
+     const size = maxLenScalar(input);
+     if (size == 0) return "";
+     assert(output.len >= size);
++    // Whole 16-character blocks decode with portable vectors (simd128 on
++    // wasm, where the simdutf path is unavailable); the scalar decoder then
++    // finishes from the first block it stopped at. Blocks are whole groups of
++    // four, so the split is invisible, and a block holding any non-alphabet
++    // byte is left for the scalar decoder to reject exactly as before.
++    const consumed = if (comptime vector_decode) decodeVectorBlocks(input, output) else 0;
+     scalar_decoder.decode(
+-        output,
+-        scalarInput(input),
++        output[consumed / 4 * 3 ..],
++        input[consumed..],
+     ) catch return error.Base64Invalid;
+     return output[0..size];
+ }
+ 
++const vector_decode = builtin.cpu.arch.endian() == .little and
++    (std.simd.suggestVectorLength(u8) orelse 0) >= 16;
++
++/// Decode 16 standard-alphabet characters to 12 bytes at a time while both
++/// the input and a 16-byte store fit. Returns the input bytes consumed, a
++/// multiple of 16; output receives consumed / 4 * 3 decoded bytes (and up
++/// to four scratch bytes after them, which later output overwrites).
++fn decodeVectorBlocks(input: []const u8, output: []u8) usize {
++    const V = @Vector(16, u8);
++    const W = @Vector(4, u32);
++    const splat = struct {
++        inline fn u8s(v: u8) V {
++            return @splat(v);
++        }
++        inline fn u32s(v: u32) W {
++            return @splat(v);
++        }
++    };
++    var src: usize = 0;
++    var dst: usize = 0;
++    while (src + 16 <= input.len and dst + 16 <= output.len) {
++        const c: V = input[src..][0..16].*;
++        // Map each character to its 6-bit value; 0xFF marks a byte outside
++        // the alphabet ('=' included: padding was trimmed by the caller).
++        var v: V = splat.u8s(0xFF);
++        v = @select(u8, c -% splat.u8s('A') < splat.u8s(26), c -% splat.u8s('A'), v);
++        v = @select(u8, c -% splat.u8s('a') < splat.u8s(26), c -% splat.u8s('a' - 26), v);
++        v = @select(u8, c -% splat.u8s('0') < splat.u8s(10), c +% splat.u8s(52 - '0'), v);
++        v = @select(u8, c == splat.u8s('+'), splat.u8s(62), v);
++        v = @select(u8, c == splat.u8s('/'), splat.u8s(63), v);
++        if (@reduce(.Max, v) > 63) break;
++        // Each little-endian u32 lane holds one group a,b,c,d (a lowest);
++        // assemble its 24 bits, then emit them most significant byte first.
++        const x: W = @bitCast(v);
++        const m = splat.u32s(0xFF);
++        const bits = ((x & m) << splat.u32s(18)) |
++            (((x >> splat.u32s(8)) & m) << splat.u32s(12)) |
++            (((x >> splat.u32s(16)) & m) << splat.u32s(6)) |
++            (x >> splat.u32s(24));
++        const bytes: V = @bitCast(bits);
++        const out = @shuffle(u8, bytes, undefined, @Vector(16, i32){
++            2, 1, 0, 6, 5, 4, 10, 9, 8, 14, 13, 12, 3, 7, 11, 15,
++        });
++        output[dst..][0..16].* = out;
++        src += 16;
++        dst += 12;
++    }
++    return src;
++}
++
+ /// For non-SIMD enabled builds, we trim the padding from the end of the
+ /// base64 input in order to get identical output with the SIMD version.
+ fn scalarInput(input: []const u8) []const u8 {
+@@ -229,6 +286,32 @@
+     output: [*]u8,
+ ) isize;
+ 
++test "base64 vector blocks match the scalar decoder" {
++    if (comptime !vector_decode) return error.SkipZigTest;
++    const testing = std.testing;
++    var prng: std.Random.DefaultPrng = .init(0x5eed);
++    const random = prng.random();
++    const alphabet = std.base64.standard_alphabet_chars;
++    var source: [700]u8 = undefined;
++    var expected: [700]u8 = undefined;
++    var actual: [700]u8 = undefined;
++    for (0..2000) |round| {
++        const len = random.uintLessThan(usize, source.len);
++        for (source[0..len]) |*c| c.* = alphabet[random.uintLessThan(usize, 64)];
++        // Some rounds plant one byte outside the alphabet.
++        if (len > 0 and round % 3 == 0) source[random.uintLessThan(usize, len)] =
++            random.uintLessThan(u8, 255);
++        const input = scalarInput(source[0..len]);
++        const size = maxLenScalar(input);
++        const want = scalar_decoder.decode(expected[0..], input);
++        const got = decodeScalar(source[0..len], actual[0..]);
++        if (size == 0) continue;
++        if (want) |_| {
++            try testing.expectEqualSlices(u8, expected[0..size], try got);
++        } else |_| try testing.expectError(error.Base64Invalid, got);
++    }
++}
++
+ test "base64 maxLen" {
+     const testing = std.testing;
+     const len = maxLen("aGVsbG8gd29ybGQ=");

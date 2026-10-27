@@ -3,7 +3,6 @@ import { KEY_CODES } from './keycodes.js';
 import {
   BackpressureError,
   packColor,
-  percentile,
   type WraithOptions,
   type WraithStats,
   type WraithTheme,
@@ -13,6 +12,9 @@ import {
   type SearchResult,
   type SelectionPosition,
   type KeyEventHandler,
+  type WraithConnectOptions,
+  type WraithConnection,
+  type WraithCloseEvent,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
 import { EffectsController, type WraithEffects } from './effects.js';
@@ -44,6 +46,84 @@ class Signal<T> {
   }
   clear() {
     this.listeners.clear();
+  }
+}
+class WorkerConnection implements WraithConnection {
+  readonly opened: Promise<void>;
+  readonly closed: Promise<WraithCloseEvent>;
+  transport: 'stream' | 'events' | undefined;
+  private opens = new Signal<void>();
+  private closes = new Signal<WraithCloseEvent>();
+  private errors = new Signal<Error>();
+  private resolveOpen!: () => void;
+  private rejectOpen!: (error: Error) => void;
+  private resolveClose!: (event: WraithCloseEvent) => void;
+  private done = false;
+  constructor(
+    readonly link: number,
+    private post: (command: Command, transfer?: Transferable[]) => void,
+    private release: () => void,
+  ) {
+    this.opened = new Promise((resolve, reject) => {
+      this.resolveOpen = resolve;
+      this.rejectOpen = reject;
+    });
+    void this.opened.catch(() => {});
+    this.closed = new Promise((resolve) => (this.resolveClose = resolve));
+  }
+  send(data: string | Uint8Array) {
+    if (this.done) return;
+    if (typeof data === 'string') this.post({ type: 'socket-send', link: this.link, data });
+    else {
+      const bytes = data.slice();
+      this.post({ type: 'socket-send', link: this.link, data: bytes }, [bytes.buffer]);
+    }
+  }
+  close(code?: number, reason?: string) {
+    if (!this.done) this.post({ type: 'socket-close', link: this.link, code, reason });
+  }
+  onOpen(listener: () => void): Disposable {
+    return this.opens.on(listener);
+  }
+  onClose(listener: (event: WraithCloseEvent) => void): Disposable {
+    return this.closes.on(listener);
+  }
+  onError(listener: (error: Error) => void): Disposable {
+    return this.errors.on(listener);
+  }
+  dispose() {
+    this.close(1000);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
+  }
+  /** @internal */
+  event(reply: Extract<Reply, { type: 'socket' }>) {
+    if (this.done) return;
+    if (reply.event === 'open') {
+      this.transport = reply.transport;
+      this.resolveOpen();
+      this.opens.emit();
+    } else if (reply.event === 'error')
+      this.errors.emit(new Error(reply.error ?? 'WebSocket error'));
+    else
+      this.finish({
+        code: reply.code ?? 1006,
+        reason: reply.reason ?? '',
+        wasClean: !!reply.wasClean,
+      });
+  }
+  /** @internal */
+  finish(event: WraithCloseEvent) {
+    if (this.done) return;
+    this.done = true;
+    this.release();
+    this.rejectOpen(new Error(`WebSocket closed before opening (${event.code})`));
+    this.resolveClose(event);
+    this.closes.emit(event);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
   }
 }
 interface Pending {
@@ -79,7 +159,12 @@ function validateGrid(cols: number, rows: number) {
 }
 
 /** One independent worker, Wasm instance, and GPU device per terminal. */
-export { WraithPool, type WraithPoolOptions } from './pool.js';
+export {
+  WraithPool,
+  type WraithPoolOptions,
+  type SharedSurfaceOptions,
+  type SharedSurfaceStats,
+} from './pool.js';
 export class Wraith {
   /** A pool of shared workers for mounting many terminals; pass it as `pool`. */
   static pool(options?: WraithPoolOptions): WraithPool {
@@ -104,6 +189,7 @@ export class Wraith {
   private pending = new Map<number, Pending>();
   private sequence = 1;
   private pendingBytes = 0;
+  private links = new Map<number, WorkerConnection>();
   /** Writes queued this task, encoded or copied once into one buffer that
    * crosses to the worker as a single transfer with one acknowledgement. */
   private batch = new Uint8Array(0);
@@ -212,6 +298,8 @@ export class Wraith {
       fail: (error: Error) => this.fail(error),
     };
     this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
+    // IME composition text must stay visible above a shared surface.
+    if (this.worker.surface) this.preedit.style.zIndex = String(this.worker.surface.zIndex + 1);
     this.bindInput();
     this.effectsController = new EffectsController(
       this.canvas,
@@ -240,7 +328,11 @@ export class Wraith {
           ...(options.fallbackFonts ?? []),
         ].map(loadFont),
       );
-      const canvas = terminal.canvas.transferControlToOffscreen();
+      // A shared-surface pool draws into its own canvas; this one stays a
+      // placeholder for layout, pointer input and visibility.
+      const canvas = terminal.worker.surface
+        ? undefined
+        : terminal.canvas.transferControlToOffscreen();
       terminal.fontBytes = font!.slice();
       terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
       terminal.send(
@@ -258,10 +350,11 @@ export class Wraith {
           ligatures: options.ligatures,
           theme: Object.values(terminal.theme).map(packColor),
         },
-        [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
+        [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
       await terminal.ready;
       terminal.dimensions();
+      terminal.worker.surface?.track(terminal.canvas, terminal.element);
       terminal.watchVisibility();
       if (options.fit !== false) {
         terminal.observer = new ResizeObserver(() => terminal.fit());
@@ -342,23 +435,35 @@ export class Wraith {
       case 'modes':
         this.mouseTracking = reply.mouse;
         break;
-      case 'cursor': {
-        const left = `${(reply.x * this.cellWidth) / this.dpr}px`,
-          top = `${(reply.y * this.cellHeight) / this.dpr}px`;
-        Object.assign(this.input.style, { left, top, bottom: 'auto' });
-        Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+      case 'cursor':
+        this.cursorCell = [reply.x, reply.y];
+        // Only the focused terminal's IME anchor follows the cursor. Moving
+        // every unfocused input makes the browser re-layerize the page each
+        // frame, which dominates with hundreds of terminals.
+        if (this.composing || document.activeElement === this.input) this.placeInput();
         break;
-      }
       case 'render':
         this.renders.emit({ frame: reply.frame });
         break;
       case 'error':
         this.fail(new Error(reply.error));
         break;
+      case 'socket':
+        this.links.get(reply.link)?.event(reply);
+        break;
       case 'stats': {
         // Some browser/display transitions update resolution without delivering
         // a media-query change event. Reuse the existing stats heartbeat.
         this.checkDisplay();
+        if (!this.statistics.size) break;
+        // Sort the render samples once for all three percentiles.
+        const sorted = Float64Array.from(reply.samples).sort();
+        const at = (fraction: number) =>
+          sorted.length
+            ? sorted[
+                Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * fraction) - 1))
+              ]!
+            : 0;
         const v = reply.values;
         this.statistics.emit({
           frames: v[0]!,
@@ -370,9 +475,9 @@ export class Wraith {
           atlasHits: v[6]!,
           atlasMisses: v[7]!,
           atlasResets: v[8]!,
-          renderP50Ms: percentile(reply.samples, 0.5),
-          renderP95Ms: percentile(reply.samples, 0.95),
-          renderP99Ms: percentile(reply.samples, 0.99),
+          renderP50Ms: at(0.5),
+          renderP95Ms: at(0.95),
+          renderP99Ms: at(0.99),
           activeFps: reply.fps,
           adapter: reply.adapter,
           effectPasses: reply.effectPasses,
@@ -391,6 +496,7 @@ export class Wraith {
     this.pendingBytes = 0;
     this.batchIds = [];
     this.batchLength = 0;
+    this.endLinks(error.message);
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
     clearInterval(this.mirrorTimer);
@@ -432,7 +538,7 @@ export class Wraith {
   }
   private reserve(bytes: number) {
     if (this.batchLength + bytes <= this.batch.length) return;
-    const next = new Uint8Array(Math.max(4096, (this.batchLength + bytes) * 2));
+    const next = new Uint8Array(Math.max(1024, (this.batchLength + bytes) * 2));
     next.set(this.batch.subarray(0, this.batchLength));
     this.batch = next;
   }
@@ -475,7 +581,20 @@ export class Wraith {
     if (rect.width > 0 && rect.height > 0)
       void this.resize(cols, rows).catch((error) => this.errors.emit(error));
   }
+  private cursorCell?: [number, number];
+  private placeInput() {
+    if (!this.cursorCell) return;
+    const left = `${(this.cursorCell[0] * this.cellWidth) / this.dpr}px`,
+      top = `${(this.cursorCell[1] * this.cellHeight) / this.dpr}px`;
+    Object.assign(this.input.style, { left, top, bottom: 'auto' });
+    Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+  }
   private dimensions() {
+    if (this.worker.surface) {
+      // The placeholder's size in terminal pixels gives the shared surface its scale.
+      this.canvas.width = this.cols * this.cellWidth;
+      this.canvas.height = this.rows * this.cellHeight;
+    }
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
     this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
@@ -713,7 +832,49 @@ export class Wraith {
     this.element.style.background = next.background;
     this.send({ type: 'theme', colors });
   }
-  connect(socket: WebSocket): Disposable {
+  private endLinks(reason: string) {
+    for (const link of [...this.links.values()])
+      link.finish({ code: 1006, reason, wasClean: false });
+  }
+  /**
+   * Open a WebSocket in the terminal's worker (`ws:`, `wss:`, `http(s):` or a
+   * path relative to the page). Output is parsed in the worker, never on the
+   * main thread; input and terminal replies are sent from the worker in order.
+   * Connecting again closes the previous worker socket.
+   */
+  connect(url: string | URL, options?: WraithConnectOptions): WraithConnection;
+  /** Bridge a page-owned WebSocket: messages are received here and posted to the worker. */
+  connect(socket: WebSocket): Disposable;
+  connect(target: string | URL | WebSocket, options: WraithConnectOptions = {}): Disposable {
+    if (typeof target === 'string' || target instanceof URL)
+      return this.connectWorker(target, options);
+    return this.bridge(target);
+  }
+  private connectWorker(target: string | URL, options: WraithConnectOptions): WraithConnection {
+    this.assertLive();
+    const url = new URL(target, location.href);
+    if (url.protocol === 'http:') url.protocol = 'ws:';
+    else if (url.protocol === 'https:') url.protocol = 'wss:';
+    const id = this.sequence++;
+    const connection = new WorkerConnection(
+      id,
+      (command, transfer) => {
+        if (!this.disposed && !this.failed) this.send(command, transfer);
+      },
+      () => this.links.delete(id),
+    );
+    this.links.set(id, connection);
+    const protocols = options.protocols ?? [];
+    this.send({
+      type: 'socket-open',
+      link: id,
+      url: url.href,
+      protocols: typeof protocols === 'string' ? [protocols] : [...protocols],
+      stream: options.stream !== false,
+    });
+    return connection;
+  }
+  private bridge(socket: WebSocket): Disposable {
     // Messages are written in order and batched across the worker boundary.
     // Only when queued bytes pass half the backpressure limit does reading
     // wait, for the latest write (and so everything before it) to be parsed.
@@ -866,7 +1027,10 @@ export class Wraith {
     );
     this.input.addEventListener(
       'focus',
-      () => this.send({ type: 'focus', focused: true }),
+      () => {
+        this.placeInput();
+        this.send({ type: 'focus', focused: true });
+      },
       options,
     );
     this.input.addEventListener(
@@ -1118,6 +1282,7 @@ export class Wraith {
     this.effectsController.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
+    this.endLinks('Wraith disposed');
     this.batchIds = [];
     this.batchLength = 0;
     // Allow Ghostty and wgpu destructors to run; terminate a stalled worker after a bounded wait.
