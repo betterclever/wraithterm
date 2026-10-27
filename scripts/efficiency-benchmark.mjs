@@ -202,7 +202,9 @@ function power() {
   return { ac: s.includes("'AC Power'"), line: s.split('\n')[1]?.trim() };
 }
 const otherBench = () =>
-  spawnSync('pgrep', ['-f', 'fleet-benchmark|fleet-profile'], { encoding: 'utf8' }).stdout.trim();
+  spawnSync('pgrep', ['-f', 'node .*(fleet-benchmark|fleet-profile)\\.mjs'], {
+    encoding: 'utf8',
+  }).stdout.trim();
 /** Wait for the Fleet GPU benchmark to finish and for AC power; then for a
  * 1-minute load average below MAX_LOAD (6) for up to PREFER_WAIT_S, below the
  * logical core count up to MAX_WAIT_S, and after that run regardless. The
@@ -414,7 +416,12 @@ for (let round = 1; round <= rounds; round++)
     for (const type of shuffled(list, round * 31 + workload.length)) {
       const key = `${round}|${workload}|${type}`;
       if (done.has(key)) continue;
-      const r = await run(type, workload, round);
+      let r = await run(type, workload, round);
+      // A Fleet benchmark that started during the run invalidates it: repeat.
+      while (otherBench()) {
+        console.log(`  discarding r${round} ${workload} ${type}: fleet benchmark overlapped`);
+        r = await run(type, workload, round);
+      }
       await appendFile(raw, JSON.stringify(r) + '\n');
       done.add(key);
       const d = r.delta;
