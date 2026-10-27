@@ -1,0 +1,109 @@
+{
+  "head": "c2520512212e8232d9c3152108fde7691d36c5ce",
+  "chrome": "155.0.8059.85",
+  "headless": true,
+  "checks": {
+    "names": {
+      "role": "group",
+      "group": "Demo shell",
+      "input": "Demo shell",
+      "describedBy": [
+        "Screen reader mode keeps an accessible row mirror and announces new output politely.\n            Press Escape, then Tab to leave the terminal. Type\n            help for commands.",
+        "Press Escape, then Tab to move focus out of the terminal, or Escape, then Shift+Tab to move backward."
+      ]
+    },
+    "tree": {
+      "firstRow": "Wraith accessibility lab. Type help and press Enter.",
+      "items": 36
+    },
+    "chromeAxTree": {
+      "listitems": 36,
+      "first": "Wraith accessibility lab. Type help and press Enter.",
+      "live": "Terminal output"
+    },
+    "announce": {
+      "echoed": [],
+      "output": {
+        "said": ["wraith ❯ ls\nREADME.md\npackage.json\nsrc/\ndocs/\nwasm/\nwraith ❯"],
+        "region": "wraith ❯ ls\nREADME.md\npackage.json\nsrc/\ndocs/\nwasm/\nwraith ❯"
+      }
+    },
+    "progress": [
+      "wraith ❯ progress",
+      "Building ████████████████████ 100%",
+      "Build finished\nwraith ❯"
+    ],
+    "burst": {
+      "bytes": 10550169,
+      "ms": 28.099999994039536,
+      "said": [
+        {
+          "t": 106.09999999403954,
+          "text": "Output is arriving quickly. Announcements paused until it settles."
+        },
+        {
+          "t": 611.7000000029802,
+          "text": "Output settled. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nburst complete: 10 MB"
+        }
+      ],
+      "minGap": 505.6000000089407
+    },
+    "readText": {
+      "screenLines": 35,
+      "allLines": 9807,
+      "hasWelcome": false,
+      "last": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nburst complete: 10 MB",
+      "mirrorMatches": true
+    },
+    "keyboardExit": {
+      "stays": true,
+      "forward": "screen-reader",
+      "back": true,
+      "backward": "GitHub"
+    },
+    "focusRing": {
+      "tabbed": {
+        "focused": true,
+        "ring": true
+      },
+      "programmatic": false
+    },
+    "pause": {
+      "during": 0,
+      "mirrored": true,
+      "after": 1
+    },
+    "reducedMotion": {
+      "blinking": 5,
+      "reduced": 0
+    },
+    "forcedColors": {
+      "normalBg": "rgb(14, 18, 23)",
+      "forcedBg": "rgb(255, 255, 255)",
+      "restoredBg": "rgb(14, 18, 23)"
+    },
+    "screenReaderOff": {
+      "mirror": false,
+      "live": false,
+      "said": 0
+    },
+    "xterm": {
+      "rows": true,
+      "ms": 950,
+      "xtermStays": true,
+      "xtermLeft": true,
+      "hint": true
+    },
+    "axeBlocking": {
+      "accessibility": 0,
+      "playground": 0,
+      "xterm": 0
+    }
+  },
+  "axe": {
+    "accessibility.html": [],
+    "playground.html": [],
+    "xterm.html": []
+  },
+  "errors": []
+}
