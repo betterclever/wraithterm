@@ -40,18 +40,18 @@
 
 | Renderer         | CPU per update |
 | ---------------- | -------------: |
-| xterm.js, DOM    |        37.7 ms |
-| xterm.js + WebGL |         9.8 ms |
-| **Wraith**       |     **2.5 ms** |
+| xterm.js, DOM    |        20.4 ms |
+| xterm.js + WebGL |         5.1 ms |
+| **Wraith**       |     **1.1 ms** |
 
-That is **15× less** than xterm.js DOM and **3.9× less** than xterm.js + WebGL, and we are still climbing.
+That is **18× less** than xterm.js DOM and **4.6× less** than xterm.js + WebGL, and we are still climbing.
 
-<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates ([report](docs/benchmarks/launch/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
+<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates, Wraith 0.5.0 ([report](docs/benchmarks/v0.5/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
 
 </td>
 <td width="50%">
 
-<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="15× less CPU than xterm.js DOM, 3.9× less than xterm.js + WebGL" width="100%">
+<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="18× less CPU than xterm.js DOM, 4.6× less than xterm.js + WebGL" width="100%">
 
 </td>
 </tr>
@@ -88,7 +88,7 @@ term.write('hello from the other side\r\n');
 import { Wraith } from 'wraithterm';
 
 const term = await Wraith.mount(document.getElementById('terminal')!);
-term.connect(new WebSocket(ptyUrl));
+term.connect(ptyUrl); // the worker opens the socket and parses its output
 ```
 
 ## About this repository
@@ -197,7 +197,66 @@ terminals run out of memory, and xterm.js + WebGL draws only 16 of them
 terminal can delay frames for its worker's neighbours; dispose terminals before
 `pool.dispose()`.
 
-Connect a PTY transport:
+For hundreds or thousands of terminals, let each worker draw all of its
+terminals into one shared WebGPU surface:
+
+```ts
+const pool = Wraith.pool({ workers: 4, surface: 'shared' });
+const terminal = await Wraith.mount(host, { pool }); // same API as before
+```
+
+Each worker owns one page-sized canvas layered above the page
+(`pointer-events: none`), one device, one compiled pipeline and one glyph atlas
+per font configuration. Each terminal is drawn at its host's on-screen
+rectangle, clipped to scrolling ancestors. Only terminals with new content are
+redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
+focus, selection and accessibility. Shared and per-canvas output are
+pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
+120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
+per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
+119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+[`demo/fleet.html`](demo/fleet.html).
+
+Limits: the shared canvases sit at `z-index: 1` by default
+(`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
+must stack above them. Placement follows layout one animation frame later
+than the DOM. Rotation and perspective transforms are not modelled, and partial
+CSS opacity or filters on a host are not applied (`visibility: hidden` and
+`opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
+terminal is created. A worker's terminals with the same fonts share one
+2048×2048 glyph atlas; when together they need more glyphs than it holds, it
+resets and every terminal repacks (one full redraw), so a glyph mix that never
+fits keeps resetting.
+`pool.surfaceStats` reports presented and GPU-completed frames per worker.
+
+Connect a PTY transport. Given a URL, the terminal's worker opens the WebSocket
+itself: output is parsed there and never crosses the page's main thread, and
+keystrokes, paste and terminal replies are sent from the worker in order.
+
+```ts
+const connection = terminal.connect('wss://your-backend/terminal');
+
+// This control message is a convention for YOUR server, not terminal output.
+// send() is queued until the socket opens and ordered with keystrokes.
+const sendSize = () =>
+  connection.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
+sendSize();
+terminal.onResize(sendSize);
+
+// Resolves after the close and every byte received before it are parsed.
+connection.closed.then(() => terminal.write('\r\n[session ended]\r\n'));
+```
+
+`connect(url, { protocols?, stream? })` accepts `ws:`, `wss:`, `http(s):` or a
+path relative to the page. Where `WebSocketStream` exists (Chrome), the worker
+reads only as fast as it parses, so a slow page pushes back on the server through
+TCP; elsewhere it parses each `WebSocket` message as it arrives. The connection
+has `opened` and `closed` promises, `onOpen`, `onClose` and `onError`, `send()`,
+`close(code?, reason?)` and `dispose()`. Connecting again closes the previous
+worker socket; disposing the terminal closes it too. There is no automatic
+reconnect.
+
+To keep a socket on the page, pass the `WebSocket` itself:
 
 ```ts
 const socket = new WebSocket('wss://your-backend/terminal');
@@ -217,8 +276,8 @@ connection.dispose();
 await terminal.dispose();
 ```
 
-`connect()` sends input as binary WebSocket messages and accepts output as text,
-ArrayBuffer, or Blob, preserving order. Your backend owns PTY creation, geometry,
+Both forms send input as binary WebSocket messages and accept output as text,
+ArrayBuffer, or Blob (page socket only), preserving order. Your backend owns PTY creation, geometry,
 authentication, and transport lifecycle.
 
 For Vite, add the included adapter so dependency prebundling preserves the worker
@@ -385,6 +444,7 @@ macOS and Linux; Windows ConPTY through node-pty is untested.
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
 | `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
 | `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
+| `connect(url, options)`                                     | Worker-owned WebSocket; output parsed off the main thread. `closed` resolves after the last byte is parsed.          |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |

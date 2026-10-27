@@ -1,3 +1,4 @@
+use crate::shared::SharedContext;
 use crate::{
     core::Core,
     images::ImageLayer,
@@ -5,7 +6,11 @@ use crate::{
     text::{Atlas, ATLAS_SIZE},
 };
 use bytemuck::{Pod, Zeroable};
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::{RefCell, RefMut},
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, Default, Pod, Zeroable)]
@@ -21,20 +26,123 @@ pub const CELL_BYTES: usize = std::mem::size_of::<GpuCell>();
 pub const CELL_WORDS: usize = CELL_BYTES / 4;
 const _: () = assert!(CELL_BYTES == 20);
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Default, Pod, Zeroable)]
 struct Uniforms {
     view: [f32; 4],
     grid: [u32; 4],
     theme: [u32; 4],
     text: [f32; 4],
+    /// Images below backgrounds, default background, and on a shared surface
+    /// the target's width and height (zero for a terminal's own canvas).
     images: [u32; 4],
+    /// Shared surfaces: origin in target pixels, scale, linear sampling.
+    place: [f32; 4],
+}
+/// A glyph atlas and its texture. A terminal's own canvas has its own; on a
+/// shared surface, terminals with the same fonts and geometry share one.
+pub struct Glyphs {
+    pub atlas: RefCell<Atlas>,
+    texture: wgpu::Texture,
+    view: wgpu::TextureView,
+}
+impl Glyphs {
+    pub fn new(device: &wgpu::Device, atlas: Atlas) -> Rc<Self> {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Wraith RGBA glyph atlas"),
+            size: wgpu::Extent3d {
+                width: ATLAS_SIZE,
+                height: ATLAS_SIZE,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let view = texture.create_view(&Default::default());
+        Rc::new(Self {
+            atlas: RefCell::new(atlas),
+            texture,
+            view,
+        })
+    }
+}
+/// Blending for a target. A shared surface is composited premultiplied over
+/// the page, so terminal pixels keep the largest alpha written (the opaque
+/// background fill) instead of a blended 254 at glyph edges.
+pub fn blend(shared: bool) -> wgpu::BlendState {
+    let mut state = wgpu::BlendState::ALPHA_BLENDING;
+    if shared {
+        state.alpha = wgpu::BlendComponent {
+            src_factor: wgpu::BlendFactor::One,
+            dst_factor: wgpu::BlendFactor::One,
+            operation: wgpu::BlendOperation::Max,
+        };
+    }
+    state
+}
+/// The terminal WGSL pipeline for one target format.
+pub fn terminal_pipeline(
+    device: &wgpu::Device,
+    format: wgpu::TextureFormat,
+    shared: bool,
+) -> wgpu::RenderPipeline {
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("Wraith terminal WGSL"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("terminal.wgsl").into()),
+    });
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Wraith two-draw terminal pipeline"),
+        layout: None,
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs"),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(blend(shared)),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: Default::default(),
+        depth_stencil: None,
+        multisample: Default::default(),
+        multiview_mask: None,
+        cache: None,
+    })
+}
+pub fn scaled_sampler(device: &wgpu::Device) -> wgpu::Sampler {
+    device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("Wraith scaled atlas sampler"),
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    })
+}
+/// Where a renderer's frames go: its own canvas, or a worker's shared surface.
+pub enum Target {
+    Own(web_sys::OffscreenCanvas),
+    Shared(Rc<SharedContext>),
 }
 pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    surface: wgpu::Surface<'static>,
+    /// A terminal's own canvas and surface; `None` on a shared surface.
+    surface: Option<wgpu::Surface<'static>>,
     config: wgpu::SurfaceConfiguration,
-    canvas: web_sys::OffscreenCanvas,
+    canvas: Option<web_sys::OffscreenCanvas>,
+    /// The shared surface's pipelines and glyph registry.
+    shared: Option<Rc<SharedContext>>,
+    /// Shared surfaces: the uniforms of the last staged frame, placed when drawn.
+    staged: Option<Uniforms>,
     pipeline: wgpu::RenderPipeline,
     bind: wgpu::BindGroup,
     cell_buffer: wgpu::Buffer,
@@ -42,9 +150,8 @@ pub struct Renderer {
     retained: RetainedRows,
     row_sources: Vec<u32>,
     uniform: wgpu::Buffer,
-    texture: wgpu::Texture,
-    atlas_view: wgpu::TextureView,
     sampler: wgpu::Sampler,
+    scaled: wgpu::Sampler,
     /// Packed native cells. The external compositor packs into its own
     /// staging, so this stays empty there and `cell_count` sizes the draw.
     cells: Vec<GpuCell>,
@@ -62,7 +169,7 @@ pub struct Renderer {
     glyphs: Vec<u32>,
     /// Cursor cell the packed ligature rows were split for, as (x, y).
     ligature_cursor: Option<(u32, u32)>,
-    pub atlas: Atlas,
+    text: Rc<Glyphs>,
     pub images: ImageLayer,
     pub frames: u64,
     pub upload_bytes: u64,
@@ -74,20 +181,20 @@ pub struct Renderer {
     pending_present: bool,
 }
 #[derive(Clone)]
-struct SharedGpu {
-    instance: wgpu::Instance,
-    adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+pub struct SharedGpu {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
     /// The device's first uncaptured error or loss, seen by every renderer on it.
-    lost: Arc<Mutex<Option<String>>>,
+    pub lost: Arc<Mutex<Option<String>>>,
 }
 thread_local! {
     static GPU: std::cell::RefCell<Option<SharedGpu>> = const { std::cell::RefCell::new(None) };
 }
 /// The worker's shared GPU, created on first use. A lost device is replaced
 /// for later terminals; terminals already on it keep reporting the loss.
-async fn shared_gpu(canvas: &web_sys::OffscreenCanvas) -> Result<SharedGpu, String> {
+pub async fn shared_gpu(canvas: &web_sys::OffscreenCanvas) -> Result<SharedGpu, String> {
     if let Some(gpu) = GPU.with(|g| g.borrow().clone()) {
         if gpu.lost.lock().unwrap().is_none() {
             return Ok(gpu);
@@ -145,6 +252,14 @@ impl Renderer {
     pub fn needs_present(&self) -> bool {
         self.pending_present
     }
+    /// The glyph atlas. On a shared surface it may be shared with other
+    /// terminals; borrows must not outlive one synchronous call.
+    pub fn atlas(&self) -> RefMut<'_, Atlas> {
+        self.text.atlas.borrow_mut()
+    }
+    pub fn shared_context(&self) -> Option<&Rc<SharedContext>> {
+        self.shared.as_ref()
+    }
     pub async fn new(
         canvas: web_sys::OffscreenCanvas,
         font: Vec<u8>,
@@ -154,29 +269,50 @@ impl Renderer {
         rows: u16,
     ) -> Result<Self, String> {
         let atlas = Atlas::new(font, font_size, line_height)?;
-        Self::with_atlas(canvas, atlas, cols, rows).await
+        Self::create(Target::Own(canvas), Some(atlas), None, cols, rows).await
+    }
+    /// A renderer drawing into a shared surface, using `glyphs` (usually shared).
+    pub async fn shared(
+        context: Rc<SharedContext>,
+        glyphs: Rc<Glyphs>,
+        cols: u16,
+        rows: u16,
+    ) -> Result<Self, String> {
+        Self::create(Target::Shared(context), None, Some(glyphs), cols, rows).await
     }
     pub async fn external(canvas: web_sys::OffscreenCanvas) -> Result<Self, String> {
-        Self::with_atlas(canvas, Atlas::external(), 1, 1).await
+        Self::create(Target::Own(canvas), Some(Atlas::external()), None, 1, 1).await
     }
-    async fn with_atlas(
-        canvas: web_sys::OffscreenCanvas,
-        atlas: Atlas,
+    async fn create(
+        target: Target,
+        atlas: Option<Atlas>,
+        glyphs: Option<Rc<Glyphs>>,
         cols: u16,
         rows: u16,
     ) -> Result<Self, String> {
         // Terminals in one worker share one instance, adapter, device and queue.
-        let gpu = shared_gpu(&canvas).await?;
+        let (gpu, surface, canvas, shared) = match target {
+            Target::Own(canvas) => {
+                let gpu = shared_gpu(&canvas).await?;
+                let surface = gpu
+                    .instance
+                    .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas.clone()))
+                    .map_err(|e| e.to_string())?;
+                (gpu, Some(surface), Some(canvas), None)
+            }
+            Target::Shared(context) => (context.gpu.clone(), None, None, Some(context)),
+        };
         let SharedGpu {
-            instance,
             adapter,
             device,
             queue,
             lost,
+            ..
         } = gpu;
-        let surface = instance
-            .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas.clone()))
-            .map_err(|e| e.to_string())?;
+        let text = match glyphs {
+            Some(glyphs) => glyphs,
+            None => Glyphs::new(&device, atlas.ok_or("renderer needs an atlas")?),
+        };
         let info = adapter.get_info();
         let adapter_name = format!(
             "{} ({:?})",
@@ -187,72 +323,60 @@ impl Renderer {
             },
             info.backend
         );
-        let width = cols as u32 * atlas.cell_width;
-        let height = rows as u32 * atlas.cell_height;
+        let (cell_width, cell_height, external) = {
+            let atlas = text.atlas.borrow();
+            (atlas.cell_width, atlas.cell_height, atlas.is_external())
+        };
+        let width = cols as u32 * cell_width;
+        let height = rows as u32 * cell_height;
         if width > device.limits().max_texture_dimension_2d
             || height > device.limits().max_texture_dimension_2d
         {
             return Err("terminal pixel dimensions exceed this GPU's texture limit".into());
         }
-        canvas.set_width(width);
-        canvas.set_height(height);
-        let config = surface
-            .get_default_config(&adapter, width, height)
-            .ok_or("unsupported WebGPU surface")?;
-        surface.configure(&device, &config);
+        let config = match (&surface, &canvas, &shared) {
+            (Some(surface), Some(canvas), _) => {
+                canvas.set_width(width);
+                canvas.set_height(height);
+                let config = surface
+                    .get_default_config(&adapter, width, height)
+                    .ok_or("unsupported WebGPU surface")?;
+                surface.configure(&device, &config);
+                config
+            }
+            (_, _, Some(context)) => wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: context.format,
+                width,
+                height,
+                present_mode: wgpu::PresentMode::Fifo,
+                desired_maximum_frame_latency: 2,
+                alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+                view_formats: Vec::new(),
+                color_space: Default::default(),
+            },
+            _ => unreachable!("a renderer has its own canvas or a shared surface"),
+        };
         let error_scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Wraith terminal WGSL"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("terminal.wgsl").into()),
-        });
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Wraith two-draw terminal pipeline"),
-            layout: None,
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs"),
-                compilation_options: Default::default(),
-                buffers: &[],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs"),
-                compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview_mask: None,
-            cache: None,
-        });
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Wraith RGBA glyph atlas"),
-            size: wgpu::Extent3d {
-                width: ATLAS_SIZE,
-                height: ATLAS_SIZE,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        let atlas_view = texture.create_view(&Default::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Wraith pixel-aligned atlas sampler"),
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
+        // A shared surface compiles its pipelines once for every terminal.
+        let pipeline = match &shared {
+            Some(context) => context.pipeline.clone(),
+            None => terminal_pipeline(&device, config.format, false),
+        };
+        let (sampler, scaled) = match &shared {
+            Some(context) => (context.sampler.clone(), context.scaled.clone()),
+            None => (
+                device.create_sampler(&wgpu::SamplerDescriptor {
+                    label: Some("Wraith pixel-aligned atlas sampler"),
+                    mag_filter: wgpu::FilterMode::Nearest,
+                    min_filter: wgpu::FilterMode::Nearest,
+                    ..Default::default()
+                }),
+                scaled_sampler(&device),
+            ),
+        };
         let cell_count = cols as usize * rows as usize;
-        let cells = if atlas.is_external() {
+        let cells = if external {
             Vec::new()
         } else {
             vec![GpuCell::default(); cell_count]
@@ -272,14 +396,23 @@ impl Renderer {
             mapped_at_creation: false,
         });
         let row_buffer = Self::row_buffer(&device, rows as usize);
-        let images = ImageLayer::new(&device, config.format, &uniform);
+        let images = match &shared {
+            Some(context) => ImageLayer::with_pipeline(
+                &device,
+                context.image_pipeline.clone(),
+                context.image_sampler.clone(),
+                &uniform,
+            ),
+            None => ImageLayer::new(&device, config.format, &uniform),
+        };
         let bind = Self::bind(
             &device,
             &pipeline,
             &cell_buffer,
             &uniform,
-            &atlas_view,
+            &text.view,
             &sampler,
+            &scaled,
             &row_buffer,
         );
         if let Some(error) = error_scope.pop().await {
@@ -291,6 +424,8 @@ impl Renderer {
             surface,
             config,
             canvas,
+            shared,
+            staged: None,
             pipeline,
             bind,
             cell_buffer,
@@ -298,9 +433,8 @@ impl Renderer {
             retained: RetainedRows::new(rows as usize),
             row_sources: vec![NEW_ROW; rows as usize],
             uniform,
-            texture,
-            atlas_view,
             sampler,
+            scaled,
             cells,
             cell_count,
             packed_versions: vec![0; rows as usize],
@@ -309,7 +443,7 @@ impl Renderer {
             atlas_resets: 0,
             glyphs: Vec::new(),
             ligature_cursor: None,
-            atlas,
+            text,
             images,
             frames: 0,
             upload_bytes: 0,
@@ -321,6 +455,19 @@ impl Renderer {
             pending_present: true,
         })
     }
+    /// Swap in another glyph atlas (a font change on a shared surface). Every
+    /// row is repacked against it.
+    pub fn set_glyphs(&mut self, glyphs: Rc<Glyphs>, cols: u16, rows: u16) {
+        self.text = glyphs;
+        self.atlas_resets = u64::MAX;
+        self.staged = None;
+        self.resize(cols, rows);
+    }
+    /// Replace this renderer's own atlas contents in place (own canvas only).
+    pub fn replace_atlas(&mut self, atlas: Atlas) {
+        *self.text.atlas.borrow_mut() = atlas;
+    }
+    #[allow(clippy::too_many_arguments)]
     fn bind(
         device: &wgpu::Device,
         pipeline: &wgpu::RenderPipeline,
@@ -328,6 +475,7 @@ impl Renderer {
         uniform: &wgpu::Buffer,
         texture: &wgpu::TextureView,
         sampler: &wgpu::Sampler,
+        scaled: &wgpu::Sampler,
         rows: &wgpu::Buffer,
     ) -> wgpu::BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -354,8 +502,24 @@ impl Renderer {
                     binding: 4,
                     resource: rows.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Sampler(scaled),
+                },
             ],
         })
+    }
+    fn rebind(&mut self) {
+        self.bind = Self::bind(
+            &self.device,
+            &self.pipeline,
+            &self.cell_buffer,
+            &self.uniform,
+            &self.text.view,
+            &self.sampler,
+            &self.scaled,
+            &self.row_buffer,
+        );
     }
     fn row_buffer(device: &wgpu::Device, rows: usize) -> wgpu::Buffer {
         device.create_buffer(&wgpu::BufferDescriptor {
@@ -366,11 +530,19 @@ impl Renderer {
         })
     }
     pub fn resize(&mut self, cols: u16, rows: u16) {
-        self.config.width = cols as u32 * self.atlas.cell_width;
-        self.config.height = rows as u32 * self.atlas.cell_height;
-        self.canvas.set_width(self.config.width);
-        self.canvas.set_height(self.config.height);
-        self.surface.configure(&self.device, &self.config);
+        let (cell_width, cell_height) = {
+            let atlas = self.atlas();
+            (atlas.cell_width, atlas.cell_height)
+        };
+        self.config.width = cols as u32 * cell_width;
+        self.config.height = rows as u32 * cell_height;
+        if let (Some(canvas), Some(surface)) = (&self.canvas, &self.surface) {
+            canvas.set_width(self.config.width);
+            canvas.set_height(self.config.height);
+            surface.configure(&self.device, &self.config);
+        }
+        // A shared surface draws nothing for this terminal until it repacks.
+        self.staged = None;
         self.cell_count = cols as usize * rows as usize;
         self.cells.resize(self.cell_count, GpuCell::default());
         self.packed_versions = vec![0; rows as usize];
@@ -384,21 +556,12 @@ impl Renderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        self.bind = Self::bind(
-            &self.device,
-            &self.pipeline,
-            &self.cell_buffer,
-            &self.uniform,
-            &self.atlas_view,
-            &self.sampler,
-            &self.row_buffer,
-        );
+        self.rebind();
     }
     pub fn validate_size(&self, cols: u16, rows: u16) -> Result<(), String> {
         let limit = self.device.limits().max_texture_dimension_2d;
-        if cols as u32 * self.atlas.cell_width > limit
-            || rows as u32 * self.atlas.cell_height > limit
-        {
+        let atlas = self.atlas();
+        if cols as u32 * atlas.cell_width > limit || rows as u32 * atlas.cell_height > limit {
             return Err("terminal pixel dimensions exceed this GPU's texture limit".into());
         }
         Ok(())
@@ -411,7 +574,9 @@ impl Renderer {
         };
         if self.config.alpha_mode != mode {
             self.config.alpha_mode = mode;
-            self.surface.configure(&self.device, &self.config);
+            if let Some(surface) = &self.surface {
+                surface.configure(&self.device, &self.config);
+            }
             self.pending_present = true;
         }
     }
@@ -425,7 +590,14 @@ impl Renderer {
         }
         let blink = ((time / 500.) as u64).is_multiple_of(2);
         let blinking = core.frame.cursor_blink != 0 || core.state.blinking != 0;
+        // A shared atlas reset by another terminal invalidates every glyph this
+        // terminal packed: repack all rows before it is drawn again.
+        let stale = self.atlas().resets != self.atlas_resets;
+        if stale && self.shared.is_some() {
+            core.state.dirty.fill(true);
+        }
         if !force
+            && !(stale && self.shared.is_some())
             && !self.pending_present
             && !changed
             && !core.state.dirty.iter().any(|d| *d)
@@ -435,28 +607,31 @@ impl Renderer {
         }
         // A miss with no free atlas slot resets the atlas; every visible row
         // is then repacked once so no stale glyph reference is drawn.
-        if self.atlas.resets != self.atlas_resets {
+        if stale {
             self.packed_versions.fill(0);
         }
         self.pack(core);
-        if self.atlas.overflow {
-            self.atlas.reset();
+        if self.atlas().overflow {
+            self.atlas().reset();
             self.packed_versions.fill(0);
             core.state.dirty.fill(true);
             self.pack(core);
-            if self.atlas.overflow {
-                self.atlas.reset();
+            if self.atlas().overflow {
+                self.atlas().reset();
                 return Err(
                     "visible glyph set exceeds atlas capacity; reduce font size or grid size"
                         .into(),
                 );
             }
         }
-        self.atlas_resets = self.atlas.resets;
-        for upload in self.atlas.uploads.drain(..) {
+        let mut atlas = self.text.atlas.borrow_mut();
+        self.atlas_resets = atlas.resets;
+        let (tile_width, tile_height) = (atlas.tile_width, atlas.tile_height);
+        let (cell_width, cell_height) = (atlas.cell_width, atlas.cell_height);
+        for upload in atlas.uploads.drain(..) {
             self.queue.write_texture(
                 wgpu::TexelCopyTextureInfo {
-                    texture: &self.texture,
+                    texture: &self.text.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d {
                         x: upload.x,
@@ -468,17 +643,18 @@ impl Renderer {
                 &upload.pixels,
                 wgpu::TexelCopyBufferLayout {
                     offset: 0,
-                    bytes_per_row: Some(self.atlas.tile_width * 4),
-                    rows_per_image: Some(self.atlas.tile_height),
+                    bytes_per_row: Some(tile_width * 4),
+                    rows_per_image: Some(tile_height),
                 },
                 wgpu::Extent3d {
-                    width: self.atlas.tile_width,
-                    height: self.atlas.tile_height,
+                    width: tile_width,
+                    height: tile_height,
                     depth_or_array_layers: 1,
                 },
             );
             self.upload_bytes += upload.pixels.len() as u64;
         }
+        drop(atlas);
         // Scrolls retain GPU slots; only newly packed rows cross the bus.
         let cols = core.state.cols;
         self.retained.plan(&self.row_sources)?;
@@ -498,8 +674,8 @@ impl Renderer {
             view: [
                 self.config.width as f32,
                 self.config.height as f32,
-                self.atlas.cell_width as f32,
-                self.atlas.cell_height as f32,
+                cell_width as f32,
+                cell_height as f32,
             ],
             grid: [
                 frame.cols,
@@ -509,8 +685,8 @@ impl Renderer {
             ],
             theme: [frame.cursor_color, 0x17120e, 0xf0d691, 0],
             text: [
-                self.atlas.tile_width as f32,
-                self.atlas.tile_height as f32,
+                tile_width as f32,
+                tile_height as f32,
                 ATLAS_SIZE as f32,
                 blink as u8 as f32,
             ],
@@ -520,8 +696,13 @@ impl Renderer {
                 0,
                 0,
             ],
+            place: [0.; 4],
         };
-        let rendered = self.present(uniforms)?;
+        let rendered = if self.surface.is_some() {
+            self.present(uniforms)?
+        } else {
+            self.stage(uniforms)
+        };
         if rendered {
             core.state.dirty.fill(false);
             self.last_blink = blink;
@@ -536,7 +717,7 @@ impl Renderer {
         let cols = state.cols;
         // Ligatures split under the cursor: repack the rows it left and entered.
         let frame = core.frame;
-        let cursor = (self.atlas.ligatures && frame.cursor_visible != 0)
+        let cursor = (self.text.atlas.borrow().ligatures && frame.cursor_visible != 0)
             .then_some((frame.cursor_x, frame.cursor_y));
         let mut forced = [usize::MAX; 2];
         if cursor != self.ligature_cursor {
@@ -590,7 +771,7 @@ impl Renderer {
                 let at = cursor
                     .filter(|&(_, cy)| cy as usize == y)
                     .map(|(x, _)| x as usize);
-                self.atlas.row(row, &mut self.glyphs, at);
+                self.text.atlas.borrow_mut().row(row, &mut self.glyphs, at);
                 for ((cell, gpu), &glyph) in row
                     .iter()
                     .zip(&mut self.cells[y * cols..(y + 1) * cols])
@@ -634,14 +815,17 @@ impl Renderer {
         // An acquired surface can be temporarily unavailable. Retain the need
         // to present even when only uniforms changed and no rows are dirty.
         self.pending_present = true;
-        let texture = match self.surface.get_current_texture() {
+        let Some(surface) = &self.surface else {
+            return Ok(self.stage(uniforms));
+        };
+        let texture = match surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(t)
             | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
             wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
                 return Ok(false)
             }
             wgpu::CurrentSurfaceTexture::Outdated => {
-                self.surface.configure(&self.device, &self.config);
+                surface.configure(&self.device, &self.config);
                 return Ok(false);
             }
             status => return Err(format!("WebGPU surface failure: {status:?}")),
@@ -693,6 +877,58 @@ impl Renderer {
         self.pending_present = false;
         Ok(true)
     }
+    /// Shared surfaces: keep the frame's uniforms for the next draw into the
+    /// surface. Packed rows and uploads are already queued.
+    fn stage(&mut self, mut uniforms: Uniforms) -> bool {
+        uniforms.grid[3] |= u32::from(!self.retained.identity) << 20;
+        self.staged = Some(uniforms);
+        self.frames += 1;
+        self.pending_present = false;
+        true
+    }
+    /// Whether this terminal holds a complete staged frame that references
+    /// the current atlas, so it can be drawn into a shared surface.
+    pub fn drawable(&self) -> bool {
+        self.staged.is_some() && self.atlas_resets == self.text.atlas.borrow().resets
+    }
+    /// Record this terminal's staged frame into a shared surface's open pass,
+    /// at `origin` (target pixels) and `scale`, clipped to `scissor`.
+    pub fn draw_shared(
+        &self,
+        pass: &mut wgpu::RenderPass<'static>,
+        target: (u32, u32),
+        origin: (f32, f32),
+        scale: f32,
+        scissor: (u32, u32, u32, u32),
+    ) -> bool {
+        let Some(mut uniforms) = self.staged else {
+            return false;
+        };
+        if !self.drawable() || scissor.2 == 0 || scissor.3 == 0 {
+            return false;
+        }
+        uniforms.images[2] = target.0;
+        uniforms.images[3] = target.1;
+        let scaled = (scale - 1.).abs() > 1e-3;
+        uniforms.place = [origin.0, origin.1, scale, scaled as u32 as f32];
+        self.queue
+            .write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniforms));
+        pass.set_scissor_rect(scissor.0, scissor.1, scissor.2, scissor.3);
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.bind, &[]);
+        // Default background first: a redraw replaces every previous pixel.
+        pass.draw(12..18, 0..1);
+        self.images.draw(pass, 1);
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.bind, &[]);
+        pass.draw(0..6, 0..self.cell_count as u32);
+        self.images.draw(pass, 2);
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.bind, &[]);
+        pass.draw(6..12, 0..self.cell_count as u32);
+        self.images.draw(pass, 3);
+        true
+    }
     fn clear_color(&self, rgb: u32) -> wgpu::Color {
         let channel = |shift: u32| {
             let c = ((rgb >> shift) & 255) as f64 / 255.;
@@ -725,9 +961,11 @@ impl Renderer {
         self.validate_external(cols, rows, width, height)?;
         self.config.width = width;
         self.config.height = height;
-        self.canvas.set_width(width);
-        self.canvas.set_height(height);
-        self.surface.configure(&self.device, &self.config);
+        if let (Some(canvas), Some(surface)) = (&self.canvas, &self.surface) {
+            canvas.set_width(width);
+            canvas.set_height(height);
+            surface.configure(&self.device, &self.config);
+        }
         self.cell_count = cols as usize * rows as usize;
         self.retained = RetainedRows::new(rows as usize);
         self.row_sources = vec![NEW_ROW; rows as usize];
@@ -738,15 +976,7 @@ impl Renderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        self.bind = Self::bind(
-            &self.device,
-            &self.pipeline,
-            &self.cell_buffer,
-            &self.uniform,
-            &self.atlas_view,
-            &self.sampler,
-            &self.row_buffer,
-        );
+        self.rebind();
         Ok(())
     }
     pub fn validate_external(
@@ -785,7 +1015,7 @@ impl Renderer {
         }
         self.queue.write_texture(
             wgpu::TexelCopyTextureInfo {
-                texture: &self.texture,
+                texture: &self.text.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d { x, y, z: 0 },
                 aspect: wgpu::TextureAspect::All,
@@ -898,7 +1128,30 @@ impl Renderer {
             theme: [frame[4], frame[5], frame[6], frame[7]],
             text: [dimensions[2], dimensions[3], ATLAS_SIZE as f32, 1.],
             images: [0; 4],
+            place: [0.; 4],
         })
+    }
+    /// Calls `done` once the GPU finishes work submitted so far, without
+    /// holding a borrow while waiting (GPUQueue.onSubmittedWorkDone on the web).
+    pub fn on_submitted_work_done(&self, done: js_sys::Function) {
+        thread_local! {
+            static WAITING: std::cell::RefCell<(u32, std::collections::HashMap<u32, js_sys::Function>)> =
+                Default::default();
+        }
+        // wgpu requires a Send callback; the JS function stays in this
+        // (single-threaded) Wasm instance and the callback carries only its key.
+        let key = WAITING.with(|w| {
+            let mut w = w.borrow_mut();
+            w.0 = w.0.wrapping_add(1);
+            let key = w.0;
+            w.1.insert(key, done);
+            key
+        });
+        self.queue.on_submitted_work_done(move || {
+            if let Some(done) = WAITING.with(|w| w.borrow_mut().1.remove(&key)) {
+                let _ = done.call0(&wasm_bindgen::JsValue::NULL);
+            }
+        });
     }
     pub async fn fence(&self) -> Result<(), String> {
         // A tiny readback waits for prior GPU work without affecting normal frames.

@@ -1,0 +1,252 @@
+{
+ "ghostty": "Ghostty 1.3.1",
+ "rounds": 3,
+ "reps": 1,
+ "files": [
+  "logs.ansi",
+  "ascii.txt",
+  "text-160x50.ansi",
+  "kitty-640x400.ansi"
+ ],
+ "runs": [
+  {
+   "name": "ghostty",
+   "round": 0,
+   "loadBefore": "{ 10.87 12.51 10.29 }",
+   "loadAfter": "{ 9.72 12.21 10.21 }",
+   "cols": 160,
+   "rows": 50,
+   "term": "ghostty",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.5983784999989439,
+     "MBps": 106.95584316634532
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.47666724999726284,
+     "MBps": 134.26536855713815
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 1.1003821659978712,
+     "MBps": 94.64232265665552
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 5.854851500000223,
+     "MBps": 73.62217743694842
+    }
+   ]
+  },
+  {
+   "name": "wraith",
+   "round": 0,
+   "loadBefore": "{ 9.03 12.02 10.15 }",
+   "loadAfter": "{ 9.46 11.95 10.17 }",
+   "cols": 160,
+   "rows": 50,
+   "term": "wraith",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 1.6934077080077259,
+     "MBps": 37.79366108785186
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 1.623844082991127,
+     "MBps": 39.41259180629703
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 2.682852666010149,
+     "MBps": 38.81790652144818
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 10.978471458001877,
+     "MBps": 39.26292632348403
+    }
+   ],
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+  },
+  {
+   "name": "wraith",
+   "round": 1,
+   "loadBefore": "{ 9.46 11.95 10.17 }",
+   "loadAfter": "{ 12.21 12.38 10.36 }",
+   "cols": 160,
+   "rows": 50,
+   "term": "wraith",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 1.656140916995355,
+     "MBps": 38.64410108054803
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 1.6767770840087906,
+     "MBps": 38.16840330796438
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 2.6034384579979815,
+     "MBps": 40.00199185813854
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 13.316722667004797,
+     "MBps": 32.36884380479114
+    }
+   ],
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+  },
+  {
+   "name": "ghostty",
+   "round": 1,
+   "loadBefore": "{ 13.80 12.71 10.49 }",
+   "loadAfter": "{ 12.85 12.56 10.47 }",
+   "cols": 160,
+   "rows": 48,
+   "term": "ghostty",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 1.037522833008552,
+     "MBps": 61.685463648463596
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 1.060212042008061,
+     "MBps": 60.365192493742114
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 2.3016083340044133,
+     "MBps": 45.24780452928283
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 9.342532624999876,
+     "MBps": 46.13812263781158
+    }
+   ]
+  },
+  {
+   "name": "ghostty",
+   "round": 2,
+   "loadBefore": "{ 11.90 12.37 10.42 }",
+   "loadAfter": "{ 11.78 12.32 10.43 }",
+   "cols": 160,
+   "rows": 50,
+   "term": "ghostty",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 0.6011463750037365,
+     "MBps": 106.46338339743328
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 0.6433932920044754,
+     "MBps": 99.47244522958879
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 1.3590397919906536,
+     "MBps": 76.62963558076319
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 6.569190374997561,
+     "MBps": 65.61644455313264
+    }
+   ]
+  },
+  {
+   "name": "wraith",
+   "round": 2,
+   "loadBefore": "{ 11.78 12.32 10.43 }",
+   "loadAfter": "{ 10.62 12.01 10.36 }",
+   "cols": 160,
+   "rows": 50,
+   "term": "wraith",
+   "results": [
+    {
+     "file": "logs.ansi",
+     "rep": 0,
+     "bytes": 64000077,
+     "seconds": 1.7627854999882402,
+     "MBps": 36.306219333224014
+    },
+    {
+     "file": "ascii.txt",
+     "rep": 0,
+     "bytes": 63999904,
+     "seconds": 1.7314707080076914,
+     "MBps": 36.962741387430796
+    },
+    {
+     "file": "text-160x50.ansi",
+     "rep": 0,
+     "bytes": 104142724,
+     "seconds": 2.6719841669982998,
+     "MBps": 38.97580131135046
+    },
+    {
+     "file": "kitty-640x400.ansi",
+     "rep": 0,
+     "bytes": 431046916,
+     "seconds": 10.875550583004951,
+     "MBps": 39.63449139518418
+    }
+   ],
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+  }
+ ],
+ "serve": "main 1151069 (one message per PTY read)",
+ "machine": "Apple M5 Max, macOS 27.2, 120 Hz built-in display; shared machine (load averages per run)"
+}

@@ -16,6 +16,7 @@ export default defineConfig({
         pipes: 'demo/pipes.html',
         ghost: 'demo/ghost.html',
         element: 'demo/element.html',
+        fleet: 'demo/fleet.html',
       },
     },
   },
