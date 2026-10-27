@@ -48,11 +48,23 @@ Wasm, changed cells are copied into retained Rust storage; they do not make an
 expensive trip through JavaScript. WebGPU performs its required upload copies.
 This is deliberately not described as an entirely zero-copy pipeline.
 
+V8 first runs each Wasm function on its baseline compiler and swaps in optimized
+code only on a later call. The parser is entered once per write batch, so a new
+terminal's first large burst would parse entirely on baseline code, and its first
+frame of text would rasterize glyphs there too. After the first terminal in a
+worker is ready, the worker rasterizes printable ASCII into that terminal's atlas
+and parses a short mixed stream in a scratch terminal, in 1 ms steps that run
+only after 8 ms without commands. See
+[engine warm-up](benchmarks/engine-warmup/REPORT.md).
+
 ## A frame
 
 1. libghostty-vt parses a streaming byte sequence and updates terminal state.
 2. The worker coalesces presentation through requestAnimationFrame. Idle state
-   produces no redraw, except cursor or text blinking.
+   produces no redraw, except cursor or text blinking. A write to a terminal
+   that drew no frame for two frame intervals, such as a keystroke's echo,
+   renders at once instead; see
+   [input latency](benchmarks/input-latency/RE5224.md).
 3. Ghostty updates its incremental render snapshot. The adapter visits dirty rows
    and copies their grapheme, colors, and flags into reusable Rust cell storage.
 4. Atlas hits reuse an existing tile. A miss chooses a fallback font, shapes the
@@ -104,6 +116,56 @@ reaches every terminal on that device; a worker failure reaches every terminal
 attached to it. Disposing a pooled terminal frees its engine and closes its
 port; the worker stays for its neighbours.
 
+## Shared surfaces
+
+`Wraith.pool({ surface: 'shared' })` gives each pool worker one page-sized
+`OffscreenCanvas`, fixed over the viewport with `pointer-events: none`
+(z-index 1 by default). The worker owns that canvas's swap chain, a retained
+backing texture of the same size, one compiled terminal pipeline and image
+pipeline, and one glyph atlas per font configuration (font and fallback
+bytes, size, line height, ligatures). Terminals keep their DOM element,
+textarea, preedit, accessibility mirror and their own `<canvas>`, which is
+never transferred: it remains a placeholder for layout, pointer selection
+and the visibility observer.
+
+Each terminal still parses, packs and uploads exactly as on its own canvas,
+but `render` stages its uniforms instead of presenting. One animation frame
+per worker renders dirty visible terminals, then draws only those with new
+content into the backing (`LoadOp::Load`) with a scissor at their placement,
+copies the backing to the canvas texture and presents. A draw starts with a
+default-background quad, so it fully replaces the terminal's earlier pixels.
+Geometry changes (scroll, pan, zoom, resize, disposal) clear the backing and
+redraw every visible terminal. Off-screen terminals do not render; their
+parsing and history continue.
+
+Placement comes from the main thread. Once per animation frame the pool
+measures each intersecting terminal's element (one `getBoundingClientRect`
+plus `offsetWidth` for the transform scale), intersects it with the element
+and its overflow-clipping ancestors, and posts changed records (id, origin,
+scale, clip, in device pixels) to the owning worker. Terminals hidden by
+`visibility: hidden` or `opacity: 0` on the host or an ancestor
+(`checkVisibility`) are placed as hidden, and a host moved to another parent
+after mount has its clipping ancestors recomputed. Unscaled placements are
+rounded to whole device pixels, so they match per-canvas output exactly; a
+CSS-scaled placement samples the atlas with a linear sampler. The vertex
+shaders map terminal pixels to the target through that placement; with a
+zero target size they keep the original own-canvas path.
+
+A shared atlas reset (a neighbour's visible glyph set overflowed) makes every
+other terminal on it stale; a stale terminal repacks before it is drawn, and
+a frame in which a reset invalidated already-recorded draws is redrawn in
+full. Shared pipelines blend alpha with `max`, keeping terminal pixels opaque
+on the premultiplied canvas.
+
+Limits: the canvases sit above page content at their z-index, so overlays
+meant to cover terminals must stack above them. Placements follow layout one
+animation frame later than the DOM, so a terminal can trail a scroll or pan
+by a frame. Rotation and perspective transforms are not modelled (placement
+is a translation plus uniform scale). Fallback fonts and ligatures are fixed
+when a shared terminal is created. Partial CSS opacity and filters on a host
+are not applied. Each worker draws all of its terminals in
+one pass, so heavy output in one terminal shares that worker's frame.
+
 ## Run shaping
 
 Packing a row first takes the per-cell path, noting whether any cell is a run
@@ -141,6 +203,61 @@ backgrounds, cells whose background equals the default become transparent and
 the pass clears to that color. Textures unused for 600 presented frames, or
 beyond 256 MiB, are released.
 
+## Command blocks
+
+libghostty-vt parses OSC 133 and reports each step through its semantic-prompt
+callback after updating the screen. On the primary screen, the bridge creates a
+Ghostty tracked grid reference at the cursor for every step. Rust owns the
+references, so the marks move with scrolling, page pruning and reflow, and
+report no value once their rows are trimmed. Erasing the scrollback moves
+references on erased rows to the screen origin instead, so a finished block
+whose end resolves to the origin is treated as erased. Output text is formatted by
+Ghostty between the C mark and the D mark (or the next prompt, or the cursor).
+The worker posts gutter extents only after the first block exists, and only
+when they change. Computing them walks from the newest block and stops at the
+first block that lies entirely above the viewport. Tracked references add
+bookkeeping to page operations, so Wraith caps the retained blocks at 1,000
+(at most four references each). Terminals without OSC 133 hold none.
+
+## GPU effects
+
+Effects are opt-in and live in `effects.rs`, `effects.wgsl` and
+`shader_prelude.wgsl`. The renderer holds `Option<Effects>`. While it is `None`
+the frame is exactly the path above: one pass, straight to the surface, with no
+effect textures, pipelines or uniform writes.
+
+With effects on, the terminal pass (images included) targets an offscreen scene
+texture in the surface format. Then, in one command buffer: bloom runs two
+half-resolution separable Gaussian passes (a bright-pass with a soft knee, then
+the vertical blur). One composite pass applies CRT curvature, chromatic
+aberration, the bloom add, the cursor trail, scanlines and vignette. A custom
+shader runs last over the composite output, or over the scene when no built-in
+is on. Every effect pipeline uses one explicit bind group layout (uniforms,
+source texture, linear sampler, glow texture), so a user shader may use any
+subset of those bindings.
+
+A custom shader is the user's WGSL followed by the prelude. The prelude declares
+the uniforms, `iChannel0`/`iChannel0Sampler` and an entry point that calls
+`mainImage`. Because the user's source comes first, compiler line numbers are the
+user's. Pipelines are created inside a validation error scope that is popped
+before anything changes. Errors are formatted from `getCompilationInfo()` as
+`line:column: message` and reject `setEffects()`; the previous effects stay.
+Errors outside the scope still reach the device's uncaptured-error handler, as
+before. A shader that hangs the GPU can still lose the device.
+
+The renderer tracks the cursor from each frame's uniforms. With a trail, a move
+starts an eased head and a slower tail from their current positions. While they
+travel, the native cursor is hidden in the scene and the composite draws the
+swept box between them. When the trail settles, the scene is redrawn once with
+the native cursor, matching the frame without effects. `needs_present` stays
+true only while the trail travels, an `iTime` shader animates, or the mouse
+moved for an `iMouse` shader. Those frames reuse the retained scene texture
+and run only the post passes. The SDK turns the trail off while
+`prefers-reduced-motion: reduce` matches, and forwards pointer positions only
+when the shader reads `iMouse`. The xterm-compatible compositor shares the same
+`Renderer`. Its `animate()` is driven by `requestAnimationFrame` only while
+`animating` is true.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This
@@ -152,6 +269,15 @@ Terminal-generated replies share the same byte event path as user input.
 Title and bell effects have separate typed events. Selection anchors belong to
 Ghostty, so copying can use its formatter rather than reconstructing logical
 lines from pixels.
+
+`connect(url)` opens the WebSocket inside the worker. Incoming messages enter
+the same serial queue as writes, resize and fences, so the page's main thread
+handles neither output nor its acknowledgements, and engine output (keys,
+paste, query replies) is sent from the worker before it is posted to the page's
+`onBytes` listeners. With `WebSocketStream` the worker reads the next message
+only after the previous one is parsed, yielding a task every 4 ms so input and
+animation frames interleave. A close is reported only after every earlier
+message is parsed.
 
 The worker serializes commands. In particular, an asynchronous GPU fence holds a
 Rust borrow until completion. Previously queued animation callbacks are canceled
@@ -240,23 +366,27 @@ wait.
 
 ## Where to extend
 
-| Area                                         | File / module                                |
-| -------------------------------------------- | -------------------------------------------- |
-| Upstream ABI and effects                     | `native/bridge.c`                            |
-| Headless state ownership and snapshots       | `crates/wraith-engine/src/core.rs`           |
-| Shaping, fallback, rasterization, cache      | `crates/wraith-engine/src/text.rs`           |
-| Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`            |
-| GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`       |
-| Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl`     |
-| Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`         |
-| Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`            |
-| Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`              |
-| Shared workers for many terminals            | `packages/wraith/src/pool.ts`                |
-| Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`               |
-| Recording and asciicast                      | `packages/wraith/src/recording.ts`           |
-| Timeline, keyframes, seeking                 | `packages/wraith/src/replay.ts`              |
-| Player UI and keyframe worker                | `packages/wraith/src/player.ts`              |
-| VT snapshots and grid digests                | `native/bridge.c` (`wraith_bridge_snapshot`) |
+| Area                                        | File / module                                                 |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| Upstream ABI and effects                    | `native/bridge.c`                                             |
+| Headless state ownership and snapshots      | `crates/wraith-engine/src/core.rs`                            |
+| Shaping, fallback, rasterization, cache     | `crates/wraith-engine/src/text.rs`                            |
+| Uploads, device, surface, render pass       | `crates/wraith-engine/src/gpu.rs`                             |
+| GPU row ownership and upload coalescing     | `crates/wraith-engine/src/retained.rs`                        |
+| Cell geometry and visual styles             | `crates/wraith-engine/src/terminal.wgsl`                      |
+| Kitty graphics textures and placement quads | `crates/wraith-engine/src/images.rs`                          |
+| Wasm public engine bindings                 | `crates/wraith-engine/src/web.rs`                             |
+| Scheduling, protocol, benchmarks            | `packages/wraith/src/worker.ts`                               |
+| Shared workers for many terminals           | `packages/wraith/src/pool.ts`                                 |
+| Shared surface: device, backing, atlases    | `crates/wraith-engine/src/shared.rs`                          |
+| Shared surface: placements and composition  | `packages/wraith/src/surface.ts`, `shared-host.ts`            |
+| Browser API, input, transport               | `packages/wraith/src/index.ts`                                |
+| ARIA, mirror, live region, keyboard exit    | `packages/wraith/src/accessibility.ts`                        |
+| Screen sampling and announcement diffing    | `packages/wraith/src/worker-accessibility.ts`, `announcer.ts` |
+| Recording and asciicast                     | `packages/wraith/src/recording.ts`                            |
+| Timeline, keyframes, seeking                | `packages/wraith/src/replay.ts`                               |
+| Player UI and keyframe worker               | `packages/wraith/src/player.ts`                               |
+| VT snapshots and grid digests               | `native/bridge.c` (`wraith_bridge_snapshot`)                  |
 
 Performance work should be driven by a recorded workload and percentile evidence.
 Broad compatibility additions should add a failing protocol fixture and, where

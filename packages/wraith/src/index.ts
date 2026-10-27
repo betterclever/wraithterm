@@ -1,9 +1,9 @@
 import { dedicatedChannel, WraithPool, type Channel, type WraithPoolOptions } from './pool.js';
 import { KEY_CODES } from './keycodes.js';
+import { TerminalAccessibility } from './accessibility.js';
 import {
   BackpressureError,
   packColor,
-  percentile,
   type WraithOptions,
   type WraithStats,
   type WraithTheme,
@@ -13,13 +13,29 @@ import {
   type SearchResult,
   type SelectionPosition,
   type KeyEventHandler,
+  type ReadTextOptions,
+  type WraithAccessibilityOptions,
+  type WraithConnectOptions,
+  type WraithConnection,
+  type WraithCloseEvent,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
 import { loadRecording, WraithRecorder, type RecordingSource } from './recording.js';
 import type { PlayerOptions, WraithPlayer } from './player.js';
+import { CommandBlocks } from './command-blocks.js';
+import type { CommandBlock } from './command-types.js';
+import { EffectsController, type WraithEffects } from './effects.js';
 export * from './types.js';
 export * from './recording.js';
 export type { PlayerOptions, WraithPlayer, PlayerControlsOptions } from './player.js';
+export * from './command-types.js';
+export { parseOsc133, type Osc133Step } from './osc133.js';
+export type {
+  WraithEffects,
+  WraithCrtOptions,
+  WraithBloomOptions,
+  WraithCursorTrailOptions,
+} from './effects.js';
 type Listener<T> = (value: T) => void;
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
@@ -41,6 +57,84 @@ class Signal<T> {
   }
   clear() {
     this.listeners.clear();
+  }
+}
+class WorkerConnection implements WraithConnection {
+  readonly opened: Promise<void>;
+  readonly closed: Promise<WraithCloseEvent>;
+  transport: 'stream' | 'events' | undefined;
+  private opens = new Signal<void>();
+  private closes = new Signal<WraithCloseEvent>();
+  private errors = new Signal<Error>();
+  private resolveOpen!: () => void;
+  private rejectOpen!: (error: Error) => void;
+  private resolveClose!: (event: WraithCloseEvent) => void;
+  private done = false;
+  constructor(
+    readonly link: number,
+    private post: (command: Command, transfer?: Transferable[]) => void,
+    private release: () => void,
+  ) {
+    this.opened = new Promise((resolve, reject) => {
+      this.resolveOpen = resolve;
+      this.rejectOpen = reject;
+    });
+    void this.opened.catch(() => {});
+    this.closed = new Promise((resolve) => (this.resolveClose = resolve));
+  }
+  send(data: string | Uint8Array) {
+    if (this.done) return;
+    if (typeof data === 'string') this.post({ type: 'socket-send', link: this.link, data });
+    else {
+      const bytes = data.slice();
+      this.post({ type: 'socket-send', link: this.link, data: bytes }, [bytes.buffer]);
+    }
+  }
+  close(code?: number, reason?: string) {
+    if (!this.done) this.post({ type: 'socket-close', link: this.link, code, reason });
+  }
+  onOpen(listener: () => void): Disposable {
+    return this.opens.on(listener);
+  }
+  onClose(listener: (event: WraithCloseEvent) => void): Disposable {
+    return this.closes.on(listener);
+  }
+  onError(listener: (error: Error) => void): Disposable {
+    return this.errors.on(listener);
+  }
+  dispose() {
+    this.close(1000);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
+  }
+  /** @internal */
+  event(reply: Extract<Reply, { type: 'socket' }>) {
+    if (this.done) return;
+    if (reply.event === 'open') {
+      this.transport = reply.transport;
+      this.resolveOpen();
+      this.opens.emit();
+    } else if (reply.event === 'error')
+      this.errors.emit(new Error(reply.error ?? 'WebSocket error'));
+    else
+      this.finish({
+        code: reply.code ?? 1006,
+        reason: reply.reason ?? '',
+        wasClean: !!reply.wasClean,
+      });
+  }
+  /** @internal */
+  finish(event: WraithCloseEvent) {
+    if (this.done) return;
+    this.done = true;
+    this.release();
+    this.rejectOpen(new Error(`WebSocket closed before opening (${event.code})`));
+    this.resolveClose(event);
+    this.closes.emit(event);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
   }
 }
 interface Pending {
@@ -76,7 +170,12 @@ function validateGrid(cols: number, rows: number) {
 }
 
 /** One independent worker, Wasm instance, and GPU device per terminal. */
-export { WraithPool, type WraithPoolOptions } from './pool.js';
+export {
+  WraithPool,
+  type WraithPoolOptions,
+  type SharedSurfaceOptions,
+  type SharedSurfaceStats,
+} from './pool.js';
 export class Wraith {
   /** A pool of shared workers for mounting many terminals; pass it as `pool`. */
   static pool(options?: WraithPoolOptions): WraithPool {
@@ -119,6 +218,7 @@ export class Wraith {
   private pending = new Map<number, Pending>();
   private sequence = 1;
   private pendingBytes = 0;
+  private links = new Map<number, WorkerConnection>();
   /** Writes queued this task, encoded or copied once into one buffer that
    * crosses to the worker as a single transfer with one acknowledgement. */
   private batch = new Uint8Array(0);
@@ -160,10 +260,18 @@ export class Wraith {
   private keyHandlers = new Set<KeyEventHandler>();
   private interceptedKeys = new Set<string>();
   private composing = false;
-  private mirror?: HTMLPreElement;
-  private mirrorTimer?: ReturnType<typeof setInterval>;
   private preedit: HTMLSpanElement;
   private theme: Required<WraithTheme>;
+  /** System colors while forced-colors mode is active; overrides `theme`. */
+  private forcedTheme?: Required<WraithTheme>;
+  private started = false;
+  private hostPaused: boolean;
+  private a11y: TerminalAccessibility;
+  private announcements = new Signal<string>();
+  private blocks: CommandBlocks;
+  /** CSS pixels reserved left of the canvas for the command gutter. */
+  private inset = 0;
+  private effectsController: EffectsController;
   private constructor(host: HTMLElement, options: WraithOptions) {
     this.options = options;
     this.dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -192,13 +300,10 @@ export class Wraith {
       overflow: 'hidden',
       background: this.theme.background,
     });
-    this.element.setAttribute('role', 'group');
-    this.element.setAttribute('aria-label', 'Wraith terminal');
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('aria-hidden', 'true');
     Object.assign(this.canvas.style, { display: 'block', touchAction: 'none', userSelect: 'none' });
     this.input = document.createElement('textarea');
-    this.input.setAttribute('aria-label', 'Terminal input');
     this.input.setAttribute('autocapitalize', 'off');
     this.input.setAttribute('autocomplete', 'off');
     this.input.spellcheck = false;
@@ -225,12 +330,82 @@ export class Wraith {
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
+    this.hostPaused = !!options.paused;
+    this.a11y = new TerminalAccessibility(
+      {
+        host,
+        element: this.element,
+        input: this.input,
+        signal: this.abort.signal,
+        send: (command) => {
+          // The worker rejects session commands before init, failing the mount.
+          if (!this.started || this.disposed || this.failed) return false;
+          this.send(command);
+          return true;
+        },
+        geometry: () => ({
+          rowHeight: this.cellHeight / this.dpr,
+          width: (this.cols * this.cellWidth) / this.dpr,
+        }),
+        setForcedTheme: (theme) => {
+          this.forcedTheme = theme;
+          this.applyTheme();
+        },
+        announced: (text) => this.announcements.emit(text),
+      },
+      options.accessibility,
+    );
     const handlers = {
       message: (reply: Reply) => this.receive(reply),
       fail: (error: Error) => this.fail(error),
     };
     this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
+    // IME composition text must stay visible above a shared surface.
+    if (this.worker.surface) this.preedit.style.zIndex = String(this.worker.surface.zIndex + 1);
     this.bindInput();
+    this.blocks = new CommandBlocks(
+      {
+        element: this.element,
+        canvas: this.canvas,
+        geometry: () => ({
+          cellWidth: this.cellWidth,
+          cellHeight: this.cellHeight,
+          dpr: this.dpr,
+          cols: this.cols,
+          rows: this.rows,
+        }),
+        request: <T>(command: Record<string, unknown> & { type: string }) =>
+          this.request<T>(command as unknown as Omit<Extract<Command, { id: number }>, 'id'>),
+        addKeyHandler: (handler) => this.attachCustomKeyEventHandler(handler),
+        reserve: (pixels) => {
+          // Only a fitted terminal can give up width without clipping columns.
+          if (this.options.fit === false || this.inset) return false;
+          this.inset = pixels;
+          Object.assign(this.element.style, {
+            boxSizing: 'border-box',
+            paddingLeft: `${pixels}px`,
+          });
+          this.fit();
+          return true;
+        },
+        error: (error) =>
+          this.errors.emit(error instanceof Error ? error : new Error(String(error))),
+      },
+      options.commandBlocks,
+    );
+    this.effectsController = new EffectsController(
+      this.canvas,
+      () => this.dpr,
+      ({ params, shader }) =>
+        this.request<void>({ type: 'effects', params, shader } as Omit<
+          Extract<Command, { type: 'effects' }>,
+          'id'
+        >),
+      (mouse) => {
+        if (!this.disposed && !this.failed) this.send({ type: 'effect-mouse', mouse });
+      },
+      (error) => this.errors.emit(error),
+    );
   }
   static async mount(host: HTMLElement, options: WraithOptions = {}): Promise<Wraith> {
     if (!navigator.gpu)
@@ -245,7 +420,11 @@ export class Wraith {
           ...(options.fallbackFonts ?? []),
         ].map(loadFont),
       );
-      const canvas = terminal.canvas.transferControlToOffscreen();
+      // A shared-surface pool draws into its own canvas; this one stays a
+      // placeholder for layout, pointer input and visibility.
+      const canvas = terminal.worker.surface
+        ? undefined
+        : terminal.canvas.transferControlToOffscreen();
       terminal.fontBytes = font!.slice();
       terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
       terminal.send(
@@ -261,19 +440,28 @@ export class Wraith {
           history: options.scrollback ?? 10000,
           imageStorageLimit: options.imageStorageLimit,
           ligatures: options.ligatures,
-          theme: Object.values(terminal.theme).map(packColor),
+          theme: Object.values(terminal.forcedTheme ?? terminal.theme).map(packColor),
         },
-        [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
+        [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
+      terminal.started = true;
       await terminal.ready;
       terminal.dimensions();
+      terminal.worker.surface?.track(terminal.canvas, terminal.element);
       terminal.watchVisibility();
       if (options.fit !== false) {
         terminal.observer = new ResizeObserver(() => terminal.fit());
         terminal.observer.observe(host);
         terminal.fit();
       }
-      if (options.screenReaderMode) terminal.enableMirror();
+      terminal.a11y.setScreenReaderMode(!!options.screenReaderMode);
+      terminal.a11y.configure();
+      if (options.effects)
+        // An invalid custom shader must not fail the mount: report it once the
+        // caller can subscribe, and keep rendering without effects.
+        await terminal.effectsController
+          .set(options.effects)
+          .catch((error) => setTimeout(() => terminal.errors.emit(error), 0));
       terminal.watchDisplay();
       window.addEventListener('resize', () => terminal.checkDisplay(), {
         signal: terminal.abort.signal,
@@ -332,6 +520,9 @@ export class Wraith {
         this.binary.emit(reply.bytes);
         this.data.emit(this.decoder.decode(reply.bytes, { stream: true }));
         break;
+      case 'output':
+        this.outputs.emit(reply.bytes);
+        break;
       case 'title':
         this.title.emit(reply.title);
         break;
@@ -341,23 +532,43 @@ export class Wraith {
       case 'modes':
         this.mouseTracking = reply.mouse;
         break;
-      case 'cursor': {
-        const left = `${(reply.x * this.cellWidth) / this.dpr}px`,
-          top = `${(reply.y * this.cellHeight) / this.dpr}px`;
-        Object.assign(this.input.style, { left, top, bottom: 'auto' });
-        Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+      case 'cursor':
+        this.cursorCell = [reply.x, reply.y];
+        // Only the focused terminal's IME anchor follows the cursor. Moving
+        // every unfocused input makes the browser re-layerize the page each
+        // frame, which dominates with hundreds of terminals.
+        if (this.composing || document.activeElement === this.input) this.placeInput();
         break;
-      }
       case 'render':
         this.renders.emit({ frame: reply.frame });
         break;
+      case 'a11y':
+        this.a11y.receive(reply);
+        break;
       case 'error':
         this.fail(new Error(reply.error));
+        break;
+      case 'command':
+      case 'marks':
+        // Replies can still arrive while dispose() waits for the worker.
+        if (!this.disposed && !this.failed) this.blocks.receive(reply);
+        break;
+      case 'socket':
+        this.links.get(reply.link)?.event(reply);
         break;
       case 'stats': {
         // Some browser/display transitions update resolution without delivering
         // a media-query change event. Reuse the existing stats heartbeat.
         this.checkDisplay();
+        if (!this.statistics.size) break;
+        // Sort the render samples once for all three percentiles.
+        const sorted = Float64Array.from(reply.samples).sort();
+        const at = (fraction: number) =>
+          sorted.length
+            ? sorted[
+                Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * fraction) - 1))
+              ]!
+            : 0;
         const v = reply.values;
         this.statistics.emit({
           frames: v[0]!,
@@ -369,11 +580,12 @@ export class Wraith {
           atlasHits: v[6]!,
           atlasMisses: v[7]!,
           atlasResets: v[8]!,
-          renderP50Ms: percentile(reply.samples, 0.5),
-          renderP95Ms: percentile(reply.samples, 0.95),
-          renderP99Ms: percentile(reply.samples, 0.99),
+          renderP50Ms: at(0.5),
+          renderP95Ms: at(0.95),
+          renderP99Ms: at(0.99),
           activeFps: reply.fps,
           adapter: reply.adapter,
+          effectPasses: reply.effectPasses,
         });
         break;
       }
@@ -389,12 +601,13 @@ export class Wraith {
     this.pendingBytes = 0;
     this.batchIds = [];
     this.batchLength = 0;
+    this.endLinks(error.message);
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
-    clearInterval(this.mirrorTimer);
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.effectsController.dispose();
     this.worker.terminate();
   }
   /** Resolves after bytes have been parsed. Use flush() to wait for rendering. */
@@ -432,7 +645,7 @@ export class Wraith {
   }
   private reserve(bytes: number) {
     if (this.batchLength + bytes <= this.batch.length) return;
-    const next = new Uint8Array(Math.max(4096, (this.batchLength + bytes) * 2));
+    const next = new Uint8Array(Math.max(1024, (this.batchLength + bytes) * 2));
     next.set(this.batch.subarray(0, this.batchLength));
     this.batch = next;
   }
@@ -470,7 +683,8 @@ export class Wraith {
   fit(): void {
     if (this.disposed || this.failed) return;
     const rect = this.element.getBoundingClientRect();
-    const cols = Math.min(512, Math.max(1, Math.floor((rect.width * this.dpr) / this.cellWidth)));
+    const width = rect.width - this.inset;
+    const cols = Math.min(512, Math.max(1, Math.floor((width * this.dpr) / this.cellWidth)));
     const rows = Math.min(
       512,
       Math.floor(65536 / cols),
@@ -479,10 +693,26 @@ export class Wraith {
     if (rect.width > 0 && rect.height > 0)
       void this.resize(cols, rows).catch((error) => this.errors.emit(error));
   }
+  private cursorCell?: [number, number];
+  private placeInput() {
+    if (!this.cursorCell) return;
+    // Offset by the command gutter reserved left of the canvas.
+    const left = `${this.inset + (this.cursorCell[0] * this.cellWidth) / this.dpr}px`,
+      top = `${(this.cursorCell[1] * this.cellHeight) / this.dpr}px`;
+    Object.assign(this.input.style, { left, top, bottom: 'auto' });
+    Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+  }
   private dimensions() {
+    if (this.worker.surface) {
+      // The placeholder's size in terminal pixels gives the shared surface its scale.
+      this.canvas.width = this.cols * this.cellWidth;
+      this.canvas.height = this.rows * this.cellHeight;
+    }
+    this.blocks.draw();
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
     this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
+    this.a11y.layout();
   }
   /** Change CSS text size without replacing terminal state or the worker. */
   setFontSize(fontSize: number): Promise<void> {
@@ -596,7 +826,14 @@ export class Wraith {
       this.sentResizes.on(({ cols, rows }) => recorder.resize(cols, rows)),
       ...(options.input ? [this.data.on((text) => recorder.input(text))] : []),
     ];
-    recorder.onStop(() => subscriptions.forEach((s) => s.dispose()));
+    // Output from a worker-owned socket (connect(url)) never reaches the page
+    // unless asked for; ask only while a recorder listens.
+    if (this.outputs.size === 1) this.send({ type: 'observe-output', enabled: true });
+    recorder.onStop(() => {
+      subscriptions.forEach((s) => s.dispose());
+      if (!this.outputs.size && !this.disposed && !this.failed)
+        this.send({ type: 'observe-output', enabled: false });
+    });
     return recorder;
   }
   /** Render submission notification, not a GPU fence or proof of display presentation.
@@ -694,6 +931,32 @@ export class Wraith {
     } as Omit<Extract<Command, { type: 'selection' }>, 'id'>);
     this.selected = start.x !== -1;
   }
+  /**
+   * Shell commands recorded from OSC 133 semantic prompt marks, oldest first
+   * (see SHELL_INTEGRATION). Output text is read lazily with `block.output()`.
+   */
+  commands(): Promise<CommandBlock[]> {
+    this.flushWrites();
+    return this.blocks.commands();
+  }
+  /** Fires when a command finishes (OSC 133;D, or the next prompt). */
+  onCommand(listener: Listener<CommandBlock>): Disposable {
+    return this.blocks.onCommand(listener);
+  }
+  /**
+   * Scroll the previous (-1) or next (1) prompt to the top of the viewport.
+   * Resolves false when there is none. Bound to Cmd+Up/Down on macOS and
+   * Ctrl+Shift+Up/Down elsewhere once the first command has run.
+   */
+  jumpToPrompt(direction: -1 | 1): Promise<boolean> {
+    this.flushWrites();
+    return this.blocks.jumpToPrompt(direction);
+  }
+  /** Copy a command block's output to the clipboard and return it. */
+  copyCommandOutput(id: number): Promise<string> {
+    this.flushWrites();
+    return this.blocks.copyCommandOutput(id);
+  }
   /** Return false to keep a key event out of the terminal. Prevent its browser default in the handler if desired. */
   attachCustomKeyEventHandler(handler: KeyEventHandler): Disposable {
     this.assertLive();
@@ -707,15 +970,141 @@ export class Wraith {
       'id'
     >);
   }
+  /** The effects currently applied, or null when none are enabled. */
+  get effects(): WraithEffects | null {
+    return this.effectsController.effects;
+  }
+  /**
+   * Replace GPU post-process effects; pass `null` or `{}` to turn them off,
+   * which removes every extra pass and texture. Rejects (and emits `onError`)
+   * with the compiler's messages for an invalid custom shader, keeping the
+   * previous effects; the terminal keeps running.
+   */
+  async setEffects(effects: WraithEffects | null): Promise<void> {
+    this.assertLive();
+    try {
+      await this.effectsController.set(effects);
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      if (!this.failed && !this.disposed) this.errors.emit(failure);
+      throw failure;
+    }
+  }
   setTheme(theme: WraithTheme): void {
     this.assertLive();
     const next = { ...this.theme, ...theme };
-    const colors = Object.values(next).map(packColor);
+    Object.values(next).forEach(packColor);
     this.theme = next;
-    this.element.style.background = next.background;
-    this.send({ type: 'theme', colors });
+    this.applyTheme();
   }
-  connect(socket: WebSocket): Disposable {
+  private applyTheme() {
+    const theme = this.forcedTheme ?? this.theme;
+    this.element.style.background = theme.background;
+    this.preedit.style.background = theme.background;
+    this.preedit.style.color = theme.foreground;
+    // Before init the engine takes the effective theme with its other settings.
+    if (this.started && !this.disposed && !this.failed)
+      this.send({ type: 'theme', colors: Object.values(theme).map(packColor) });
+  }
+  /**
+   * Plain text of the visible screen (default), or of retained scrollback plus
+   * the screen with soft-wrapped lines joined (`scope: 'all'`). Reading `all`
+   * clears an active selection. It never changes the viewport or focus.
+   */
+  async readText(options: ReadTextOptions = {}): Promise<string> {
+    const scope = options.scope ?? 'screen';
+    if (scope !== 'screen' && scope !== 'all') throw new RangeError('scope must be screen or all');
+    this.flushWrites();
+    const text = await this.request<string>({ type: 'read', scope } as Omit<
+      Extract<Command, { type: 'read' }>,
+      'id'
+    >);
+    if (scope === 'all') this.selected = false;
+    const last = options.lastLines;
+    if (last === undefined) return text;
+    if (!Number.isInteger(last) || last < 0) throw new RangeError('lastLines must be a count');
+    return last === 0 ? '' : text.split('\n').slice(-last).join('\n');
+  }
+  /** Stop painting (an inactive pane). Parsing, replies and accessibility
+   * continue; `resume()` paints the latest state once, without replaying output. */
+  pause(): void {
+    this.hostPaused = true;
+    this.updateVisibility();
+  }
+  resume(): void {
+    this.hostPaused = false;
+    this.updateVisibility();
+  }
+  /** Whether painting is paused by `pause()`. Offscreen and hidden-document
+   * pausing is automatic and independent. */
+  get paused(): boolean {
+    return this.hostPaused;
+  }
+  get screenReaderMode(): boolean {
+    return this.a11y.enabled;
+  }
+  /** Add or remove the accessible mirror and output announcements at runtime. */
+  setScreenReaderMode(enabled: boolean): void {
+    this.assertLive();
+    this.a11y.setScreenReaderMode(enabled);
+  }
+  /** Change accessibility options without remounting. */
+  setAccessibility(options: WraithAccessibilityOptions): void {
+    this.assertLive();
+    this.a11y.update(options);
+  }
+  /** Speak a host message (for example "Connection lost") through the
+   * terminal's live region. Requires screen reader mode. */
+  announce(text: string): void {
+    this.a11y.announce(String(text));
+  }
+  /** Text placed in the live region: output summaries and `announce()` calls. */
+  onAnnounce(listener: Listener<string>): Disposable {
+    return this.announcements.on(listener);
+  }
+  private endLinks(reason: string) {
+    for (const link of [...this.links.values()])
+      link.finish({ code: 1006, reason, wasClean: false });
+  }
+  /**
+   * Open a WebSocket in the terminal's worker (`ws:`, `wss:`, `http(s):` or a
+   * path relative to the page). Output is parsed in the worker, never on the
+   * main thread; input and terminal replies are sent from the worker in order.
+   * Connecting again closes the previous worker socket.
+   */
+  connect(url: string | URL, options?: WraithConnectOptions): WraithConnection;
+  /** Bridge a page-owned WebSocket: messages are received here and posted to the worker. */
+  connect(socket: WebSocket): Disposable;
+  connect(target: string | URL | WebSocket, options: WraithConnectOptions = {}): Disposable {
+    if (typeof target === 'string' || target instanceof URL)
+      return this.connectWorker(target, options);
+    return this.bridge(target);
+  }
+  private connectWorker(target: string | URL, options: WraithConnectOptions): WraithConnection {
+    this.assertLive();
+    const url = new URL(target, location.href);
+    if (url.protocol === 'http:') url.protocol = 'ws:';
+    else if (url.protocol === 'https:') url.protocol = 'wss:';
+    const id = this.sequence++;
+    const connection = new WorkerConnection(
+      id,
+      (command, transfer) => {
+        if (!this.disposed && !this.failed) this.send(command, transfer);
+      },
+      () => this.links.delete(id),
+    );
+    this.links.set(id, connection);
+    const protocols = options.protocols ?? [];
+    this.send({
+      type: 'socket-open',
+      link: id,
+      url: url.href,
+      protocols: typeof protocols === 'string' ? [protocols] : [...protocols],
+      stream: options.stream !== false,
+    });
+    return connection;
+  }
+  private bridge(socket: WebSocket): Disposable {
     // Messages are written in order and batched across the worker boundary.
     // Only when queued bytes pass half the backpressure limit does reading
     // wait, for the latest write (and so everything before it) to be parsed.
@@ -868,7 +1257,10 @@ export class Wraith {
     );
     this.input.addEventListener(
       'focus',
-      () => this.send({ type: 'focus', focused: true }),
+      () => {
+        this.placeInput();
+        this.send({ type: 'focus', focused: true });
+      },
       options,
     );
     this.input.addEventListener(
@@ -1082,43 +1474,26 @@ export class Wraith {
   }
   private updateVisibility() {
     if (!this.visibilityReady || this.disposed || this.failed) return;
-    const visible = !document.hidden && this.intersectsViewport;
+    const visible = !this.hostPaused && !document.hidden && this.intersectsViewport;
     if (visible === this.workerVisible) return;
     this.workerVisible = visible;
     this.send({ type: 'visibility', visible });
-  }
-  private enableMirror() {
-    this.mirror = document.createElement('pre');
-    this.mirror.setAttribute('role', 'log');
-    this.mirror.setAttribute('aria-live', 'polite');
-    Object.assign(this.mirror.style, {
-      position: 'absolute',
-      width: '1px',
-      height: '1px',
-      overflow: 'hidden',
-      clipPath: 'inset(50%)',
-    });
-    this.element.append(this.mirror);
-    this.mirrorTimer = setInterval(() => {
-      void this.getText()
-        .then((text) => {
-          if (this.mirror && this.mirror.textContent !== text) this.mirror.textContent = text;
-        })
-        .catch(() => {});
-    }, 250);
   }
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
     this.abort.abort();
+    this.blocks.dispose();
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
-    clearInterval(this.mirrorTimer);
+    this.a11y.dispose();
+    this.effectsController.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
+    this.endLinks('Wraith disposed');
     this.batchIds = [];
     this.batchLength = 0;
     // Allow Ghostty and wgpu destructors to run; terminate a stalled worker after a bounded wait.
@@ -1151,6 +1526,7 @@ export class Wraith {
     this.renders.clear();
     this.outputs.clear();
     this.sentResizes.clear();
+    this.announcements.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();
   }

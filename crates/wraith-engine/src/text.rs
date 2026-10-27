@@ -291,6 +291,24 @@ impl Atlas {
     pub(crate) fn is_external(&self) -> bool {
         self.fonts.is_empty()
     }
+    /// Rasterize up to `count` printable ASCII characters in the regular style,
+    /// starting `from` characters after '!', ahead of their first use. Returns
+    /// where to continue, or `None` once all of them are cached.
+    pub fn prefill_ascii(&mut self, from: u32, count: u32) -> Option<u32> {
+        const FIRST: u32 = '!' as u32;
+        const LAST: u32 = '~' as u32;
+        // Never crowd out glyphs a terminal is already showing.
+        if self.next >= self.capacity / 2 {
+            return None;
+        }
+        let mut text = [0u8; 4];
+        let end = (FIRST + from).saturating_add(count).min(LAST + 1);
+        for scalar in FIRST + from..end {
+            let c = char::from_u32(scalar).unwrap_or(' ');
+            self.tile(&Cell::with_text(c.encode_utf8(&mut text)));
+        }
+        (end <= LAST).then_some(end - FIRST)
+    }
     pub fn add_font(&mut self, bytes: Vec<u8>) -> Result<(), String> {
         self.fonts.push(Font::new(bytes)?);
         self.reset();
@@ -686,6 +704,29 @@ mod tests {
         assert_eq!(atlas.tile(&cell("A")), tile);
         assert!(!atlas.overflow);
         assert_eq!(atlas.count(), 1);
+    }
+
+    #[test]
+    fn prefilled_ascii_is_cached_in_steps() {
+        let mut atlas = small_atlas(1000);
+        let mut next = Some(0);
+        let mut steps = 0;
+        while let Some(from) = next {
+            next = atlas.prefill_ascii(from, 10);
+            steps += 1;
+        }
+        assert_eq!(steps, 10);
+        assert_eq!(atlas.count(), 94);
+        assert_eq!(atlas.uploads.len(), 94);
+        let misses = atlas.misses;
+        let glyph = atlas.tile(&cell("~"));
+        assert_ne!(glyph, 0);
+        assert_eq!(atlas.misses, misses);
+        // A crowded atlas is left alone.
+        let mut full = small_atlas(2);
+        full.tile(&cell("x"));
+        assert_eq!(full.prefill_ascii(0, 10), None);
+        assert_eq!(full.count(), 1);
     }
 
     #[test]

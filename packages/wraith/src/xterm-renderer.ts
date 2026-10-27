@@ -1,5 +1,6 @@
 import type { Terminal, IDisposable, ITerminalOptions } from './xterm-api.js';
 import init, { Compositor, type InitOutput } from '../wasm/wraith_engine.js';
+import { EffectsController } from './effects.js';
 import { BrowserAtlas, AtlasFull } from './xterm-atlas.js';
 import { ContrastCache, backgroundGlyph } from './xterm-contrast.js';
 import {
@@ -104,6 +105,10 @@ export class XtermRenderer implements Renderer {
   private selectedStart: [number, number] | undefined;
   private selectedEnd: [number, number] | undefined;
   private columnSelection = false;
+  /** An asynchronous effect rebuild holds the compositor; frames wait. */
+  private effectsBusy = false;
+  private animation = 0;
+  readonly effects: EffectsController;
   readonly ready: Promise<boolean>;
   get active(): boolean {
     return this.core._renderService._renderer.value === this;
@@ -134,6 +139,13 @@ export class XtermRenderer implements Renderer {
       display: 'none',
     });
     core.screenElement.prepend(this.canvas);
+    this.effects = new EffectsController(
+      this.canvas,
+      () => this.core._coreBrowserService.dpr,
+      ({ params, shader }) => this.applyEffects(params, shader),
+      (mouse) => this.setEffectMouse(mouse),
+      () => {},
+    );
     this.subscriptions.push(
       core.optionsService.onOptionChange(() => this.invalidate()),
       core._themeService.onChangeColors(() => {
@@ -149,13 +161,17 @@ export class XtermRenderer implements Renderer {
         this.invalidate();
       }),
     );
+    const reduceMotion =
+      typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
     this.timer = setInterval(() => {
       if (
         !this.disposed &&
         this.state === 'webgpu' &&
         (core.coreService.decPrivateModes.cursorBlink ?? terminal.options.cursorBlink)
       ) {
-        this.blink = !this.blink;
+        // Reduced motion holds the cursor in its visible phase.
+        if (reduceMotion?.matches && this.blink) return;
+        this.blink = reduceMotion?.matches || !this.blink;
         this.invalidate(false);
       }
     }, 600);
@@ -251,8 +267,53 @@ export class XtermRenderer implements Renderer {
     if (this.core._characterJoinerService._characterJoiners.length) return 'Character joiners';
     return undefined;
   }
+  private async applyEffects(params: number[], shader?: string): Promise<void> {
+    if (!(await this.ready) || this.disposed || !this.gpu || this.state !== 'webgpu')
+      throw new Error('GPU effects require the WebGPU renderer');
+    this.effectsBusy = true;
+    cancelAnimationFrame(this.animation);
+    this.animation = 0;
+    const gpu = this.gpu;
+    try {
+      await gpu.set_effects(new Float32Array(params), shader);
+    } finally {
+      this.effectsBusy = false;
+      // dispose() during the rebuild could not free the borrowed compositor.
+      if (this.disposed) {
+        gpu.free();
+        if (this.gpu === gpu) this.gpu = undefined;
+      } else this.invalidate();
+    }
+    if (this.disposed) throw new Error('Terminal disposed');
+  }
+  private setEffectMouse(mouse: number[]): void {
+    if (!this.gpu || this.effectsBusy || this.disposed) return;
+    this.gpu.set_effect_mouse(mouse[0]!, mouse[1]!, mouse[2]!, mouse[3]!);
+    this.animate();
+  }
+  /** Drive effect animation frames only while the compositor reports one. */
+  private animate(): void {
+    if (this.animation || !this.gpu || this.effectsBusy || this.disposed) return;
+    if (!this.gpu.animating) return;
+    this.animation = requestAnimationFrame(() => {
+      this.animation = 0;
+      if (!this.gpu || this.effectsBusy || this.disposed || this.state !== 'webgpu') return;
+      try {
+        this.gpu.animate();
+      } catch (error) {
+        this.fail(String(error));
+        this.fallback.renderRows(0, this.terminal.rows - 1);
+        return;
+      }
+      this.animate();
+    });
+  }
   renderRows(start: number, end: number): void {
     if (this.disposed) return;
+    if (this.effectsBusy) {
+      this.full = true;
+      return;
+    }
     const reason = this.fallbackReason();
     if (reason) {
       if (this.state !== 'dom') {
@@ -353,6 +414,7 @@ export class XtermRenderer implements Renderer {
       this.full = false;
       this.reason = undefined;
       this.show(true);
+      this.animate();
     } catch (error) {
       this.fail(String(error));
       this.fallback.renderRows(0, this.terminal.rows - 1);
@@ -844,9 +906,16 @@ export class XtermRenderer implements Renderer {
     if (this.disposed) return;
     this.disposed = true;
     clearInterval(this.timer);
+    cancelAnimationFrame(this.animation);
+    this.effects.dispose();
     for (const subscription of this.subscriptions) subscription.dispose();
     this.restoreBackgrounds();
-    this.gpu?.free();
+    // An in-flight setEffects() holds a Rust borrow; it frees the compositor
+    // when the rebuild settles.
+    if (!this.effectsBusy) {
+      this.gpu?.free();
+      this.gpu = undefined;
+    }
     this.canvas.remove();
     this.fallback.dispose();
   }

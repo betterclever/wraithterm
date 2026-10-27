@@ -14,8 +14,16 @@ export interface WraithOptions {
   scrollback?: number;
   fit?: boolean;
   theme?: WraithTheme;
-  /** Maintain an accessible text mirror. Off by default to minimize DOM work. */
+  /**
+   * Screen-reader support: an accessible row mirror of the screen and polite,
+   * throttled announcements of new output. Off by default; when off, no text
+   * leaves the worker. Change it later with `setScreenReaderMode()`.
+   */
   screenReaderMode?: boolean;
+  /** Labels, keyboard exit, announcements, and display preferences. */
+  accessibility?: WraithAccessibilityOptions;
+  /** Start with painting paused, as for an inactive pane. See `pause()`. */
+  paused?: boolean;
   /** Maximum unacknowledged input bytes. Defaults to 8 MiB. */
   maxPendingBytes?: number;
   /**
@@ -35,6 +43,54 @@ export interface WraithOptions {
    * without it, each terminal has a dedicated worker.
    */
   pool?: import('./pool.js').WraithPool;
+  /**
+   * OSC 133 command blocks: gutter marks, a copy-output button and
+   * jump-to-prompt keys. On by default; inert until a shell sends OSC 133.
+   * `false` disables the gutter, button and keys (the API still works).
+   */
+  commandBlocks?: import('./command-types.js').CommandBlockOptions | false;
+  /**
+   * GPU post-process effects: CRT, bloom, cursor trail and custom WGSL
+   * shaders. Off by default. Change them later with `setEffects()`.
+   */
+  effects?: import('./effects.js').WraithEffects;
+}
+export interface WraithAccessibilityOptions {
+  /** Accessible name of the terminal group. Defaults to the host's
+   * `aria-label`, else "Terminal". */
+  label?: string;
+  /** Role of the terminal element. Defaults to "group". */
+  role?: string;
+  /** Accessible name of the input. Defaults to the host's `aria-label` /
+   * `aria-labelledby`, else "Terminal input". */
+  inputLabel?: string;
+  /**
+   * Which terminals speak new output while `screenReaderMode` is on: only the
+   * one whose input has focus (default), every one while the page is visible
+   * (including offscreen and paused terminals), or none.
+   */
+  announcements?: 'focused' | 'always' | false;
+  /** Minimum milliseconds between announcements. Defaults to 500. */
+  announceInterval?: number;
+  /** Rows per announcement before the "arriving quickly" notice. Defaults to 20. */
+  maxAnnouncementLines?: number;
+  /** UTF-16 code units per announcement before the notice. Defaults to 4000. */
+  maxAnnouncementCharacters?: number;
+  /** Escape then Tab (or Shift+Tab) moves focus out of the terminal. Defaults to true. */
+  keyboardExit?: boolean;
+  /** Outline the terminal while it holds keyboard focus reached by Tab. Defaults to true. */
+  focusRing?: boolean;
+  /** In forced-colors (high contrast) mode, use system colors for the default
+   * foreground, background and cursor. Defaults to true. */
+  forcedColors?: boolean;
+  /** Stop cursor and text blinking. Defaults to `prefers-reduced-motion`. */
+  reducedMotion?: boolean;
+}
+export interface ReadTextOptions {
+  /** The visible screen (default), or retained scrollback plus the screen. */
+  scope?: 'screen' | 'all';
+  /** Return only the last N lines. */
+  lastLines?: number;
 }
 export interface WraithStats {
   frames: number;
@@ -51,6 +107,8 @@ export interface WraithStats {
   renderP99Ms: number;
   activeFps: number;
   adapter: string;
+  /** Post-process passes in the last effect frame; zero with effects off. */
+  effectPasses: number;
 }
 export type Workload = 'sparse' | 'dense' | 'scroll';
 export interface BenchmarkOptions {
@@ -75,6 +133,40 @@ export interface BenchmarkResult {
 }
 export interface Disposable {
   dispose(): void;
+}
+export interface WraithConnectOptions {
+  /** WebSocket subprotocols. */
+  protocols?: string | string[];
+  /**
+   * Read with `WebSocketStream` where the browser provides it, so reading
+   * pauses while the parser is behind. Defaults to true; false always uses
+   * `WebSocket` events in the worker.
+   */
+  stream?: boolean;
+}
+export interface WraithCloseEvent {
+  code: number;
+  reason: string;
+  wasClean: boolean;
+}
+/**
+ * A WebSocket opened and read by the terminal's worker. Output is parsed there
+ * without crossing the page's main thread; keystrokes, paste and terminal
+ * replies are sent from the worker in order.
+ */
+export interface WraithConnection extends Disposable {
+  /** Resolves when the socket opens; rejects if it closes first. */
+  readonly opened: Promise<void>;
+  /** Resolves after the socket closes and every byte received before the close is parsed. */
+  readonly closed: Promise<WraithCloseEvent>;
+  /** `stream` (WebSocketStream) or `events` (WebSocket); undefined until open. */
+  readonly transport: 'stream' | 'events' | undefined;
+  /** Send to the server, ordered with terminal input. Queued until the socket opens. */
+  send(data: string | Uint8Array): void;
+  close(code?: number, reason?: string): void;
+  onOpen(listener: () => void): Disposable;
+  onClose(listener: (event: WraithCloseEvent) => void): Disposable;
+  onError(listener: (error: Error) => void): Disposable;
 }
 /** Native Ghostty search uses ASCII-insensitive matching; other UTF-8 bytes match exactly. */
 export interface SearchResult {

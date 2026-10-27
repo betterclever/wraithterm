@@ -5,7 +5,19 @@ export function wraith() {
   return {
     name: 'wraith-terminal-assets',
     config() {
-      return { optimizeDeps: { exclude: ['wraithterm', '@xterm/xterm'] } };
+      return {
+        optimizeDeps: {
+          exclude: [
+            'wraithterm',
+            'wraithterm/xterm',
+            'wraithterm/react',
+            'wraithterm/vue',
+            'wraithterm/svelte',
+            'wraithterm/element',
+            '@xterm/xterm',
+          ],
+        },
+      };
     },
   };
 }

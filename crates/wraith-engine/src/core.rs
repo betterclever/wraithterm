@@ -131,6 +131,8 @@ pub(crate) struct State {
     /// Ghostty's storage-wide generation. It also advances when a pending
     /// payload completes, which leaves the image's own generation unchanged.
     pub image_generation: u64,
+    /// OSC 133 command blocks; empty unless the shell sends semantic prompts.
+    pub commands: crate::commands::Commands,
 }
 /// Ghostty's row identity, its raw cells and its selection range. Equal keys
 /// produce equal snapshots: a row id changes when the row is edited in place,
@@ -177,7 +179,7 @@ impl Drop for StateOwner {
 }
 
 pub struct Core {
-    bridge: NonNull<c_void>,
+    pub(crate) bridge: NonNull<c_void>,
     pub(crate) state: StateOwner,
     pub(crate) frame: Frame,
 }
@@ -270,6 +272,7 @@ impl Core {
             placements: Vec::new(),
             staged: Vec::new(),
             image_generation: 0,
+            commands: Default::default(),
         });
         // Ghostty borrows the stable allocation only for synchronous callbacks
         // and never after bridge_free. StateOwner then releases the allocation.

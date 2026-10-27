@@ -44,4 +44,10 @@ int wraith_bridge_search(WraithBridge*, const uint8_t*, size_t, uint32_t, uint32
 int wraith_bridge_images(WraithBridge*, uint64_t* generation);
 int wraith_bridge_image(WraithBridge*, uint32_t, WraithImage*);
 int wraith_bridge_image_limit(WraithBridge*, uint64_t);
+/* OSC 133 command blocks. Marks are Ghostty tracked grid refs owned by Rust. */
+int wraith_bridge_mark_point(void* mark, uint32_t tag, uint32_t* x, uint32_t* y);
+void wraith_bridge_mark_free(void* mark);
+int wraith_bridge_screen(WraithBridge*, uint64_t* out);
+int wraith_bridge_range_text(WraithBridge*, uint32_t, uint32_t, uint32_t, uint32_t);
+void wraith_bridge_scroll_row(WraithBridge*, uint64_t);
 #endif

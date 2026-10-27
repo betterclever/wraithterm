@@ -1,4 +1,11 @@
-use crate::{core::Core, gpu::Renderer, staging::Staging};
+use crate::{
+    core::Core,
+    gpu::Renderer,
+    shared::{atlas_key, SharedContext, Surface},
+    staging::Staging,
+    text::Atlas,
+};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 extern "C" {
@@ -17,6 +24,54 @@ fn events(core: &mut Core) -> js_sys::Array {
         output.push(&event);
     }
     output
+}
+
+fn row(value: Option<u32>) -> JsValue {
+    value.map_or(JsValue::from(-1), JsValue::from)
+}
+/// `[id, state, exit | null, command, promptRow, inputRow, outputRow, endRow,
+/// truncated]` per retained block, oldest first; rows are -1 when unknown.
+fn block(block: crate::commands::BlockInfo) -> js_sys::Array {
+    let item = js_sys::Array::new();
+    item.push(&JsValue::from(block.id));
+    item.push(&JsValue::from(block.state as u32));
+    item.push(&block.exit.map_or(JsValue::NULL, JsValue::from));
+    item.push(&JsValue::from_str(&block.command));
+    item.push(&row(block.prompt_row));
+    item.push(&row(block.input_row));
+    item.push(&row(block.output_row));
+    item.push(&row(block.end_row));
+    item.push(&JsValue::from(block.truncated));
+    item
+}
+fn commands(core: &mut Core) -> js_sys::Array {
+    core.commands()
+        .into_iter()
+        .map(|b| JsValue::from(block(b)))
+        .collect()
+}
+/// `[text, truncated]`, or undefined for an unknown block.
+fn command_text(core: &mut Core, id: u32, input: bool) -> Result<JsValue, JsValue> {
+    Ok(match core.command_text(id, input).map_err(error)? {
+        Some((text, truncated)) => {
+            let item = js_sys::Array::new();
+            item.push(&JsValue::from_str(&text));
+            item.push(&JsValue::from(truncated));
+            item.into()
+        }
+        None => JsValue::UNDEFINED,
+    })
+}
+fn screen(core: &Core) -> Vec<f64> {
+    let s = core.screen();
+    vec![
+        s.total as f64,
+        s.offset as f64,
+        s.len as f64,
+        s.cursor_row as f64,
+        s.cursor_col as f64,
+        s.primary as u32 as f64,
+    ]
 }
 
 /// Headless browser instance for tests, replay, and serverless terminal analysis.
@@ -80,6 +135,37 @@ impl Headless {
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
     }
+    /// OSC 133 command blocks; see `commands.rs`.
+    #[wasm_bindgen(getter)]
+    pub fn has_commands(&self) -> bool {
+        self.core.has_commands()
+    }
+    pub fn commands(&mut self) -> js_sys::Array {
+        commands(&mut self.core)
+    }
+    /// One block in the `commands()` layout, or undefined.
+    pub fn command(&self, id: u32) -> JsValue {
+        self.core
+            .command(id)
+            .map_or(JsValue::UNDEFINED, |b| block(b).into())
+    }
+    pub fn command_text(&mut self, id: u32, input: bool) -> Result<JsValue, JsValue> {
+        command_text(&mut self.core, id, input)
+    }
+    pub fn command_marks(&self) -> Vec<i32> {
+        self.core.command_marks()
+    }
+    /// The new viewport offset, or -1 when there is no prompt in that direction.
+    pub fn jump_to_prompt(&mut self, direction: i32) -> f64 {
+        self.core
+            .jump_to_prompt(direction)
+            .map_or(-1., |offset| offset as f64)
+    }
+    /// Total rows, viewport offset and length, cursor screen row and column,
+    /// and 1 when the primary screen is active.
+    pub fn screen(&self) -> Vec<f64> {
+        screen(&self.core)
+    }
     pub fn cell(&mut self, x: u16, y: u16) -> Result<js_sys::Array, JsValue> {
         self.core.update().map_err(error)?;
         if x as usize >= self.core.state.cols || y as usize >= self.core.state.rows {
@@ -119,17 +205,19 @@ impl Engine {
         line_height: f32,
         history: u32,
     ) -> Result<Engine, JsValue> {
-        let mut core = Core::new(cols, rows, history as usize).map_err(error)?;
+        let core = Core::new(cols, rows, history as usize).map_err(error)?;
         let renderer = Renderer::new(canvas, font, font_size, line_height, cols, rows)
             .await
             .map_err(error)?;
-        core.resize(
-            cols,
-            rows,
-            renderer.atlas.cell_width,
-            renderer.atlas.cell_height,
-        )
-        .map_err(error)?;
+        Self::finish(core, renderer, cols, rows)
+    }
+    fn finish(mut core: Core, renderer: Renderer, cols: u16, rows: u16) -> Result<Engine, JsValue> {
+        let (cell_width, cell_height) = {
+            let atlas = renderer.atlas();
+            (atlas.cell_width, atlas.cell_height)
+        };
+        core.resize(cols, rows, cell_width, cell_height)
+            .map_err(error)?;
         core.theme(0xe8e5de, 0x17120e, 0xf0d691);
         Ok(Self {
             core,
@@ -138,6 +226,80 @@ impl Engine {
             parse_ms: 0.,
             render_ms: 0.,
         })
+    }
+    /// A terminal drawn into a worker's shared surface. Terminals with the
+    /// same fonts, size, line height and ligature setting share one atlas.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn create_shared(
+        context: SurfaceContext,
+        font: Vec<u8>,
+        fallbacks: js_sys::Array,
+        cols: u16,
+        rows: u16,
+        font_size: f32,
+        line_height: f32,
+        history: u32,
+        ligatures: bool,
+    ) -> Result<Engine, JsValue> {
+        let core = Core::new(cols, rows, history as usize).map_err(error)?;
+        let fallbacks: Vec<Vec<u8>> = fallbacks
+            .iter()
+            .map(|bytes| js_sys::Uint8Array::new(&bytes).to_vec())
+            .collect();
+        let glyphs = shared_glyphs(
+            &context.0,
+            font,
+            fallbacks,
+            font_size,
+            line_height,
+            ligatures,
+        )?;
+        let renderer = Renderer::shared(context.0, glyphs, cols, rows)
+            .await
+            .map_err(error)?;
+        Self::finish(core, renderer, cols, rows)
+    }
+    /// Whether a staged frame referencing the current atlas is ready to draw.
+    #[wasm_bindgen(getter)]
+    pub fn drawable(&self) -> bool {
+        self.renderer.drawable()
+    }
+    /// Draw this terminal's staged frame into `surface`'s open frame at device
+    /// pixel `x`, `y` and `scale`, clipped to the given rectangle. Returns
+    /// false if it has nothing drawable (render it first) or is fully clipped.
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw(
+        &self,
+        surface: &mut Surface,
+        x: f32,
+        y: f32,
+        scale: f32,
+        clip_x: f32,
+        clip_y: f32,
+        clip_width: f32,
+        clip_height: f32,
+    ) -> bool {
+        let (width, height) = surface.target();
+        if !(x.is_finite() && y.is_finite() && scale.is_finite() && scale > 0.) {
+            return false;
+        }
+        let x0 = clip_x.max(0.).floor().min(width as f32) as u32;
+        let y0 = clip_y.max(0.).floor().min(height as f32) as u32;
+        let x1 = (clip_x + clip_width).ceil().clamp(0., width as f32) as u32;
+        let y1 = (clip_y + clip_height).ceil().clamp(0., height as f32) as u32;
+        let Some(pass) = surface.pass.as_mut() else {
+            return false;
+        };
+        if x1 <= x0 || y1 <= y0 {
+            return false;
+        }
+        self.renderer.draw_shared(
+            pass,
+            (width, height),
+            (x, y),
+            scale,
+            (x0, y0, x1 - x0, y1 - y0),
+        )
     }
     pub fn write(&mut self, bytes: &[u8]) {
         let started = now();
@@ -160,19 +322,23 @@ impl Engine {
     }
     pub fn resize(&mut self, cols: u16, rows: u16) -> Result<(), JsValue> {
         self.renderer.validate_size(cols, rows).map_err(error)?;
+        let (cell_width, cell_height) = {
+            let atlas = self.renderer.atlas();
+            (atlas.cell_width, atlas.cell_height)
+        };
         self.core
-            .resize(
-                cols,
-                rows,
-                self.renderer.atlas.cell_width,
-                self.renderer.atlas.cell_height,
-            )
+            .resize(cols, rows, cell_width, cell_height)
             .map_err(error)?;
         self.renderer.resize(cols, rows);
         Ok(())
     }
     pub fn add_font(&mut self, bytes: Vec<u8>) -> Result<(), JsValue> {
-        self.renderer.atlas.add_font(bytes).map_err(error)?;
+        if self.renderer.shared_context().is_some() {
+            return Err(error(
+                "pass fallback fonts when creating a shared-surface terminal".into(),
+            ));
+        }
+        self.renderer.atlas().add_font(bytes).map_err(error)?;
         self.core.state.dirty.fill(true);
         Ok(())
     }
@@ -184,14 +350,40 @@ impl Engine {
         size: f32,
         line_height: f32,
     ) -> Result<Vec<u32>, JsValue> {
+        let cols = self.core.state.cols as u16;
+        let rows = self.core.state.rows as u16;
+        if let Some(context) = self.renderer.shared_context().cloned() {
+            // Join (or start) the shared atlas for the new configuration.
+            let ligatures = self.renderer.atlas().ligatures;
+            let fallbacks: Vec<Vec<u8>> = fallbacks
+                .iter()
+                .map(|bytes| js_sys::Uint8Array::new(&bytes).to_vec())
+                .collect();
+            let glyphs = shared_glyphs(&context, font, fallbacks, size, line_height, ligatures)?;
+            let (cell_width, cell_height) = {
+                let atlas = glyphs.atlas.borrow();
+                (atlas.cell_width, atlas.cell_height)
+            };
+            self.renderer
+                .validate_external(
+                    cols,
+                    rows,
+                    cols as u32 * cell_width,
+                    rows as u32 * cell_height,
+                )
+                .map_err(error)?;
+            self.core
+                .resize(cols, rows, cell_width, cell_height)
+                .map_err(error)?;
+            self.renderer.set_glyphs(glyphs, cols, rows);
+            return Ok(vec![cell_width, cell_height]);
+        }
         let mut atlas = crate::text::Atlas::new(font, size, line_height).map_err(error)?;
         for bytes in fallbacks.iter() {
             atlas
                 .add_font(js_sys::Uint8Array::new(&bytes).to_vec())
                 .map_err(error)?;
         }
-        let cols = self.core.state.cols as u16;
-        let rows = self.core.state.rows as u16;
         self.renderer
             .validate_external(
                 cols,
@@ -204,17 +396,34 @@ impl Engine {
             .resize(cols, rows, atlas.cell_width, atlas.cell_height)
             .map_err(error)?;
         let dimensions = vec![atlas.cell_width, atlas.cell_height];
-        self.renderer.atlas = atlas;
+        self.renderer.replace_atlas(atlas);
         self.renderer.resize(cols, rows);
         Ok(dimensions)
     }
+    /// Rasterize printable ASCII ahead of first use, `count` glyphs per call,
+    /// so idle time after creation absorbs that work. Returns where to
+    /// continue, or -1 when done.
+    pub fn prefill_glyphs(&mut self, from: u32, count: u32) -> i32 {
+        self.renderer
+            .atlas()
+            .prefill_ascii(from, count)
+            .map_or(-1, |next| next as i32)
+    }
     /// Shape operator runs together to form programming-font ligatures.
-    pub fn set_ligatures(&mut self, enabled: bool) {
-        if self.renderer.atlas.ligatures != enabled {
-            self.renderer.atlas.ligatures = enabled;
+    pub fn set_ligatures(&mut self, enabled: bool) -> Result<(), JsValue> {
+        let shared = self.renderer.shared_context().is_some();
+        let mut atlas = self.renderer.atlas();
+        if atlas.ligatures != enabled {
+            if shared {
+                return Err(error(
+                    "choose ligatures when creating a shared-surface terminal".into(),
+                ));
+            }
+            atlas.ligatures = enabled;
             // Cached runs and packed rows reflect the old setting.
-            self.renderer.atlas.reset();
+            atlas.reset();
         }
+        Ok(())
     }
     /// Decoded Kitty graphics bytes each screen may store; zero disables them.
     pub fn set_image_limit(&mut self, bytes: f64) -> Result<(), JsValue> {
@@ -290,6 +499,37 @@ impl Engine {
             Ok(self.core.text(false))
         }
     }
+    /// OSC 133 command blocks; see `commands.rs`.
+    #[wasm_bindgen(getter)]
+    pub fn has_commands(&self) -> bool {
+        self.core.has_commands()
+    }
+    pub fn commands(&mut self) -> js_sys::Array {
+        commands(&mut self.core)
+    }
+    /// One block in the `commands()` layout, or undefined.
+    pub fn command(&self, id: u32) -> JsValue {
+        self.core
+            .command(id)
+            .map_or(JsValue::UNDEFINED, |b| block(b).into())
+    }
+    pub fn command_text(&mut self, id: u32, input: bool) -> Result<JsValue, JsValue> {
+        command_text(&mut self.core, id, input)
+    }
+    pub fn command_marks(&self) -> Vec<i32> {
+        self.core.command_marks()
+    }
+    /// The new viewport offset, or -1 when there is no prompt in that direction.
+    pub fn jump_to_prompt(&mut self, direction: i32) -> f64 {
+        self.core
+            .jump_to_prompt(direction)
+            .map_or(-1., |offset| offset as f64)
+    }
+    /// Total rows, viewport offset and length, cursor screen row and column,
+    /// and 1 when the primary screen is active.
+    pub fn screen(&self) -> Vec<f64> {
+        screen(&self.core)
+    }
     pub fn link(&self, x: u16, y: u16) -> String {
         self.core.link(x, y)
     }
@@ -300,16 +540,17 @@ impl Engine {
         self.core.release_hold();
     }
     pub fn metrics(&self) -> Vec<f64> {
+        let atlas = self.renderer.atlas();
         vec![
             self.renderer.frames as f64,
             self.bytes as f64,
             self.parse_ms,
             self.render_ms,
             self.renderer.upload_bytes as f64,
-            self.renderer.atlas.count() as f64,
-            self.renderer.atlas.hits as f64,
-            self.renderer.atlas.misses as f64,
-            self.renderer.atlas.resets as f64,
+            atlas.count() as f64,
+            atlas.hits as f64,
+            atlas.misses as f64,
+            atlas.resets as f64,
             self.core.reused_rows() as f64,
         ]
     }
@@ -323,11 +564,11 @@ impl Engine {
     }
     #[wasm_bindgen(getter)]
     pub fn cell_width(&self) -> u32 {
-        self.renderer.atlas.cell_width
+        self.renderer.atlas().cell_width
     }
     #[wasm_bindgen(getter)]
     pub fn cell_height(&self) -> u32 {
-        self.renderer.atlas.cell_height
+        self.renderer.atlas().cell_height
     }
     #[wasm_bindgen(getter)]
     pub fn adapter(&self) -> String {
@@ -344,6 +585,65 @@ impl Engine {
     pub async fn fence(&self) -> Result<(), JsValue> {
         self.renderer.fence().await.map_err(error)
     }
+    /// Replace post-process effects (see `effect_state::Settings::parse`).
+    /// Rejects with compiler messages and keeps the previous effects when a
+    /// custom shader is invalid. Call only while rendering is paused.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        self.renderer
+            .set_effects(&params, shader)
+            .await
+            .map_err(error)
+    }
+    /// Shadertoy `iMouse` in physical pixels.
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        self.renderer.set_effect_mouse([x, y, z, w]);
+    }
+    /// Post-process passes in the last effect frame; zero with effects off.
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.renderer.effect_passes()
+    }
+    /// Calls `done` when the GPU has finished all work submitted so far.
+    /// Unlike `fence`, this returns at once and holds no borrow while waiting.
+    pub fn on_submitted_work_done(&self, done: js_sys::Function) {
+        self.renderer.on_submitted_work_done(done);
+    }
+}
+
+/// A handle on a shared surface's pipelines and atlases, passed by value to
+/// `Engine.create_shared` (take a fresh one from `Surface.context()` each time).
+#[wasm_bindgen]
+pub struct SurfaceContext(Rc<SharedContext>);
+#[wasm_bindgen]
+impl Surface {
+    pub fn context(&self) -> SurfaceContext {
+        SurfaceContext(self.context.clone())
+    }
+}
+fn shared_glyphs(
+    context: &SharedContext,
+    font: Vec<u8>,
+    fallbacks: Vec<Vec<u8>>,
+    size: f32,
+    line_height: f32,
+    ligatures: bool,
+) -> Result<Rc<crate::gpu::Glyphs>, JsValue> {
+    let key = atlas_key(&font, &fallbacks, size, line_height, ligatures);
+    context
+        .glyphs(key, move || {
+            let mut atlas = Atlas::new(font, size, line_height)?;
+            for bytes in fallbacks {
+                atlas.add_font(bytes)?;
+            }
+            atlas.ligatures = ligatures;
+            atlas.reset();
+            Ok(atlas)
+        })
+        .map_err(error)
 }
 
 /// Stateless Rust/WebGPU compositor for the xterm-compatible semantic core.
@@ -461,5 +761,32 @@ impl Compositor {
     #[wasm_bindgen(getter)]
     pub fn frames(&self) -> u64 {
         self.renderer.frames
+    }
+    /// See `Engine::set_effects`. Call only while rendering is paused.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        self.renderer
+            .set_effects(&params, shader)
+            .await
+            .map_err(error)
+    }
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        self.renderer.set_effect_mouse([x, y, z, w]);
+    }
+    /// An effect animation wants another display frame.
+    #[wasm_bindgen(getter)]
+    pub fn animating(&self) -> bool {
+        self.renderer.effects_due()
+    }
+    /// Advance effect animations over the last submitted frame.
+    pub fn animate(&mut self) -> Result<bool, JsValue> {
+        self.renderer.animate().map_err(error)
+    }
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.renderer.effect_passes()
     }
 }

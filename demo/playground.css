@@ -16,7 +16,7 @@
   --line: #241b16;
   --text: #f5ece3;
   --dim: #a6958a;
-  --faint: #6e5c50;
+  --faint: #958174;
   --amber: #ffb86b;
   --gold: #ffd98a;
   --coral: #ff7f6e;
@@ -107,7 +107,7 @@ input {
   font: 600 16px var(--mono);
 }
 .mark svg {
-  width: 20px;
+  width: 26px;
   color: var(--amber);
 }
 .mark b {

@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-25T18:42:02.079Z",
+  "head": "c2520512212e8232d9c3152108fde7691d36c5ce",
+  "node": "v24.14.1",
+  "hardware": {
+    "cpu": "Apple M5 Max",
+    "logicalCpus": 18,
+    "os": "darwin 27.2.0"
+  },
+  "methodology": "Node, Wasm Headless engine. Each sample: write N new lines, then time Headless.text() (snapshot update + viewport text) + splitRows + OutputAnnouncer.sample/flush + mirrorPatch, the work one 100 ms worker sample does. The first 100 samples are warmup. In the browser this runs at most every 100 ms while output changes, in the worker, not on the main thread; DOM work (changed rows, one live-region node) is not included.",
+  "results": [
+    {
+      "cols": 80,
+      "rows": 24,
+      "linesPerSample": 1,
+      "samples": 500,
+      "p50Us": 49.79200000000361,
+      "p95Us": 89.29200000000037,
+      "maxUs": 506.04200000000077
+    },
+    {
+      "cols": 80,
+      "rows": 24,
+      "linesPerSample": 10,
+      "samples": 500,
+      "p50Us": 49.41700000000537,
+      "p95Us": 87.79199999999321,
+      "maxUs": 989.0829999999937
+    },
+    {
+      "cols": 80,
+      "rows": 24,
+      "linesPerSample": 24,
+      "samples": 500,
+      "p50Us": 43.54200000000219,
+      "p95Us": 72.33299999998621,
+      "maxUs": 135.95800000000224
+    },
+    {
+      "cols": 160,
+      "rows": 50,
+      "linesPerSample": 1,
+      "samples": 500,
+      "p50Us": 195.58299999999917,
+      "p95Us": 239.79199999999423,
+      "maxUs": 777.8330000000153
+    },
+    {
+      "cols": 160,
+      "rows": 50,
+      "linesPerSample": 10,
+      "samples": 500,
+      "p50Us": 208.25000000002092,
+      "p95Us": 237.87500000003092,
+      "maxUs": 700.9160000000065
+    },
+    {
+      "cols": 160,
+      "rows": 50,
+      "linesPerSample": 50,
+      "samples": 500,
+      "p50Us": 169.208000000026,
+      "p95Us": 204.91699999996627,
+      "maxUs": 271.2500000000091
+    },
+    {
+      "cols": 300,
+      "rows": 100,
+      "linesPerSample": 1,
+      "samples": 500,
+      "p50Us": 696.7089999999416,
+      "p95Us": 818.9589999999498,
+      "maxUs": 2651.124999999979
+    },
+    {
+      "cols": 300,
+      "rows": 100,
+      "linesPerSample": 10,
+      "samples": 500,
+      "p50Us": 700.7089999999607,
+      "p95Us": 790.6249999998636,
+      "maxUs": 1352.3330000000442
+    },
+    {
+      "cols": 300,
+      "rows": 100,
+      "linesPerSample": 100,
+      "samples": 500,
+      "p50Us": 604.7089999999571,
+      "p95Us": 670.7499999999982,
+      "maxUs": 767.7079999998568
+    }
+  ]
+}
