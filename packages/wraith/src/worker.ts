@@ -4,6 +4,7 @@ import { MessageBatch, nextTask } from './batch.js';
 import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
+import { createAccessibility } from './worker-accessibility.js';
 import { createCommandTracker } from './worker-commands.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
@@ -135,6 +136,24 @@ function createSession(
     }
   };
   let searchGeneration = 0;
+  let reducedMotion = false;
+  // Screen-reader mirror and announcements; inert until a mounted terminal enables them.
+  const a11y = createAccessibility(
+    () =>
+      !engine || busy || disposed || engine.mode(2026)
+        ? undefined
+        : {
+            text: engine.text(false),
+            rows,
+            cursor: engine.cursor_y,
+            alternate: engine.mode(1049) || engine.mode(1047) || engine.mode(47),
+          },
+    (task) => {
+      // Accessibility is advisory: a failed sample must not fail the terminal.
+      serial = serial.then(task).catch((error) => console.error('Wraith accessibility', error));
+    },
+    (reply) => post(reply),
+  );
   let searchRequest: number | undefined;
   // A posted task yields to writes/input without the nested-timer 4 ms clamp.
   // Coalesce superseded work so cancelled searches do not leave a task backlog.
@@ -182,6 +201,7 @@ function createSession(
           }
           const selected = engine!.search('', direction > 0 ? 2 : 3);
           searchRequest = undefined;
+          a11y.rebaseline();
           result(id, {
             total: selected[1]!,
             index: selected[2] === 0xffffffff ? -1 : selected[2]!,
@@ -230,6 +250,8 @@ function createSession(
               ? data
               : new Uint8Array(data),
         );
+        // Socket output reaches screen readers like written output does.
+        a11y.changed();
         drain();
         schedule();
       })
@@ -392,7 +414,8 @@ function createSession(
     // Consume this only inside the guarded draw path, including explicit flush.
     force ||= forceNextFrame;
     const start = performance.now();
-    const rendered = engine!.render(time, force);
+    // A fixed time freezes cursor and SGR blink phases in their visible state.
+    const rendered = engine!.render(reducedMotion ? 0 : time, force);
     if (rendered) {
       forceNextFrame = false;
       renderedFrames++;
@@ -665,6 +688,7 @@ function createSession(
       case 'write': {
         const marked = tracing && command.bytes.some((b) => b >= 0x61 && b <= 0x7a);
         engine.write(command.bytes);
+        a11y.changed();
         drain();
         if (marked) {
           trace('parsed');
@@ -695,12 +719,18 @@ function createSession(
         engine.resize(command.cols, command.rows);
         cols = command.cols;
         rows = command.rows;
+        a11y.rebaseline();
         schedule();
         result(command.id);
         break;
       case 'key':
         if (tracing) trace('key', command.text);
         engine.key(command.key, command.mods, command.action, command.text, command.unshifted);
+        // Printable keys, Backspace and Delete echo into the cursor row.
+        if (command.action !== 0)
+          a11y.typed(
+            (!!command.text && !(command.mods & 6)) || command.key === 53 || command.key === 68,
+          );
         drain();
         break;
       case 'font':
@@ -726,6 +756,7 @@ function createSession(
         break;
       case 'scroll':
         engine.scroll(command.delta);
+        a11y.rebaseline();
         schedule();
         break;
       case 'select':
@@ -743,6 +774,7 @@ function createSession(
         const framed = engine.mode(2004)
           ? `\x1b[200~${text}\x1b[201~`
           : text.replace(/\r?\n/g, '\r');
+        a11y.typed(true);
         output(encoder.encode(framed));
         result(command.id);
         break;
@@ -811,6 +843,29 @@ function createSession(
         }
         result(command.id, fed);
         break;
+      case 'a11y':
+        reducedMotion = command.reducedMotion;
+        a11y.configure(command);
+        schedule(true);
+        break;
+      case 'read': {
+        if (command.scope === 'screen') {
+          result(command.id, engine.text(false));
+          break;
+        }
+        // Select all, format, and clear in one task: no frame can paint the
+        // temporary selection. Ghostty's formatter joins soft wraps.
+        engine.select_mode(0, 0, 0, 0, 4);
+        let text: string;
+        try {
+          text = engine.text(true);
+        } finally {
+          engine.select_mode(-1, 0, 0, 0, 0);
+        }
+        schedule();
+        result(command.id, text);
+        break;
+      }
       case 'effects':
         // Pipeline validation awaits the GPU while holding the engine borrow;
         // pause frames exactly as a fence does.
@@ -859,6 +914,7 @@ function createSession(
       case 'dispose':
         disposed = true;
         feeders.delete(feedStep);
+        a11y.dispose();
         link?.close(1000, 'Terminal disposed');
         link = undefined;
         searchGeneration++;

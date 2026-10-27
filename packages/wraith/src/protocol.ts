@@ -65,6 +65,16 @@ export type Command =
    * animation frame, as if a worker-side source produced them; `null` stops.
    * Resolves with the number of chunks parsed so far. */
   | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
+  | {
+      type: 'a11y';
+      mirror: boolean;
+      announce: boolean;
+      interval: number;
+      maxLines: number;
+      maxCharacters: number;
+      reducedMotion: boolean;
+    }
+  | { type: 'read'; scope: 'screen' | 'all'; id: number }
   | { type: 'commands'; id: number }
   | { type: 'command-text'; block: number; input: boolean; id: number }
   | { type: 'jump-prompt'; direction: number; id: number }
@@ -105,6 +115,13 @@ export type Reply =
   | { type: 'command'; block: RawCommandBlock }
   /** Gutter extents, five numbers per visible block; see command_marks(). */
   | { type: 'marks'; marks: number[]; primary: boolean }
+  | {
+      type: 'a11y';
+      rows: number;
+      patch: [number, string][];
+      cursor: number;
+      announce?: string;
+    }
   | {
       type: 'socket';
       link: number;

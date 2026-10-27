@@ -324,21 +324,23 @@ wait.
 
 ## Where to extend
 
-| Area                                         | File / module                                      |
-| -------------------------------------------- | -------------------------------------------------- |
-| Upstream ABI and effects                     | `native/bridge.c`                                  |
-| Headless state ownership and snapshots       | `crates/wraith-engine/src/core.rs`                 |
-| Shaping, fallback, rasterization, cache      | `crates/wraith-engine/src/text.rs`                 |
-| Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`                  |
-| GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`             |
-| Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl`           |
-| Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`               |
-| Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`                  |
-| Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`                    |
-| Shared workers for many terminals            | `packages/wraith/src/pool.ts`                      |
-| Shared surface: device, backing, atlases     | `crates/wraith-engine/src/shared.rs`               |
-| Shared surface: placements and composition   | `packages/wraith/src/surface.ts`, `shared-host.ts` |
-| Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`                     |
+| Area                                        | File / module                                                 |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| Upstream ABI and effects                    | `native/bridge.c`                                             |
+| Headless state ownership and snapshots      | `crates/wraith-engine/src/core.rs`                            |
+| Shaping, fallback, rasterization, cache     | `crates/wraith-engine/src/text.rs`                            |
+| Uploads, device, surface, render pass       | `crates/wraith-engine/src/gpu.rs`                             |
+| GPU row ownership and upload coalescing     | `crates/wraith-engine/src/retained.rs`                        |
+| Cell geometry and visual styles             | `crates/wraith-engine/src/terminal.wgsl`                      |
+| Kitty graphics textures and placement quads | `crates/wraith-engine/src/images.rs`                          |
+| Wasm public engine bindings                 | `crates/wraith-engine/src/web.rs`                             |
+| Scheduling, protocol, benchmarks            | `packages/wraith/src/worker.ts`                               |
+| Shared workers for many terminals           | `packages/wraith/src/pool.ts`                                 |
+| Shared surface: device, backing, atlases    | `crates/wraith-engine/src/shared.rs`                          |
+| Shared surface: placements and composition  | `packages/wraith/src/surface.ts`, `shared-host.ts`            |
+| Browser API, input, transport               | `packages/wraith/src/index.ts`                                |
+| ARIA, mirror, live region, keyboard exit    | `packages/wraith/src/accessibility.ts`                        |
+| Screen sampling and announcement diffing    | `packages/wraith/src/worker-accessibility.ts`, `announcer.ts` |
 
 Performance work should be driven by a recorded workload and percentile evidence.
 Broad compatibility additions should add a failing protocol fixture and, where
