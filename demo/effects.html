@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Wraith Effects Lab</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/playground.css" />
+    <style>
+      .screen {
+        overflow: hidden;
+      }
+      .side {
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .side .panel {
+        min-width: 0;
+      }
+      pre.code {
+        overflow-x: auto;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        color: var(--dim);
+        font: 13px var(--mono);
+      }
+      .toggle input[type='range'] {
+        width: 120px;
+        accent-color: var(--amber);
+      }
+      .toggle input[type='checkbox'] {
+        accent-color: var(--amber);
+        width: 16px;
+        height: 16px;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .gallery button[aria-pressed='true'] {
+        border-color: var(--amber);
+        color: var(--gold);
+      }
+      textarea.shader {
+        width: 100%;
+        min-height: 190px;
+        resize: vertical;
+        padding: 10px;
+        border: 1px solid #3d2e25;
+        border-radius: 8px;
+        background: #0d0a08;
+        color: var(--text);
+        font: 12px/1.5 var(--mono);
+        tab-size: 4;
+      }
+      .shader-error {
+        margin: 8px 0 0;
+        min-height: 1.5em;
+        color: var(--coral);
+        font: 12px/1.5 var(--mono);
+        white-space: pre-wrap;
+      }
+      .shader-error.ok {
+        color: var(--faint);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="mark" href="/" aria-label="Wraith home"
+        ><svg viewBox="0 0 36 36" aria-hidden="true">
+          <path d="M6 28 15 7h5l-9 21zm10 0 9-21h5l-9 21z" fill="currentColor" /></svg
+        >wraith<b>_</b></a
+      >
+      <nav>
+        <a href="/">Home</a><a href="/playground.html">Native lab</a
+        ><a href="/kitty.html">Kitty lab</a
+        ><a href="/effects.html" aria-current="page">Effects lab</a
+        ><a href="/xterm.html">xterm.js lab</a
+        ><a class="keep" href="https://github.com/betterclever/wraithterm">GitHub</a>
+      </nav>
+    </header>
+    <main class="page">
+      <section class="intro">
+        <div>
+          <h1>Effects lab: <em>shaders on every glyph.</em></h1>
+          <p>
+            A CRT tube, bloom, a gliding cursor and your own WGSL, run as GPU post-process passes
+            over the terminal image. Type to move the cursor. With every effect off, the renderer
+            draws exactly as before: no extra passes.
+          </p>
+        </div>
+        <div id="status" class="status"><i></i> Initializing WebGPU</div>
+      </section>
+      <section class="window">
+        <div class="titlebar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span id="title" class="title">wraith / effects</span>
+          <span id="grid" class="tag">— × —</span>
+        </div>
+        <div class="screen"><div id="terminal"></div></div>
+        <div class="foot">
+          Click the terminal to type · <kbd>Enter</kbd> runs <kbd>colors</kbd>, <kbd>clear</kbd>, or
+          echoes
+        </div>
+      </section>
+      <aside class="side">
+        <section class="panel">
+          <h2>Built-in</h2>
+          <label class="toggle">CRT <input id="crt" type="checkbox" /></label>
+          <label class="toggle"
+            >curvature <input id="curvature" type="range" min="0" max="1" step="0.05" value="0.5"
+          /></label>
+          <label class="toggle"
+            >scanlines <input id="scanlines" type="range" min="0" max="1" step="0.05" value="0.5"
+          /></label>
+          <label class="toggle"
+            >aberration
+            <input id="aberration" type="range" min="0" max="1" step="0.05" value="0.35"
+          /></label>
+          <label class="toggle"
+            >bloom <input id="bloom" type="range" min="0" max="2" step="0.05" value="0"
+          /></label>
+          <label class="toggle">cursor trail <input id="trail" type="checkbox" /></label>
+          <p id="motion" class="note"></p>
+          <div class="stats">
+            <div><span>post passes</span><strong id="passes">0</strong></div>
+            <div>
+              <span>frames</span><strong id="fps">—<small>/s</small></strong>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Shader gallery</h2>
+          <div id="gallery" class="gallery"></div>
+        </section>
+        <section class="panel">
+          <h2>Custom WGSL</h2>
+          <textarea
+            id="source"
+            class="shader"
+            spellcheck="false"
+            aria-label="Custom shader WGSL"
+          ></textarea>
+          <div class="row"><button id="apply" class="primary">Apply shader</button></div>
+          <p id="error" class="shader-error ok" role="status">
+            Define fn mainImage(fragCoord: vec2&lt;f32&gt;) -&gt; vec4&lt;f32&gt;.
+          </p>
+        </section>
+        <section class="panel">
+          <h2>Use it</h2>
+          <pre
+            class="code"
+          ><span class="k">const</span> term = <span class="k">await</span> Wraith.<span class="f">mount</span>(el, {
+  effects: { crt: <span class="k">true</span>, bloom: <span class="s">0.6</span>, cursorTrail: <span class="k">true</span> },
+});
+<span class="k">await</span> term.<span class="f">setEffects</span>({ shader: wgsl });</pre>
+        </section>
+      </aside>
+    </main>
+    <script type="module" src="/effects.ts"></script>
+  </body>
+</html>

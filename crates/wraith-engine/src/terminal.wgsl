@@ -10,13 +10,15 @@ struct Uniforms {
     grid: vec4<u32>, // columns, rows, cursor index, visible | style << 1
     theme: vec4<u32>, // cursor, selected fg, selected bg, reserved
     text: vec4<f32>, // tile width/height, atlas size, blink phase
-    images: vec4<u32>, // bit 0: images below backgrounds; default background
+    images: vec4<u32>, // bit 0: images below backgrounds; default background; shared target width/height (0: own canvas)
+    place: vec4<f32>, // shared surfaces: origin x/y in target pixels, scale, linear sampling
 }
 @group(0) @binding(0) var<storage, read> cells: array<Cell>;
 @group(0) @binding(1) var<uniform> u: Uniforms;
 @group(0) @binding(2) var glyphs: texture_2d<f32>;
 @group(0) @binding(3) var glyph_sampler: sampler;
 @group(0) @binding(4) var<storage, read> row_slots: array<u32>;
+@group(0) @binding(5) var scaled_sampler: sampler;
 // Cell words travel as flat varyings, so fragments never reread storage.
 struct Vertex {
     @builtin(position) position: vec4<f32>,
@@ -39,9 +41,29 @@ fn color(c: u32) -> vec3<f32> {
 fn has_cursor(index: u32) -> bool {
     return index == u.grid.z && (u.grid.w & 1u) != 0u;
 }
+// A terminal pixel in clip space. Its own canvas is the whole target; on a
+// shared surface it is placed (and possibly scaled) inside a larger target.
+fn clip_position(pixel: vec2<f32>) -> vec4<f32> {
+    var target_size = u.view.xy;
+    var at = pixel;
+    if u.images.z != 0u {
+        target_size = vec2<f32>(f32(u.images.z), f32(u.images.w));
+        at = u.place.xy + pixel * u.place.z;
+    }
+    return vec4<f32>(at.x / target_size.x * 2. - 1., 1. - at.y / target_size.y * 2., 0., 1.);
+}
 @vertex fn vs(@builtin(vertex_index) vertex: u32, @builtin(instance_index) index: u32) -> Vertex {
     let points = array<vec2<f32>, 6>(vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(0.,1.), vec2(1.,0.), vec2(1.,1.));
     let p = points[vertex % 6u];
+    if vertex >= 12u {
+        // Shared surfaces: one opaque quad of the default background, so a
+        // redraw fully replaces the terminal's previous pixels.
+        var fill: Vertex;
+        fill.position = clip_position(p * u.view.xy);
+        fill.layer = 2u;
+        fill.background = u.images.y;
+        return fill;
+    }
     var cell_index = index;
     if (u.grid.w & 1048576u) != 0u {
         cell_index = row_slots[index / u.grid.x] * u.grid.x + index % u.grid.x;
@@ -64,7 +86,7 @@ fn has_cursor(index: u32) -> bool {
     let slot = max(c.glyph & SLOT, 1u) - 1u;
     let tile = vec2<f32>(f32(slot % per_row), f32(slot / per_row)) * u.text.xy;
     var output: Vertex;
-    output.position = vec4<f32>(pixel.x / u.view.x * 2. - 1., 1. - pixel.y / u.view.y * 2., 0., 1.);
+    output.position = clip_position(pixel);
     output.uv = (tile + p * size) / u.text.z;
     output.local = p * size;
     output.index = index;
@@ -77,6 +99,7 @@ fn has_cursor(index: u32) -> bool {
     return output;
 }
 @fragment fn fs(v: Vertex) -> @location(0) vec4<f32> {
+    if v.layer == 2u { return vec4<f32>(color(v.background), 1.); }
     let selected = (v.flags & 131072u) != 0u;
     var fg = color(select(v.foreground, u.theme.y, selected));
     var bg = color(select(v.background, u.theme.z, selected));
@@ -120,7 +143,9 @@ fn has_cursor(index: u32) -> bool {
     if (v.glyph & SLOT) == 0u || (v.flags & 16u) != 0u || ((v.flags & 8u) != 0u && u.text.w == 0.) { discard; }
     // Atlas has one mip level. Explicit LOD avoids derivative requirements
     // after per-cell cursor, decoration, and visibility branches.
-    let sample = textureSampleLevel(glyphs, glyph_sampler, v.uv, 0.);
+    var sample = textureSampleLevel(glyphs, glyph_sampler, v.uv, 0.);
+    // A scaled shared-surface placement filters instead of skipping texels.
+    if u.place.w != 0. { sample = textureSampleLevel(glyphs, scaled_sampler, v.uv, 0.); }
     let tint = select(fg, sample.rgb, (v.glyph >> 31u) != 0u);
     let alpha = sample.a * select(fg_alpha, 1., (v.glyph >> 31u) != 0u) * select(1., 0.5, (v.flags & 4u) != 0u);
     return vec4(tint, alpha);

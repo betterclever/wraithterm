@@ -45,6 +45,16 @@ pub struct ImageLayer {
 }
 impl ImageLayer {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, uniform: &wgpu::Buffer) -> Self {
+        let (pipeline, sampler) = Self::pipeline(device, format, false);
+        Self::with_pipeline(device, pipeline, sampler, uniform)
+    }
+    /// The image quad pipeline and sampler for one target format. A shared
+    /// surface builds them once for all of its terminals.
+    pub fn pipeline(
+        device: &wgpu::Device,
+        format: wgpu::TextureFormat,
+        shared: bool,
+    ) -> (wgpu::RenderPipeline, wgpu::Sampler) {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Wraith Kitty graphics WGSL"),
             source: wgpu::ShaderSource::Wgsl(include_str!("image.wgsl").into()),
@@ -64,7 +74,7 @@ impl ImageLayer {
                 compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(crate::gpu::blend(shared)),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -80,6 +90,14 @@ impl ImageLayer {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
+        (pipeline, sampler)
+    }
+    pub fn with_pipeline(
+        device: &wgpu::Device,
+        pipeline: wgpu::RenderPipeline,
+        sampler: wgpu::Sampler,
+        uniform: &wgpu::Buffer,
+    ) -> Self {
         let capacity = 16;
         let quads = Self::quad_buffer(device, capacity);
         let globals = Self::globals(device, &pipeline, uniform, &quads, &sampler);
@@ -313,7 +331,7 @@ impl ImageLayer {
     }
     /// Draw this frame's quads in one z-layer (1 below backgrounds, 2 below
     /// text, 3 above text).
-    pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, layer: u32) {
+    pub fn draw(&self, pass: &mut wgpu::RenderPass<'_>, layer: u32) {
         let mut bound = false;
         for (index, &(l, id)) in self.draws.iter().enumerate() {
             if l != layer {

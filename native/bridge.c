@@ -19,6 +19,10 @@ extern void wraith_row_store(void* user, uint32_t row, uint64_t id0, uint64_t id
 extern void wraith_cell(void* user, uint32_t x, uint32_t y, uint32_t scalar, const uint8_t* text,
                         size_t len, uint32_t fg, uint32_t bg, uint32_t ul, uint32_t flags);
 extern void wraith_placement(void* user, const WraithPlacement* placement);
+/* One OSC 133 step on the primary screen. `mark` is a tracked grid ref at the
+ * cursor (or NULL); Rust owns it from here on and frees it with mark_free. */
+extern void wraith_semantic(void* user, uint32_t kind, uint32_t prompt_kind, bool has_exit,
+                            int32_t exit_code, const uint8_t* command, size_t len, void* mark);
 
 static void* alloc_fn(void* ctx, size_t n, uint8_t a, uintptr_t r) {
   (void)ctx; (void)r; return wraith_alloc(n, a);
@@ -134,6 +138,25 @@ static bool on_size(GhosttyTerminal t, void* user, GhosttySizeReportSize* size) 
     .cell_width = b->cw, .cell_height = b->ch};
   return true;
 }
+/* Ghostty has already applied the step to the screen when this runs, so the
+ * cursor is where the step happened. A tracked ref follows that cell through
+ * scrolling, pruning and reflow; it reports no value once the row is trimmed.
+ * Alternate-screen applications never produce blocks. */
+static void on_semantic(GhosttyTerminal t, void* user, const GhosttyTerminalSemanticPrompt* event) {
+  WraithBridge* b = user;
+  GhosttyTerminalScreen screen = GHOSTTY_TERMINAL_SCREEN_PRIMARY;
+  if (ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_ACTIVE_SCREEN, &screen) ||
+      screen != GHOSTTY_TERMINAL_SCREEN_PRIMARY)
+    return;
+  uint16_t x = 0, y = 0;
+  ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_CURSOR_X, &x);
+  ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_CURSOR_Y, &y);
+  GhosttyPoint point = {.tag = GHOSTTY_POINT_TAG_ACTIVE, .value = {.coordinate = {x, y}}};
+  GhosttyTrackedGridRef mark = NULL;
+  if (ghostty_terminal_grid_ref_track(t, point, &mark)) mark = NULL;
+  wraith_semantic(b->user, event->kind, event->prompt_kind, event->has_exit_code,
+                  event->exit_code, event->command.ptr, event->command.len, mark);
+}
 static bool on_scheme(GhosttyTerminal t, void* user, GhosttyColorScheme* scheme) {
   (void)user; GhosttyColorRgb bg = {0};
   ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_COLOR_BACKGROUND, &bg);
@@ -172,6 +195,7 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_XTVERSION, (const void*)on_version);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SIZE, (const void*)on_size);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_SCHEME, (const void*)on_scheme);
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SEMANTIC_PROMPT, (const void*)on_semantic);
   /* The SDK's history option is a line count. Ghostty defaults to an
    * independent 10,000-byte limit; leaving it enabled silently prunes history
    * long before the requested line count. Zero must use the no-history path. */
@@ -505,6 +529,9 @@ size_t wraith_bridge_link(WraithBridge* b, uint16_t x, uint16_t y, char* out, si
 static bool selection_write(void* user, const uint8_t* bytes, size_t len) {
   WraithBridge* b = user; wraith_emit(b->user, 4, bytes, len); return true;
 }
+static bool range_write(void* user, const uint8_t* bytes, size_t len) {
+  WraithBridge* b = user; wraith_emit(b->user, 6, bytes, len); return true;
+}
 int wraith_bridge_selection_text(WraithBridge* b) {
   GhosttySelection selection = GHOSTTY_INIT_SIZED(GhosttySelection);
   int r = ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_SELECTION, &selection);
@@ -587,4 +614,56 @@ int wraith_bridge_image(WraithBridge* b, uint32_t id, WraithImage* out) {
         GHOSTTY_KITTY_IMAGE_DATA_GENERATION, GHOSTTY_KITTY_IMAGE_DATA_DATA_PTR},
       (void*[]){&out->width, &out->height, &format, &out->len, &out->generation, &out->data},
       NULL) ? GHOSTTY_NO_VALUE : (out->format = format, GHOSTTY_SUCCESS);
+}
+
+/* Command-block marks. `tag` is a GhosttyPointTag. Returns 0 with the point,
+ * or 1 when the mark's rows were trimmed or lie outside that coordinate space
+ * (for the viewport: above it). */
+int wraith_bridge_mark_point(void* mark, uint32_t tag, uint32_t* x, uint32_t* y) {
+  GhosttyPointCoordinate c = {0};
+  if (!mark || tag > GHOSTTY_POINT_TAG_HISTORY ||
+      ghostty_tracked_grid_ref_point((GhosttyTrackedGridRef)mark, tag, &c))
+    return 1;
+  *x = c.x; *y = c.y; return 0;
+}
+void wraith_bridge_mark_free(void* mark) { ghostty_tracked_grid_ref_free((GhosttyTrackedGridRef)mark); }
+/* Scroll geometry in screen rows: total, viewport offset, viewport length,
+ * cursor screen row, cursor column, and whether the primary screen is active. */
+int wraith_bridge_screen(WraithBridge* b, uint64_t* out) {
+  GhosttyTerminalScrollbar bar = {0};
+  int r = ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_SCROLLBAR, &bar);
+  if (r) return r;
+  uint16_t x = 0, y = 0;
+  GhosttyTerminalScreen screen = GHOSTTY_TERMINAL_SCREEN_PRIMARY;
+  ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_CURSOR_X, &x);
+  ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_CURSOR_Y, &y);
+  ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_ACTIVE_SCREEN, &screen);
+  out[0] = bar.total; out[1] = bar.offset; out[2] = bar.len;
+  out[3] = bar.total - b->height + y; out[4] = x;
+  out[5] = screen == GHOSTTY_TERMINAL_SCREEN_PRIMARY;
+  return GHOSTTY_SUCCESS;
+}
+/* Plain text of an inclusive screen-coordinate range, emitted as kind 6. */
+int wraith_bridge_range_text(WraithBridge* b, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2) {
+  GhosttySelection selection = GHOSTTY_INIT_SIZED(GhosttySelection);
+  GhosttyGridRef start = GHOSTTY_INIT_SIZED(GhosttyGridRef), end = GHOSTTY_INIT_SIZED(GhosttyGridRef);
+  GhosttyPoint p1 = {.tag = GHOSTTY_POINT_TAG_SCREEN, .value = {.coordinate = {(uint16_t)x1, y1}}};
+  GhosttyPoint p2 = {.tag = GHOSTTY_POINT_TAG_SCREEN, .value = {.coordinate = {(uint16_t)x2, y2}}};
+  int r = ghostty_terminal_grid_ref(b->terminal, p1, &start);
+  if (r) return r;
+  r = ghostty_terminal_grid_ref(b->terminal, p2, &end);
+  if (r) return r;
+  selection.start = start; selection.end = end;
+  GhosttyFormatterTerminalOptions options = GHOSTTY_INIT_SIZED(GhosttyFormatterTerminalOptions);
+  options.emit = GHOSTTY_FORMATTER_FORMAT_PLAIN; options.unwrap = true; options.trim = true;
+  options.selection = &selection;
+  GhosttyFormatter formatter = NULL;
+  r = ghostty_formatter_terminal_new(&allocator, &formatter, b->terminal, options);
+  if (r) return r;
+  GhosttyWriter writer = {.userdata = b, .write = range_write};
+  r = ghostty_formatter_format(formatter, writer); ghostty_formatter_free(formatter); return r;
+}
+void wraith_bridge_scroll_row(WraithBridge* b, uint64_t row) {
+  GhosttyTerminalScrollViewport v = {.tag = GHOSTTY_SCROLL_VIEWPORT_ROW, .value = {.row = (size_t)row}};
+  ghostty_terminal_scroll_viewport(b->terminal, v);
 }

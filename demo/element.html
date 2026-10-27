@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0806" />
+    <title>Wraith Element</title>
+    <link rel="icon" href="/favicon.svg" />
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px;
+        background: #0c0806;
+        color: #f3e6da;
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        display: grid;
+        gap: 16px;
+      }
+      code {
+        color: #ffb86b;
+      }
+      label {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      wraith-term {
+        height: 300px;
+        border: 1px solid #3a2c22;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><code>&lt;wraith-term&gt;</code></h1>
+      <p>
+        One import registers the element. Attributes configure it and update live; events arrive as
+        <code>wraith-*</code> <code>CustomEvent</code>s. Type in either terminal.
+      </p>
+      <label
+        >Font size <input id="size" type="range" min="10" max="22" value="14" /><output
+          id="size-value"
+          >14</output
+        ></label
+      >
+      <wraith-term id="native" font-size="14" theme='{"background":"#120d0a"}'></wraith-term>
+      <p>The same element with <code>profile="xterm"</code>: the xterm.js 6.0 API on WebGPU.</p>
+      <wraith-term id="xterm" profile="xterm" cols="96" rows="14" font-size="14"></wraith-term>
+      <p id="log">Last input: none</p>
+    </main>
+    <script type="module" src="./element.ts"></script>
+  </body>
+</html>

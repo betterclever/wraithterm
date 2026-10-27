@@ -107,7 +107,7 @@ input {
   font: 600 16px var(--mono);
 }
 .mark svg {
-  width: 20px;
+  width: 26px;
   color: var(--amber);
 }
 .mark b {
