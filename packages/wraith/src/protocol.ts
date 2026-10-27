@@ -158,6 +158,7 @@ export type SurfaceReply =
       completedUpdates: number;
       updates: number;
       atlases: number;
+      effectPasses: number;
       terminals: number;
       width: number;
       height: number;

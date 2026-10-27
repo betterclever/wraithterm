@@ -67,7 +67,8 @@ export class SharedHost {
   }
   private postStats() {
     const s = this.surface;
-    if (!s || this.failed) return;
+    // set_effects holds the surface across its await; reading it then throws.
+    if (!s || this.failed || this.configuring) return;
     this.post({
       type: 'surface-stats',
       frames: s.frames,
@@ -75,6 +76,7 @@ export class SharedHost {
       completedUpdates: s.completed_updates,
       updates: this.updates,
       atlases: s.atlases,
+      effectPasses: s.effect_passes,
       terminals: this.slots.size,
       width: s.width,
       height: s.height,
@@ -111,12 +113,19 @@ export class SharedHost {
   resize(width: number, height: number) {
     this.ready.then(
       (surface) => {
+        // While effects are configured the surface is borrowed: apply the
+        // latest size once they are done.
+        if (this.configuring) {
+          this.pendingSize = [width, height];
+          return;
+        }
         surface.resize(width, height);
         this.invalidate();
       },
       () => {},
     );
   }
+  private pendingSize?: [number, number];
   geometry(data: Float32Array) {
     for (let i = 0; i + GEOMETRY_STRIDE <= data.length; i += GEOMETRY_STRIDE) {
       const id = data[i]!;
@@ -186,6 +195,10 @@ export class SharedHost {
       await surface.set_effects(new Float32Array(params), shader);
     } finally {
       this.configuring = false;
+      if (this.pendingSize) {
+        surface.resize(...this.pendingSize);
+        this.pendingSize = undefined;
+      }
       this.invalidate();
     }
   }

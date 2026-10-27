@@ -312,9 +312,11 @@ for (const dpr of [1, 2]) {
     const image = pixels(await page.screenshot());
     const s = (v) => Math.round(v * dpr);
     const [x, y, w, h] = (await boxes()).shared[0];
+    const inside = region(image, s(x), s(y), s(w), s(h));
+    const dark = inside.filter((v) => v < 250).length;
     assert(
-      region(image, s(x), s(y), s(w), s(h)).every((v) => v >= 250),
-      `DPR ${dpr}: custom shader output missing inside a shared terminal`,
+      dark === 0,
+      `DPR ${dpr}: custom shader output missing inside a shared terminal (${dark} of ${inside.length} channels below 250; first ${[...inside.subarray(0, 6)]})`,
     );
     assert(
       region(image, s(480), s(10), s(180), s(480)).every((v) => v === 0),

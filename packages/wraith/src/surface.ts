@@ -39,6 +39,8 @@ export interface SharedSurfaceStats {
   completedUpdates: number;
   /** Distinct live glyph atlases on this worker. */
   atlases: number;
+  /** Post-process passes in the surface's last frame (zero with effects off). */
+  effectPasses: number;
   terminals: number;
   width: number;
   height: number;
