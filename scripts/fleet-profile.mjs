@@ -63,6 +63,16 @@ if (!process.env.ANALYZE) {
       `display ${((b.frames - a.frames) / s).toFixed(1)} rAF/s, ` +
       `${(per.reduce((x, y) => x + y, 0) / count).toFixed(1)} updates/terminal/s, p10 ${per[Math.floor(count * 0.1)].toFixed(1)}`,
   );
+  const loaf = (key) => b.loaf[key] - a.loaf[key];
+  console.log(
+    `Long animation frames: ${loaf('count')} (${loaf('ms').toFixed(0)} ms, blocking ${loaf('blockingMs').toFixed(0)} ms, render ${loaf('renderMs').toFixed(0)} ms, style/layout ${loaf('styleLayoutMs').toFixed(0)} ms)`,
+  );
+  for (const [script, ms] of Object.entries(b.loaf.scripts)
+    .map(([k, v]) => [k, v - (a.loaf.scripts[k] ?? 0)])
+    .filter(([, v]) => v > 1)
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 8))
+    console.log(`    ${ms.toFixed(0).padStart(6)} ms  ${script}`);
 }
 // Traces of a few seconds run to hundreds of MB: parse one event at a time.
 const traceEvents = [];

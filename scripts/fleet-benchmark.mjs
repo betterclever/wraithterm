@@ -156,6 +156,18 @@ for (let round = 0; round < rounds; round++)
               ? b.surfaceCompletedFrames.map((f, i) => (f - (a.surfaceCompletedFrames[i] ?? 0)) / s)
               : null,
           longTasks: b.longTasks.count - a.longTasks.count,
+          longAnimationFrames: {
+            count: b.loaf.count - a.loaf.count,
+            ms: Math.round(b.loaf.ms - a.loaf.ms),
+            blockingMs: Math.round(b.loaf.blockingMs - a.loaf.blockingMs),
+            renderMs: Math.round(b.loaf.renderMs - a.loaf.renderMs),
+            styleLayoutMs: Math.round(b.loaf.styleLayoutMs - a.loaf.styleLayoutMs),
+            topScripts: Object.entries(b.loaf.scripts)
+              .map(([k, v]) => [k, Math.round(v - (a.loaf.scripts[k] ?? 0))])
+              .filter(([, v]) => v > 0)
+              .sort((x, y) => y[1] - x[1])
+              .slice(0, 5),
+          },
           longTaskMs: b.longTasks.ms - a.longTasks.ms,
           atlases: b.atlases,
           memoryMiB: Math.round(memory),
@@ -174,7 +186,7 @@ for (let round = 0; round < rounds; round++)
       console.log(
         run.failed
           ? `${round} ${count} ${mode}/${feed}: FAILED ${run.failed}`
-          : `${round} ${count} ${mode}/${feed}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
+          : `${round} ${count} ${mode}/${feed}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms), ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
       );
     }
 
@@ -268,6 +280,8 @@ await writeFile(
         surfaceFrames: 'shared only: frames each worker presented to its canvas per second',
         longTasks:
           'PerformanceObserver longtask entries (>50 ms) on the main thread during the window',
+        longAnimationFrames:
+          "PerformanceObserver 'long-animation-frame' entries (>50 ms) in the window: total and blocking duration, time from render start and from style/layout start to frame end, and the five scripts with the most attributed time",
         memory: 'summed RSS of the browser and all its processes, sampled mid-window',
         browserCpuCores:
           'CPU time of the browser and all its processes (ps) over the window, divided by wall time',
