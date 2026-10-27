@@ -3,6 +3,82 @@
 Release notes are generated from conventional commits by
 [release-please](https://github.com/googleapis/release-please).
 
+## [0.6.0](https://github.com/betterclever/wraithterm/compare/v0.5.0...v0.6.0) (2026-10-27)
+
+
+### Features
+
+* **a11y:** screen reader announcements, row mirror and keyboard exit ([37c7595](https://github.com/betterclever/wraithterm/commit/37c75958dbb7a93b59410a0cc6b5ce64a3e74f7d))
+* add GPU post-process effects and custom WGSL shaders ([6040feb](https://github.com/betterclever/wraithterm/commit/6040feb943c1f6f8ad825d122fae7b9735eb13c4)), closes [#43](https://github.com/betterclever/wraithterm/issues/43)
+* add React, Vue, Svelte and &lt;wraith-term&gt; bindings ([9b9c876](https://github.com/betterclever/wraithterm/commit/9b9c876dff587037e91f5782a03a70dc9d6eb3bb)), closes [#42](https://github.com/betterclever/wraithterm/issues/42)
+* command blocks API, gutter and shell integration for both profiles ([fe489e0](https://github.com/betterclever/wraithterm/commit/fe489e0d034694b108b26eb66389cd0f3e9c131e)), closes [#48](https://github.com/betterclever/wraithterm/issues/48)
+* command blocks from OSC 133 shell integration ([bd31175](https://github.com/betterclever/wraithterm/commit/bd311758b6abee5f4536740521975b63fd17358c))
+* **demo:** add the effects lab with a custom shader gallery ([48d4bff](https://github.com/betterclever/wraithterm/commit/48d4bff92670d38b005ef95deefd25b1b8b3fd6a)), closes [#43](https://github.com/betterclever/wraithterm/issues/43)
+* draw pooled terminals into one shared WebGPU surface per worker ([e5fbb60](https://github.com/betterclever/wraithterm/commit/e5fbb60c6b7547c66f676788a1a6e22eaddf2043)), closes [#45](https://github.com/betterclever/wraithterm/issues/45)
+* **engine:** track OSC 133 command blocks with Ghostty tracked refs ([a986aa5](https://github.com/betterclever/wraithterm/commit/a986aa56e38c08bbb92fa099c81dc3cad255e658)), closes [#48](https://github.com/betterclever/wraithterm/issues/48)
+* expose VT state snapshots and grid digests from the headless engine ([c08ca79](https://github.com/betterclever/wraithterm/commit/c08ca799f8e47ba218f4fefd294c89f74252bfc6)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+* GPU effects (CRT, bloom, cursor trail) and custom WGSL shaders ([a7cfb53](https://github.com/betterclever/wraithterm/commit/a7cfb5311a36233725d20275e2cdf392d8939795))
+* let the engine worker own the terminal's WebSocket ([0873abe](https://github.com/betterclever/wraithterm/commit/0873abe3014ffee0855c199f36097b1ab558a0fa))
+* React, Vue, Svelte and &lt;wraith-term&gt; bindings ([2b3f45b](https://github.com/betterclever/wraithterm/commit/2b3f45b9cffc3c127c232625c836743089b44874))
+* record, replay and scrub terminal sessions ([a9bdbd9](https://github.com/betterclever/wraithterm/commit/a9bdbd9f9e40d0c0698a2d1f488cd1528501a7f3)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+
+
+### Performance
+
+* batch serve's PTY output into larger WebSocket messages ([66f6f5b](https://github.com/betterclever/wraithterm/commit/66f6f5b1558c17c699c87e5dd032ab33270e2419))
+* measure keystroke-to-pixel latency; render idle echoes at once ([2c66654](https://github.com/betterclever/wraithterm/commit/2c66654e721b56d4512a596df950de8b9964061d))
+* open serve's WebSocket in the engine worker, off the main thread ([3f6548d](https://github.com/betterclever/wraithterm/commit/3f6548dbe0b314f7e1b0a9ccac72f53597534fb2))
+* read serve's PTY from a worker thread ([a7849e2](https://github.com/betterclever/wraithterm/commit/a7849e2886139da6a32f7e8cca71dc2d2546ea49))
+* read serve's PTY into a shared ring without stack traces ([1f48fa6](https://github.com/betterclever/wraithterm/commit/1f48fa67dc24724d59c67a1344dacca1aa477fd6)), closes [#60](https://github.com/betterclever/wraithterm/issues/60)
+* render an idle terminal's next write at once ([7c308c3](https://github.com/betterclever/wraithterm/commit/7c308c3d19f274fda4930e420e4f9462e78636dd)), closes [#59](https://github.com/betterclever/wraithterm/issues/59)
+* stop re-layerizing the page on every unfocused cursor move ([94b0ec7](https://github.com/betterclever/wraithterm/commit/94b0ec70ad0fe683bdb4e3e220c6cda866114966)), closes [#45](https://github.com/betterclever/wraithterm/issues/45)
+* warm up the first engine in each worker during idle time ([73f9788](https://github.com/betterclever/wraithterm/commit/73f9788e727252a102b268b3bb2fc8f53486138c))
+* warm up the Wasm engine; measure SIMD and build flags ([c787121](https://github.com/betterclever/wraithterm/commit/c787121fb4960382a507a5cdce8e0cf4f703c824))
+
+
+### Bug fixes
+
+* **a11y:** hold accessibility config until the worker has started ([c266ed4](https://github.com/betterclever/wraithterm/commit/c266ed47e0e5503f85aa868c8b1d3517bc245002))
+* **a11y:** show the focus ring only for the focus a Tab caused ([c252051](https://github.com/betterclever/wraithterm/commit/c2520512212e8232d9c3152108fde7691d36c5ce))
+* **bindings:** stop live grid changes on fitting terminals and late onReady ([e42377a](https://github.com/betterclever/wraithterm/commit/e42377a1549cfcf9d711f0bc433bb8b482fec3d7))
+* correct bash integration cmdlines for unsaved and non-ASCII commands ([db6df0c](https://github.com/betterclever/wraithterm/commit/db6df0c696b0f2e0e9c0d19d6aa78db6e1fbfa2f))
+* drop the worker socket when the terminal fails ([75ca66b](https://github.com/betterclever/wraithterm/commit/75ca66bd26ecc5b5446891610b1344cffa06a0fb))
+* **effects:** survive dispose during setEffects and restore trail after reduced motion ([bda3871](https://github.com/betterclever/wraithterm/commit/bda3871c1a2f37fc8cdc6477a70c969654a5fd6c))
+* **engine:** report blocks erased by clear as truncated ([34489dc](https://github.com/betterclever/wraithterm/commit/34489dc7889a4b4946f7f10e36de34fe2a51c916))
+* fall back to the typed command in the native profile ([a30dca5](https://github.com/betterclever/wraithterm/commit/a30dca55f2316eedfe98dcc517f459cba447489a))
+* hide styled-hidden and re-clip moved hosts on shared surfaces ([9908ea9](https://github.com/betterclever/wraithterm/commit/9908ea9302538a342732558ca2b4d9b7047bcf44))
+* ignore command-block replies while a terminal disposes ([00e893e](https://github.com/betterclever/wraithterm/commit/00e893e450b05bc0d82eb8a24a555be22b566f99))
+* keep internal player seeks from raising unhandled rejections ([50b2a72](https://github.com/betterclever/wraithterm/commit/50b2a72ac8f3e8075735463d2b560725f0f2e971)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+* keep Wraith.player from deadlocking under top-level await ([ee33a8b](https://github.com/betterclever/wraithterm/commit/ee33a8be168b9c0ab803ad72725df74a90f43f2e))
+* read grid digests inside synchronized output without releasing it ([1567485](https://github.com/betterclever/wraithterm/commit/1567485220fc8644ed08c7a905a89795643068b4)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+* record resizes in the order the worker applies them ([415563b](https://github.com/betterclever/wraithterm/commit/415563b574f2c13a644dbe414e097e5e3e1bff62))
+* **serve:** stop the PTY reader thread before node-pty closes the master ([92f242e](https://github.com/betterclever/wraithterm/commit/92f242ee8c75bcd26351e50f70b08d15a8a496a8))
+
+
+### Documentation
+
+* **a11y:** describe what announcements: 'always' actually gates on ([accbcc0](https://github.com/betterclever/wraithterm/commit/accbcc0217aab75040ff3bb8e50637af3a655c0d))
+* document accessibility and compare it with wterm ([564fb28](https://github.com/betterclever/wraithterm/commit/564fb28b7a2027086ee114018eb1c62cb6a088b5))
+* document command blocks and measure their overhead ([3de3011](https://github.com/betterclever/wraithterm/commit/3de3011d1435ff25ff3cac5f920890ae064d98c6)), closes [#48](https://github.com/betterclever/wraithterm/issues/48)
+* document framework bindings and add a &lt;wraith-term&gt; demo ([5c3723e](https://github.com/betterclever/wraithterm/commit/5c3723eeb9c9c8342ee88ee89a0472daedf2bccb)), closes [#42](https://github.com/betterclever/wraithterm/issues/42)
+* document recording, asciicast and the scrubbable player ([87514b5](https://github.com/betterclever/wraithterm/commit/87514b589458ea0863817efacd3c1439d675a7d2)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+* measure and document GPU effects ([de0790f](https://github.com/betterclever/wraithterm/commit/de0790f6c32df91c36fb02cee974170eb8ebaa4f)), closes [#43](https://github.com/betterclever/wraithterm/issues/43)
+* record replay seek latency on a 10-minute session ([0ef13cd](https://github.com/betterclever/wraithterm/commit/0ef13cda54f846152b7e0553bfbb79e07863d90b)), closes [#47](https://github.com/betterclever/wraithterm/issues/47)
+* rename engine warm-up report and state its measurement limits ([2de5b0f](https://github.com/betterclever/wraithterm/commit/2de5b0fa2cfc3b57916ad5f26cd0a3a7c1c102cf))
+* report the headed fleet benchmark and document shared surfaces ([53ecd08](https://github.com/betterclever/wraithterm/commit/53ecd08f84980003686ad61bd9f798b5f1b3d6e7)), closes [#45](https://github.com/betterclever/wraithterm/issues/45)
+* state shared atlas capacity and opacity limits in both READMEs ([127d4a3](https://github.com/betterclever/wraithterm/commit/127d4a3ee9130f137cecef404cc8454cb1290fce))
+* state that recordings start empty ([1cf25a3](https://github.com/betterclever/wraithterm/commit/1cf25a34d3c81b177cb4d9790d37a6297e6d1745))
+
+
+### Benchmarks
+
+* **a11y:** measure screen reader mode overhead and record validation ([66fab23](https://github.com/betterclever/wraithterm/commit/66fab23681d5e52ae5e1097de437287246a99b32))
+* add engine-only throughput, first-content and worker profile harnesses ([c2dc4be](https://github.com/betterclever/wraithterm/commit/c2dc4be69ab34cd1d3b573cc955b70bc41701901))
+* add headed fleet benchmark for shared vs per-canvas pools ([df8b8db](https://github.com/betterclever/wraithterm/commit/df8b8dbc3f62e424ea6a911ff07b16c56461b85f)), closes [#45](https://github.com/betterclever/wraithterm/issues/45)
+* make the native-Ghostty scripts portable across concurrent runs ([5dc8e63](https://github.com/betterclever/wraithterm/commit/5dc8e63cc18a24997392edea8665fcd0819efd9c)), closes [#60](https://github.com/betterclever/wraithterm/issues/60)
+* measure keystroke-to-pixel latency through serve ([d255384](https://github.com/betterclever/wraithterm/commit/d255384de8b81bfb21f5f39fcce90fe9197b73a0)), closes [#59](https://github.com/betterclever/wraithterm/issues/59)
+* record serve's ring reader against [#57](https://github.com/betterclever/wraithterm/issues/57), with a browserless client ([a05efe2](https://github.com/betterclever/wraithterm/commit/a05efe23f87cfd4d5d440879adc165f94eceb835)), closes [#60](https://github.com/betterclever/wraithterm/issues/60)
+
 ## [0.5.0](https://github.com/betterclever/wraithterm/compare/v0.3.0...v0.5.0) (2026-10-24)
 
 
