@@ -68,6 +68,7 @@ class Fleet {
   frames = 0;
   longTasks = { count: 0, ms: 0 };
   pace = 'frame';
+  feed = 'main';
   mountMs = 0;
   errors = [];
   async start({
@@ -80,9 +81,11 @@ class Fleet {
     lineHeight = 1.2,
     pace = 'frame',
     scrollback = 1000,
+    feed = 'main',
   } = {}) {
     await this.stop();
     this.pace = pace;
+    this.feed = mode === 'shared' && feed === 'worker' ? 'worker' : 'main';
     $('count').value = String(count);
     $('mode').value = mode;
     $('pace').value = pace;
@@ -131,8 +134,16 @@ class Fleet {
     show('r-terminals', String(count));
     fit();
     this.running = true;
-    this.drive();
-    return { mountMs: this.mountMs, count };
+    // Display frames: main-thread animation frames, whatever feeds the terminals.
+    const frame = () => {
+      if (!this.running) return;
+      this.frames++;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    if (this.feed === 'worker') await this.feedWorkers();
+    else this.drive();
+    return { mountMs: this.mountMs, count, feed: this.feed };
   }
   /** One animation-frame driver: every terminal whose previous update was
    * parsed writes its next one, at most once per display frame (or at `pace`). */
@@ -142,7 +153,6 @@ class Fleet {
     const sequence = new Uint32Array(this.terms.length);
     const tick = (now) => {
       if (!this.running) return;
-      this.frames++;
       const interval =
         this.pace === 'frame' ? 0 : this.pace === '0' ? Infinity : 1000 / Number(this.pace);
       for (let i = 0; i < this.terms.length; i++) {
@@ -161,8 +171,26 @@ class Fleet {
     };
     requestAnimationFrame(tick);
   }
+  /** Worker-fed: each pool worker replays its terminals' updates itself, one
+   * per terminal per worker animation frame; nothing crosses the main thread
+   * while they stream. (Internal benchmark command; see protocol.ts 'feed'.) */
+  async feedWorkers() {
+    const cycle = 64;
+    await Promise.all(
+      this.terms.map((term, i) =>
+        term.request({
+          type: 'feed',
+          chunks: Array.from({ length: cycle }, (_, n) => logUpdate(i, n)),
+        }),
+      ),
+    );
+  }
   /** Cumulative counters; callers difference two snapshots. */
-  metrics() {
+  async metrics() {
+    if (this.feed === 'worker' && this.running)
+      this.acked = await Promise.all(
+        this.terms.map((term) => term.request({ type: 'feed' }).catch(() => 0)),
+      );
     const surfaces = this.pool?.surfaceStats ?? [];
     const sum = (key) => surfaces.reduce((a, s) => a + (s?.[key] ?? 0), 0);
     return {
@@ -211,9 +239,9 @@ if (typeof PerformanceObserver !== 'undefined')
   }
 
 // Live readout, from differences between half-second snapshots.
-let previous = fleet.metrics();
-setInterval(() => {
-  const now = fleet.metrics();
+let previous = await fleet.metrics();
+setInterval(async () => {
+  const now = await fleet.metrics();
   const seconds = (now.time - previous.time) / 1000;
   if (fleet.terms.length && now.acked.length === previous.acked.length && seconds > 0) {
     const updates =
@@ -337,6 +365,7 @@ if (params.get('auto') !== '0')
       mode: $('mode').value,
       pace: $('pace').value,
       workers: Number(params.get('workers') ?? 4),
+      feed: params.get('feed') ?? 'main',
     })
     .catch((error) => {
       $('hint').textContent = `Could not start: ${error.message}`;

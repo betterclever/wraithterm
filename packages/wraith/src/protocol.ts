@@ -48,6 +48,10 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  /** Internal (benchmarks): replay `chunks` in the worker, one per worker
+   * animation frame, as if a worker-side source produced them; `null` stops.
+   * Resolves with the number of chunks parsed so far. */
+  | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
   /** Internal: latency tracing and the immediate-frame switch (benchmarks only). */
   | { type: 'trace'; enabled?: boolean; immediate?: boolean }
   | { type: 'socket-open'; link: number; url: string; protocols: string[]; stream: boolean }

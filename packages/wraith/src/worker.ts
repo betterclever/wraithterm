@@ -55,6 +55,25 @@ const yieldTask = () =>
     yields.port2.postMessage(null);
   });
 
+// Benchmark feeds (see the 'feed' command): every feeding terminal parses its
+// next chunk once per worker animation frame, before that frame renders.
+const feeders = new Set<() => void>();
+let feeding = false;
+function startFeeding(step: () => void) {
+  feeders.add(step);
+  if (feeding) return;
+  feeding = true;
+  const frame = () => {
+    if (!feeders.size) {
+      feeding = false;
+      return;
+    }
+    for (const feed of feeders) feed();
+    scope.requestAnimationFrame(frame);
+  };
+  scope.requestAnimationFrame(frame);
+}
+
 /** One terminal: its engine, scheduling, search and fences, replying through
  * `endpoint`. A dedicated worker runs one; a pooled worker one per attached terminal. */
 function createSession(
@@ -97,6 +116,23 @@ function createSession(
     frameInterval = 1000 / 60;
   let serial = Promise.resolve();
   let link: Link | undefined;
+  // Benchmark feed: chunks replayed in this worker, one per animation frame.
+  let feedChunks: Uint8Array[] = [],
+    fed = 0;
+  const feedStep = () => {
+    if (disposed || !engine) return feeders.delete(feedStep);
+    // A benchmark or flush holds the engine; skip this frame.
+    if (busy) return;
+    try {
+      engine.write(feedChunks[fed % feedChunks.length]!);
+      fed++;
+      drain();
+      schedule();
+    } catch (error) {
+      feeders.delete(feedStep);
+      fatal(error);
+    }
+  };
   let searchGeneration = 0;
   let searchRequest: number | undefined;
   // A posted task yields to writes/input without the nested-timer 4 ms clamp.
@@ -750,6 +786,14 @@ function createSession(
       case 'observe-render':
         observeRender = command.enabled;
         break;
+      case 'feed':
+        if (command.chunks !== undefined) {
+          feeders.delete(feedStep);
+          feedChunks = command.chunks ?? [];
+          if (feedChunks.length) startFeeding(feedStep);
+        }
+        result(command.id, fed);
+        break;
       case 'trace':
         if (command.enabled !== undefined) tracing = command.enabled;
         if (command.immediate !== undefined) immediate = command.immediate;
@@ -765,6 +809,7 @@ function createSession(
         break;
       case 'dispose':
         disposed = true;
+        feeders.delete(feedStep);
         link?.close(1000, 'Terminal disposed');
         link = undefined;
         searchGeneration++;
