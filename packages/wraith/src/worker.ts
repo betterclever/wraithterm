@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import init, { Engine, Headless } from '../wasm/wraith_engine.js';
 import { MessageBatch, nextTask } from './batch.js';
-import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
+import type { Command, PoolMessage, PoolReply, Reply, SurfaceReply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 import { createCommandTracker } from './worker-commands.js';
@@ -939,6 +939,23 @@ scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
       return;
     case 'geometry':
       host?.geometry(message.data);
+      return;
+    case 'surface-effects': {
+      const id = message.id;
+      const done = (error?: unknown) =>
+        scope.postMessage({
+          type: 'surface-effects-result',
+          id,
+          ...(error !== undefined && {
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        } satisfies SurfaceReply);
+      if (!host) done(new Error('This worker has no shared surface'));
+      else host.setEffects(message.params, message.shader).then(() => done(), done);
+      return;
+    }
+    case 'surface-effect-mouse':
+      host?.setEffectMouse(message.mouse);
       return;
   }
   dedicated ??= createSession(scope, () => scope.close());

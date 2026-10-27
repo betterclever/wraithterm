@@ -262,6 +262,46 @@ for (const dpr of [1, 2]) {
   }
   await compare('visible again', [2]);
 
+  // Effects over the shared surface: a custom shader sees the surface as one
+  // image and its output is kept to terminal coverage; the page between the
+  // columns stays transparent. Off restores the exact direct path.
+  const effects = await page.evaluate(async () => {
+    const pool = window.pools.shared;
+    const white = 'fn mainImage(p: vec2<f32>) -> vec4<f32> { return vec4<f32>(1.0); }';
+    await pool.setEffects({ crt: { curvature: 0 }, bloom: 0.5, shader: white });
+    const invalid = await pool
+      .setEffects({ shader: 'fn mainImage(p: vec2<f32>) -> vec4<f32> { return nope; }' })
+      .then(
+        () => 'accepted',
+        (e) => e.message,
+      );
+    const canvasPool = await window.pools.canvas.setEffects({ crt: true }).then(
+      () => 'accepted',
+      (e) => e.message,
+    );
+    return { invalid, canvasPool, current: !!pool.effects?.shader };
+  });
+  assert.match(effects.invalid, /\d+:\d+: /, 'invalid shader rejected with line:column');
+  assert.match(effects.canvasPool, /surface: 'shared'/);
+  assert(effects.current, 'a rejected shader keeps the previous effects');
+  await settle();
+  {
+    const image = pixels(await page.screenshot());
+    const s = (v) => Math.round(v * dpr);
+    const [x, y, w, h] = (await boxes()).shared[0];
+    assert(
+      region(image, s(x), s(y), s(w), s(h)).every((v) => v >= 250),
+      `DPR ${dpr}: custom shader output missing inside a shared terminal`,
+    );
+    assert(
+      region(image, s(480), s(10), s(180), s(480)).every((v) => v === 0),
+      `DPR ${dpr}: shared-surface effects drew outside the terminals`,
+    );
+    checks++;
+  }
+  await page.evaluate(() => window.pools.shared.setEffects(null));
+  await compare('effects off again', [0, 1, 2]);
+
   // An off-screen shared terminal keeps parsing but submits no GPU work.
   const offscreen = await page.evaluate(async () => {
     const host = document.createElement('div');

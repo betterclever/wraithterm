@@ -124,7 +124,10 @@ export type PoolMessage =
   | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
   | { type: 'surface-size'; width: number; height: number }
   /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
-  | { type: 'geometry'; data: Float32Array };
+  | { type: 'geometry'; data: Float32Array }
+  /** Post-process effects over the worker's whole surface (see effects.ts). */
+  | { type: 'surface-effects'; id: number; params: number[]; shader?: string }
+  | { type: 'surface-effect-mouse'; mouse: number[] };
 /** Replies from a pooled worker's terminals, in order, batched per task. */
 export type PoolReply = { type: 'replies'; items: [id: number, reply: Reply][] };
 /** Messages a shared-surface worker sends its pool. */
@@ -140,4 +143,5 @@ export type SurfaceReply =
       width: number;
       height: number;
     }
-  | { type: 'surface-error'; error: string };
+  | { type: 'surface-error'; error: string }
+  | { type: 'surface-effects-result'; id: number; error?: string };

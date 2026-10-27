@@ -1,4 +1,5 @@
 import { MessageBatch } from './batch.js';
+import { packEffects, type WraithEffects } from './effects.js';
 import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
 import { SharedSurfaces, type SharedSurfaceOptions, type SharedSurfaceStats } from './surface.js';
 export type { PlacementTracking, SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
@@ -70,6 +71,7 @@ export class WraithPool {
   private disposed = false;
   private surfaces?: SharedSurfaces;
   private nextId = 1;
+  private currentEffects: WraithEffects | null = null;
   readonly size: number;
   /** `'shared'` when workers draw into page-sized shared surfaces. */
   readonly surface: 'canvas' | 'shared';
@@ -94,6 +96,29 @@ export class WraithPool {
    */
   updatePlacements(): void {
     this.surfaces?.invalidate();
+  }
+  /** Effects applied with `setEffects()`, or null when none are on. */
+  get effects(): WraithEffects | null {
+    return this.currentEffects;
+  }
+  /**
+   * Shared surfaces: GPU post-process effects over each worker's whole
+   * surface (CRT, bloom, a custom WGSL shader); `null` or `{}` turns them off
+   * and returns to the direct path with no extra passes or textures. The
+   * cursor trail needs a terminal's own canvas and is ignored here; a custom
+   * shader sees the surface as one image (`iResolution` is the page in device
+   * pixels) and its output is kept to where terminals are. Rejects with the
+   * compiler's messages for an invalid shader, keeping the previous effects.
+   * Per-canvas pools take effects per terminal with `terminal.setEffects()`.
+   */
+  async setEffects(effects: WraithEffects | null): Promise<void> {
+    if (!this.surfaces)
+      throw new Error("pool.setEffects() needs surface: 'shared'; use terminal.setEffects()");
+    const reduced =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const packed = packEffects(effects, reduced);
+    await this.surfaces.setEffects(packed);
+    this.currentEffects = packed.active ? { ...effects } : null;
   }
   /** Terminals currently attached to each worker. */
   get load(): number[] {

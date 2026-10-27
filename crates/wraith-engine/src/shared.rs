@@ -3,6 +3,8 @@
 //! surface at its host's rectangle. A retained backing texture keeps terminals
 //! that did not change, so a frame redraws only those with new content unless
 //! the geometry changed. Terminals with the same fonts share one glyph atlas.
+use crate::effect_state::Settings;
+use crate::effects::{self, Effects};
 use crate::gpu::{scaled_sampler, shared_gpu, terminal_pipeline, Glyphs, SharedGpu};
 use crate::images::ImageLayer;
 use crate::text::Atlas;
@@ -101,16 +103,21 @@ pub struct Surface {
     frames: u64,
     completed_frames: Arc<AtomicU64>,
     completed_updates: Arc<AtomicU64>,
+    /// Post-process effects over the whole surface. None (the default) keeps
+    /// the direct path: the backing is copied to the canvas, nothing else.
+    effects: Option<Box<Effects>>,
 }
 fn error(e: String) -> JsValue {
     js_sys::Error::new(&e).into()
 }
 impl Surface {
+    /// The retained backing. With effects it is also sampled as their scene.
     fn backing(
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         width: u32,
         height: u32,
+        sampled: bool,
     ) -> (wgpu::Texture, wgpu::TextureView) {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Wraith shared surface backing"),
@@ -123,7 +130,11 @@ impl Surface {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            usage: if sampled {
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
+            } else {
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC
+            },
             view_formats: &[],
         });
         let view = texture.create_view(&Default::default());
@@ -131,6 +142,21 @@ impl Surface {
     }
     pub(crate) fn target(&self) -> (u32, u32) {
         (self.config.width, self.config.height)
+    }
+    /// Recreate the backing (empty) for the current size and effect state.
+    fn rebuild_backing(&mut self) {
+        let device = &self.context.gpu.device;
+        let (width, height) = (self.config.width, self.config.height);
+        (self.backing, self.backing_view) = Self::backing(
+            device,
+            self.config.format,
+            width,
+            height,
+            self.effects.is_some(),
+        );
+        if let Some(fx) = &mut self.effects {
+            fx.external_scene(device, &self.backing_view, width, height);
+        }
     }
 }
 #[wasm_bindgen]
@@ -169,7 +195,8 @@ impl Surface {
             ..Default::default()
         });
         let scaled = scaled_sampler(&gpu.device);
-        let (backing, backing_view) = Self::backing(&gpu.device, config.format, width, height);
+        let (backing, backing_view) =
+            Self::backing(&gpu.device, config.format, width, height, false);
         if let Some(e) = error_scope.pop().await {
             return Err(error(format!("WebGPU shared surface initialization: {e}")));
         }
@@ -195,6 +222,7 @@ impl Surface {
             frames: 0,
             completed_frames: Arc::new(AtomicU64::new(0)),
             completed_updates: Arc::new(AtomicU64::new(0)),
+            effects: None,
         })
     }
     /// Resize to the page's device-pixel size. The backing starts empty, so
@@ -213,8 +241,73 @@ impl Surface {
         self.canvas.set_height(height);
         self.surface
             .configure(&self.context.gpu.device, &self.config);
-        (self.backing, self.backing_view) =
-            Self::backing(&self.context.gpu.device, self.config.format, width, height);
+        self.rebuild_backing();
+    }
+    /// Replace post-process effects over the whole surface (parameters as in
+    /// `Engine::set_effects`; the cursor trail does not apply). Pipelines are
+    /// validated first, so an invalid shader rejects and keeps the current
+    /// effects. Turning effects on or off empties the backing: redraw every
+    /// visible terminal next frame. Call only between frames.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        let mut settings = Settings::parse(&params).map_err(error)?;
+        settings.trail = None;
+        if !settings.composite() && shader.is_none() {
+            if self.effects.take().is_some() {
+                self.pass = None;
+                self.encoder = None;
+                self.rebuild_backing();
+            }
+            return Ok(());
+        }
+        let context = self.context.clone();
+        let mut next = Effects::new(
+            &context.gpu.device,
+            context.format,
+            settings,
+            shader.as_deref(),
+        )
+        .await
+        .map_err(error)?;
+        next.for_shared_surface();
+        if let Some(previous) = &self.effects {
+            next.inherit(previous);
+        }
+        let was_on = self.effects.is_some();
+        self.effects = Some(Box::new(next));
+        self.pass = None;
+        self.encoder = None;
+        if was_on {
+            let (width, height) = (self.config.width, self.config.height);
+            let device = &self.context.gpu.device;
+            if let Some(fx) = &mut self.effects {
+                fx.external_scene(device, &self.backing_view, width, height);
+            }
+        } else {
+            self.rebuild_backing();
+        }
+        Ok(())
+    }
+    /// Shadertoy `iMouse` in physical pixels of the surface.
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        if let Some(fx) = &mut self.effects {
+            fx.set_mouse([x, y, z, w]);
+        }
+    }
+    /// An effect animation wants a frame even though no terminal changed.
+    #[wasm_bindgen(getter)]
+    pub fn effects_due(&self) -> bool {
+        self.effects
+            .as_ref()
+            .is_some_and(|fx| fx.wants_post(effects::now()))
+    }
+    /// Post-process passes in the last frame; zero with effects off.
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.effects.as_ref().map_or(0, |fx| fx.passes)
     }
     #[wasm_bindgen(getter)]
     pub fn width(&self) -> u32 {
@@ -282,7 +375,11 @@ impl Surface {
             }
             status => return Err(error(format!("WebGPU surface failure: {status:?}"))),
         };
-        if let Some(texture) = &texture {
+        if let (Some(texture), Some(fx)) = (&texture, &mut self.effects) {
+            // Effects read the backing as their scene and write the canvas.
+            let view = texture.texture.create_view(&Default::default());
+            fx.post(&self.context.gpu.queue, &mut encoder, &view, effects::now());
+        } else if let Some(texture) = &texture {
             encoder.copy_texture_to_texture(
                 self.backing.as_image_copy(),
                 texture.texture.as_image_copy(),
