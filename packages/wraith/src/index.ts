@@ -302,6 +302,9 @@ export class Wraith {
       color: this.theme.foreground,
       pointerEvents: 'none',
       fontFamily: 'monospace',
+      // Shown only while an IME composes: a positioned, z-indexed span above a
+      // shared surface would otherwise be its own compositor layer per terminal.
+      display: 'none',
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
@@ -1149,6 +1152,7 @@ export class Wraith {
       'compositionstart',
       () => {
         this.composing = true;
+        this.preedit.style.display = '';
       },
       options,
     );
@@ -1164,6 +1168,7 @@ export class Wraith {
       (event) => {
         this.composing = false;
         this.preedit.textContent = '';
+        this.preedit.style.display = 'none';
         if (event.data)
           this.send({ type: 'key', key: 0, mods: 0, action: 1, text: event.data, unshifted: 0 });
         this.input.value = '';
