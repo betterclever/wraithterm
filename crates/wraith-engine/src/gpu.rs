@@ -1131,6 +1131,28 @@ impl Renderer {
             place: [0.; 4],
         })
     }
+    /// Calls `done` once the GPU finishes work submitted so far, without
+    /// holding a borrow while waiting (GPUQueue.onSubmittedWorkDone on the web).
+    pub fn on_submitted_work_done(&self, done: js_sys::Function) {
+        thread_local! {
+            static WAITING: std::cell::RefCell<(u32, std::collections::HashMap<u32, js_sys::Function>)> =
+                Default::default();
+        }
+        // wgpu requires a Send callback; the JS function stays in this
+        // (single-threaded) Wasm instance and the callback carries only its key.
+        let key = WAITING.with(|w| {
+            let mut w = w.borrow_mut();
+            w.0 = w.0.wrapping_add(1);
+            let key = w.0;
+            w.1.insert(key, done);
+            key
+        });
+        self.queue.on_submitted_work_done(move || {
+            if let Some(done) = WAITING.with(|w| w.borrow_mut().1.remove(&key)) {
+                let _ = done.call0(&wasm_bindgen::JsValue::NULL);
+            }
+        });
+    }
     pub async fn fence(&self) -> Result<(), String> {
         // A tiny readback waits for prior GPU work without affecting normal frames.
         let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {

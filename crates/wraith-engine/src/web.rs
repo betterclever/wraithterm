@@ -313,6 +313,15 @@ impl Engine {
         self.renderer.resize(cols, rows);
         Ok(dimensions)
     }
+    /// Rasterize printable ASCII ahead of first use, `count` glyphs per call,
+    /// so idle time after creation absorbs that work. Returns where to
+    /// continue, or -1 when done.
+    pub fn prefill_glyphs(&mut self, from: u32, count: u32) -> i32 {
+        self.renderer
+            .atlas()
+            .prefill_ascii(from, count)
+            .map_or(-1, |next| next as i32)
+    }
     /// Shape operator runs together to form programming-font ligatures.
     pub fn set_ligatures(&mut self, enabled: bool) -> Result<(), JsValue> {
         let shared = self.renderer.shared_context().is_some();
@@ -457,6 +466,11 @@ impl Engine {
     }
     pub async fn fence(&self) -> Result<(), JsValue> {
         self.renderer.fence().await.map_err(error)
+    }
+    /// Calls `done` when the GPU has finished all work submitted so far.
+    /// Unlike `fence`, this returns at once and holds no borrow while waiting.
+    pub fn on_submitted_work_done(&self, done: js_sys::Function) {
+        self.renderer.on_submitted_work_done(done);
     }
 }
 

@@ -1,0 +1,479 @@
+{
+ "date": "2026-10-25T20:31:54.409Z",
+ "cpu": "Apple M5 Max",
+ "logicalCpus": 18,
+ "os": "darwin 27.2.0",
+ "grid": "160x50",
+ "warm": false,
+ "chromeArgs": "",
+ "method": "Wraith.mount() at the given grid, DPR 2, headed Chrome; each file is written with term.write() in 64 KiB chunks (awaiting every 64th write), then flush(). Time covers parse and coalesced rendering; no PTY or WebSocket. Variants alternate order per round in one browser.",
+ "variants": [
+  {
+   "name": "base",
+   "dir": "/Users/betterclever/projects/wraith/.claude/worktrees/wf_bb05e9ea-88f-3/.cache/ab/base",
+   "wasmBytes": 2767102,
+   "wasmSha256": "8882eda89dd45b0c6e206e4da6ae8924e8ca17a5874757756a979be4d7f6c5c5"
+  },
+  {
+   "name": "slice16",
+   "dir": "/Users/betterclever/projects/wraith/.claude/worktrees/wf_bb05e9ea-88f-3/.cache/ab/slice16",
+   "wasmBytes": 2767223,
+   "wasmSha256": "d82a6aaecec1d926f258f05feaaca89e66f5192b004f050b2f79c073d782c5b2"
+  }
+ ],
+ "files": [
+  {
+   "file": "logs.ansi",
+   "bytes": 64000077
+  },
+  {
+   "file": "ascii.txt",
+   "bytes": 63999904
+  },
+  {
+   "file": "doomtext30.ansi",
+   "bytes": 30000000
+  },
+  {
+   "file": "kitty60.ansi",
+   "bytes": 60551533
+  }
+ ],
+ "runs": [
+  {
+   "variant": "base",
+   "file": "logs.ansi",
+   "round": 0,
+   "loadBefore": "{ 6.49 7.20 5.99 }",
+   "loadAfter": "{ 6.13 7.12 5.97 }",
+   "bytes": 64000077,
+   "seconds": 0.16979999999701978,
+   "MBps": 376.9144699712797,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "slice16",
+   "file": "logs.ansi",
+   "round": 0,
+   "loadBefore": "{ 6.13 7.12 5.97 }",
+   "loadAfter": "{ 6.13 7.12 5.97 }",
+   "bytes": 64000077,
+   "seconds": 0.17690000000596046,
+   "MBps": 361.7867552167529,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "base",
+   "file": "ascii.txt",
+   "round": 0,
+   "loadBefore": "{ 6.13 7.12 5.97 }",
+   "loadAfter": "{ 6.13 7.12 5.97 }",
+   "bytes": 63999904,
+   "seconds": 0.07879999999701977,
+   "MBps": 812.1815228733565,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "slice16",
+   "file": "ascii.txt",
+   "round": 0,
+   "loadBefore": "{ 6.13 7.12 5.97 }",
+   "loadAfter": "{ 6.13 7.12 5.97 }",
+   "bytes": 63999904,
+   "seconds": 0.0825,
+   "MBps": 775.7564121212122,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "base",
+   "file": "doomtext30.ansi",
+   "round": 0,
+   "loadBefore": "{ 6.13 7.12 5.97 }",
+   "loadAfter": "{ 5.80 7.03 5.95 }",
+   "bytes": 30000000,
+   "seconds": 0.0966000000089407,
+   "MBps": 310.5590061824367,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "slice16",
+   "file": "doomtext30.ansi",
+   "round": 0,
+   "loadBefore": "{ 5.80 7.03 5.95 }",
+   "loadAfter": "{ 5.80 7.03 5.95 }",
+   "bytes": 30000000,
+   "seconds": 0.12,
+   "MBps": 250,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "base",
+   "file": "kitty60.ansi",
+   "round": 0,
+   "loadBefore": "{ 5.80 7.03 5.95 }",
+   "loadAfter": "{ 5.80 7.03 5.95 }",
+   "bytes": 60551533,
+   "seconds": 0.05129999999701977,
+   "MBps": 1180.3417739477131,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "slice16",
+   "file": "kitty60.ansi",
+   "round": 0,
+   "loadBefore": "{ 5.80 7.03 5.95 }",
+   "loadAfter": "{ 5.80 7.03 5.95 }",
+   "bytes": 60551533,
+   "seconds": 0.05009999999403954,
+   "MBps": 1208.6134332775227,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "slice16",
+   "file": "logs.ansi",
+   "round": 1,
+   "loadBefore": "{ 5.80 7.03 5.95 }",
+   "loadAfter": "{ 5.80 7.03 5.95 }",
+   "bytes": 64000077,
+   "seconds": 0.1685,
+   "MBps": 379.82241543026703,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "base",
+   "file": "logs.ansi",
+   "round": 1,
+   "loadBefore": "{ 5.80 7.03 5.95 }",
+   "loadAfter": "{ 6.05 7.06 5.96 }",
+   "bytes": 64000077,
+   "seconds": 0.17409999999403952,
+   "MBps": 367.6052671004658,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "slice16",
+   "file": "ascii.txt",
+   "round": 1,
+   "loadBefore": "{ 6.05 7.06 5.96 }",
+   "loadAfter": "{ 6.05 7.06 5.96 }",
+   "bytes": 63999904,
+   "seconds": 0.08329999999701977,
+   "MBps": 768.306170495675,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "base",
+   "file": "ascii.txt",
+   "round": 1,
+   "loadBefore": "{ 6.05 7.06 5.96 }",
+   "loadAfter": "{ 6.05 7.06 5.96 }",
+   "bytes": 63999904,
+   "seconds": 0.08520000000298024,
+   "MBps": 751.1725821333489,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "slice16",
+   "file": "doomtext30.ansi",
+   "round": 1,
+   "loadBefore": "{ 6.05 7.06 5.96 }",
+   "loadAfter": "{ 6.05 7.06 5.96 }",
+   "bytes": 30000000,
+   "seconds": 0.09209999999403953,
+   "MBps": 325.7328990438819,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "base",
+   "file": "doomtext30.ansi",
+   "round": 1,
+   "loadBefore": "{ 6.05 7.06 5.96 }",
+   "loadAfter": "{ 6.05 7.06 5.96 }",
+   "bytes": 30000000,
+   "seconds": 0.09540000000596047,
+   "MBps": 314.46540878538406,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "slice16",
+   "file": "kitty60.ansi",
+   "round": 1,
+   "loadBefore": "{ 6.05 7.06 5.96 }",
+   "loadAfter": "{ 5.97 7.03 5.96 }",
+   "bytes": 60551533,
+   "seconds": 0.05190000000596046,
+   "MBps": 1166.6962041049317,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "base",
+   "file": "kitty60.ansi",
+   "round": 1,
+   "loadBefore": "{ 5.97 7.03 5.96 }",
+   "loadAfter": "{ 5.97 7.03 5.96 }",
+   "bytes": 60551533,
+   "seconds": 0.05079999999701977,
+   "MBps": 1191.9593110935496,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "base",
+   "file": "logs.ansi",
+   "round": 2,
+   "loadBefore": "{ 5.97 7.03 5.96 }",
+   "loadAfter": "{ 5.97 7.03 5.96 }",
+   "bytes": 64000077,
+   "seconds": 0.17320000000298022,
+   "MBps": 369.51545611373416,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "slice16",
+   "file": "logs.ansi",
+   "round": 2,
+   "loadBefore": "{ 5.97 7.03 5.96 }",
+   "loadAfter": "{ 5.97 7.03 5.96 }",
+   "bytes": 64000077,
+   "seconds": 0.17170000000298022,
+   "MBps": 372.7436051187487,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "base",
+   "file": "ascii.txt",
+   "round": 2,
+   "loadBefore": "{ 5.97 7.03 5.96 }",
+   "loadAfter": "{ 5.97 7.03 5.96 }",
+   "bytes": 63999904,
+   "seconds": 0.08760000000894069,
+   "MBps": 730.5925113409588,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "slice16",
+   "file": "ascii.txt",
+   "round": 2,
+   "loadBefore": "{ 5.97 7.03 5.96 }",
+   "loadAfter": "{ 6.45 7.11 5.99 }",
+   "bytes": 63999904,
+   "seconds": 0.0895,
+   "MBps": 715.0827262569833,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "base",
+   "file": "doomtext30.ansi",
+   "round": 2,
+   "loadBefore": "{ 6.45 7.11 5.99 }",
+   "loadAfter": "{ 6.45 7.11 5.99 }",
+   "bytes": 30000000,
+   "seconds": 0.1005,
+   "MBps": 298.5074626865671,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "slice16",
+   "file": "doomtext30.ansi",
+   "round": 2,
+   "loadBefore": "{ 6.45 7.11 5.99 }",
+   "loadAfter": "{ 6.45 7.11 5.99 }",
+   "bytes": 30000000,
+   "seconds": 0.10320000000298023,
+   "MBps": 290.69767441020986,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "base",
+   "file": "kitty60.ansi",
+   "round": 2,
+   "loadBefore": "{ 6.45 7.11 5.99 }",
+   "loadAfter": "{ 6.45 7.11 5.99 }",
+   "bytes": 60551533,
+   "seconds": 0.056200000002980234,
+   "MBps": 1077.429412754253,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "slice16",
+   "file": "kitty60.ansi",
+   "round": 2,
+   "loadBefore": "{ 6.45 7.11 5.99 }",
+   "loadAfter": "{ 6.45 7.11 5.99 }",
+   "bytes": 60551533,
+   "seconds": 0.059299999997019764,
+   "MBps": 1021.1051096634593,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "slice16",
+   "file": "logs.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.45 7.11 5.99 }",
+   "loadAfter": "{ 6.50 7.11 6.00 }",
+   "bytes": 64000077,
+   "seconds": 0.1803999999910593,
+   "MBps": 354.76761088232746,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "base",
+   "file": "logs.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.50 7.11 6.00 }",
+   "loadAfter": "{ 6.50 7.11 6.00 }",
+   "bytes": 64000077,
+   "seconds": 0.1896000000089407,
+   "MBps": 337.5531487182597,
+   "digest": "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+  },
+  {
+   "variant": "slice16",
+   "file": "ascii.txt",
+   "round": 3,
+   "loadBefore": "{ 6.50 7.11 6.00 }",
+   "loadAfter": "{ 6.50 7.11 6.00 }",
+   "bytes": 63999904,
+   "seconds": 0.0865,
+   "MBps": 739.8832832369943,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "base",
+   "file": "ascii.txt",
+   "round": 3,
+   "loadBefore": "{ 6.50 7.11 6.00 }",
+   "loadAfter": "{ 6.50 7.11 6.00 }",
+   "bytes": 63999904,
+   "seconds": 0.09079999999701976,
+   "MBps": 704.8447577323855,
+   "digest": "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+  },
+  {
+   "variant": "slice16",
+   "file": "doomtext30.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.50 7.11 6.00 }",
+   "loadAfter": "{ 6.46 7.09 6.00 }",
+   "bytes": 30000000,
+   "seconds": 0.10120000000298023,
+   "MBps": 296.44268773830566,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "base",
+   "file": "doomtext30.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.46 7.09 6.00 }",
+   "loadAfter": "{ 6.46 7.09 6.00 }",
+   "bytes": 30000000,
+   "seconds": 0.10240000000596046,
+   "MBps": 292.968749982947,
+   "digest": "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+  },
+  {
+   "variant": "slice16",
+   "file": "kitty60.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.46 7.09 6.00 }",
+   "loadAfter": "{ 6.46 7.09 6.00 }",
+   "bytes": 60551533,
+   "seconds": 0.05159999999403954,
+   "MBps": 1173.4793218409782,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "variant": "base",
+   "file": "kitty60.ansi",
+   "round": 3,
+   "loadBefore": "{ 6.46 7.09 6.00 }",
+   "loadAfter": "{ 6.46 7.09 6.00 }",
+   "bytes": 60551533,
+   "seconds": 0.06959999999403954,
+   "MBps": 869.9932903043901,
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ ],
+ "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+ "summary": [
+  {
+   "file": "logs.ansi",
+   "variant": "base",
+   "medianMBps": 368.6,
+   "minMBps": 337.6,
+   "maxMBps": 376.9,
+   "digests": [
+    "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+   ]
+  },
+  {
+   "file": "logs.ansi",
+   "variant": "slice16",
+   "medianMBps": 367.3,
+   "minMBps": 354.8,
+   "maxMBps": 379.8,
+   "digests": [
+    "7fe578dc454255e81ebdb57ac8f10ce47ada6e44844dcf5ebd8d94ec5e9a4dc9"
+   ]
+  },
+  {
+   "file": "ascii.txt",
+   "variant": "base",
+   "medianMBps": 740.9,
+   "minMBps": 704.8,
+   "maxMBps": 812.2,
+   "digests": [
+    "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+   ]
+  },
+  {
+   "file": "ascii.txt",
+   "variant": "slice16",
+   "medianMBps": 754.1,
+   "minMBps": 715.1,
+   "maxMBps": 775.8,
+   "digests": [
+    "70ebe8ea84d028e0cf027860ecb8de8b57005e965cb9a9af9b90e820d4e7871e"
+   ]
+  },
+  {
+   "file": "doomtext30.ansi",
+   "variant": "base",
+   "medianMBps": 304.5,
+   "minMBps": 293,
+   "maxMBps": 314.5,
+   "digests": [
+    "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+   ]
+  },
+  {
+   "file": "doomtext30.ansi",
+   "variant": "slice16",
+   "medianMBps": 293.6,
+   "minMBps": 250,
+   "maxMBps": 325.7,
+   "digests": [
+    "48b6c6d618cf55e7225706ea40371246afa64873b0c594f2dd258bc9fdad24a9"
+   ]
+  },
+  {
+   "file": "kitty60.ansi",
+   "variant": "base",
+   "medianMBps": 1128.9,
+   "minMBps": 870,
+   "maxMBps": 1192,
+   "digests": [
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   ]
+  },
+  {
+   "file": "kitty60.ansi",
+   "variant": "slice16",
+   "medianMBps": 1170.1,
+   "minMBps": 1021.1,
+   "maxMBps": 1208.6,
+   "digests": [
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+   ]
+  }
+ ]
+}

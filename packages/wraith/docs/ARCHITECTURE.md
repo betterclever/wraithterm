@@ -48,11 +48,23 @@ Wasm, changed cells are copied into retained Rust storage; they do not make an
 expensive trip through JavaScript. WebGPU performs its required upload copies.
 This is deliberately not described as an entirely zero-copy pipeline.
 
+V8 first runs each Wasm function on its baseline compiler and swaps in optimized
+code only on a later call. The parser is entered once per write batch, so a new
+terminal's first large burst would parse entirely on baseline code, and its first
+frame of text would rasterize glyphs there too. After the first terminal in a
+worker is ready, the worker rasterizes printable ASCII into that terminal's atlas
+and parses a short mixed stream in a scratch terminal, in 1 ms steps that run
+only after 8 ms without commands. See
+[engine warm-up](benchmarks/engine-warmup/REPORT.md).
+
 ## A frame
 
 1. libghostty-vt parses a streaming byte sequence and updates terminal state.
 2. The worker coalesces presentation through requestAnimationFrame. Idle state
-   produces no redraw, except cursor or text blinking.
+   produces no redraw, except cursor or text blinking. A write to a terminal
+   that drew no frame for two frame intervals, such as a keystroke's echo,
+   renders at once instead; see
+   [input latency](benchmarks/input-latency/RE5224.md).
 3. Ghostty updates its incremental render snapshot. The adapter visits dirty rows
    and copies their grapheme, colors, and flags into reusable Rust cell storage.
 4. Atlas hits reuse an existing tile. A miss chooses a fallback font, shapes the
@@ -202,6 +214,15 @@ Terminal-generated replies share the same byte event path as user input.
 Title and bell effects have separate typed events. Selection anchors belong to
 Ghostty, so copying can use its formatter rather than reconstructing logical
 lines from pixels.
+
+`connect(url)` opens the WebSocket inside the worker. Incoming messages enter
+the same serial queue as writes, resize and fences, so the page's main thread
+handles neither output nor its acknowledgements, and engine output (keys,
+paste, query replies) is sent from the worker before it is posted to the page's
+`onBytes` listeners. With `WebSocketStream` the worker reads the next message
+only after the previous one is parsed, yielding a task every 4 ms so input and
+animation frames interleave. A close is reported only after every earlier
+message is parsed.
 
 The worker serializes commands. In particular, an asynchronous GPU fence holds a
 Rust borrow until completion. Previously queued animation callbacks are canceled
