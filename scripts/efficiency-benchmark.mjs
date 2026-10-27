@@ -21,7 +21,7 @@
 // docs/benchmarks/resource-efficiency/results.json. scripts/efficiency-report.mjs
 // computes baseline deltas and writes REPORT.md.
 //
-// Env: ROUNDS (3), WORKLOADS, RENDERERS, MAX_LOAD (6), PREFER_WAIT_S (60), MAX_WAIT_S (600),
+// Env: ROUNDS (3), WORKLOADS, RENDERERS, MAX_LOAD (6), PREFER_WAIT_S (20), MAX_WAIT_S (45),
 // SHOTS_DIR, RAW (jsonl path), CHROME_PATH.
 import { chromium } from '@playwright/test';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -41,9 +41,9 @@ const shots = resolve(root, process.env.SHOTS_DIR ?? join(cache, 'shots'));
 const outDir = resolve(root, 'docs/benchmarks/resource-efficiency');
 const rounds = Number(process.env.ROUNDS ?? 3);
 const maxLoad = Number(process.env.MAX_LOAD ?? 6);
-const preferWaitS = Number(process.env.PREFER_WAIT_S ?? 60);
+const preferWaitS = Number(process.env.PREFER_WAIT_S ?? 20);
 const cores = cpus().length;
-const maxWaitS = Number(process.env.MAX_WAIT_S ?? 600);
+const maxWaitS = Number(process.env.MAX_WAIT_S ?? 45);
 const scale = Number(process.env.SCALE ?? 1); // window length multiplier, smoke tests only
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

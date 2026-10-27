@@ -1,6 +1,6 @@
-// Turns docs/benchmarks/resource-efficiency/results.json into the generated tables of
-// docs/benchmarks/resource-efficiency/REPORT.md (between the tables markers) and
-// summary.csv. Every value is a delta over the 'none' baseline run of the same
+// Turns docs/benchmarks/resource-efficiency/results.json into REPORT.md
+// (provenance, findings and method from efficiency-report-text.mjs, tables
+// generated here) and summary.csv. Every value is a delta over the 'none' baseline run of the same
 // workload and round, and the median of the rounds is shown.
 //
 //   node scripts/efficiency-report.mjs [results.json]
@@ -448,14 +448,17 @@ lines.push(
 );
 
 const report = resolve(dir, 'REPORT.md');
-let text = await readFile(report, 'utf8').catch(
-  () => '<!-- tables:start -->\n<!-- tables:end -->\n',
+const { findings, method } = await import('./efficiency-report-text.mjs');
+const v = data.versions;
+const provenance = [
+  `Measured ${data.measured.slice(0, 10)} on ${data.machine.cpu} (${data.machine.logicalCpus} logical CPUs, ${Math.round(data.machine.memoryGB)} GB), macOS ${data.machine.os}, ${data.chrome}, headed, DPR 2, AC power.`,
+  `Wraith at \`${data.head.slice(0, 7)}\`${data.dirty ? ' (uncommitted changes)' : ''}, engine Wasm SHA-256 \`${data.sources['packages/wraith/wasm/wraith_engine_bg.wasm']}\`.`,
+  `Others: @xterm/xterm ${v['@xterm/xterm']} + @xterm/addon-webgl ${v['@xterm/addon-webgl']}, restty ${v.restty}, @zem-sh/terminal ${v['@zem-sh/terminal']}, ghostty-web ${v['ghostty-web']}, @wterm/dom ${v['@wterm/dom']} (+ @wterm/core ${v['@wterm/core']}, @wterm/ghostty ${v['@wterm/ghostty']}).`,
+].join(' ');
+await writeFile(
+  report,
+  `# Resource efficiency: what a web terminal costs in Chrome\n\n${provenance}\n\n${findings(summary, agg)}\n\n## Results\n\n${lines.join('\n')}\n${method}\n`,
 );
-text = text.replace(
-  /<!-- tables:start -->[\s\S]*<!-- tables:end -->/,
-  `<!-- tables:start -->\n\n${lines.join('\n')}\n<!-- tables:end -->`,
-);
-await writeFile(report, text);
 const csv = [['renderer', ...Object.keys(summary.wraith)].join(',')];
 for (const [t, s] of Object.entries(summary))
   csv.push(
