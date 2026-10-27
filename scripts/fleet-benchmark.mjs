@@ -130,9 +130,11 @@ for (let round = 0; round < rounds; round++)
         const perTerminal = b.acked.map((v, i) => (v - a.acked[i]) / s);
         // Per-terminal stats when the page collected them, else (shared pools)
         // terminal updates drawn into surface frames, from the workers' counters.
-        const submitted = b.terminalStats
-          ? b.rendered.map((v, i) => (v - a.rendered[i]) / s)
-          : [(b.surfaceUpdates - a.surfaceUpdates) / s];
+        // Builds before observed-only stats always collect per-terminal stats.
+        const submitted =
+          b.terminalStats !== false
+            ? b.rendered.map((v, i) => (v - a.rendered[i]) / s)
+            : [(b.surfaceUpdates - a.surfaceUpdates) / s];
         await page.evaluate(() => window.fleet.stop());
         const idleHz = await page.evaluate(
           () =>
@@ -168,7 +170,8 @@ for (let round = 0; round < rounds; round++)
               ? b.surfaceCompletedFrames.map((f, i) => (f - (a.surfaceCompletedFrames[i] ?? 0)) / s)
               : null,
           longTasks: b.longTasks.count - a.longTasks.count,
-          longAnimationFrames: {
+          // Older builds of the page do not record Long Animation Frames.
+          longAnimationFrames: b.loaf && {
             count: b.loaf.count - a.loaf.count,
             ms: Math.round(b.loaf.ms - a.loaf.ms),
             blockingMs: Math.round(b.loaf.blockingMs - a.loaf.blockingMs),
@@ -198,7 +201,7 @@ for (let round = 0; round < rounds; round++)
       console.log(
         run.failed
           ? `${round} ${count} ${mode}/${feed}/${effects}: FAILED ${run.failed}`
-          : `${round} ${count} ${mode}/${feed}/${effects}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms), ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
+          : `${round} ${count} ${mode}/${feed}/${effects}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames ? `${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms)` : 'n/a'}, ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
       );
     }
 
