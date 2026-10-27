@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import init, { Engine, Headless } from '../wasm/wraith_engine.js';
-import type { Command, PoolMessage, Reply } from './protocol.js';
+import { MessageBatch, nextTask } from './batch.js';
+import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
@@ -55,7 +56,7 @@ const yieldTask = () =>
   });
 
 /** One terminal: its engine, scheduling, search and fences, replying through
- * `endpoint`. A dedicated worker runs one; a pooled worker runs one per port. */
+ * `endpoint`. A dedicated worker runs one; a pooled worker one per attached terminal. */
 function createSession(
   endpoint: Endpoint,
   onClose: () => void,
@@ -795,24 +796,47 @@ function createSession(
   };
 }
 
-// Pooled workers receive one MessagePort per terminal; dedicated workers take
-// commands on the worker scope itself.
+// Pooled workers multiplex their terminals over the worker scope: commands
+// arrive in per-task batches tagged with the terminal's id, and replies leave
+// the same way. Dedicated workers take commands on the worker scope itself.
 let dedicated: ((command: Command) => void) | undefined;
+const sessions = new Map<number, (command: Command) => void>();
+const replies = new MessageBatch<[number, Reply]>((items, transfers) => {
+  try {
+    scope.postMessage({ type: 'replies', items } satisfies PoolReply, transfers);
+  } catch {
+    // Resend individually so one uncloneable reply cannot drop the rest.
+    for (const item of items)
+      try {
+        scope.postMessage({ type: 'replies', items: [item] } satisfies PoolReply);
+      } catch (error) {
+        scope.postMessage({
+          type: 'replies',
+          items: [[item[0], { type: 'error', error: String(error) }]],
+        } satisfies PoolReply);
+      }
+  }
+}, nextTask());
 // A shared-surface pool sends this worker one page-sized canvas first.
 let host: SharedHost | undefined;
 scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
   const message = event.data;
   switch (message.type) {
     case 'attach': {
-      const port = message.port;
-      const receive = createSession(
-        port,
-        () => port.close(),
-        message.shared && host ? { host, id: message.id } : undefined,
+      const id = message.id;
+      sessions.set(
+        id,
+        createSession(
+          { postMessage: (reply, transfers) => replies.push([id, reply], transfers) },
+          () => sessions.delete(id),
+          message.shared && host ? { host, id } : undefined,
+        ),
       );
-      port.onmessage = (e: MessageEvent<Command>) => receive(e.data);
       return;
     }
+    case 'commands':
+      for (const [id, command] of message.items) sessions.get(id)?.(command);
+      return;
     case 'surface':
       host = new SharedHost(scope, ready, message.canvas, message.width, message.height);
       return;

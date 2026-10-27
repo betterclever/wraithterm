@@ -83,13 +83,18 @@ export type Reply =
       wasClean?: boolean;
       error?: string;
     };
-/** Messages a pool sends to its workers directly, outside terminal ports. */
+/** Messages a pool sends to its workers on the worker scope. */
 export type PoolMessage =
-  | { type: 'attach'; port: MessagePort; id: number; shared?: boolean }
+  /** A pooled terminal joins the worker; its commands arrive in `commands`. */
+  | { type: 'attach'; id: number; shared?: boolean }
+  /** Commands for the worker's terminals, in order, batched per task. */
+  | { type: 'commands'; items: [id: number, command: Command][] }
   | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
   | { type: 'surface-size'; width: number; height: number }
   /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
   | { type: 'geometry'; data: Float32Array };
+/** Replies from a pooled worker's terminals, in order, batched per task. */
+export type PoolReply = { type: 'replies'; items: [id: number, reply: Reply][] };
 /** Messages a shared-surface worker sends its pool. */
 export type SurfaceReply =
   | {

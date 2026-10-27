@@ -509,7 +509,11 @@ export class Wraith {
   }
   private reserve(bytes: number) {
     if (this.batchLength + bytes <= this.batch.length) return;
-    const next = new Uint8Array(Math.max(1024, (this.batchLength + bytes) * 2));
+    // The batch buffer is transferred on every flush, so most writes start a
+    // new one: size the first to the write, grow later ones geometrically.
+    const next = new Uint8Array(
+      this.batchLength ? Math.max(1024, (this.batchLength + bytes) * 2) : Math.max(64, bytes),
+    );
     next.set(this.batch.subarray(0, this.batchLength));
     this.batch = next;
   }
