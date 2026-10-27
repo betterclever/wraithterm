@@ -41,6 +41,11 @@ export interface WraithOptions {
    * `false` disables the gutter, button and keys (the API still works).
    */
   commandBlocks?: import('./command-types.js').CommandBlockOptions | false;
+  /**
+   * GPU post-process effects: CRT, bloom, cursor trail and custom WGSL
+   * shaders. Off by default. Change them later with `setEffects()`.
+   */
+  effects?: import('./effects.js').WraithEffects;
 }
 export interface WraithStats {
   frames: number;
@@ -57,6 +62,8 @@ export interface WraithStats {
   renderP99Ms: number;
   activeFps: number;
   adapter: string;
+  /** Post-process passes in the last effect frame; zero with effects off. */
+  effectPasses: number;
 }
 export type Workload = 'sparse' | 'dense' | 'scroll';
 export interface BenchmarkOptions {
@@ -81,6 +88,40 @@ export interface BenchmarkResult {
 }
 export interface Disposable {
   dispose(): void;
+}
+export interface WraithConnectOptions {
+  /** WebSocket subprotocols. */
+  protocols?: string | string[];
+  /**
+   * Read with `WebSocketStream` where the browser provides it, so reading
+   * pauses while the parser is behind. Defaults to true; false always uses
+   * `WebSocket` events in the worker.
+   */
+  stream?: boolean;
+}
+export interface WraithCloseEvent {
+  code: number;
+  reason: string;
+  wasClean: boolean;
+}
+/**
+ * A WebSocket opened and read by the terminal's worker. Output is parsed there
+ * without crossing the page's main thread; keystrokes, paste and terminal
+ * replies are sent from the worker in order.
+ */
+export interface WraithConnection extends Disposable {
+  /** Resolves when the socket opens; rejects if it closes first. */
+  readonly opened: Promise<void>;
+  /** Resolves after the socket closes and every byte received before the close is parsed. */
+  readonly closed: Promise<WraithCloseEvent>;
+  /** `stream` (WebSocketStream) or `events` (WebSocket); undefined until open. */
+  readonly transport: 'stream' | 'events' | undefined;
+  /** Send to the server, ordered with terminal input. Queued until the socket opens. */
+  send(data: string | Uint8Array): void;
+  close(code?: number, reason?: string): void;
+  onOpen(listener: () => void): Disposable;
+  onClose(listener: (event: WraithCloseEvent) => void): Disposable;
+  onError(listener: (error: Error) => void): Disposable;
 }
 /** Native Ghostty search uses ASCII-insensitive matching; other UTF-8 bytes match exactly. */
 export interface SearchResult {

@@ -40,18 +40,18 @@
 
 | Renderer         | CPU per update |
 | ---------------- | -------------: |
-| xterm.js, DOM    |        37.7 ms |
-| xterm.js + WebGL |         9.8 ms |
-| **Wraith**       |     **2.5 ms** |
+| xterm.js, DOM    |        20.4 ms |
+| xterm.js + WebGL |         5.1 ms |
+| **Wraith**       |     **1.1 ms** |
 
-That is **15× less** than xterm.js DOM and **3.9× less** than xterm.js + WebGL, and we are still climbing.
+That is **18× less** than xterm.js DOM and **4.6× less** than xterm.js + WebGL, and we are still climbing.
 
-<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates ([report](docs/benchmarks/launch/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
+<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates, Wraith 0.5.0 ([report](docs/benchmarks/v0.5/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
 
 </td>
 <td width="50%">
 
-<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="15× less CPU than xterm.js DOM, 3.9× less than xterm.js + WebGL" width="100%">
+<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="18× less CPU than xterm.js DOM, 4.6× less than xterm.js + WebGL" width="100%">
 
 </td>
 </tr>
@@ -88,7 +88,7 @@ term.write('hello from the other side\r\n');
 import { Wraith } from 'wraithterm';
 
 const term = await Wraith.mount(document.getElementById('terminal')!);
-term.connect(new WebSocket(ptyUrl));
+term.connect(ptyUrl); // the worker opens the socket and parses its output
 ```
 
 ## About this repository
@@ -197,7 +197,66 @@ terminals run out of memory, and xterm.js + WebGL draws only 16 of them
 terminal can delay frames for its worker's neighbours; dispose terminals before
 `pool.dispose()`.
 
-Connect a PTY transport:
+For hundreds or thousands of terminals, let each worker draw all of its
+terminals into one shared WebGPU surface:
+
+```ts
+const pool = Wraith.pool({ workers: 4, surface: 'shared' });
+const terminal = await Wraith.mount(host, { pool }); // same API as before
+```
+
+Each worker owns one page-sized canvas layered above the page
+(`pointer-events: none`), one device, one compiled pipeline and one glyph atlas
+per font configuration. Each terminal is drawn at its host's on-screen
+rectangle, clipped to scrolling ancestors. Only terminals with new content are
+redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
+focus, selection and accessibility. Shared and per-canvas output are
+pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
+120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
+per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
+119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+[`demo/fleet.html`](demo/fleet.html).
+
+Limits: the shared canvases sit at `z-index: 1` by default
+(`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
+must stack above them. Placement follows layout one animation frame later
+than the DOM. Rotation and perspective transforms are not modelled, and partial
+CSS opacity or filters on a host are not applied (`visibility: hidden` and
+`opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
+terminal is created. A worker's terminals with the same fonts share one
+2048×2048 glyph atlas; when together they need more glyphs than it holds, it
+resets and every terminal repacks (one full redraw), so a glyph mix that never
+fits keeps resetting.
+`pool.surfaceStats` reports presented and GPU-completed frames per worker.
+
+Connect a PTY transport. Given a URL, the terminal's worker opens the WebSocket
+itself: output is parsed there and never crosses the page's main thread, and
+keystrokes, paste and terminal replies are sent from the worker in order.
+
+```ts
+const connection = terminal.connect('wss://your-backend/terminal');
+
+// This control message is a convention for YOUR server, not terminal output.
+// send() is queued until the socket opens and ordered with keystrokes.
+const sendSize = () =>
+  connection.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
+sendSize();
+terminal.onResize(sendSize);
+
+// Resolves after the close and every byte received before it are parsed.
+connection.closed.then(() => terminal.write('\r\n[session ended]\r\n'));
+```
+
+`connect(url, { protocols?, stream? })` accepts `ws:`, `wss:`, `http(s):` or a
+path relative to the page. Where `WebSocketStream` exists (Chrome), the worker
+reads only as fast as it parses, so a slow page pushes back on the server through
+TCP; elsewhere it parses each `WebSocket` message as it arrives. The connection
+has `opened` and `closed` promises, `onOpen`, `onClose` and `onError`, `send()`,
+`close(code?, reason?)` and `dispose()`. Connecting again closes the previous
+worker socket; disposing the terminal closes it too. There is no automatic
+reconnect.
+
+To keep a socket on the page, pass the `WebSocket` itself:
 
 ```ts
 const socket = new WebSocket('wss://your-backend/terminal');
@@ -217,8 +276,8 @@ connection.dispose();
 await terminal.dispose();
 ```
 
-`connect()` sends input as binary WebSocket messages and accepts output as text,
-ArrayBuffer, or Blob, preserving order. Your backend owns PTY creation, geometry,
+Both forms send input as binary WebSocket messages and accept output as text,
+ArrayBuffer, or Blob (page socket only), preserving order. Your backend owns PTY creation, geometry,
 authentication, and transport lifecycle.
 
 For Vite, add the included adapter so dependency prebundling preserves the worker
@@ -235,6 +294,126 @@ export default defineConfig({ plugins: [wraith()] });
 
 Other bundlers must preserve the `new URL(..., import.meta.url)` worker and asset
 references; they have not yet been certified.
+
+## React, Vue, Svelte and `<wraith-term>`
+
+The package ships bindings for React, Vue 3, Svelte and plain HTML. Each one is a
+thin wrapper around one shared lifecycle controller. React, Vue and Svelte are
+optional peer dependencies and are never bundled. No binding needs a compiler
+plugin: React is written without JSX, Vue uses `defineComponent` + `h`, and the
+Svelte action is plain JavaScript. Importing any binding is safe during server
+rendering; the engine is loaded with `import()` on mount, in its own chunk.
+
+All bindings take the same configuration:
+
+| Field       | Meaning                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `profile`   | `'native'` (default): `Wraith.mount()`. `'xterm'`: the xterm.js-compatible `Terminal` (import `wraithterm/css/xterm.css`).                                                                                                |
+| `options`   | `WraithOptions`, or xterm `ITerminalOptions` with `profile: 'xterm'`. `theme`, `fontSize`, `lineHeight`, `font` and, for a terminal mounted with `fit: false`, `cols`/`rows` update live; `fit` itself is fixed at mount. |
+| `src`       | A WebSocket URL (or an open `WebSocket`) connected once mounted, through `connect()` with backpressure. Sockets made from a URL close on unmount.                                                                         |
+| `autoFocus` | Focus the terminal when ready.                                                                                                                                                                                            |
+| events      | `onReady(terminal)`, `onData(string)`, `onBytes(Uint8Array)`, `onTitleChange`, `onBell`, `onResize({cols, rows})`, `onError(Error)`.                                                                                      |
+
+Other options (`scrollback`, `pool`, `ligatures`, …) apply at mount; remount to
+change them (a React `key`, a Vue `:key`). A `profile` change remounts by itself.
+Event handlers are read when an event fires, so passing new closures each render
+costs nothing. Give the host an explicit height.
+
+**React** (18 or 19, StrictMode-safe):
+
+```tsx
+import { useRef } from 'react';
+import { Wraith, type WraithHandle } from 'wraithterm/react';
+
+export function Shell() {
+  const term = useRef<WraithHandle>(null);
+  return (
+    <Wraith
+      ref={term}
+      style={{ height: 420 }}
+      options={{ fontSize: 14, theme: { background: '#0e1217' } }}
+      src="wss://your-backend/terminal"
+      onReady={() => term.current?.write('connected\r\n')}
+      onTitleChange={(title) => (document.title = title)}
+    />
+  );
+}
+```
+
+The ref exposes `terminal` (the `Wraith` or `Terminal`, null until ready),
+`ready`, `write()` (queued until ready) and `focus()`. Other props go to the host
+`<div>`. StrictMode's mount → cleanup → mount disposes the discarded terminal as
+soon as its mount settles, exactly once.
+
+**Vue 3**:
+
+```ts
+import { h } from 'vue';
+import { Wraith } from 'wraithterm/vue'; // or app.use(WraithPlugin)
+
+export default {
+  setup: () => () =>
+    h('div', { style: 'height: 420px' }, [
+      h(Wraith, {
+        options: { fontSize: 14 },
+        src: 'wss://your-backend/terminal',
+        onData: (data: string) => console.log(data),
+        onReady: (terminal) => terminal.focus(),
+      }),
+    ]),
+};
+```
+
+In templates: `<Wraith :options="{ fontSize: 14 }" src="wss://…" @data="send" @title-change="setTitle" />`.
+Events are `ready`, `data`, `bytes`, `title-change`, `bell`, `resize`, `error`; a
+template ref exposes `terminal`, `ready`, `write()` and `focus()`.
+
+**Svelte** (an action for any Svelte version, and an attachment for Svelte 5.29+):
+
+```svelte
+<script>
+  import { wraith, terminal } from 'wraithterm/svelte';
+  let fontSize = $state(14);
+</script>
+
+<div style="height: 420px" use:wraith={{ options: { fontSize }, onData: (d) => send(d) }}></div>
+
+<div style="height: 240px" {@attach terminal({ profile: 'xterm', src: 'wss://your-backend/terminal' })}></div>
+```
+
+The action's `update` applies changed parameters to the live terminal; Svelte
+reruns an attachment when its parameters change, which remounts. Pass
+`controller: (c) => …` to get `c.ready`, `c.terminal` and `c.write()`.
+
+**`<wraith-term>`** (any framework, or none):
+
+```html
+<script type="module">
+  import 'wraithterm/element';
+</script>
+<wraith-term src="wss://your-backend/terminal" font-size="14" style="height: 420px"></wraith-term>
+```
+
+Attributes: `profile`, `cols`, `rows`, `font-size`, `line-height`, `scrollback`,
+`theme` (JSON, e.g. `'{"background":"#101820"}'`), `ligatures`, `screen-reader`,
+`fit`, `autofocus`, `src`. Giving `cols` or `rows` at mount turns fitting off unless
+`fit` is present; adding them to a fitting terminal later only logs a warning. The `options` property merges anything an attribute cannot carry
+(fonts, a pool). Events are `CustomEvent`s that bubble: `wraith-ready`,
+`wraith-data`, `wraith-bytes`, `wraith-title`, `wraith-bell`, `wraith-resize` and
+`wraith-error`, with the value in `detail`. The element exposes `terminal`,
+`ready`, `write()` and `focus()`. Moving it within the document keeps its
+terminal; removing it disposes the terminal. Its default style is
+`display: block; height: 360px`, at zero specificity.
+
+With Vite, use the `wraith()` plugin above; it excludes every binding subpath from
+dependency prebundling. `npm run test:frameworks` installs the packed archive into
+fresh React (StrictMode), Vue, Svelte and `<wraith-term>` Vite apps, then checks in
+Chrome, under both the dev server and a production build, that each terminal
+renders text and pixels, receives typed input and its title, and that
+unmounting terminates every worker it created. It also checks that the `src`
+attribute round-trips over a real WebSocket, that the xterm profile reaches
+WebGPU, and that a Svelte parameter change updates the terminal without a new
+worker.
 
 ## Your shell in a tab
 
@@ -254,6 +433,116 @@ page, its PTY WebSocket and same-origin checks all require it. `--host` exposes 
 shell to your network, so use it only on networks you trust. The PTY runs with
 `TERM=xterm-256color`, `COLORTERM=truecolor` and `TERM_PROGRAM=wraith`. Tested on
 macOS and Linux; Windows ConPTY through node-pty is untested.
+
+### Share a terminal
+
+```sh
+npx wraithterm serve --share                     # owner link + read-only viewer link
+npx wraithterm serve --share=write               # adds a collaborator link that can type
+npx wraithterm serve --share --record demo.cast  # also records asciicast v2
+```
+
+With `--share` (or `--record`), every link attaches to one PTY and sees the same
+output. Each role has its own random per-run token, compared in constant time:
+
+| Link         | Sees output | Types | Sets the size |
+| ------------ | ----------- | ----- | ------------- |
+| Owner        | yes         | yes   | yes           |
+| Collaborator | yes         | yes   | no            |
+| Viewer       | yes         | no    | no            |
+
+The server drops viewer input and resize messages, so read-only does not
+depend on the page. Viewers and collaborators render at the owner's grid,
+scaled down to fit their window or letterboxed. Every page shows how many
+owners, collaborators and viewers are connected. The session ends when the
+command exits. Without `--share` or `--record`, each tab still gets its own
+PTY.
+
+- **Late joiners** get a replay of the current screen. The server keeps the
+  output since the last full reset (`ESC c`, or cursor home followed by erase
+  display outside the alternate screen), along with owner resizes, and restores
+  tracked modes (DEC private modes such as cursor keys, mouse reporting and
+  bracketed paste; keypad; cursor style; title). The replay is capped at
+  2 MiB. If more output arrives with no reset, the oldest output is dropped and
+  replay resumes at a line boundary with the modes in effect there. A
+  full-screen app that has redrawn only part of its screen since then can look
+  incomplete until it redraws.
+- **Backpressure** is per client. The PTY never waits for viewers. A client
+  with more than 4 MiB queued stops receiving live output and shows as
+  "resyncing". When its socket drains, it gets a terminal reset and the replay,
+  so it skips ahead to the current screen. In the
+  [burst benchmark](docs/benchmarks/serve-share/README.md), a socket that never
+  read did not slow the owner's 48 MiB burst.
+- **`--record <file>`** writes [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/):
+  output (`"o"`) and owner resizes (`"r"`). Keystrokes are not recorded. The
+  file is created with mode 0600. It does contain everything the command
+  prints, so treat it like a terminal log.
+
+Links bound to `127.0.0.1` work on that machine only. To share with someone
+else, forward the port (`ssh -L 7681:127.0.0.1:7681 host`) or put the server
+behind an HTTPS proxy or tunnel. Browsers expose WebGPU only in secure
+contexts, so a plain `http://` LAN address cannot render Wraith. `--host`
+prints the same warning as before: anyone with the owner or collaborator link
+can type into your shell.
+
+## GPU effects
+
+Shader effects run on the GPU as post-process passes over the terminal image.
+They are off by default. With none enabled the renderer draws exactly as without
+them: no extra passes, textures or pipelines.
+
+```ts
+const terminal = await Wraith.mount(element, {
+  effects: { crt: true, bloom: 0.6, cursorTrail: true },
+});
+
+// Change or remove them at runtime; null turns everything off.
+await terminal.setEffects({ crt: { curvature: 0.3, scanlines: 0.6 }, bloom: { intensity: 1 } });
+await terminal.setEffects(null);
+```
+
+- `crt`: barrel curvature, scanlines, vignette and chromatic aberration, each
+  0..1 (`true` uses 0.5, 0.5, 0.5, 0.35).
+- `bloom`: an intensity (0..4), `true` (0.6), or `{ intensity, threshold, spread }`.
+  Two half-resolution blur passes.
+- `cursorTrail`: the cursor glides to its new cell with a short trail (`{ duration }`
+  in ms, default 120). Frames are requested only while it moves. It is off while
+  the user prefers reduced motion.
+- `shader`: your WGSL, in the spirit of Ghostty's `custom-shader`:
+
+```wgsl
+fn mainImage(fragCoord: vec2<f32>) -> vec4<f32> {
+    let uv = fragCoord / iResolution.xy;
+    let c = textureSample(iChannel0, iChannel0Sampler, uv);
+    let glow = 0.6 + 0.4 * smoothstep(400.0, 0.0, distance(fragCoord, iCurrentCursor.xy));
+    return vec4<f32>(c.rgb * glow, c.a);
+}
+```
+
+`fragCoord` is in physical pixels from the top-left. Available: `iResolution`,
+`iTime`, `iTimeDelta`, `iFrame`, `iMouse` (xy follows the pointer, zw is the last
+press, negated after release), `iCurrentCursor` and `iPreviousCursor` (x, y, w, h
+in pixels), `iCurrentCursorColor`, `iTimeCursorChange` (`iTime` of the last
+move), and the terminal image as `iChannel0` with `iChannel0Sampler`. A shader
+that reads `iTime`, `iTimeDelta` or `iFrame` redraws every display frame, unless
+you set `animate: false` or the user prefers reduced motion. Static effects
+request no idle frames.
+
+An invalid shader makes `setEffects()` reject with the compiler's messages,
+using the line numbers of your source (`3:5: expected ';' …`). It also emits
+`onError`. The previous effects stay, and the terminal keeps running. If a
+shader passed to `mount()` fails, the terminal mounts without effects and
+reports the error through `onError`. The xterm-compatible `Terminal` has the same
+`setEffects()` as a Wraith extension. Effects post-process a terminal's own
+canvas, so a terminal in a shared-surface pool (`surface: 'shared'`) rejects
+them the same way and keeps drawing without them.
+
+On an Apple M5 Max (headless Chrome 155, 160x50 at DPR 2), a GPU-bound update
+took 0.077 ms with effects off. CRT added 0.028 ms, bloom 0.059 ms, a custom
+shader about 0.025 ms, and every built-in plus a shader 0.095 ms. These are
+GPU-completed updates, not display frames
+([report](docs/benchmarks/gpu-effects/REPORT.md)). Try them in the effects
+lab: `npm run dev`, then open `/effects.html`.
 
 ## Command blocks
 
@@ -334,6 +623,7 @@ plays a scripted coding-agent session. Measured cost:
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
 | `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
 | `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
+| `connect(url, options)`                                     | Worker-owned WebSocket; output parsed off the main thread. `closed` resolves after the last byte is parsed.          |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
@@ -348,6 +638,7 @@ plays a scripted coding-agent session. Measured cost:
 | `clearSelection()`                                          | Remove the current selection.                                                                                        |
 | `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
 | `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
+| `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
 | `commands()`                                                | OSC 133 command blocks, oldest first; `block.output()` reads text lazily.                                            |
 | `onCommand(listener)`                                       | Fires when a command finishes (OSC 133;D, or the next prompt).                                                       |

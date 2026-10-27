@@ -1,0 +1,65 @@
+{
+ "note": "Wraith.mount() 160x50, DPR 2, headed Chrome, bytes written straight to term.write() in 64 KiB chunks, timed to flush(); no PTY or WebSocket. Parsed from the run log.",
+ "runs": [
+  {
+   "file": "logs.ansi",
+   "round": 0,
+   "MBps": 356.9
+  },
+  {
+   "file": "ascii.txt",
+   "round": 0,
+   "MBps": 851.1
+  },
+  {
+   "file": "doomtext30.ansi",
+   "round": 0,
+   "MBps": 296.2
+  },
+  {
+   "file": "kitty60.ansi",
+   "round": 0,
+   "MBps": 1113.1
+  },
+  {
+   "file": "logs.ansi",
+   "round": 1,
+   "MBps": 411.6
+  },
+  {
+   "file": "ascii.txt",
+   "round": 1,
+   "MBps": 789.1
+  },
+  {
+   "file": "doomtext30.ansi",
+   "round": 1,
+   "MBps": 288.2
+  },
+  {
+   "file": "kitty60.ansi",
+   "round": 1,
+   "MBps": 1111.0
+  },
+  {
+   "file": "logs.ansi",
+   "round": 2,
+   "MBps": 413.4
+  },
+  {
+   "file": "ascii.txt",
+   "round": 2,
+   "MBps": 920.9
+  },
+  {
+   "file": "doomtext30.ansi",
+   "round": 2,
+   "MBps": 342.5
+  },
+  {
+   "file": "kitty60.ansi",
+   "round": 2,
+   "MBps": 1162.2
+  }
+ ]
+}
