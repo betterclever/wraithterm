@@ -49,6 +49,9 @@ export type Command =
   | { type: 'observe-render'; enabled: boolean }
   /** Internal: latency tracing and the immediate-frame switch (benchmarks only). */
   | { type: 'trace'; enabled?: boolean; immediate?: boolean }
+  | { type: 'socket-open'; link: number; url: string; protocols: string[]; stream: boolean }
+  | { type: 'socket-send'; link: number; data: string | Uint8Array }
+  | { type: 'socket-close'; link: number; code?: number; reason?: string }
   | { type: 'dispose'; id: number };
 export type Reply =
   | { type: 'ready'; width: number; height: number; adapter: string }
@@ -68,4 +71,14 @@ export type Reply =
       info?: string;
     }
   | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string }
+  | {
+      type: 'socket';
+      link: number;
+      event: 'open' | 'error' | 'close';
+      transport?: 'stream' | 'events';
+      code?: number;
+      reason?: string;
+      wasClean?: boolean;
+      error?: string;
+    };

@@ -13,6 +13,9 @@ import {
   type SearchResult,
   type SelectionPosition,
   type KeyEventHandler,
+  type WraithConnectOptions,
+  type WraithConnection,
+  type WraithCloseEvent,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
 export * from './types.js';
@@ -37,6 +40,84 @@ class Signal<T> {
   }
   clear() {
     this.listeners.clear();
+  }
+}
+class WorkerConnection implements WraithConnection {
+  readonly opened: Promise<void>;
+  readonly closed: Promise<WraithCloseEvent>;
+  transport: 'stream' | 'events' | undefined;
+  private opens = new Signal<void>();
+  private closes = new Signal<WraithCloseEvent>();
+  private errors = new Signal<Error>();
+  private resolveOpen!: () => void;
+  private rejectOpen!: (error: Error) => void;
+  private resolveClose!: (event: WraithCloseEvent) => void;
+  private done = false;
+  constructor(
+    readonly link: number,
+    private post: (command: Command, transfer?: Transferable[]) => void,
+    private release: () => void,
+  ) {
+    this.opened = new Promise((resolve, reject) => {
+      this.resolveOpen = resolve;
+      this.rejectOpen = reject;
+    });
+    void this.opened.catch(() => {});
+    this.closed = new Promise((resolve) => (this.resolveClose = resolve));
+  }
+  send(data: string | Uint8Array) {
+    if (this.done) return;
+    if (typeof data === 'string') this.post({ type: 'socket-send', link: this.link, data });
+    else {
+      const bytes = data.slice();
+      this.post({ type: 'socket-send', link: this.link, data: bytes }, [bytes.buffer]);
+    }
+  }
+  close(code?: number, reason?: string) {
+    if (!this.done) this.post({ type: 'socket-close', link: this.link, code, reason });
+  }
+  onOpen(listener: () => void): Disposable {
+    return this.opens.on(listener);
+  }
+  onClose(listener: (event: WraithCloseEvent) => void): Disposable {
+    return this.closes.on(listener);
+  }
+  onError(listener: (error: Error) => void): Disposable {
+    return this.errors.on(listener);
+  }
+  dispose() {
+    this.close(1000);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
+  }
+  /** @internal */
+  event(reply: Extract<Reply, { type: 'socket' }>) {
+    if (this.done) return;
+    if (reply.event === 'open') {
+      this.transport = reply.transport;
+      this.resolveOpen();
+      this.opens.emit();
+    } else if (reply.event === 'error')
+      this.errors.emit(new Error(reply.error ?? 'WebSocket error'));
+    else
+      this.finish({
+        code: reply.code ?? 1006,
+        reason: reply.reason ?? '',
+        wasClean: !!reply.wasClean,
+      });
+  }
+  /** @internal */
+  finish(event: WraithCloseEvent) {
+    if (this.done) return;
+    this.done = true;
+    this.release();
+    this.rejectOpen(new Error(`WebSocket closed before opening (${event.code})`));
+    this.resolveClose(event);
+    this.closes.emit(event);
+    this.opens.clear();
+    this.closes.clear();
+    this.errors.clear();
   }
 }
 interface Pending {
@@ -97,6 +178,7 @@ export class Wraith {
   private pending = new Map<number, Pending>();
   private sequence = 1;
   private pendingBytes = 0;
+  private links = new Map<number, WorkerConnection>();
   /** Writes queued this task, encoded or copied once into one buffer that
    * crosses to the worker as a single transfer with one acknowledgement. */
   private batch = new Uint8Array(0);
@@ -328,6 +410,9 @@ export class Wraith {
       case 'error':
         this.fail(new Error(reply.error));
         break;
+      case 'socket':
+        this.links.get(reply.link)?.event(reply);
+        break;
       case 'stats': {
         // Some browser/display transitions update resolution without delivering
         // a media-query change event. Reuse the existing stats heartbeat.
@@ -363,6 +448,7 @@ export class Wraith {
     this.pendingBytes = 0;
     this.batchIds = [];
     this.batchLength = 0;
+    this.endLinks(error.message);
     this.observer?.disconnect();
     this.visibilityObserver?.disconnect();
     clearInterval(this.mirrorTimer);
@@ -664,7 +750,49 @@ export class Wraith {
     this.element.style.background = next.background;
     this.send({ type: 'theme', colors });
   }
-  connect(socket: WebSocket): Disposable {
+  private endLinks(reason: string) {
+    for (const link of [...this.links.values()])
+      link.finish({ code: 1006, reason, wasClean: false });
+  }
+  /**
+   * Open a WebSocket in the terminal's worker (`ws:`, `wss:`, `http(s):` or a
+   * path relative to the page). Output is parsed in the worker, never on the
+   * main thread; input and terminal replies are sent from the worker in order.
+   * Connecting again closes the previous worker socket.
+   */
+  connect(url: string | URL, options?: WraithConnectOptions): WraithConnection;
+  /** Bridge a page-owned WebSocket: messages are received here and posted to the worker. */
+  connect(socket: WebSocket): Disposable;
+  connect(target: string | URL | WebSocket, options: WraithConnectOptions = {}): Disposable {
+    if (typeof target === 'string' || target instanceof URL)
+      return this.connectWorker(target, options);
+    return this.bridge(target);
+  }
+  private connectWorker(target: string | URL, options: WraithConnectOptions): WraithConnection {
+    this.assertLive();
+    const url = new URL(target, location.href);
+    if (url.protocol === 'http:') url.protocol = 'ws:';
+    else if (url.protocol === 'https:') url.protocol = 'wss:';
+    const id = this.sequence++;
+    const connection = new WorkerConnection(
+      id,
+      (command, transfer) => {
+        if (!this.disposed && !this.failed) this.send(command, transfer);
+      },
+      () => this.links.delete(id),
+    );
+    this.links.set(id, connection);
+    const protocols = options.protocols ?? [];
+    this.send({
+      type: 'socket-open',
+      link: id,
+      url: url.href,
+      protocols: typeof protocols === 'string' ? [protocols] : [...protocols],
+      stream: options.stream !== false,
+    });
+    return connection;
+  }
+  private bridge(socket: WebSocket): Disposable {
     // Messages are written in order and batched across the worker boundary.
     // Only when queued bytes pass half the backpressure limit does reading
     // wait, for the latest write (and so everything before it) to be parsed.
@@ -1068,6 +1196,7 @@ export class Wraith {
     clearInterval(this.mirrorTimer);
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));
     this.pending.clear();
+    this.endLinks('Wraith disposed');
     this.batchIds = [];
     this.batchLength = 0;
     // Allow Ghostty and wgpu destructors to run; terminate a stalled worker after a bounded wait.

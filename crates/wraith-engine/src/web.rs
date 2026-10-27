@@ -200,6 +200,15 @@ impl Engine {
         self.renderer.resize(cols, rows);
         Ok(dimensions)
     }
+    /// Rasterize printable ASCII ahead of first use, `count` glyphs per call,
+    /// so idle time after creation absorbs that work. Returns where to
+    /// continue, or -1 when done.
+    pub fn prefill_glyphs(&mut self, from: u32, count: u32) -> i32 {
+        self.renderer
+            .atlas
+            .prefill_ascii(from, count)
+            .map_or(-1, |next| next as i32)
+    }
     /// Shape operator runs together to form programming-font ligatures.
     pub fn set_ligatures(&mut self, enabled: bool) {
         if self.renderer.atlas.ligatures != enabled {

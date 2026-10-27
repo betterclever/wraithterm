@@ -1,0 +1,208 @@
+# Engine throughput: Wasm SIMD, build flags and warm-up
+
+Measured 26 October 2026 on an Apple M5 Max (18 logical CPUs), macOS 27.2, headed
+Chrome 155 at DPR 2, base commit `1151069`. **These numbers are provisional.** Other
+agents were building and benchmarking on the same machine; one-minute load
+averages were 6–19 during the session, and the raw JSON records the load for every
+run. Builds were always compared in the same browser session, interleaved with
+the order reversed each round.
+
+## Method
+
+[engine-throughput.mjs](../../../scripts/engine-throughput.mjs) mounts a fresh
+`Wraith.mount()` terminal (160×50, 14 px font) for each run and writes a workload
+straight into `term.write()` in 64 KiB chunks, awaiting every 64th write, then
+`flush()`. Time runs from the first write to `flush()` resolving: parsing plus
+coalesced rendering, with no PTY and no WebSocket. It also records how long
+`mount()` takes, and a SHA-256 of `getText()` after each run. Every build gave the
+same digest on every workload. On the Kitty workload the screen holds only an
+image, so its digest is that of empty text and does not check the image.
+
+The harness waits 500 ms after `mount()` (and after the workload is fetched)
+before the timed write, so the idle warm-up below has finished by then. The cold
+gains therefore apply to a burst that starts some time after `mount()`; a burst
+written immediately after `mount()` gets none of the glyph warm-up (see the 0 ms
+row under time to first content).
+
+Workloads, the same four used for the native Ghostty comparison:
+
+| File            |      Bytes | Contents                                                           | SHA-256 (prefix) |
+| --------------- | ---------: | ------------------------------------------------------------------ | ---------------- |
+| logs.ansi       | 64,000,077 | coloured agent log lines                                           | `8d6cce25`       |
+| ascii.txt       | 63,999,904 | 150-column printable lines                                         | `1744d52e`       |
+| doomtext30.ansi | 30,000,000 | first 30 MB of the doomterm 160×50 truecolour half-block recording | `7399aaf4`       |
+| kitty60.ansi    | 60,551,533 | frame-aligned prefix of the doomterm 640×400 Kitty recording       | `c8b36970`       |
+
+The files are not checked in.
+
+[profile-engine-worker.mjs](../../../scripts/profile-engine-worker.mjs) attaches
+to the engine worker over CDP and prints self time per function. It needs a build
+that keeps the Wasm name section.
+
+## What the Wasm already does
+
+- **Zig/Ghostty.** At the pinned revision, Ghostty's build adds `simd128` for any
+  Wasm target without an explicit CPU. Its C++ SIMD libraries (simdutf, highway)
+  are compiled out for freestanding targets, but the Zig fallbacks use `@Vector`,
+  which lowers to v128. The parser hot paths contain v128 ops:
+  `utf8DecodeUntilControlSeq` (19), `printSliceFill` (40), `findScalarPos` (80),
+  `vt_write` (78), and `consumeApcString` (12). The module's `target_features`
+  section lists bulk-memory, multivalue, nontrapping-fptoint, reference-types,
+  sign-ext and simd128. The shipped engine contains 11,298 SIMD instructions.
+- **Rust.** wraith-engine is built without `simd128` and has no SIMD of its own.
+  Its release profile already uses `lto = true`, `codegen-units = 1`,
+  `opt-level = 3` and `panic = "abort"`.
+
+## Profile
+
+Steady state, with an untimed pass first. Parsing in libghostty-vt dominates.
+Wraith's Rust code is under 5% of worker time on text.
+
+- **DOOM text:** `vt_write` 29% (CSI parameters, inlined), style interning
+  (`RefCountedSet.addContext`, `Style.eql`, hashing) 16%, `printSliceFill` 9%,
+  SGR parsing 11%, and idle 11%.
+- **Logs:** `vt_write` 18%, `printSliceFill` 14%, UTF-8 decode 14%, `Style.eql`
+  6%, page growth and scrolling 10%, and idle 11%.
+- **DOOM Kitty:** base64 decode 24–30% and idle 36–42%.
+
+"Idle" is time the worker waits for the harness's next 4 MiB batch.
+
+A cold terminal is a different story. Per-megabyte timing of the first burst on
+ASCII showed the first MiB at about 230 MB/s and the second at about 66 MB/s,
+then about 1,000 MB/s. Chrome with `--no-liftoff --no-wasm-lazy-compilation`
+gave 600 and 250 MB/s for the same two MiB. V8 starts every Wasm function on its
+Liftoff baseline compiler and swaps in optimized code only on a later call:
+
+- The parser is entered once per write batch, so the first batch parses entirely
+  on baseline code.
+- The first frame with text rasterizes and shapes every visible glyph on baseline
+  code. Natively, those 94 ASCII glyphs take 1.5 ms. On baseline Wasm, the stall
+  measured about 15 ms.
+
+## Shipped: idle warm-up of the first terminal in each worker
+
+After the first terminal in a worker is ready:
+
+- It rasterizes printable ASCII into that terminal's atlas
+  (`Engine.prefill_glyphs`, 4 glyphs per call). These are real atlas entries, so
+  no work is wasted. Prefill stops if the atlas is half full.
+- It parses a 7 KB mixed stream 48 times in a scratch `Headless` terminal: SGR
+  truecolour, 256-colour and attributes, UTF-8 symbols, cursor moves, erase and
+  scrolling.
+
+It works in 1 ms steps that queue behind real commands, and runs only after 8 ms
+without a command. On baseline code, the whole warm-up costs about 14 ms
+(rasterizing) plus 6 ms (parsing). Later terminals in a pooled worker reuse the
+optimized code and skip it.
+
+### Cold first burst
+
+Fresh terminal per run, 6 interleaved rounds; [cold.json](cold.json). Values are
+MB/s, median (min–max).
+
+| Workload   | Before              | After               |             Change |
+| ---------- | ------------------- | ------------------- | -----------------: |
+| Logs       | 349 (327–372)       | 400 (387–414)       |               +14% |
+| ASCII      | 735 (721–757)       | 912 (877–924)       |               +24% |
+| DOOM text  | 286 (259–308)       | 322 (284–339)       |               +13% |
+| DOOM Kitty | 1,128 (1,006–1,197) | 1,164 (1,123–1,246) | +3% (within noise) |
+
+`mount()` median: 26–28 ms both before and after.
+
+### Steady state (control)
+
+Same terminal after an untimed pass and a reset, 4 rounds;
+[steady.json](steady.json).
+
+| Workload   | Before | After |
+| ---------- | -----: | ----: |
+| Logs       |    409 |   409 |
+| ASCII      |    925 |   928 |
+| DOOM text  |    294 |   300 |
+| DOOM Kitty |  1,200 | 1,208 |
+
+These are equal within noise, as expected. After the change, the cold first
+burst runs at close to the steady-state rate.
+
+### Time to first content
+
+One 90-byte coloured prompt line, written after a delay from `mount()` and timed
+to `flush()`, 8 interleaved samples; [first-content.json](first-content.json).
+Values are ms, median (min–max).
+
+| Delay after mount | Before           | After            |
+| ----------------- | ---------------- | ---------------- |
+| 0 ms              | 20.1 (17.2–22.4) | 20.2 (19.5–21.6) |
+| 30 ms             | 15.0 (14.2–16.8) | 4.9 (4.4–8.9)    |
+| 100 ms            | 14.9 (14.1–16.8) | 4.6 (4.0–5.7)    |
+
+`mount()` is unchanged (median 26–29 ms). A shell prompt through `serve` arrives
+after the WebSocket connects and the shell starts, so it is normally in the
+30 ms+ case.
+
+Optimized Wasm: 2,767,102 → 2,767,644 bytes (+542). Browser support is
+unchanged. Wasm SIMD (`simd128`), which the engine already required, ships in
+every evergreen browser that has WebGPU: Chrome/Edge 91+, Firefox 89+ and
+Safari 16.4+.
+
+## Measured and not shipped
+
+- **wasm-opt -O3 against none** ([wasm-opt.json](negative/wasm-opt.json),
+  4 rounds): logs 363 against 370, ASCII 774 against 797, DOOM text 299 against
+  289, Kitty 1,177 against 1,215. This is noise. wasm-opt stays, for its 18%
+  size reduction.
+- **Rust `+simd128`**
+  ([rust-simd128-and-base64.json](negative/rust-simd128-and-base64.json),
+  6 rounds): logs 374 against 375, ASCII 754 against 763, DOOM text 311 against
+  307, Kitty 1,195 against 1,216. It adds 9,289 SIMD instructions (mostly in
+  zeno, skrifa and harfrust) and 16.6 KB. No measurable gain, since Rust is under
+  5% of text time. An earlier pilot under load 11–19 was too noisy to read
+  ([rust-simd128-pilot.json](negative/rust-simd128-pilot.json)).
+- **Vector base64 for Kitty payloads**
+  ([patch](negative/wasm-base64-simd.patch)). A portable `@Vector` decoder for
+  builds without simdutf: 16 characters to 12 bytes per step, with the scalar
+  decoder finishing the tail and rejecting invalid blocks. It passed Ghostty's
+  base64 tests and a randomized comparison against the scalar decoder, and its
+  v128 loop is in the build. The profile moved from 13 to 11 ms per run, and Kitty
+  throughput did not move (1,235 against 1,216, ranges overlapping). Not worth a
+  fourth Ghostty patch.
+- **`relaxed-simd` in Zig** (`-Dcpu=generic+simd128+relaxed_simd`). The code
+  section was byte-identical; only the `target_features` section changed. LLVM
+  emits no relaxed instructions for this code.
+- **Capping parser calls at 16 KiB** ([write-slices.json](negative/write-slices.json))
+  so a burst could switch to optimized code part-way: no change. V8 has not yet
+  compiled optimized code by then.
+- **Parser warm-up alone** ([parser-warmup-only.json](negative/parser-warmup-only.json)):
+  logs +3%, DOOM text +5%, ASCII +1%. Most of the cold cost was the first frame's
+  glyph rasterization.
+- **Prefilling the atlas while the GPU device is created**
+  ([atlas-during-gpu-wait.json](negative/atlas-during-gpu-wait.json)). This gave
+  the same throughput gains, but `mount()` grew from about 28 to 49 ms, because
+  GPU setup finishes before the baseline-code rasterization does. The idle-time
+  version keeps `mount()` unchanged.
+
+## Remaining headroom
+
+- About 11% of worker time on text, and 36–42% on Kitty, is the worker idling
+  between the harness's 4 MiB batches. Pipelining batches would show more
+  of the parser's rate.
+- Style interning is 16% on DOOM text. A small cache in front of
+  `RefCountedSet` for the last few styles could cut it. This would be a Ghostty
+  change.
+- `vt_write`'s CSI parameter loop is about 29% on DOOM text. A wider parameter
+  scan, such as SWAR digits, would also be a Ghostty change.
+- `passArray8ToWasm0` (the copy into Wasm memory) is 1.5–4%. Writing batches into
+  a reusable Wasm buffer would remove the per-batch malloc and free.
+
+## Reproduce
+
+```sh
+npm run build:sdk
+npx vite --host 127.0.0.1 --port 5223 --strictPort &
+# Copy packages/wraith/{dist,wasm} of each build to .cache/ab/<name>
+VARIANTS=base=.cache/ab/base,new=.cache/ab/new FILES=logs.ansi,ascii.txt,doomtext30.ansi,kitty60.ansi \
+  ROUNDS=6 node scripts/engine-throughput.mjs out.json
+WARM=1 ... node scripts/engine-throughput.mjs steady.json
+VARIANTS=... node scripts/engine-first-content.mjs first-content.json
+VARIANT=.cache/ab/named FILE=logs.ansi WARM=1 node scripts/profile-engine-worker.mjs
+```
