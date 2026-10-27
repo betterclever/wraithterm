@@ -3,6 +3,28 @@
 // page-sized WebGPU canvas; per-canvas mode gives every terminal its own.
 // window.fleet exposes start/stop/metrics/view for the browser test and benchmark.
 import { Wraith } from '../packages/wraith/dist/index.js';
+import glitch from './effects/glitch.wgsl?raw';
+import hologram from './effects/hologram.wgsl?raw';
+import matrix from './effects/matrix.wgsl?raw';
+import rain from './effects/rain.wgsl?raw';
+import synthwave from './effects/synthwave.wgsl?raw';
+import warp from './effects/warp.wgsl?raw';
+
+const shaders = { glitch, hologram, matrix, rain, synthwave, warp };
+/** 'off' or comma-separated crt, bloom and at most one shader name. */
+export function effectsFor(spec) {
+  const parts = new Set(
+    String(spec ?? 'off')
+      .split(',')
+      .filter(Boolean),
+  );
+  const effects = {};
+  if (parts.has('crt')) effects.crt = true;
+  if (parts.has('bloom')) effects.bloom = true;
+  const shader = [...parts].find((p) => p in shaders);
+  if (shader) effects.shader = shaders[shader];
+  return Object.keys(effects).length ? effects : null;
+}
 
 const encoder = new TextEncoder();
 /** Two coloured agent-log lines and a rewritten status row (demo/rival-bench.js). */
@@ -69,6 +91,7 @@ class Fleet {
   longTasks = { count: 0, ms: 0 };
   pace = 'frame';
   feed = 'main';
+  effects = 'off';
   mountMs = 0;
   errors = [];
   async start({
@@ -82,6 +105,7 @@ class Fleet {
     pace = 'frame',
     scrollback = 1000,
     feed = 'main',
+    effects = 'off',
   } = {}) {
     await this.stop();
     this.pace = pace;
@@ -93,6 +117,9 @@ class Fleet {
       await (await fetch('/fonts/JetBrainsMono-Regular.ttf')).arrayBuffer(),
     );
     this.pool = Wraith.pool({ workers, surface: mode });
+    this.effects = 'off';
+    $('effects').disabled = mode !== 'shared';
+    if (mode === 'shared') await this.setEffects(effects);
     const options = {
       cols,
       rows,
@@ -184,6 +211,14 @@ class Fleet {
         }),
       ),
     );
+  }
+  /** Shared surfaces: apply an effects spec ('off', 'crt,bloom,synthwave', ...)
+   * to every worker surface, live, in either feed mode. */
+  async setEffects(spec) {
+    if (this.pool?.surface !== 'shared') return;
+    await this.pool.setEffects(effectsFor(spec));
+    this.effects = spec;
+    $('effects').value = spec;
   }
   /** Cumulative counters; callers difference two snapshots. */
   async metrics() {
@@ -341,13 +376,18 @@ for (const [id, key] of [
   ['count', 'count'],
   ['mode', 'mode'],
   ['pace', 'pace'],
+  ['effects', 'effects'],
 ]) {
   const select = $(id);
   if (params.has(key)) select.value = params.get(key);
   select.addEventListener('change', () => {
-    if (id === 'pace') {
-      fleet.pace = select.value;
-      params.set('pace', select.value);
+    if (id === 'pace' || id === 'effects') {
+      if (id === 'pace') fleet.pace = select.value;
+      else
+        fleet.setEffects(select.value).catch((error) => {
+          $('hint').textContent = `Effects failed: ${error.message}`;
+        });
+      params.set(key, select.value);
       history.replaceState(null, '', `?${params}`);
       return;
     }
@@ -366,6 +406,7 @@ if (params.get('auto') !== '0')
       pace: $('pace').value,
       workers: Number(params.get('workers') ?? 4),
       feed: params.get('feed') ?? 'main',
+      effects: $('effects').value,
     })
     .catch((error) => {
       $('hint').textContent = `Could not start: ${error.message}`;
