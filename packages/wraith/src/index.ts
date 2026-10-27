@@ -274,6 +274,9 @@ export class Wraith {
       height: '100%',
       overflow: 'hidden',
       background: this.theme.background,
+      // Its layout and painting never affect the page outside it, so style,
+      // layout and paint invalidations stop here (size still follows the host).
+      contain: 'layout paint style',
     });
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('aria-hidden', 'true');
