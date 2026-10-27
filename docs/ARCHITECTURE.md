@@ -153,6 +153,15 @@ Title and bell effects have separate typed events. Selection anchors belong to
 Ghostty, so copying can use its formatter rather than reconstructing logical
 lines from pixels.
 
+`connect(url)` opens the WebSocket inside the worker. Incoming messages enter
+the same serial queue as writes, resize and fences, so the page's main thread
+handles neither output nor its acknowledgements, and engine output (keys,
+paste, query replies) is sent from the worker before it is posted to the page's
+`onBytes` listeners. With `WebSocketStream` the worker reads the next message
+only after the previous one is parsed, yielding a task every 4 ms so input and
+animation frames interleave. A close is reported only after every earlier
+message is parsed.
+
 The worker serializes commands. In particular, an asynchronous GPU fence holds a
 Rust borrow until completion. Previously queued animation callbacks are canceled
 or guarded while that borrow is active. This prevents a render callback from

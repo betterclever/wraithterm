@@ -135,13 +135,28 @@ try {
   });
   window.wraith = term;
   term.onTitleChange((title) => (document.title = title || 'Wraith'));
-  const socket = new WebSocket(\`\${location.protocol === 'https:' ? 'wss' : 'ws'}://\${location.host}/pty?token=${token}\`);
-  socket.binaryType = 'arraybuffer';
-  const size = () => socket.readyState === 1 && socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-  socket.addEventListener('open', size);
-  term.onResize(size);
-  term.connect(socket);
-  socket.addEventListener('close', () => term.write('\\r\\n\\x1b[2m[session ended]\\x1b[0m\\r\\n'));
+  const ended = () => term.write('\\r\\n\\x1b[2m[session ended]\\x1b[0m\\r\\n');
+  const url = '/pty?token=${token}';
+  // The worker owns the socket: PTY output is parsed without touching this
+  // thread. ?transport=page keeps the page-owned socket for comparison.
+  if (new URLSearchParams(location.search).get('transport') === 'page') {
+    const socket = new WebSocket(new URL(url, location.href.replace(/^http/, 'ws')));
+    socket.binaryType = 'arraybuffer';
+    const size = () => socket.readyState === 1 && socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    socket.addEventListener('open', size);
+    term.onResize(size);
+    term.connect(socket);
+    socket.addEventListener('close', ended);
+  } else {
+    const socket = term.connect(url);
+    window.wraithSocket = socket;
+    // Sent once open, ordered with keystrokes.
+    const size = () => socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    size();
+    term.onResize(size);
+    // A failed or disposed terminal also resolves closed; it cannot be written.
+    socket.closed.then(ended).catch(() => {});
+  }
   term.focus();
 } catch (error) {
   fail(String(error.message ?? error));
