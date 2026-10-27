@@ -1,10 +1,20 @@
-import type { Command, Reply } from './protocol.js';
+import type { Command, PoolMessage, Reply } from './protocol.js';
+import { SharedSurfaces, type SharedSurfaceOptions, type SharedSurfaceStats } from './surface.js';
+export type { SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
 
 /** How a terminal reaches its engine: a dedicated worker or a port on a pooled one. */
 export interface Channel {
   postMessage(command: Command, transfer: Transferable[]): void;
   /** Stop delivering replies and release the terminal's share of the worker. */
   terminate(): void;
+  /** Present on a shared-surface pool: the worker draws this terminal into its
+   * page-sized canvas at the placeholder's on-screen rectangle. */
+  surface?: {
+    track(placeholder: HTMLCanvasElement, element: HTMLElement): void;
+    untrack(): void;
+    /** Stacking order of the shared canvases. */
+    zIndex: number;
+  };
 }
 export interface ChannelHandlers {
   message(reply: Reply): void;
@@ -17,6 +27,16 @@ export interface WraithPoolOptions {
    * and WebGPU device.
    */
   workers?: number;
+  /**
+   * `'canvas'` (default): each terminal has its own canvas and surface.
+   * `'shared'`: each worker draws all of its terminals into one page-sized
+   * canvas layered above the page with one glyph atlas per font
+   * configuration, so thousands of terminals share a few surfaces. Hosts keep
+   * their input, focus and selection elements; see the README for limits.
+   */
+  surface?: 'canvas' | 'shared';
+  /** Shared surfaces only: stacking order and container of the canvases. */
+  sharedSurface?: SharedSurfaceOptions;
 }
 
 const spawn = () =>
@@ -34,6 +54,7 @@ export function dedicatedChannel(handlers: ChannelHandlers): Channel {
 interface Slot {
   worker: Worker;
   terminals: Set<ChannelHandlers>;
+  index: number;
 }
 
 /**
@@ -44,10 +65,24 @@ interface Slot {
 export class WraithPool {
   private slots: Slot[] = [];
   private disposed = false;
+  private surfaces?: SharedSurfaces;
+  private nextId = 1;
   readonly size: number;
+  /** `'shared'` when workers draw into page-sized shared surfaces. */
+  readonly surface: 'canvas' | 'shared';
   constructor(options: WraithPoolOptions = {}) {
     const cpus = globalThis.navigator?.hardwareConcurrency ?? 4;
     this.size = Math.max(1, Math.floor(options.workers ?? Math.min(4, Math.max(1, cpus / 2))));
+    this.surface = options.surface === 'shared' ? 'shared' : 'canvas';
+    if (this.surface === 'shared')
+      this.surfaces = new SharedSurfaces(options.sharedSurface, (index, error) => {
+        const slot = this.slots[index];
+        if (slot) for (const terminal of slot.terminals) terminal.fail(error);
+      });
+  }
+  /** Shared surfaces: each worker's latest frame and GPU-completion counters. */
+  get surfaceStats(): readonly SharedSurfaceStats[] {
+    return this.surfaces?.workerStats ?? [];
   }
   /** Terminals currently attached to each worker. */
   get load(): number[] {
@@ -57,7 +92,9 @@ export class WraithPool {
   connect(handlers: ChannelHandlers): Channel {
     if (this.disposed) throw new Error('Wraith pool has been disposed');
     if (this.slots.length < this.size) {
-      const slot: Slot = { worker: spawn(), terminals: new Set() };
+      const slot: Slot = { worker: spawn(), terminals: new Set(), index: this.slots.length };
+      // The surface reaches the worker before any terminal attaches.
+      this.surfaces?.attach(slot.worker);
       const failAll = (error: Error) => {
         for (const terminal of slot.terminals) terminal.fail(error);
       };
@@ -68,7 +105,12 @@ export class WraithPool {
     }
     const slot = this.slots.reduce((a, b) => (b.terminals.size < a.terminals.size ? b : a));
     const { port1, port2 } = new MessageChannel();
-    slot.worker.postMessage({ type: 'attach', port: port2 }, [port2]);
+    const id = this.nextId++;
+    const surfaces = this.surfaces;
+    slot.worker.postMessage(
+      { type: 'attach', port: port2, id, shared: !!surfaces } satisfies PoolMessage,
+      [port2],
+    );
     port1.onmessage = (event: MessageEvent<Reply>) => handlers.message(event.data);
     port1.onmessageerror = () =>
       handlers.fail(new Error('Wraith worker message could not be decoded'));
@@ -76,15 +118,22 @@ export class WraithPool {
     return {
       postMessage: (command, transfer) => port1.postMessage(command, transfer),
       terminate: () => {
+        surfaces?.untrack(id);
         port1.onmessage = null;
         port1.close();
         slot.terminals.delete(handlers);
+      },
+      surface: surfaces && {
+        track: (placeholder, element) => surfaces.track(id, slot.index, placeholder, element),
+        untrack: () => surfaces.untrack(id),
+        zIndex: surfaces.zIndex,
       },
     };
   }
   /** Terminate every worker. Dispose attached terminals first. */
   dispose() {
     this.disposed = true;
+    this.surfaces?.dispose();
     for (const slot of this.slots) slot.worker.terminate();
     this.slots = [];
   }

@@ -116,6 +116,56 @@ reaches every terminal on that device; a worker failure reaches every terminal
 attached to it. Disposing a pooled terminal frees its engine and closes its
 port; the worker stays for its neighbours.
 
+## Shared surfaces
+
+`Wraith.pool({ surface: 'shared' })` gives each pool worker one page-sized
+`OffscreenCanvas`, fixed over the viewport with `pointer-events: none`
+(z-index 1 by default). The worker owns that canvas's swap chain, a retained
+backing texture of the same size, one compiled terminal pipeline and image
+pipeline, and one glyph atlas per font configuration (font and fallback
+bytes, size, line height, ligatures). Terminals keep their DOM element,
+textarea, preedit, accessibility mirror and their own `<canvas>`, which is
+never transferred: it remains a placeholder for layout, pointer selection
+and the visibility observer.
+
+Each terminal still parses, packs and uploads exactly as on its own canvas,
+but `render` stages its uniforms instead of presenting. One animation frame
+per worker renders dirty visible terminals, then draws only those with new
+content into the backing (`LoadOp::Load`) with a scissor at their placement,
+copies the backing to the canvas texture and presents. A draw starts with a
+default-background quad, so it fully replaces the terminal's earlier pixels.
+Geometry changes (scroll, pan, zoom, resize, disposal) clear the backing and
+redraw every visible terminal. Off-screen terminals do not render; their
+parsing and history continue.
+
+Placement comes from the main thread. Once per animation frame the pool
+measures each intersecting terminal's element (one `getBoundingClientRect`
+plus `offsetWidth` for the transform scale), intersects it with the element
+and its overflow-clipping ancestors, and posts changed records (id, origin,
+scale, clip, in device pixels) to the owning worker. Terminals hidden by
+`visibility: hidden` or `opacity: 0` on the host or an ancestor
+(`checkVisibility`) are placed as hidden, and a host moved to another parent
+after mount has its clipping ancestors recomputed. Unscaled placements are
+rounded to whole device pixels, so they match per-canvas output exactly; a
+CSS-scaled placement samples the atlas with a linear sampler. The vertex
+shaders map terminal pixels to the target through that placement; with a
+zero target size they keep the original own-canvas path.
+
+A shared atlas reset (a neighbour's visible glyph set overflowed) makes every
+other terminal on it stale; a stale terminal repacks before it is drawn, and
+a frame in which a reset invalidated already-recorded draws is redrawn in
+full. Shared pipelines blend alpha with `max`, keeping terminal pixels opaque
+on the premultiplied canvas.
+
+Limits: the canvases sit above page content at their z-index, so overlays
+meant to cover terminals must stack above them. Placements follow layout one
+animation frame later than the DOM, so a terminal can trail a scroll or pan
+by a frame. Rotation and perspective transforms are not modelled (placement
+is a translation plus uniform scale). Fallback fonts and ligatures are fixed
+when a shared terminal is created. Partial CSS opacity and filters on a host
+are not applied. Each worker draws all of its terminals in
+one pass, so heavy output in one terminal shares that worker's frame.
+
 ## Run shaping
 
 Packing a row first takes the per-cell path, noting whether any cell is a run
@@ -219,19 +269,21 @@ wait.
 
 ## Where to extend
 
-| Area                                         | File / module                            |
-| -------------------------------------------- | ---------------------------------------- |
-| Upstream ABI and effects                     | `native/bridge.c`                        |
-| Headless state ownership and snapshots       | `crates/wraith-engine/src/core.rs`       |
-| Shaping, fallback, rasterization, cache      | `crates/wraith-engine/src/text.rs`       |
-| Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`        |
-| GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`   |
-| Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl` |
-| Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`     |
-| Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`        |
-| Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`          |
-| Shared workers for many terminals            | `packages/wraith/src/pool.ts`            |
-| Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`           |
+| Area                                         | File / module                                      |
+| -------------------------------------------- | -------------------------------------------------- |
+| Upstream ABI and effects                     | `native/bridge.c`                                  |
+| Headless state ownership and snapshots       | `crates/wraith-engine/src/core.rs`                 |
+| Shaping, fallback, rasterization, cache      | `crates/wraith-engine/src/text.rs`                 |
+| Uploads, device, surface, render pass        | `crates/wraith-engine/src/gpu.rs`                  |
+| GPU row ownership and upload coalescing      | `crates/wraith-engine/src/retained.rs`             |
+| Cell geometry and visual styles              | `crates/wraith-engine/src/terminal.wgsl`           |
+| Kitty graphics textures and placement quads  | `crates/wraith-engine/src/images.rs`               |
+| Wasm public engine bindings                  | `crates/wraith-engine/src/web.rs`                  |
+| Scheduling, protocol, benchmarks             | `packages/wraith/src/worker.ts`                    |
+| Shared workers for many terminals            | `packages/wraith/src/pool.ts`                      |
+| Shared surface: device, backing, atlases     | `crates/wraith-engine/src/shared.rs`               |
+| Shared surface: placements and composition   | `packages/wraith/src/surface.ts`, `shared-host.ts` |
+| Browser API, input, transport, accessibility | `packages/wraith/src/index.ts`                     |
 
 Performance work should be driven by a recorded workload and percentile evidence.
 Broad compatibility additions should add a failing protocol fixture and, where

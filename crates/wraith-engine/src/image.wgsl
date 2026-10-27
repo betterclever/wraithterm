@@ -4,7 +4,8 @@ struct Uniforms {
     grid: vec4<u32>,
     theme: vec4<u32>,
     text: vec4<f32>,
-    images: vec4<u32>,
+    images: vec4<u32>, // z, w: shared target width/height (0: own canvas)
+    place: vec4<f32>, // shared surfaces: origin x/y in target pixels, scale
 }
 struct Quad {
     dst: vec4<f32>, // x, y, width, height in pixels
@@ -24,7 +25,13 @@ struct Vertex {
     let q = quads[index];
     let pixel = q.dst.xy + p * q.dst.zw;
     var output: Vertex;
-    output.position = vec4<f32>(pixel.x / u.view.x * 2. - 1., 1. - pixel.y / u.view.y * 2., 0., 1.);
+    var target_size = u.view.xy;
+    var at = pixel;
+    if u.images.z != 0u {
+        target_size = vec2<f32>(f32(u.images.z), f32(u.images.w));
+        at = u.place.xy + pixel * u.place.z;
+    }
+    output.position = vec4<f32>(at.x / target_size.x * 2. - 1., 1. - at.y / target_size.y * 2., 0., 1.);
     output.uv = mix(q.src.xy, q.src.zw, p);
     return output;
 }

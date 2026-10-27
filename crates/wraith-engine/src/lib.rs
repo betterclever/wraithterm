@@ -7,6 +7,8 @@ pub mod image;
 mod images;
 #[cfg(any(target_arch = "wasm32", test))]
 mod retained;
+#[cfg(target_arch = "wasm32")]
+mod shared;
 #[cfg(any(target_arch = "wasm32", test))]
 mod staging;
 pub mod text;

@@ -3,7 +3,6 @@ import { KEY_CODES } from './keycodes.js';
 import {
   BackpressureError,
   packColor,
-  percentile,
   type WraithOptions,
   type WraithStats,
   type WraithTheme,
@@ -153,7 +152,12 @@ function validateGrid(cols: number, rows: number) {
 }
 
 /** One independent worker, Wasm instance, and GPU device per terminal. */
-export { WraithPool, type WraithPoolOptions } from './pool.js';
+export {
+  WraithPool,
+  type WraithPoolOptions,
+  type SharedSurfaceOptions,
+  type SharedSurfaceStats,
+} from './pool.js';
 export class Wraith {
   /** A pool of shared workers for mounting many terminals; pass it as `pool`. */
   static pool(options?: WraithPoolOptions): WraithPool {
@@ -286,6 +290,8 @@ export class Wraith {
       fail: (error: Error) => this.fail(error),
     };
     this.worker = options.pool ? options.pool.connect(handlers) : dedicatedChannel(handlers);
+    // IME composition text must stay visible above a shared surface.
+    if (this.worker.surface) this.preedit.style.zIndex = String(this.worker.surface.zIndex + 1);
     this.bindInput();
   }
   static async mount(host: HTMLElement, options: WraithOptions = {}): Promise<Wraith> {
@@ -301,7 +307,11 @@ export class Wraith {
           ...(options.fallbackFonts ?? []),
         ].map(loadFont),
       );
-      const canvas = terminal.canvas.transferControlToOffscreen();
+      // A shared-surface pool draws into its own canvas; this one stays a
+      // placeholder for layout, pointer input and visibility.
+      const canvas = terminal.worker.surface
+        ? undefined
+        : terminal.canvas.transferControlToOffscreen();
       terminal.fontBytes = font!.slice();
       terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
       terminal.send(
@@ -319,10 +329,11 @@ export class Wraith {
           ligatures: options.ligatures,
           theme: Object.values(terminal.theme).map(packColor),
         },
-        [canvas, ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
+        [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
       await terminal.ready;
       terminal.dimensions();
+      terminal.worker.surface?.track(terminal.canvas, terminal.element);
       terminal.watchVisibility();
       if (options.fit !== false) {
         terminal.observer = new ResizeObserver(() => terminal.fit());
@@ -397,13 +408,13 @@ export class Wraith {
       case 'modes':
         this.mouseTracking = reply.mouse;
         break;
-      case 'cursor': {
-        const left = `${(reply.x * this.cellWidth) / this.dpr}px`,
-          top = `${(reply.y * this.cellHeight) / this.dpr}px`;
-        Object.assign(this.input.style, { left, top, bottom: 'auto' });
-        Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+      case 'cursor':
+        this.cursorCell = [reply.x, reply.y];
+        // Only the focused terminal's IME anchor follows the cursor. Moving
+        // every unfocused input makes the browser re-layerize the page each
+        // frame, which dominates with hundreds of terminals.
+        if (this.composing || document.activeElement === this.input) this.placeInput();
         break;
-      }
       case 'render':
         this.renders.emit({ frame: reply.frame });
         break;
@@ -417,6 +428,15 @@ export class Wraith {
         // Some browser/display transitions update resolution without delivering
         // a media-query change event. Reuse the existing stats heartbeat.
         this.checkDisplay();
+        if (!this.statistics.size) break;
+        // Sort the render samples once for all three percentiles.
+        const sorted = Float64Array.from(reply.samples).sort();
+        const at = (fraction: number) =>
+          sorted.length
+            ? sorted[
+                Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * fraction) - 1))
+              ]!
+            : 0;
         const v = reply.values;
         this.statistics.emit({
           frames: v[0]!,
@@ -428,9 +448,9 @@ export class Wraith {
           atlasHits: v[6]!,
           atlasMisses: v[7]!,
           atlasResets: v[8]!,
-          renderP50Ms: percentile(reply.samples, 0.5),
-          renderP95Ms: percentile(reply.samples, 0.95),
-          renderP99Ms: percentile(reply.samples, 0.99),
+          renderP50Ms: at(0.5),
+          renderP95Ms: at(0.95),
+          renderP99Ms: at(0.99),
           activeFps: reply.fps,
           adapter: reply.adapter,
         });
@@ -489,7 +509,7 @@ export class Wraith {
   }
   private reserve(bytes: number) {
     if (this.batchLength + bytes <= this.batch.length) return;
-    const next = new Uint8Array(Math.max(4096, (this.batchLength + bytes) * 2));
+    const next = new Uint8Array(Math.max(1024, (this.batchLength + bytes) * 2));
     next.set(this.batch.subarray(0, this.batchLength));
     this.batch = next;
   }
@@ -532,7 +552,20 @@ export class Wraith {
     if (rect.width > 0 && rect.height > 0)
       void this.resize(cols, rows).catch((error) => this.errors.emit(error));
   }
+  private cursorCell?: [number, number];
+  private placeInput() {
+    if (!this.cursorCell) return;
+    const left = `${(this.cursorCell[0] * this.cellWidth) / this.dpr}px`,
+      top = `${(this.cursorCell[1] * this.cellHeight) / this.dpr}px`;
+    Object.assign(this.input.style, { left, top, bottom: 'auto' });
+    Object.assign(this.preedit.style, { left, top, bottom: 'auto' });
+  }
   private dimensions() {
+    if (this.worker.surface) {
+      // The placeholder's size in terminal pixels gives the shared surface its scale.
+      this.canvas.width = this.cols * this.cellWidth;
+      this.canvas.height = this.rows * this.cellHeight;
+    }
     this.canvas.style.width = `${(this.cols * this.cellWidth) / this.dpr}px`;
     this.canvas.style.height = `${(this.rows * this.cellHeight) / this.dpr}px`;
     this.preedit.style.fontSize = `${this.options.fontSize ?? 14}px`;
@@ -945,7 +978,10 @@ export class Wraith {
     );
     this.input.addEventListener(
       'focus',
-      () => this.send({ type: 'focus', focused: true }),
+      () => {
+        this.placeInput();
+        this.send({ type: 'focus', focused: true });
+      },
       options,
     );
     this.input.addEventListener(
