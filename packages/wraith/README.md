@@ -40,18 +40,18 @@
 
 | Renderer         | CPU per update |
 | ---------------- | -------------: |
-| xterm.js, DOM    |        37.7 ms |
-| xterm.js + WebGL |         9.8 ms |
-| **Wraith**       |     **2.5 ms** |
+| xterm.js, DOM    |        20.4 ms |
+| xterm.js + WebGL |         5.1 ms |
+| **Wraith**       |     **1.1 ms** |
 
-That is **15× less** than xterm.js DOM and **3.9× less** than xterm.js + WebGL, and we are still climbing.
+That is **18× less** than xterm.js DOM and **4.6× less** than xterm.js + WebGL, and we are still climbing.
 
-<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates ([report](docs/benchmarks/launch/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
+<sub>Medians of interleaved runs, Chrome 155, Apple M5 Max, GPU-completed updates, Wraith 0.5.0 ([report](docs/benchmarks/v0.5/REPORT.md)). Your machine will differ: [race it yourself](https://wraithterm.com/#race).</sub>
 
 </td>
 <td width="50%">
 
-<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="15× less CPU than xterm.js DOM, 3.9× less than xterm.js + WebGL" width="100%">
+<img src="https://raw.githubusercontent.com/betterclever/wraithterm/main/.github/assets/numbers.jpg" alt="18× less CPU than xterm.js DOM, 4.6× less than xterm.js + WebGL" width="100%">
 
 </td>
 </tr>
