@@ -25,15 +25,24 @@ const viewport = document.getElementById('viewport');
 const world = document.getElementById('world');
 const $ = (id) => document.getElementById(id);
 const view = { x: 0, y: 0, z: 1 };
+/** Write a readout only when its text changes. */
+function show(id, text) {
+  const node = $(id);
+  if (node.textContent !== text) node.textContent = text;
+}
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
-  $('r-zoom').textContent = `${(view.z * 100).toFixed(view.z < 0.1 ? 1 : 0)}%`;
+  show('r-zoom', `${(view.z * 100).toFixed(view.z < 0.1 ? 1 : 0)}%`);
 }
-function hudHeight() {
-  return document.querySelector('.hud').getBoundingClientRect().bottom + 8;
+// The grid sits below the HUD. Its height is fixed by CSS for a given window
+// width, so measure it at load and on resize only, never as readouts change.
+let hudInset = 0;
+function measureHud() {
+  hudInset = document.querySelector('.hud').getBoundingClientRect().bottom + 8;
 }
+measureHud();
 function fit() {
-  const top = hudHeight();
+  const top = hudInset;
   const w = world.offsetWidth,
     h = world.offsetHeight;
   if (!w || !h) return;
@@ -114,12 +123,12 @@ class Fleet {
       const batch = [];
       for (let j = i; j < Math.min(count, i + 64); j++) batch.push(mountOne(j));
       this.terms.push(...(await Promise.all(batch)));
-      $('r-terminals').textContent = `${this.terms.length} / ${count}`;
+      show('r-terminals', `${this.terms.length} / ${count}`);
     }
     this.mountMs = performance.now() - started;
     this.acked = new Array(count).fill(0);
     this.rendered = new Array(count).fill(0);
-    $('r-terminals').textContent = String(count);
+    show('r-terminals', String(count));
     fit();
     this.running = true;
     this.drive();
@@ -209,22 +218,30 @@ setInterval(() => {
   if (fleet.terms.length && now.acked.length === previous.acked.length && seconds > 0) {
     const updates =
       now.acked.reduce((a, b) => a + b, 0) - previous.acked.reduce((a, b) => a + b, 0);
-    $('r-fps').textContent = ((now.frames - previous.frames) / seconds).toFixed(0);
-    $('r-updates').textContent = Math.round(updates / seconds).toLocaleString();
-    $('r-per').textContent = (updates / seconds / fleet.terms.length).toFixed(1);
+    show('r-fps', ((now.frames - previous.frames) / seconds).toFixed(0));
+    show('r-updates', Math.round(updates / seconds).toLocaleString());
+    show('r-per', (updates / seconds / fleet.terms.length).toFixed(1));
     const shared = fleet.pool?.surface === 'shared';
-    $('r-gpu').textContent = shared
-      ? Math.round(
-          (now.surfaceCompletedUpdates - previous.surfaceCompletedUpdates) / seconds,
-        ).toLocaleString()
-      : 'n/a';
-    $('r-surface').textContent = shared
-      ? now.surfaceFrames
-          .map((f, i) => ((f - (previous.surfaceFrames[i] ?? 0)) / seconds).toFixed(0))
-          .join(' · ')
-      : `${fleet.terms.length} canvases`;
-    $('r-long').textContent =
-      `${now.longTasks.count - previous.longTasks.count} · ${(now.longTasks.ms - previous.longTasks.ms).toFixed(0)} ms`;
+    show(
+      'r-gpu',
+      shared
+        ? Math.round(
+            (now.surfaceCompletedUpdates - previous.surfaceCompletedUpdates) / seconds,
+          ).toLocaleString()
+        : 'n/a',
+    );
+    // Slowest–fastest worker, so the width does not grow with the worker count.
+    const rates = now.surfaceFrames.map((f, i) => (f - (previous.surfaceFrames[i] ?? 0)) / seconds);
+    show(
+      'r-surface',
+      shared && rates.length
+        ? `${Math.min(...rates).toFixed(0)}–${Math.max(...rates).toFixed(0)}`
+        : `${fleet.terms.length} canvases`,
+    );
+    show(
+      'r-long',
+      `${now.longTasks.count - previous.longTasks.count} · ${(now.longTasks.ms - previous.longTasks.ms).toFixed(0)} ms`,
+    );
   }
   previous = now;
 }, 500);
@@ -286,7 +303,10 @@ viewport.addEventListener('dblclick', (e) => {
   view.y += innerHeight / 2 - (c.top + c.height / 2);
   applyView();
 });
-addEventListener('resize', () => fleet.terms.length && fit());
+addEventListener('resize', () => {
+  measureHud();
+  if (fleet.terms.length) fit();
+});
 
 const params = new URLSearchParams(location.search);
 for (const [id, key] of [
