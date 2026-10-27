@@ -292,6 +292,10 @@ export class Wraith {
       padding: '0',
       border: '0',
       resize: 'none',
+      // A user-scrollable textarea is a composited scroller: three compositor
+      // layers (scroller, contents, scrollbar) per terminal, which dominated
+      // Chrome's layerization and GPU process with hundreds of terminals.
+      overflow: 'hidden',
     });
     this.preedit = document.createElement('span');
     Object.assign(this.preedit.style, {
