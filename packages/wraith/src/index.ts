@@ -20,10 +20,14 @@ import {
   type WraithCloseEvent,
 } from './types.js';
 import type { Command, Reply } from './protocol.js';
+import { loadRecording, WraithRecorder, type RecordingSource } from './recording.js';
+import type { PlayerOptions, WraithPlayer } from './player.js';
 import { CommandBlocks } from './command-blocks.js';
 import type { CommandBlock } from './command-types.js';
 import { EffectsController, type WraithEffects } from './effects.js';
 export * from './types.js';
+export * from './recording.js';
+export type { PlayerOptions, WraithPlayer, PlayerControlsOptions } from './player.js';
 export * from './command-types.js';
 export { parseOsc133, type Osc133Step } from './osc133.js';
 export type {
@@ -177,6 +181,24 @@ export class Wraith {
   static pool(options?: WraithPoolOptions): WraithPool {
     return new WraithPool(options);
   }
+  /**
+   * Mount a player for a recording, asciicast text, or a URL/Blob of a `.cast`
+   * file. The player module and its keyframe worker load on first use.
+   */
+  static async player(
+    host: HTMLElement,
+    source: RecordingSource,
+    options?: PlayerOptions,
+  ): Promise<WraithPlayer> {
+    // The player chunk must not import this module back: an application that
+    // awaits this at its top level is still evaluating, and a bundle that put
+    // Wraith in the application's chunk would wait on itself forever.
+    const [{ WraithPlayer }, recording] = await Promise.all([
+      import('./player.js'),
+      loadRecording(source),
+    ]);
+    return WraithPlayer.create(Wraith, host, recording, options);
+  }
   readonly element: HTMLDivElement;
   readonly canvas: HTMLCanvasElement;
   readonly input: HTMLTextAreaElement;
@@ -219,6 +241,10 @@ export class Wraith {
   private statistics = new Signal<WraithStats>();
   private resizes = new Signal<{ cols: number; rows: number }>();
   private renders = new Signal<{ frame: number }>();
+  /** Output as written, for recorders; only copied while one is attached. */
+  private outputs = new Signal<Uint8Array>();
+  /** Resizes in worker order (when sent), for recorders. */
+  private sentResizes = new Signal<{ cols: number; rows: number }>();
   private decoder = new TextDecoder();
   private encoder = new TextEncoder();
   private readyResolve!: () => void;
@@ -494,6 +520,9 @@ export class Wraith {
         this.binary.emit(reply.bytes);
         this.data.emit(this.decoder.decode(reply.bytes, { stream: true }));
         break;
+      case 'output':
+        this.outputs.emit(reply.bytes);
+        break;
       case 'title':
         this.title.emit(reply.title);
         break;
@@ -598,6 +627,9 @@ export class Wraith {
       this.reserve(length);
       this.batch.set(data, this.batchLength);
     }
+    // Recorders copy what they keep; nothing is copied while none listens.
+    if (this.outputs.size)
+      this.outputs.emit(this.batch.subarray(this.batchLength, this.batchLength + length));
     this.batchLength += length;
     const id = this.sequence++;
     this.pendingBytes += length;
@@ -635,10 +667,14 @@ export class Wraith {
   async resize(cols: number, rows: number): Promise<void> {
     validateGrid(cols, rows);
     if (cols === this.cols && rows === this.rows) return;
-    await this.request<void>({ type: 'resize', cols, rows } as Omit<
+    const done = this.request<void>({ type: 'resize', cols, rows } as Omit<
       Extract<Command, { type: 'resize' }>,
       'id'
     >);
+    // The worker parses writes made before this resize is acknowledged after
+    // it, so recorders take the resize in send order, not on acknowledgement.
+    this.sentResizes.emit({ cols, rows });
+    await done;
     this.cols = cols;
     this.rows = rows;
     this.dimensions();
@@ -774,6 +810,31 @@ export class Wraith {
   }
   onResize(listener: Listener<{ cols: number; rows: number }>): Disposable {
     return this.resizes.on(listener);
+  }
+  /**
+   * Record what this terminal parses: written output with timestamps and
+   * resizes, plus typed input when `input` is true. `stop()` returns the
+   * recording; `toAsciicast()` serializes it as an asciinema `.cast` file.
+   */
+  record(
+    options: { input?: boolean; title?: string; command?: string; idleTimeLimit?: number } = {},
+  ): WraithRecorder {
+    this.assertLive();
+    const recorder = new WraithRecorder({ cols: this.cols, rows: this.rows, ...options });
+    const subscriptions = [
+      this.outputs.on((bytes) => recorder.output(bytes)),
+      this.sentResizes.on(({ cols, rows }) => recorder.resize(cols, rows)),
+      ...(options.input ? [this.data.on((text) => recorder.input(text))] : []),
+    ];
+    // Output from a worker-owned socket (connect(url)) never reaches the page
+    // unless asked for; ask only while a recorder listens.
+    if (this.outputs.size === 1) this.send({ type: 'observe-output', enabled: true });
+    recorder.onStop(() => {
+      subscriptions.forEach((s) => s.dispose());
+      if (!this.outputs.size && !this.disposed && !this.failed)
+        this.send({ type: 'observe-output', enabled: false });
+    });
+    return recorder;
   }
   /** Render submission notification, not a GPU fence or proof of display presentation.
    * Worker notifications are enabled only while at least one listener exists. */
@@ -1463,6 +1524,8 @@ export class Wraith {
     this.statistics.clear();
     this.resizes.clear();
     this.renders.clear();
+    this.outputs.clear();
+    this.sentResizes.clear();
     this.announcements.clear();
     this.keyHandlers.clear();
     this.interceptedKeys.clear();

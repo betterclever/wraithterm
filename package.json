@@ -62,7 +62,10 @@
     "test:shell-integration": "node scripts/shell-integration-test.mjs",
     "benchmark:commands": "node scripts/command-blocks-benchmark.mjs",
     "test:frameworks": "node scripts/framework-consumer-test.mjs",
-    "benchmark:input-latency": "node scripts/input-latency-benchmark.mjs"
+    "benchmark:input-latency": "node scripts/input-latency-benchmark.mjs",
+    "test:replay": "node scripts/replay-browser-test.mjs",
+    "benchmark:replay": "node scripts/replay-benchmark.mjs",
+    "record:sample": "node scripts/record-sample.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

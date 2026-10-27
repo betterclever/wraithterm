@@ -1,0 +1,195 @@
+{
+ "date": "2026-10-25T19:05:21.940Z",
+ "build": {
+  "commit": "5ffffad7709775299300302f759942f6b363baa9",
+  "dirty": true
+ },
+ "environment": {
+  "cpu": "Apple M5 Max",
+  "node": "v24.14.1",
+  "platform": "darwin"
+ },
+ "note": "elapsedMs is single-threaded Node time for the whole build, not browser worker time.",
+ "results": [
+  {
+   "session": "benchmark session (seed 42, 600 s, 120x36, scale 1.5)",
+   "outputBytes": 6616774,
+   "mode": "sampled (default)",
+   "stats": {
+    "candidates": 24,
+    "verified": 24,
+    "rejected": 0,
+    "alternate": 19,
+    "graphics": false,
+    "stateBytes": 1826616,
+    "samples": 170,
+    "elapsedMs": 269.6665
+   }
+  },
+  {
+   "session": "benchmark session (seed 42, 600 s, 120x36, scale 1.5)",
+   "outputBytes": 6616774,
+   "mode": "every event",
+   "stats": {
+    "candidates": 24,
+    "verified": 24,
+    "rejected": 0,
+    "alternate": 19,
+    "graphics": false,
+    "stateBytes": 1826616,
+    "samples": 9696,
+    "elapsedMs": 2519.07975
+   }
+  },
+  {
+   "session": "benchmark session (seed 42, 600 s, 120x36, scale 1.5)",
+   "outputBytes": 6616774,
+   "mode": "sampled, 32 KiB interval",
+   "stats": {
+    "candidates": 61,
+    "verified": 61,
+    "rejected": 0,
+    "alternate": 41,
+    "graphics": false,
+    "stateBytes": 3284052,
+    "samples": 1300,
+    "elapsedMs": 691.2542090000002
+   }
+  },
+  {
+   "session": "benchmark session (seed 42, 600 s, 120x36, scale 1.5)",
+   "outputBytes": 6616774,
+   "mode": "every event, 32 KiB interval",
+   "stats": {
+    "candidates": 61,
+    "verified": 61,
+    "rejected": 0,
+    "alternate": 41,
+    "graphics": false,
+    "stateBytes": 3284052,
+    "samples": 10097,
+    "elapsedMs": 2759.1582500000004
+   }
+  },
+  {
+   "session": "fixture (seed 7, 300 s, 80x24)",
+   "outputBytes": 2490410,
+   "mode": "sampled (default)",
+   "stats": {
+    "candidates": 9,
+    "verified": 9,
+    "rejected": 0,
+    "alternate": 5,
+    "graphics": false,
+    "stateBytes": 461110,
+    "samples": 59,
+    "elapsedMs": 88.57466599999952
+   }
+  },
+  {
+   "session": "fixture (seed 7, 300 s, 80x24)",
+   "outputBytes": 2490410,
+   "mode": "every event",
+   "stats": {
+    "candidates": 9,
+    "verified": 9,
+    "rejected": 0,
+    "alternate": 5,
+    "graphics": false,
+    "stateBytes": 461110,
+    "samples": 3800,
+    "elapsedMs": 918.2874160000001
+   }
+  },
+  {
+   "session": "fixture (seed 7, 300 s, 80x24)",
+   "outputBytes": 2490410,
+   "mode": "sampled, 32 KiB interval",
+   "stats": {
+    "candidates": 39,
+    "verified": 39,
+    "rejected": 0,
+    "alternate": 32,
+    "graphics": false,
+    "stateBytes": 1188639,
+    "samples": 479,
+    "elapsedMs": 276.7950000000001
+   }
+  },
+  {
+   "session": "fixture (seed 7, 300 s, 80x24)",
+   "outputBytes": 2490410,
+   "mode": "every event, 32 KiB interval",
+   "stats": {
+    "candidates": 39,
+    "verified": 39,
+    "rejected": 0,
+    "alternate": 32,
+    "graphics": false,
+    "stateBytes": 1188639,
+    "samples": 4311,
+    "elapsedMs": 1117.024625
+   }
+  },
+  {
+   "session": "demo/replay/sample.cast",
+   "outputBytes": 317827,
+   "mode": "sampled (default)",
+   "stats": {
+    "candidates": 1,
+    "verified": 1,
+    "rejected": 0,
+    "alternate": 1,
+    "graphics": false,
+    "stateBytes": 30693,
+    "samples": 1,
+    "elapsedMs": 4.6365829999995185
+   }
+  },
+  {
+   "session": "demo/replay/sample.cast",
+   "outputBytes": 317827,
+   "mode": "every event",
+   "stats": {
+    "candidates": 1,
+    "verified": 1,
+    "rejected": 0,
+    "alternate": 1,
+    "graphics": false,
+    "stateBytes": 30693,
+    "samples": 96,
+    "elapsedMs": 13.075582999999824
+   }
+  },
+  {
+   "session": "demo/replay/sample.cast",
+   "outputBytes": 317827,
+   "mode": "sampled, 32 KiB interval",
+   "stats": {
+    "candidates": 5,
+    "verified": 5,
+    "rejected": 0,
+    "alternate": 5,
+    "graphics": false,
+    "stateBytes": 155628,
+    "samples": 64,
+    "elapsedMs": 20.152333
+   }
+  },
+  {
+   "session": "demo/replay/sample.cast",
+   "outputBytes": 317827,
+   "mode": "every event, 32 KiB interval",
+   "stats": {
+    "candidates": 5,
+    "verified": 5,
+    "rejected": 0,
+    "alternate": 5,
+    "graphics": false,
+    "stateBytes": 155628,
+    "samples": 338,
+    "elapsedMs": 64.41204200000175
+   }
+  }
+ ]
+}
