@@ -47,6 +47,8 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  /** Internal: latency tracing and the immediate-frame switch (benchmarks only). */
+  | { type: 'trace'; enabled?: boolean; immediate?: boolean }
   | { type: 'socket-open'; link: number; url: string; protocols: string[]; stream: boolean }
   | { type: 'socket-send'; link: number; data: string | Uint8Array }
   | { type: 'socket-close'; link: number; code?: number; reason?: string }
@@ -61,6 +63,13 @@ export type Reply =
   | { type: 'modes'; mouse: boolean }
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
+  /** Internal latency trace stage; `time` is performance.timeOrigin + now(). */
+  | {
+      type: 'trace';
+      stage: 'key' | 'parsed' | 'submit' | 'gpu' | 'frame';
+      time: number;
+      info?: string;
+    }
   | { type: 'stats'; values: number[]; samples: number[]; fps: number; adapter: string }
   | { type: 'error'; error: string }
   | {

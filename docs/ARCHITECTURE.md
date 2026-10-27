@@ -61,7 +61,10 @@ only after 8 ms without commands. See
 
 1. libghostty-vt parses a streaming byte sequence and updates terminal state.
 2. The worker coalesces presentation through requestAnimationFrame. Idle state
-   produces no redraw, except cursor or text blinking.
+   produces no redraw, except cursor or text blinking. A write to a terminal
+   that drew no frame for two frame intervals, such as a keystroke's echo,
+   renders at once instead; see
+   [input latency](benchmarks/input-latency/RE5224.md).
 3. Ghostty updates its incremental render snapshot. The adapter visits dirty rows
    and copies their grapheme, colors, and flags into reusable Rust cell storage.
 4. Atlas hits reuse an existing tile. A miss chooses a fallback font, shapes the

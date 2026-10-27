@@ -72,6 +72,23 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
   let mouseTracking = false;
   let observeRender = false,
     renderedFrames = 0;
+  // Latency tracing (benchmarks only).
+  let tracing = false,
+    traceFrame = false;
+  // A write to an idle terminal (no frame for two frame intervals), such as a
+  // keystroke's echo, renders at once instead of on the next animation frame:
+  // Chrome's compositor draws and swaps a canvas frame that arrives between
+  // vsyncs straight away, so the echo reaches the display about one frame
+  // sooner. Busier output stays on animation frames: mixing in off-phase
+  // frames there delayed later frames in measurement (see
+  // docs/benchmarks/input-latency). `immediate` is switchable for A/B runs.
+  let immediate = true;
+  const IDLE_FRAMES = 2;
+  // When the last frame was rendered, and the display's frame interval as
+  // estimated from consecutive animation frames.
+  let lastDraw = -Infinity,
+    lastAnimationFrame = 0,
+    frameInterval = 1000 / 60;
   let serial = Promise.resolve();
   let link: Link | undefined;
   let searchGeneration = 0;
@@ -140,6 +157,9 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
     decoder = new TextDecoder();
   function post(reply: Reply, transfers: Transferable[] = []) {
     endpoint.postMessage(reply, transfers);
+  }
+  function trace(stage: Extract<Reply, { type: 'trace' }>['stage'], info?: string) {
+    post({ type: 'trace', stage, time: performance.timeOrigin + performance.now(), info });
   }
   /** The page fails the terminal on any reported error. A pooled worker
    * outlives that terminal, so drop its socket here rather than keep reading
@@ -330,6 +350,13 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
     if (engine!.render(time, force)) {
       forceNextFrame = false;
       renderedFrames++;
+      lastDraw = performance.now();
+      if (traceFrame) {
+        traceFrame = false;
+        trace('submit');
+        engine!.on_submitted_work_done(() => trace('gpu'));
+        scope.requestAnimationFrame(() => trace('frame'));
+      }
       if (observeRender) post({ type: 'render', frame: renderedFrames });
       samples.push(performance.now() - start);
       frameTimes.push(time);
@@ -351,6 +378,10 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
     scheduled = true;
     raf = scope.requestAnimationFrame((time) => {
       scheduled = false;
+      const delta = time - lastAnimationFrame;
+      lastAnimationFrame = time;
+      // Consecutive frames only: skipped frames would overestimate the interval.
+      if (delta > 2 && delta < frameInterval * 1.5) frameInterval += (delta - frameInterval) * 0.2;
       // An async GPU fence holds a Rust borrow across await. A previously queued
       // animation callback must not enter the engine until that borrow ends.
       if (busy || !engine || !visible || disposed) return;
@@ -542,12 +573,33 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
     }
     if (!engine || disposed) throw new Error('Wraith engine is not running');
     switch (command.type) {
-      case 'write':
+      case 'write': {
+        const marked = tracing && command.bytes.some((b) => b >= 0x61 && b <= 0x7a);
         engine.write(command.bytes);
         drain();
-        schedule();
+        if (marked) {
+          trace('parsed');
+          traceFrame = true;
+        }
         post({ type: 'written', ids: command.ids });
+        if (
+          immediate &&
+          visible &&
+          !busy &&
+          performance.now() - lastDraw >= frameInterval * IDLE_FRAMES
+        ) {
+          if (scheduled) {
+            scope.cancelAnimationFrame(raf);
+            scheduled = false;
+          }
+          try {
+            draw(performance.now());
+          } catch (error) {
+            post({ type: 'error', error: String(error) });
+          }
+        } else schedule();
         break;
+      }
       case 'resize':
         engine.resize(command.cols, command.rows);
         cols = command.cols;
@@ -556,6 +608,7 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         result(command.id);
         break;
       case 'key':
+        if (tracing) trace('key', command.text);
         engine.key(command.key, command.mods, command.action, command.text, command.unshifted);
         drain();
         break;
@@ -645,6 +698,10 @@ function createSession(endpoint: Endpoint, onClose: () => void) {
         break;
       case 'observe-render':
         observeRender = command.enabled;
+        break;
+      case 'trace':
+        if (command.enabled !== undefined) tracing = command.enabled;
+        if (command.immediate !== undefined) immediate = command.immediate;
         break;
       case 'socket-open':
         openLink(command.link, command.url, command.protocols, command.stream);
