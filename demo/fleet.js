@@ -89,6 +89,9 @@ class Fleet {
   rendered = [];
   frames = 0;
   longTasks = { count: 0, ms: 0 };
+  /** Long Animation Frames (>50 ms): count, durations, and time per phase and
+   * per attributed script, cumulative. */
+  loaf = { count: 0, ms: 0, blockingMs: 0, renderMs: 0, styleLayoutMs: 0, scripts: {} };
   pace = 'frame';
   feed = 'main';
   effects = 'off';
@@ -106,6 +109,9 @@ class Fleet {
     scrollback = 1000,
     feed = 'main',
     effects = 'off',
+    // Per-terminal stats cost a message per terminal every 500 ms; shared
+    // pools report drawn updates per worker instead.
+    terminalStats = mode !== 'shared',
   } = {}) {
     await this.stop();
     this.pace = pace;
@@ -120,6 +126,7 @@ class Fleet {
     this.effects = 'off';
     $('effects').disabled = mode !== 'shared';
     if (mode === 'shared') await this.setEffects(effects);
+    this.terminalStats = terminalStats;
     const options = {
       cols,
       rows,
@@ -137,7 +144,7 @@ class Fleet {
       world.append(host);
       const term = await Wraith.mount(host, options);
       term.onError((error) => this.errors.push(`${i}: ${error.message}`));
-      term.onStats((stats) => (this.rendered[i] = stats.frames));
+      if (terminalStats) term.onStats((stats) => (this.rendered[i] = stats.frames));
       return term;
     };
     // The first terminal sizes the grid; the rest mount in bounded batches.
@@ -234,9 +241,11 @@ class Fleet {
       acked: [...this.acked],
       rendered: [...this.rendered],
       longTasks: { ...this.longTasks },
+      loaf: { ...this.loaf, scripts: { ...this.loaf.scripts } },
       surfaceFrames: surfaces.map((s) => s?.frames ?? 0),
       surfaceCompletedFrames: surfaces.map((s) => s?.completedFrames ?? 0),
       surfaceUpdates: sum('updates'),
+      terminalStats: this.terminalStats,
       surfaceCompletedUpdates: sum('completedUpdates'),
       atlases: surfaces.map((s) => s?.atlases ?? 0),
       errors: [...this.errors],
@@ -271,6 +280,31 @@ if (typeof PerformanceObserver !== 'undefined')
     }).observe({ type: 'longtask' });
   } catch {
     // Long-task timing is unavailable outside Chromium.
+  }
+// What stalled a frame: Long Animation Frames with script attribution.
+if (typeof PerformanceObserver !== 'undefined')
+  try {
+    new PerformanceObserver((list) => {
+      const loaf = fleet.loaf;
+      for (const entry of list.getEntries()) {
+        loaf.count++;
+        loaf.ms += entry.duration;
+        loaf.blockingMs += entry.blockingDuration ?? 0;
+        const end = entry.startTime + entry.duration;
+        if (entry.renderStart) loaf.renderMs += end - entry.renderStart;
+        if (entry.styleAndLayoutStart) loaf.styleLayoutMs += end - entry.styleAndLayoutStart;
+        for (const script of entry.scripts ?? []) {
+          const file = String(script.sourceURL ?? '')
+            .split('/')
+            .pop()
+            .split('?')[0];
+          const key = `${script.invokerType}:${script.invoker} ${script.sourceFunctionName || '(anonymous)'} ${file}`;
+          loaf.scripts[key] = (loaf.scripts[key] ?? 0) + script.duration;
+        }
+      }
+    }).observe({ type: 'long-animation-frame', buffered: false });
+  } catch {
+    // Long Animation Frames are Chromium-only.
   }
 
 // Live readout, from differences between half-second snapshots.

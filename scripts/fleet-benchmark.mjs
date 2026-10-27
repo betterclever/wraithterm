@@ -107,6 +107,8 @@ for (let round = 0; round < rounds; round++)
           mode,
           feed,
           workers,
+          effects,
+          ...(process.env.TERMINAL_STATS && { terminalStats: process.env.TERMINAL_STATS === '1' }),
         });
         await page.waitForTimeout(warm * 1000);
         const loadBefore = loadavg();
@@ -126,7 +128,11 @@ for (let round = 0; round < rounds; round++)
           .replace(/'/g, '');
         const s = (b.time - a.time) / 1000;
         const perTerminal = b.acked.map((v, i) => (v - a.acked[i]) / s);
-        const submitted = b.rendered.map((v, i) => (v - a.rendered[i]) / s);
+        // Per-terminal stats when the page collected them, else (shared pools)
+        // terminal updates drawn into surface frames, from the workers' counters.
+        const submitted = b.terminalStats
+          ? b.rendered.map((v, i) => (v - a.rendered[i]) / s)
+          : [(b.surfaceUpdates - a.surfaceUpdates) / s];
         await page.evaluate(() => window.fleet.stop());
         const idleHz = await page.evaluate(
           () =>
@@ -162,6 +168,18 @@ for (let round = 0; round < rounds; round++)
               ? b.surfaceCompletedFrames.map((f, i) => (f - (a.surfaceCompletedFrames[i] ?? 0)) / s)
               : null,
           longTasks: b.longTasks.count - a.longTasks.count,
+          longAnimationFrames: {
+            count: b.loaf.count - a.loaf.count,
+            ms: Math.round(b.loaf.ms - a.loaf.ms),
+            blockingMs: Math.round(b.loaf.blockingMs - a.loaf.blockingMs),
+            renderMs: Math.round(b.loaf.renderMs - a.loaf.renderMs),
+            styleLayoutMs: Math.round(b.loaf.styleLayoutMs - a.loaf.styleLayoutMs),
+            topScripts: Object.entries(b.loaf.scripts)
+              .map(([k, v]) => [k, Math.round(v - (a.loaf.scripts[k] ?? 0))])
+              .filter(([, v]) => v > 0)
+              .sort((x, y) => y[1] - x[1])
+              .slice(0, 5),
+          },
           longTaskMs: b.longTasks.ms - a.longTasks.ms,
           atlases: b.atlases,
           memoryMiB: Math.round(memory),
@@ -180,7 +198,7 @@ for (let round = 0; round < rounds; round++)
       console.log(
         run.failed
           ? `${round} ${count} ${mode}/${feed}/${effects}: FAILED ${run.failed}`
-          : `${round} ${count} ${mode}/${feed}/${effects}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
+          : `${round} ${count} ${mode}/${feed}/${effects}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms), ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
       );
     }
 
@@ -270,12 +288,14 @@ await writeFile(
         updatesPerTerminal:
           'updates parsed per terminal per second (main: write() resolved; worker: chunks parsed in the worker)',
         submittedPerTerminal:
-          'frames each terminal submitted (Wraith stats frames, reported every 500 ms) per second; not display presentation',
+          'per-canvas (or TERMINAL_STATS=1): frames each terminal submitted (Wraith stats frames, reported every 500 ms) per second; shared pools by default: terminal updates drawn into surface frames (worker counters) per terminal per second. Not display presentation.',
         gpuCompletedUpdatesPerTerminal:
           'shared only: terminal updates drawn into presented surface frames whose GPU work completed (onSubmittedWorkDone)',
         surfaceFrames: 'shared only: frames each worker presented to its canvas per second',
         longTasks:
           'PerformanceObserver longtask entries (>50 ms) on the main thread during the window',
+        longAnimationFrames:
+          "PerformanceObserver 'long-animation-frame' entries (>50 ms) in the window: total and blocking duration, time from render start and from style/layout start to frame end, and the five scripts with the most attributed time",
         memory: 'summed RSS of the browser and all its processes, sampled mid-window',
         browserCpuCores:
           'CPU time of the browser and all its processes (ps) over the window, divided by wall time',

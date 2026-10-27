@@ -97,6 +97,9 @@ function createSession(
     frameTimes: number[] = [];
   let cursor = '';
   let mouseTracking = false;
+  // Stats cost a message (with up to 512 render samples) per terminal every
+  // 500 ms; send them only while the page listens.
+  let observeStats = false;
   let observeRender = false,
     renderedFrames = 0;
   // Latency tracing (benchmarks only).
@@ -487,7 +490,7 @@ function createSession(
   }
   const blinkTimer = setInterval(() => schedule(), 250);
   const statsTimer = setInterval(() => {
-    if (engine && !disposed && !busy)
+    if (observeStats && engine && !disposed && !busy)
       post({
         type: 'stats',
         values: Array.from(engine.metrics()),
@@ -834,6 +837,9 @@ function createSession(
       }
       case 'observe-render':
         observeRender = command.enabled;
+        break;
+      case 'observe-stats':
+        observeStats = command.enabled;
         break;
       case 'feed':
         if (command.chunks !== undefined) {

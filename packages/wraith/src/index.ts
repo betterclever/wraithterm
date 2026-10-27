@@ -33,6 +33,22 @@ export type {
   WraithCursorTrailOptions,
 } from './effects.js';
 type Listener<T> = (value: T) => void;
+/** Some browser/display transitions change resolution without a media-query
+ * change event; one page-wide 500 ms heartbeat checks every live terminal. */
+const displayWatchers = new Set<{ checkDisplayNow(): void }>();
+let displayTimer: ReturnType<typeof setInterval> | undefined;
+function watchDisplays(terminal: { checkDisplayNow(): void }, watch: boolean) {
+  if (watch) displayWatchers.add(terminal);
+  else displayWatchers.delete(terminal);
+  if (displayWatchers.size && !displayTimer)
+    displayTimer = setInterval(() => {
+      for (const t of displayWatchers) t.checkDisplayNow();
+    }, 500);
+  else if (!displayWatchers.size && displayTimer) {
+    clearInterval(displayTimer);
+    displayTimer = undefined;
+  }
+}
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
   get size() {
@@ -274,6 +290,9 @@ export class Wraith {
       height: '100%',
       overflow: 'hidden',
       background: this.theme.background,
+      // Its layout and painting never affect the page outside it, so style,
+      // layout and paint invalidations stop here (size still follows the host).
+      contain: 'layout paint style',
     });
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('aria-hidden', 'true');
@@ -292,6 +311,10 @@ export class Wraith {
       padding: '0',
       border: '0',
       resize: 'none',
+      // A user-scrollable textarea is a composited scroller: three compositor
+      // layers (scroller, contents, scrollbar) per terminal, which dominated
+      // Chrome's layerization and GPU process with hundreds of terminals.
+      overflow: 'hidden',
     });
     this.preedit = document.createElement('span');
     Object.assign(this.preedit.style, {
@@ -302,6 +325,9 @@ export class Wraith {
       color: this.theme.foreground,
       pointerEvents: 'none',
       fontFamily: 'monospace',
+      // Shown only while an IME composes: a positioned, z-indexed span above a
+      // shared surface would otherwise be its own compositor layer per terminal.
+      display: 'none',
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
@@ -420,6 +446,8 @@ export class Wraith {
         [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
       terminal.started = true;
+      terminal.syncStats();
+      watchDisplays(terminal, true);
       await terminal.ready;
       terminal.dimensions();
       terminal.worker.surface?.track(terminal.canvas, terminal.element);
@@ -529,9 +557,6 @@ export class Wraith {
         this.links.get(reply.link)?.event(reply);
         break;
       case 'stats': {
-        // Some browser/display transitions update resolution without delivering
-        // a media-query change event. Reuse the existing stats heartbeat.
-        this.checkDisplay();
         if (!this.statistics.size) break;
         // Sort the render samples once for all three percentiles.
         const sorted = Float64Array.from(reply.samples).sort();
@@ -566,6 +591,7 @@ export class Wraith {
   private fail(error: Error) {
     if (this.failed) return;
     this.failed = true;
+    watchDisplays(this, false);
     this.readyReject(error);
     this.errors.emit(error);
     for (const pending of this.pending.values()) pending.reject(error);
@@ -628,8 +654,14 @@ export class Wraith {
     // Writes keep their order and each promise still resolves after its bytes
     // are parsed; a burst crosses the worker boundary once.
     const bytes = this.batch.subarray(0, this.batchLength);
-    this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
-    this.batch = new Uint8Array(0);
+    if (this.worker.write) {
+      // A pool copies the bytes into one buffer per worker per task, so this
+      // terminal keeps (and reuses) its batch buffer.
+      this.worker.write(this.batchIds, bytes);
+    } else {
+      this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
+      this.batch = new Uint8Array(0);
+    }
     this.batchLength = 0;
     this.batchIds = [];
   }
@@ -751,6 +783,10 @@ export class Wraith {
     };
     this.dprQuery.addEventListener('change', this.dprListener, { once: true });
   }
+  /** @internal Display heartbeat. */
+  checkDisplayNow() {
+    this.checkDisplay();
+  }
   private checkDisplay() {
     if (this.disposed || this.failed) return;
     if (this.dprQuery && !this.dprQuery.matches) this.dprListener?.();
@@ -775,7 +811,22 @@ export class Wraith {
     return this.errors.on(listener);
   }
   onStats(listener: Listener<WraithStats>): Disposable {
-    return this.statistics.on(listener);
+    const subscription = this.statistics.on(listener);
+    this.syncStats();
+    return {
+      dispose: () => {
+        subscription.dispose();
+        this.syncStats();
+      },
+    };
+  }
+  private statsObserved = false;
+  /** Ask the worker for stats only while someone listens. */
+  private syncStats() {
+    const wanted = this.statistics.size > 0;
+    if (!this.started || this.disposed || this.failed || wanted === this.statsObserved) return;
+    this.statsObserved = wanted;
+    this.send({ type: 'observe-stats', enabled: wanted });
   }
   onResize(listener: Listener<{ cols: number; rows: number }>): Disposable {
     return this.resizes.on(listener);
@@ -1149,6 +1200,7 @@ export class Wraith {
       'compositionstart',
       () => {
         this.composing = true;
+        this.preedit.style.display = '';
       },
       options,
     );
@@ -1164,6 +1216,7 @@ export class Wraith {
       (event) => {
         this.composing = false;
         this.preedit.textContent = '';
+        this.preedit.style.display = 'none';
         if (event.data)
           this.send({ type: 'key', key: 0, mods: 0, action: 1, text: event.data, unshifted: 0 });
         this.input.value = '';
@@ -1426,6 +1479,7 @@ export class Wraith {
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    watchDisplays(this, false);
     this.abort.abort();
     this.blocks.dispose();
     this.observer?.disconnect();

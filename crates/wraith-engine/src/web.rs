@@ -279,14 +279,15 @@ impl Engine {
         let y0 = clip_y.max(0.).floor().min(height as f32) as u32;
         let x1 = (clip_x + clip_width).ceil().clamp(0., width as f32) as u32;
         let y1 = (clip_y + clip_height).ceil().clamp(0., height as f32) as u32;
-        let Some(pass) = surface.pass.as_mut() else {
-            return false;
-        };
         if x1 <= x0 || y1 <= y0 {
             return false;
         }
+        let Some(pass) = surface.pass.as_mut() else {
+            return false;
+        };
         self.renderer.draw_shared(
             pass,
+            &mut surface.pipeline_bound,
             (width, height),
             (x, y),
             scale,

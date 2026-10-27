@@ -331,7 +331,13 @@ impl ImageLayer {
     }
     /// Draw this frame's quads in one z-layer (1 below backgrounds, 2 below
     /// text, 3 above text).
-    pub fn draw(&self, pass: &mut wgpu::RenderPass<'_>, layer: u32) {
+    /// Whether any placement is drawn this frame.
+    pub fn any(&self) -> bool {
+        !self.draws.is_empty()
+    }
+    /// Draw this layer's placements. Returns whether it changed the pass's
+    /// pipeline or bind groups.
+    pub fn draw(&self, pass: &mut wgpu::RenderPass<'_>, layer: u32) -> bool {
         let mut bound = false;
         for (index, &(l, id)) in self.draws.iter().enumerate() {
             if l != layer {
@@ -348,5 +354,6 @@ impl ImageLayer {
             pass.set_bind_group(1, &texture.bind, &[]);
             pass.draw(0..6, index as u32..index as u32 + 1);
         }
+        bound
     }
 }

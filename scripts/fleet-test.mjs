@@ -226,6 +226,29 @@ for (const dpr of [1, 2]) {
   ]);
   await compare('resized + scrollback', [0, 1, 2]);
 
+  // A Kitty graphics placement draws through the image pipeline between the
+  // shared pass's terminal draws (and reads the terminal's own uniforms).
+  await page.evaluate(async () => {
+    const rgb = new Uint8Array(4 * 4 * 3);
+    for (let i = 0; i < rgb.length; i += 3) rgb.set([255, 64 + i, 32], i);
+    const data = btoa(String.fromCharCode(...rgb));
+    for (const terms of Object.values(window.cols)) {
+      await terms[2].write(`\r\n\x1b_Ga=T,f=24,s=4,v=4,c=6,r=2;${data}\x1b\\ after image`);
+      await terms[2].flush();
+    }
+  });
+  await compare('kitty image', [2, 0]);
+  {
+    const image = pixels(await page.screenshot());
+    const [x, y, w, h] = (await boxes()).shared[2].map((v) => Math.round(v * dpr));
+    const area = region(image, x, y, w, h);
+    let red = 0;
+    for (let k = 0; k < area.length; k += 3)
+      if (area[k] > 240 && area[k + 1] > 60 && area[k + 1] < 120 && area[k + 2] < 60) red++;
+    assert(red > 0, `DPR ${dpr}: shared Kitty image not drawn`);
+    checks++;
+  }
+
   // Scrolling a clipping container moves and clips the shared drawing too.
   await page.evaluate(() => {
     for (const s of document.querySelectorAll('[class^=scroller-]')) s.scrollTop = 95;

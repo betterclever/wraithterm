@@ -1,12 +1,16 @@
-import { MessageBatch } from './batch.js';
+import { MessageBatch, WriteArena } from './batch.js';
 import { packEffects, type WraithEffects } from './effects.js';
-import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
+import type { Command, PoolMessage, PoolReply, Reply, SurfaceReply } from './protocol.js';
+const EMPTY = new Uint8Array(0);
 import { SharedSurfaces, type SharedSurfaceOptions, type SharedSurfaceStats } from './surface.js';
 export type { PlacementTracking, SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
 
 /** How a terminal reaches its engine: a dedicated worker or a port on a pooled one. */
 export interface Channel {
   postMessage(command: Command, transfer: Transferable[]): void;
+  /** Pooled channels: send a write, copying `bytes` before returning, so the
+   * caller can reuse its buffer. Ordered with `postMessage` commands. */
+  write?(ids: number[], bytes: Uint8Array): void;
   /** Stop delivering replies and release the terminal's share of the worker. */
   terminate(): void;
   /** Present on a shared-surface pool: the worker draws this terminal into its
@@ -59,6 +63,8 @@ interface Slot {
   index: number;
   /** Every terminal's commands to this worker, one message per task. */
   commands: MessageBatch<[number, Command]>;
+  /** Every terminal's write bytes for the current batch, in one buffer. */
+  arena: WriteArena;
 }
 
 /**
@@ -133,17 +139,21 @@ export class WraithPool {
       const failAll = (error: Error) => {
         for (const terminal of [...terminals.values()]) terminal.fail(error);
       };
+      const arena = new WriteArena();
       const commands = new MessageBatch<[number, Command]>((items, transfers) => {
+        const writes = arena.seal();
         try {
-          worker.postMessage({ type: 'batch', items } satisfies PoolMessage, transfers);
+          worker.postMessage({ type: 'batch', items } satisfies PoolMessage, [
+            ...transfers,
+            ...(writes ? [writes] : []),
+          ]);
         } catch {
           // One uncloneable command must not take its neighbours down: resend
-          // individually and fail only the terminals whose command was refused.
+          // individually (copying, not transferring) and fail only the
+          // terminals whose command was refused.
           for (const item of items)
             try {
-              worker.postMessage({ type: 'batch', items: [item] } satisfies PoolMessage, [
-                ...transfers.filter((t) => isTransferOf(item[1], t)),
-              ]);
+              worker.postMessage({ type: 'batch', items: [item] } satisfies PoolMessage);
             } catch (error) {
               terminals
                 .get(item[0])
@@ -151,14 +161,17 @@ export class WraithPool {
             }
         }
       });
-      const slot: Slot = { worker, terminals, index: this.slots.length, commands };
+      const slot: Slot = { worker, terminals, index: this.slots.length, commands, arena };
       // The surface reaches the worker before any terminal attaches.
-      this.surfaces?.attach(worker);
-      worker.addEventListener('message', (event: MessageEvent<PoolReply | { type: string }>) => {
+      const surfaces = this.surfaces;
+      surfaces?.attach(worker);
+      // One listener per worker: terminal replies, else surface messages.
+      worker.onmessage = (event: MessageEvent<PoolReply | SurfaceReply>) => {
         const message = event.data;
-        if (message.type !== 'replies') return;
-        for (const [id, reply] of (message as PoolReply).items) terminals.get(id)?.message(reply);
-      });
+        if (message.type === 'replies')
+          for (const [id, reply] of message.items) terminals.get(id)?.message(reply);
+        else surfaces?.receive(slot.index, message);
+      };
       worker.onerror = (event) => failAll(new Error(event.message || 'Wraith worker failed'));
       worker.onmessageerror = () =>
         failAll(new Error('Wraith worker message could not be decoded'));
@@ -176,6 +189,12 @@ export class WraithPool {
     return {
       postMessage: (command, transfer) => {
         if (attached) slot.commands.push([id, command], transfer);
+      },
+      write: (ids, bytes) => {
+        if (!attached) return;
+        const command = { type: 'write' as const, ids, bytes: EMPTY };
+        slot.arena.add(command, bytes);
+        slot.commands.push([id, command]);
       },
       terminate: () => {
         if (!attached) return;
@@ -198,19 +217,9 @@ export class WraithPool {
     this.surfaces?.dispose();
     for (const slot of this.slots) {
       slot.commands.clear();
+      slot.arena.clear();
       slot.worker.terminate();
     }
     this.slots = [];
   }
-}
-
-/** Whether `transfer` belongs to `command` (a write's or socket send's bytes). */
-function isTransferOf(command: Command, transfer: Transferable): boolean {
-  const bytes =
-    command.type === 'write'
-      ? command.bytes
-      : command.type === 'socket-send' && typeof command.data !== 'string'
-        ? command.data
-        : undefined;
-  return !!bytes && bytes.buffer === transfer;
 }
