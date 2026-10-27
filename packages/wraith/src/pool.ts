@@ -1,7 +1,7 @@
 import { MessageBatch } from './batch.js';
 import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
 import { SharedSurfaces, type SharedSurfaceOptions, type SharedSurfaceStats } from './surface.js';
-export type { SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
+export type { PlacementTracking, SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
 
 /** How a terminal reaches its engine: a dedicated worker or a port on a pooled one. */
 export interface Channel {
@@ -86,6 +86,14 @@ export class WraithPool {
   /** Shared surfaces: each worker's latest frame and GPU-completion counters. */
   get surfaceStats(): readonly SharedSurfaceStats[] {
     return this.surfaces?.workerStats ?? [];
+  }
+  /**
+   * Shared surfaces: re-measure every terminal's placement on the next frame.
+   * Call after moving terminals in a way the page cannot observe; scrolling,
+   * resizing, DOM and style changes and CSS animations are picked up already.
+   */
+  updatePlacements(): void {
+    this.surfaces?.invalidate();
   }
   /** Terminals currently attached to each worker. */
   get load(): number[] {

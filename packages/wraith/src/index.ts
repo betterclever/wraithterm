@@ -155,6 +155,7 @@ function validateGrid(cols: number, rows: number) {
 export {
   WraithPool,
   type WraithPoolOptions,
+  type PlacementTracking,
   type SharedSurfaceOptions,
   type SharedSurfaceStats,
 } from './pool.js';
