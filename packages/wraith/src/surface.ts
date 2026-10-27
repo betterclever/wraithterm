@@ -202,17 +202,17 @@ export class SharedSurfaces {
       { type: 'surface', canvas: offscreen, width, height } satisfies PoolMessage,
       [offscreen],
     );
-    worker.addEventListener('message', (event: MessageEvent<SurfaceReply>) => {
-      const reply = event.data;
-      if (reply.type === 'surface-stats') {
-        const { type: _, ...stats } = reply;
-        this.stats[index] = stats;
-      } else if (reply.type === 'surface-error') this.onError(index, new Error(reply.error));
-    });
     this.canvases.push(canvas);
     this.workers.push(worker);
     this.size = [width, height];
     return index;
+  }
+  /** A message from worker `index`'s surface (the pool routes them here). */
+  receive(index: number, reply: SurfaceReply) {
+    if (reply.type === 'surface-stats') {
+      const { type: _, ...stats } = reply;
+      this.stats[index] = stats;
+    } else if (reply.type === 'surface-error') this.onError(index, new Error(reply.error));
   }
   private measure(canvas: HTMLCanvasElement): [number, number] {
     const dpr = window.devicePixelRatio || 1;

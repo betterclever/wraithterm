@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MessageBatch, nextTask, type Scheduler } from './batch.js';
+import { MessageBatch, nextTask, WriteArena, type Scheduler } from './batch.js';
 
 function manual() {
   const pending: (() => void)[] = [];
@@ -75,5 +75,37 @@ describe('MessageBatch', () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(sent).toHaveLength(1);
     expect(sent[0]).toEqual(Array.from({ length: 50 }, (_, i) => i));
+  });
+});
+
+describe('WriteArena', () => {
+  it('copies writes into one buffer and points commands at their views', () => {
+    const arena = new WriteArena(4);
+    const a = { bytes: new Uint8Array(0) },
+      b = { bytes: new Uint8Array(0) };
+    const source = new Uint8Array([1, 2, 3]);
+    arena.add(a, source);
+    source[0] = 9; // the caller may reuse its buffer at once
+    arena.add(b, new Uint8Array([4, 5, 6, 7, 8]));
+    const buffer = arena.seal()!;
+    expect(a.bytes.buffer).toBe(buffer);
+    expect(b.bytes.buffer).toBe(buffer);
+    expect([...a.bytes]).toEqual([1, 2, 3]);
+    expect([...b.bytes]).toEqual([4, 5, 6, 7, 8]);
+    expect(arena.seal()).toBeUndefined();
+  });
+
+  it('starts a new buffer after sealing and drops cleared writes', () => {
+    const arena = new WriteArena(8);
+    const a = { bytes: new Uint8Array(0) };
+    arena.add(a, new Uint8Array([1]));
+    const first = arena.seal();
+    const c = { bytes: new Uint8Array(0) };
+    arena.add(c, new Uint8Array([2]));
+    arena.clear();
+    expect(arena.seal()).toBeUndefined();
+    arena.add(c, new Uint8Array([3]));
+    expect(arena.seal()).not.toBe(first);
+    expect([...c.bytes]).toEqual([3]);
   });
 });

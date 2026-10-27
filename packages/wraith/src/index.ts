@@ -33,6 +33,22 @@ export type {
   WraithCursorTrailOptions,
 } from './effects.js';
 type Listener<T> = (value: T) => void;
+/** Some browser/display transitions change resolution without a media-query
+ * change event; one page-wide 500 ms heartbeat checks every live terminal. */
+const displayWatchers = new Set<{ checkDisplayNow(): void }>();
+let displayTimer: ReturnType<typeof setInterval> | undefined;
+function watchDisplays(terminal: { checkDisplayNow(): void }, watch: boolean) {
+  if (watch) displayWatchers.add(terminal);
+  else displayWatchers.delete(terminal);
+  if (displayWatchers.size && !displayTimer)
+    displayTimer = setInterval(() => {
+      for (const t of displayWatchers) t.checkDisplayNow();
+    }, 500);
+  else if (!displayWatchers.size && displayTimer) {
+    clearInterval(displayTimer);
+    displayTimer = undefined;
+  }
+}
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
   get size() {
@@ -430,6 +446,8 @@ export class Wraith {
         [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
       terminal.started = true;
+      terminal.syncStats();
+      watchDisplays(terminal, true);
       await terminal.ready;
       terminal.dimensions();
       terminal.worker.surface?.track(terminal.canvas, terminal.element);
@@ -539,9 +557,6 @@ export class Wraith {
         this.links.get(reply.link)?.event(reply);
         break;
       case 'stats': {
-        // Some browser/display transitions update resolution without delivering
-        // a media-query change event. Reuse the existing stats heartbeat.
-        this.checkDisplay();
         if (!this.statistics.size) break;
         // Sort the render samples once for all three percentiles.
         const sorted = Float64Array.from(reply.samples).sort();
@@ -576,6 +591,7 @@ export class Wraith {
   private fail(error: Error) {
     if (this.failed) return;
     this.failed = true;
+    watchDisplays(this, false);
     this.readyReject(error);
     this.errors.emit(error);
     for (const pending of this.pending.values()) pending.reject(error);
@@ -638,8 +654,14 @@ export class Wraith {
     // Writes keep their order and each promise still resolves after its bytes
     // are parsed; a burst crosses the worker boundary once.
     const bytes = this.batch.subarray(0, this.batchLength);
-    this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
-    this.batch = new Uint8Array(0);
+    if (this.worker.write) {
+      // A pool copies the bytes into one buffer per worker per task, so this
+      // terminal keeps (and reuses) its batch buffer.
+      this.worker.write(this.batchIds, bytes);
+    } else {
+      this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
+      this.batch = new Uint8Array(0);
+    }
     this.batchLength = 0;
     this.batchIds = [];
   }
@@ -761,6 +783,10 @@ export class Wraith {
     };
     this.dprQuery.addEventListener('change', this.dprListener, { once: true });
   }
+  /** @internal Display heartbeat. */
+  checkDisplayNow() {
+    this.checkDisplay();
+  }
   private checkDisplay() {
     if (this.disposed || this.failed) return;
     if (this.dprQuery && !this.dprQuery.matches) this.dprListener?.();
@@ -785,7 +811,22 @@ export class Wraith {
     return this.errors.on(listener);
   }
   onStats(listener: Listener<WraithStats>): Disposable {
-    return this.statistics.on(listener);
+    const subscription = this.statistics.on(listener);
+    this.syncStats();
+    return {
+      dispose: () => {
+        subscription.dispose();
+        this.syncStats();
+      },
+    };
+  }
+  private statsObserved = false;
+  /** Ask the worker for stats only while someone listens. */
+  private syncStats() {
+    const wanted = this.statistics.size > 0;
+    if (!this.started || this.disposed || this.failed || wanted === this.statsObserved) return;
+    this.statsObserved = wanted;
+    this.send({ type: 'observe-stats', enabled: wanted });
   }
   onResize(listener: Listener<{ cols: number; rows: number }>): Disposable {
     return this.resizes.on(listener);
@@ -1438,6 +1479,7 @@ export class Wraith {
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    watchDisplays(this, false);
     this.abort.abort();
     this.blocks.dispose();
     this.observer?.disconnect();

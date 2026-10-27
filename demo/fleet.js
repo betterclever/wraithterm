@@ -85,6 +85,9 @@ class Fleet {
     pace = 'frame',
     scrollback = 1000,
     feed = 'main',
+    // Per-terminal stats cost a message per terminal every 500 ms; shared
+    // pools report drawn updates per worker instead.
+    terminalStats = mode !== 'shared',
   } = {}) {
     await this.stop();
     this.pace = pace;
@@ -96,6 +99,7 @@ class Fleet {
       await (await fetch('/fonts/JetBrainsMono-Regular.ttf')).arrayBuffer(),
     );
     this.pool = Wraith.pool({ workers, surface: mode });
+    this.terminalStats = terminalStats;
     const options = {
       cols,
       rows,
@@ -113,7 +117,7 @@ class Fleet {
       world.append(host);
       const term = await Wraith.mount(host, options);
       term.onError((error) => this.errors.push(`${i}: ${error.message}`));
-      term.onStats((stats) => (this.rendered[i] = stats.frames));
+      if (terminalStats) term.onStats((stats) => (this.rendered[i] = stats.frames));
       return term;
     };
     // The first terminal sizes the grid; the rest mount in bounded batches.
@@ -206,6 +210,7 @@ class Fleet {
       surfaceFrames: surfaces.map((s) => s?.frames ?? 0),
       surfaceCompletedFrames: surfaces.map((s) => s?.completedFrames ?? 0),
       surfaceUpdates: sum('updates'),
+      terminalStats: this.terminalStats,
       surfaceCompletedUpdates: sum('completedUpdates'),
       atlases: surfaces.map((s) => s?.atlases ?? 0),
       errors: [...this.errors],

@@ -101,6 +101,7 @@ for (let round = 0; round < rounds; round++)
           mode,
           feed,
           workers,
+          ...(process.env.TERMINAL_STATS && { terminalStats: process.env.TERMINAL_STATS === '1' }),
         });
         await page.waitForTimeout(warm * 1000);
         const loadBefore = loadavg();
@@ -120,7 +121,11 @@ for (let round = 0; round < rounds; round++)
           .replace(/'/g, '');
         const s = (b.time - a.time) / 1000;
         const perTerminal = b.acked.map((v, i) => (v - a.acked[i]) / s);
-        const submitted = b.rendered.map((v, i) => (v - a.rendered[i]) / s);
+        // Per-terminal stats when the page collected them, else (shared pools)
+        // terminal updates drawn into surface frames, from the workers' counters.
+        const submitted = b.terminalStats
+          ? b.rendered.map((v, i) => (v - a.rendered[i]) / s)
+          : [(b.surfaceUpdates - a.surfaceUpdates) / s];
         await page.evaluate(() => window.fleet.stop());
         const idleHz = await page.evaluate(
           () =>
@@ -274,7 +279,7 @@ await writeFile(
         updatesPerTerminal:
           'updates parsed per terminal per second (main: write() resolved; worker: chunks parsed in the worker)',
         submittedPerTerminal:
-          'frames each terminal submitted (Wraith stats frames, reported every 500 ms) per second; not display presentation',
+          'per-canvas (or TERMINAL_STATS=1): frames each terminal submitted (Wraith stats frames, reported every 500 ms) per second; shared pools by default: terminal updates drawn into surface frames (worker counters) per terminal per second. Not display presentation.',
         gpuCompletedUpdatesPerTerminal:
           'shared only: terminal updates drawn into presented surface frames whose GPU work completed (onSubmittedWorkDone)',
         surfaceFrames: 'shared only: frames each worker presented to its canvas per second',

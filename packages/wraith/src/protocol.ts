@@ -61,6 +61,8 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  /** Post 'stats' every 500 ms only while the page has stats listeners. */
+  | { type: 'observe-stats'; enabled: boolean }
   /** Internal (benchmarks): replay `chunks` in the worker, one per worker
    * animation frame, as if a worker-side source produced them; `null` stops.
    * Resolves with the number of chunks parsed so far. */

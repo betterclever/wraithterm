@@ -59,3 +59,49 @@ export class MessageBatch<T> {
     this.transfers.clear();
   }
 }
+
+/**
+ * Write bytes from many terminals copied into one buffer per batch, so a
+ * pooled terminal's write needs no buffer of its own and a worker's batch
+ * transfers one ArrayBuffer instead of one per terminal.
+ */
+export class WriteArena {
+  private buffer: Uint8Array;
+  private length = 0;
+  private writes: { command: { bytes: Uint8Array }; offset: number; length: number }[] = [];
+  constructor(private readonly initial = 16 * 1024) {
+    this.buffer = new Uint8Array(initial);
+  }
+  /** Copy `bytes` now; `command.bytes` is pointed at the copy by `seal()`. */
+  add(command: { bytes: Uint8Array }, bytes: Uint8Array) {
+    const end = this.length + bytes.byteLength;
+    if (end > this.buffer.length) {
+      const next = new Uint8Array(Math.max(end, this.buffer.length * 2));
+      next.set(this.buffer.subarray(0, this.length));
+      this.buffer = next;
+    }
+    this.buffer.set(bytes, this.length);
+    this.writes.push({ command, offset: this.length, length: bytes.byteLength });
+    this.length = end;
+  }
+  /** Point every queued command at its view of the buffer and hand the buffer
+   * over for transfer; the next batch starts a new one. */
+  seal(): ArrayBuffer | undefined {
+    if (!this.writes.length) return undefined;
+    const buffer = this.buffer.buffer as ArrayBuffer;
+    for (const w of this.writes) w.command.bytes = new Uint8Array(buffer, w.offset, w.length);
+    // Size the next buffer for what this batch needed, so steady streams do
+    // not regrow it and one burst does not keep a huge one.
+    let capacity = this.initial;
+    while (capacity < this.length) capacity *= 2;
+    this.buffer = new Uint8Array(capacity);
+    this.length = 0;
+    this.writes = [];
+    return buffer;
+  }
+  /** Drop queued writes (the destination has gone). */
+  clear() {
+    this.length = 0;
+    this.writes = [];
+  }
+}
