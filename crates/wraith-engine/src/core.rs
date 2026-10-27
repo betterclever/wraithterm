@@ -64,7 +64,7 @@ pub struct Image<'a> {
 /// unplaced images first when a transmission would exceed it.
 pub const DEFAULT_IMAGE_LIMIT: u64 = 64 << 20;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Debug)]
 pub struct Cell {
     pub text: String,
     /// The Unicode scalar when `text` is exactly one scalar, otherwise zero.
@@ -73,6 +73,29 @@ pub struct Cell {
     pub background: u32,
     pub underline: u32,
     pub flags: u32,
+}
+// Rows reused after a scroll copy every cell with `clone_from`; the derived
+// implementation would allocate a new `String` per cell instead of reusing the
+// destination's buffer, which dominated scrolling output with many terminals.
+impl Clone for Cell {
+    fn clone(&self) -> Self {
+        Self {
+            text: self.text.clone(),
+            scalar: self.scalar,
+            foreground: self.foreground,
+            background: self.background,
+            underline: self.underline,
+            flags: self.flags,
+        }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.text.clone_from(&source.text);
+        self.scalar = source.scalar;
+        self.foreground = source.foreground;
+        self.background = source.background;
+        self.underline = source.underline;
+        self.flags = source.flags;
+    }
 }
 impl Cell {
     pub fn with_text(text: &str) -> Self {
@@ -136,12 +159,28 @@ pub(crate) struct State {
 /// produce equal snapshots: a row id changes when the row is edited in place,
 /// raw cells hold codepoints, widths and page-local style ids, and rows with
 /// grapheme clusters are never reusable.
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub(crate) struct RowKey {
     id: [u64; 2],
     raw: Vec<u64>,
     selection: u32,
     reusable: bool,
+}
+impl Clone for RowKey {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            raw: self.raw.clone(),
+            selection: self.selection,
+            reusable: self.reusable,
+        }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.id = source.id;
+        self.raw.clone_from(&source.raw);
+        self.selection = source.selection;
+        self.reusable = source.reusable;
+    }
 }
 
 /// Owns the stable callback allocation through a raw pointer. Unlike keeping a
@@ -637,6 +676,13 @@ pub unsafe extern "C" fn wraith_cell(
     cell.flags = flags;
 }
 
+/// Slice equality on u64 words. `==` lowers to `memcmp`, which compiler-rt
+/// implements a byte at a time on wasm32; comparing words is several times
+/// faster for the 80-column rows compared on every scrolled update.
+#[inline]
+fn same_words(a: &[u64], b: &[u64]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x == y)
+}
 #[no_mangle]
 /// Reuse a dirty row whose identity, raw cells and selection equal a row staged
 /// earlier and not overwritten during this update. Returns whether it did.
@@ -665,7 +711,7 @@ pub unsafe extern "C" fn wraith_row_reuse(
             && key.id == [id0, id1]
             && key.selection == selection
             && (s == y || state.stamps[s] != state.stamp)
-            && key.raw == raw
+            && same_words(&key.raw, raw)
     };
     let guess = y as isize + state.shift;
     let source = if matches(state, y) {
@@ -704,8 +750,14 @@ pub unsafe extern "C" fn wraith_row_reuse(
         };
         b.clone_from(a);
     }
-    let key = state.keys[source].clone();
-    state.keys[y].clone_from(&key);
+    let (a, b) = if source < y {
+        let (head, tail) = state.keys.split_at_mut(y);
+        (&head[source], &mut tail[0])
+    } else {
+        let (head, tail) = state.keys.split_at_mut(source);
+        (&tail[0], &mut head[y])
+    };
+    b.clone_from(a);
     state.versions[y] = state.versions[source];
     state.stamps[y] = state.stamp;
     state.dirty[y] = true;
