@@ -232,6 +232,21 @@ fn synchronized_output_holds_the_previous_snapshot() {
     assert_eq!(text(&mut c), "new");
 }
 #[test]
+fn digests_read_content_inside_synchronized_output_without_releasing_it() {
+    let mut a = term(10, 2);
+    let mut b = term(10, 2);
+    a.write(b"old");
+    b.write(b"old");
+    let before = a.digest().unwrap();
+    a.write(b"\x1b[?2026h\rnew");
+    b.write(b"\rnew");
+    assert_ne!(a.digest().unwrap(), before);
+    assert_eq!(a.digest().unwrap(), b.digest().unwrap());
+    assert!(a.mode(2026));
+    a.update().unwrap();
+    assert_eq!(a.frame().held, 1);
+}
+#[test]
 fn abandoned_synchronized_output_can_be_recovered() {
     let mut c = term(10, 2);
     c.write(b"\x1b[?2026hheld");
@@ -606,5 +621,63 @@ fn native_search_survives_page_cache_eviction() {
             c.search("", 2).unwrap()[1],
             if needle == "absent" { 0 } else { 1 }
         );
+    }
+}
+#[test]
+fn vt_snapshots_restore_screen_history_modes_and_cursor() {
+    let cases: [&[u8]; 9] = [
+        b"plain\r\nlines\r\n\x1b[1;31mred bold\x1b[0m tail",
+        b"\x1b[?1049h\x1b[2;5Halt screen \x1b[7mreverse\x1b[0m",
+        // Trailing blank rows, a scrolling region, origin and insert modes.
+        b"\x1b[3;10r\x1b[?6h\x1b[2;3Hin region\x1b[4h\x1b[?25l",
+        // Pending wrap at the right edge and a soft-wrapped line in history.
+        b"0123456789012345678901234567890123456789\r\nabcdefghijklmnopqrst",
+        "\x1b]8;;https://example.com\x1b\\link\x1b]8;;\x1b\\ \u{754c} e\u{301}\x1b(0lqk\x1b(B"
+            .as_bytes(),
+        // Rows erased with a background colour but holding no text.
+        b"\x1b[44m\x1b[2J\x1b[H\x1b[0mtop\x1b[4;1H\x1b[48;2;10;20;30m\x1b[K\x1b[0m",
+        // Autowrap off with a long line.
+        b"\x1b[?7lthis line is longer than twenty columns\r\nnext",
+        // Cursor parked on a blank row after a clear with history.
+        b"\x1b[2J\x1b[5;7H",
+        // A custom palette entry and blank screen tail.
+        b"\x1b]4;1;rgb:12/34/56\x1b\\\x1b[31mpalette\x1b[0m\r\n\r\n",
+    ];
+    for bytes in cases {
+        let mut source = term(20, 6);
+        for n in 0..12 {
+            source.write(format!("history {n}\r\n").as_bytes());
+        }
+        source.write(bytes);
+        let snapshot = source.snapshot().unwrap();
+        assert!(!snapshot.is_empty());
+        let mut restored = term(20, 6);
+        restored.write(&snapshot);
+        let label = String::from_utf8_lossy(bytes).into_owned();
+        assert_eq!(text(&mut restored), text(&mut source), "{label:?}");
+        assert_eq!(restored.snapshot().unwrap(), snapshot, "{label:?}");
+        assert_eq!(
+            restored.digest().unwrap(),
+            source.digest().unwrap(),
+            "{label:?}"
+        );
+        // Continuing both terminals with the same bytes keeps them identical.
+        let more = b"next\r\n\x1b[Acont\x1b[Kz\r\n\r\n\r\n\r\n\r\n\r\n\r\nend";
+        source.write(more);
+        restored.write(more);
+        assert_eq!(text(&mut restored), text(&mut source), "{label:?}");
+        assert_eq!(
+            restored.digest().unwrap(),
+            source.digest().unwrap(),
+            "{label:?}"
+        );
+        assert_eq!(
+            restored.snapshot().unwrap(),
+            source.snapshot().unwrap(),
+            "{label:?}"
+        );
+        source.scroll(-6);
+        restored.scroll(-6);
+        assert_eq!(text(&mut restored), text(&mut source), "{label:?} history");
     }
 }

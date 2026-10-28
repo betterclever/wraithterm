@@ -254,6 +254,8 @@ extern "C" {
     fn wraith_bridge_select(b: *mut c_void, x1: i32, y1: i32, x2: i32, y2: i32) -> i32;
     fn wraith_bridge_link(b: *mut c_void, x: u16, y: u16, output: *mut u8, cap: usize) -> usize;
     fn wraith_bridge_selection_text(b: *mut c_void) -> i32;
+    fn wraith_bridge_snapshot(b: *mut c_void) -> i32;
+    fn wraith_bridge_update_content(b: *mut c_void, frame: *mut Frame) -> i32;
     fn wraith_bridge_select_mode(
         b: *mut c_void,
         x1: i32,
@@ -535,6 +537,67 @@ impl Core {
             }
         });
         Ok(String::from_utf8_lossy(&output).into_owned())
+    }
+    /// The terminal state as VT sequences (Ghostty's formatter with every
+    /// extra). Written into a reset terminal of the same size, it reproduces
+    /// the active screen, history, modes, cursor and style. It omits inactive
+    /// screens, saved cursors, titles and Kitty images; verify before use.
+    pub fn snapshot(&mut self) -> Result<Vec<u8>, String> {
+        let pending = self.state.events.len();
+        let result = check(unsafe { wraith_bridge_snapshot(self.bridge.as_ptr()) });
+        let mut output = Vec::new();
+        let mut index = 0;
+        self.state.events.retain(|(kind, bytes)| {
+            index += 1;
+            if index > pending && *kind == 5 {
+                output.extend_from_slice(bytes);
+                false
+            } else {
+                true
+            }
+        });
+        result.map(|_| output)
+    }
+    /// FNV-1a hash of the visible grid: grapheme text, resolved colours and
+    /// flags of every cell, plus the cursor. Replay verification compares it
+    /// where plain text would miss colour or attribute changes.
+    pub fn digest(&mut self) -> Result<u64, String> {
+        // Parsed content, also inside a synchronized update (which keeps
+        // showing the previous frame and stays in effect).
+        self.state.stamp = self.state.stamp.wrapping_add(1);
+        check(unsafe { wraith_bridge_update_content(self.bridge.as_ptr(), &mut self.frame) })?;
+        let mut hash = 0xcbf2_9ce4_8422_2325u64;
+        let mut mix = |bytes: &[u8]| {
+            for byte in bytes {
+                hash = (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        };
+        let f = self.frame;
+        for value in [
+            f.cols,
+            f.rows,
+            f.cursor_x,
+            f.cursor_y,
+            f.cursor_style,
+            f.cursor_visible,
+            f.cursor_blink,
+            f.background,
+            f.foreground,
+            f.cursor_color,
+        ] {
+            mix(&value.to_le_bytes());
+        }
+        for cell in &self.state.cells {
+            // A space draws exactly like an empty cell of the same style.
+            if cell.text != " " {
+                mix(cell.text.as_bytes());
+            }
+            mix(&[0xff]);
+            for value in [cell.foreground, cell.background, cell.underline, cell.flags] {
+                mix(&value.to_le_bytes());
+            }
+        }
+        Ok(hash)
     }
     pub fn text(&self, selected: bool) -> String {
         let mut output = String::new();

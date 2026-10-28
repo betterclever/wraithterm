@@ -67,6 +67,8 @@ export type Command =
    * animation frame, as if a worker-side source produced them; `null` stops.
    * Resolves with the number of chunks parsed so far. */
   | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
+  /** Copy output parsed from a worker-owned socket back to the page (recording). */
+  | { type: 'observe-output'; enabled: boolean }
   | {
       type: 'a11y';
       mirror: boolean;
@@ -98,6 +100,8 @@ export type Reply =
   | { type: 'modes'; mouse: boolean }
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
+  /** Output the worker parsed from its own socket, sent only while observed. */
+  | { type: 'output'; bytes: Uint8Array }
   /** Internal latency trace stage; `time` is performance.timeOrigin + now(). */
   | {
       type: 'trace';

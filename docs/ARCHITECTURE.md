@@ -344,6 +344,48 @@ Horspool skip tables are reused across pages; non-ASCII matching stays byte exac
 Soft-wrap overlap pages belong to the active search frontier so history does not
 count their matches again.
 
+## Replay
+
+`Timeline` indexes a recording's output and resize events into typed arrays:
+one concatenated byte buffer, per-event offsets, sizes and idle-compressed times.
+It cuts an event wherever a synchronized update (DEC 2026) begins or the
+alternate screen opens, including when the sequence started in an earlier write,
+and maps every state inside an open synchronized update to the state before it:
+the frame a live terminal still shows.
+
+Keyframes come from `Headless.snapshot()`: libghostty's VT formatter with every
+extra (palette, modes, tabstops, history and screen, scrolling region, keyboard
+modes, working directory, cursor, style, hyperlink, protection, charsets). The
+bridge splices its output around the content: it appends the trailing blank rows
+the formatter trims, repaints viewport rows that hold only background-erased
+cells, and applies autowrap-off and insert modes after the content. The formatter
+covers only the active screen, so an alternate-screen keyframe is the primary
+screen's snapshot from the moment the alternate screen opened, followed by the
+alternate snapshot, whose modes switch screens. A resize while the alternate
+screen is open invalidates that primary snapshot.
+
+A dedicated worker owns its own headless Wasm instance and replays the timeline
+linearly. Candidates are taken every 256 KiB of output (or twice the last
+snapshot's size) where a conservative parser tracker sees no pending escape
+sequence, control string or UTF-8 continuation, no synchronized update is open
+and no Kitty graphics command has appeared. Each candidate is restored into a
+second engine (`RIS` + state) and must reproduce the snapshot and the grid digest
+(`Headless.digest()`: FNV-1a over cell text, resolved colours, attributes and the
+cursor, read through a synchronized update without ending it). The restored
+engine then follows the linear replay, compared by digest every eighth of the
+interval and by full snapshot at the next candidate. The keyframe is valid for
+exactly that range; the newest verified engine keeps extending across candidates
+that fail. At most three engines run at once.
+
+`ReplayCursor` applies the cheaper of forward replay from the current state or a
+restore of the latest keyframe valid at the target: resize to the keyframe's
+size, then one write of `RIS`, the state and the bytes up to the next resize.
+The start of the recording is a keyframe valid everywhere. Playback that crosses
+the end of a keyframe's range restores the next valid keyframe, so continued
+playback never relies on unverified state. The player coalesces seeks: only the
+latest target is applied after the one in flight. Recording copies written bytes
+only while a recorder is attached.
+
 ## Bounds and failures
 
 The grid is limited to 512 per dimension and 65,536 cells, and pixel dimensions
@@ -382,6 +424,10 @@ wait.
 | Browser API, input, transport               | `packages/wraith/src/index.ts`                                |
 | ARIA, mirror, live region, keyboard exit    | `packages/wraith/src/accessibility.ts`                        |
 | Screen sampling and announcement diffing    | `packages/wraith/src/worker-accessibility.ts`, `announcer.ts` |
+| Recording and asciicast                     | `packages/wraith/src/recording.ts`                            |
+| Timeline, keyframes, seeking                | `packages/wraith/src/replay.ts`                               |
+| Player UI and keyframe worker               | `packages/wraith/src/player.ts`                               |
+| VT snapshots and grid digests               | `native/bridge.c` (`wraith_bridge_snapshot`)                  |
 
 Performance work should be driven by a recorded workload and percentile evidence.
 Broad compatibility additions should add a failing protocol fixture and, where
