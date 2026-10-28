@@ -7,7 +7,7 @@ use crate::gpu::{scaled_sampler, shared_gpu, terminal_pipeline, Glyphs, SharedGp
 use crate::images::ImageLayer;
 use crate::text::Atlas;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -27,6 +27,76 @@ pub struct SharedContext {
     pub image_pipeline: wgpu::RenderPipeline,
     pub image_sampler: wgpu::Sampler,
     atlases: RefCell<Vec<(u64, Weak<Glyphs>)>>,
+    /// Every terminal's frame uniforms in one buffer, written once per frame.
+    pub uniforms: UniformRing,
+}
+
+/// Terminal uniforms for a whole shared surface. Each terminal owns a fixed
+/// 256-byte slot (the uniform offset alignment) its bind group points at;
+/// draws stage their uniforms here and `flush` writes the touched range with
+/// one `write_buffer` per frame instead of one per terminal. Terminals beyond
+/// `SLOTS` keep their own uniform buffer.
+pub struct UniformRing {
+    pub buffer: wgpu::Buffer,
+    free: RefCell<Vec<u32>>,
+    next: Cell<u32>,
+    mirror: RefCell<Vec<u8>>,
+    /// Touched slots this frame: first and one past the last.
+    dirty: Cell<(u32, u32)>,
+}
+impl UniformRing {
+    pub const SLOT: u64 = 256;
+    pub const SLOTS: u32 = 4096;
+    fn new(device: &wgpu::Device) -> Self {
+        Self {
+            buffer: device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Wraith shared terminal uniforms"),
+                size: Self::SLOT * Self::SLOTS as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+            free: RefCell::new(Vec::new()),
+            next: Cell::new(0),
+            mirror: RefCell::new(vec![0; (Self::SLOT * Self::SLOTS as u64) as usize]),
+            dirty: Cell::new((u32::MAX, 0)),
+        }
+    }
+    pub fn alloc(&self) -> Option<u32> {
+        if let Some(slot) = self.free.borrow_mut().pop() {
+            return Some(slot);
+        }
+        let slot = self.next.get();
+        (slot < Self::SLOTS).then(|| {
+            self.next.set(slot + 1);
+            slot
+        })
+    }
+    pub fn release(&self, slot: u32) {
+        self.free.borrow_mut().push(slot);
+    }
+    /// Stage a slot's uniforms for this frame's `flush`.
+    pub fn stage(&self, slot: u32, bytes: &[u8]) {
+        let start = (slot as u64 * Self::SLOT) as usize;
+        self.mirror.borrow_mut()[start..start + bytes.len()].copy_from_slice(bytes);
+        let (first, end) = self.dirty.get();
+        self.dirty.set((first.min(slot), end.max(slot + 1)));
+    }
+    /// Write every slot staged since the last flush, in one copy.
+    pub fn flush(&self, queue: &wgpu::Queue) {
+        let (first, end) = self.dirty.replace((u32::MAX, 0));
+        if first >= end {
+            return;
+        }
+        let (start, stop) = (
+            (first as u64 * Self::SLOT) as usize,
+            (end as u64 * Self::SLOT) as usize,
+        );
+        queue.write_buffer(
+            &self.buffer,
+            start as u64,
+            &self.mirror.borrow()[start..stop],
+        );
+    }
 }
 /// FNV-1a over 8-byte words: font bytes are hashed once per terminal mount.
 fn hash(state: &mut u64, bytes: &[u8]) {
@@ -96,6 +166,8 @@ pub struct Surface {
     backing_view: wgpu::TextureView,
     encoder: Option<wgpu::CommandEncoder>,
     pub(crate) pass: Option<wgpu::RenderPass<'static>>,
+    /// The terminal pipeline is set on the open pass (draws skip resetting it).
+    pub(crate) pipeline_bound: bool,
     /// The backing holds content the canvas has not shown yet.
     unpresented: bool,
     frames: u64,
@@ -182,6 +254,7 @@ impl Surface {
                 image_pipeline,
                 image_sampler,
                 atlases: RefCell::new(Vec::new()),
+                uniforms: UniformRing::new(&gpu.device),
                 gpu,
             }),
             surface,
@@ -191,6 +264,7 @@ impl Surface {
             backing_view,
             encoder: None,
             pass: None,
+            pipeline_bound: false,
             unpresented: false,
             frames: 0,
             completed_frames: Arc::new(AtomicU64::new(0)),
@@ -259,6 +333,7 @@ impl Surface {
             .forget_lifetime();
         self.encoder = Some(encoder);
         self.pass = Some(pass);
+        self.pipeline_bound = false;
         self.unpresented = true;
         Ok(())
     }
@@ -294,6 +369,8 @@ impl Surface {
             );
         }
         let queue = &self.context.gpu.queue;
+        // The frame's terminal uniforms, written before its commands run.
+        self.context.uniforms.flush(queue);
         queue.submit([encoder.finish()]);
         let (frames, total) = (
             self.completed_frames.clone(),

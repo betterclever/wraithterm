@@ -41,6 +41,7 @@
     "test:native-pool": "node scripts/native-pool-test.mjs",
     "test:fleet": "node scripts/fleet-test.mjs",
     "benchmark:fleet": "node scripts/fleet-benchmark.mjs",
+    "profile:fleet": "node scripts/fleet-profile.mjs",
     "test:serve": "node scripts/serve-test.mjs",
     "benchmark:serve-share": "node scripts/serve-share-benchmark.mjs",
     "test:worker-socket": "node scripts/worker-socket-test.mjs",
