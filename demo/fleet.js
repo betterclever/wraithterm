@@ -248,6 +248,7 @@ class Fleet {
       terminalStats: this.terminalStats,
       surfaceCompletedUpdates: sum('completedUpdates'),
       atlases: surfaces.map((s) => s?.atlases ?? 0),
+      effectPasses: surfaces.map((s) => s?.effectPasses ?? 0),
       errors: [...this.errors],
     };
   }

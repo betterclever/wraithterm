@@ -45,6 +45,9 @@ export class SharedHost {
     canvas: OffscreenCanvas,
     width: number,
     height: number,
+    /** Runs device work one task at a time with terminal creation, whose
+     * validation error scopes and surface borrows must not interleave. */
+    private exclusive: <T>(run: () => Promise<T>) => Promise<T> = (run) => run(),
   ) {
     this.ready = wasm
       .then(() => Surface.create(canvas, width, height))
@@ -189,18 +192,20 @@ export class SharedHost {
    */
   async setEffects(params: number[], shader?: string): Promise<void> {
     const surface = await this.ready;
-    if (this.failed) throw new Error('Shared surface failed');
-    this.configuring = true;
-    try {
-      await surface.set_effects(new Float32Array(params), shader);
-    } finally {
-      this.configuring = false;
-      if (this.pendingSize) {
-        surface.resize(...this.pendingSize);
-        this.pendingSize = undefined;
+    return this.exclusive(async () => {
+      if (this.failed) throw new Error('Shared surface failed');
+      this.configuring = true;
+      try {
+        await surface.set_effects(new Float32Array(params), shader);
+      } finally {
+        this.configuring = false;
+        if (this.pendingSize) {
+          surface.resize(...this.pendingSize);
+          this.pendingSize = undefined;
+        }
+        this.invalidate();
       }
-      this.invalidate();
-    }
+    });
   }
   setEffectMouse(mouse: number[]) {
     if (!this.surface || this.configuring) return;

@@ -185,6 +185,8 @@ for (let round = 0; round < rounds; round++)
           },
           longTaskMs: b.longTasks.ms - a.longTasks.ms,
           atlases: b.atlases,
+          // Post-process passes in each worker surface's last frame.
+          effectPasses: b.effectPasses,
           memoryMiB: Math.round(memory),
           browserCpuCores: (cpuB - cpuA) / ((wallB - wallA) / 1000),
           loadAverage1m: [loadBefore[0], loadAfter[0]],
