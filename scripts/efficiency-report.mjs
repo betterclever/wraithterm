@@ -491,7 +491,7 @@ const provenance = [
 ].join(' ');
 await writeFile(
   report,
-  `# Resource efficiency: what a web terminal costs in Chrome\n\n${provenance}\n\n${findings(summary, agg)}\n\n## Results\n\n${lines.join('\n')}\n${method}\n`,
+  `# Resource efficiency: what a web terminal costs in Chrome\n\n${provenance}\n\n${findings(summary, agg, { cpu: rc, ram: rr, rendererRam: rp })}\n\n## Results\n\n${lines.join('\n')}\n${method}\n`,
 );
 const csv = [['renderer', ...Object.keys(summary.wraith)].join(',')];
 for (const [t, s] of Object.entries(summary))
