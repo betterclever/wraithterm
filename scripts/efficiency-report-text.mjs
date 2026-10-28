@@ -29,7 +29,10 @@ baseline run of the same workload and round**, so it is what the terminal adds.
     first write until the last write is accepted (for Wraith, also rendered,
     via \`flush()\`) plus two animation frames and a 500 ms tail for deferred
     work. The baseline's idle CPU rate is subtracted over that duration.
-  - Paced workloads also give CPU-ms per 1,000 updates actually accepted.
+  - Paced workloads also give CPU-ms per 1,000 updates actually accepted. An
+    update is one write: one character (typing), ten log lines (logs), one
+    full frame (dense), or two lines and a status bar to one terminal
+    (multi-terminal).
 - **RAM**: macOS \`phys_footprint\` per process (\`footprint\`; the figure Activity
   Monitor shows as Memory), read at the end of the window, and for fixed work
   also the peak sampled every ~2 s. Reported for the renderer process, the GPU

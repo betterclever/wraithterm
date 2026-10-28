@@ -291,6 +291,8 @@ for (const [wl, title] of Object.entries(WL)) {
         if (paced)
           row.push(f1(a.updatesPerS), f0(a.skipped), f1((a.cpu.total / a.updatesPerS) * 1000));
         if (scroll) row.push(Number.isFinite(a.retained) ? f0(a.retained) : 'not exposed');
+        if (wl.startsWith('multi') && a.lost)
+          row[0] += ` (${a.lost} WebGL contexts lost: those terminals stopped drawing; not comparable)`;
         if (wl.startsWith('multi'))
           row.push(
             f1(
@@ -312,6 +314,14 @@ for (const t of order.filter((t) => t !== 'static')) {
   const g = (wl) => agg[wl]?.[t];
   const perMB = (wl) => (g(wl) ? g(wl).cpu.total / (g(wl).bytes / MB) : NaN);
   const multiType = t === 'wraith' ? 'wraith-pool' : t;
+  // A renderer whose WebGL contexts were lost at 64 terminals stopped drawing
+  // most of them; its 64-terminal cost is not comparable.
+  const m64 = agg.multi64?.[multiType];
+  const valid64 = m64 && !m64.lost;
+  // RAM per 10k lines only where the 100k lines were kept (or retention is not
+  // exposed, flagged in the retained column).
+  const r100 = g('scroll100k')?.retained;
+  const kept = !Number.isFinite(r100) || r100 >= 99_000;
   summary[t] = {
     idleCpu: g('idle')?.cpu.total,
     typingCpu: g('typing')?.cpu.total,
@@ -321,16 +331,18 @@ for (const t of order.filter((t) => t !== 'static')) {
     denseCpuPer1k: g('dense') ? (g('dense').cpu.total / g('dense').updatesPerS) * 1000 : NaN,
     denseUpdatesPerS: g('dense')?.updatesPerS,
     multi16Cpu: agg.multi16?.[multiType]?.cpu.total,
-    multi64Cpu: agg.multi64?.[multiType]?.cpu.total,
+    multi64Cpu: valid64 ? m64.cpu.total : NaN,
+    lost64: m64?.lost,
     idleRam: g('idle')?.mem.total,
     idleRendererRam: g('idle')?.mem.renderer,
     idleGpuRam: g('idle')?.mem.gpu,
     ramPer10kLines:
-      g('scroll100k') && g('idle')
+      g('scroll100k') && g('idle') && kept
         ? (g('scroll100k').mem.renderer - g('idle').mem.renderer) / 10
         : NaN,
     retained100k: g('scroll100k')?.retained,
-    ramPerTerminal64: agg.multi64?.[multiType] ? agg.multi64[multiType].mem.total / 64 : NaN,
+    ramPerTerminal64: valid64 ? m64.mem.total / 64 : NaN,
+    rendererRamPerTerminal64: valid64 ? m64.mem.renderer / 64 : NaN,
   };
 }
 summary['wraith-fleet'] = {
@@ -373,13 +385,17 @@ table(
     f1(s.unicodeCpuPerMB),
     f1(s.denseCpuPer1k),
     f1(s.multi16Cpu),
-    f1(s.multi64Cpu),
+    s.lost64 ? `n/c (${s.lost64} of 64 contexts lost)` : f1(s.multi64Cpu),
     Number.isFinite(s.idleRam)
       ? `${f0(s.idleRam)} (${f0(s.idleRendererRam)} + ${f0(s.idleGpuRam)})`
       : '–',
-    f1(s.ramPer10kLines),
+    Number.isFinite(s.ramPer10kLines)
+      ? f1(s.ramPer10kLines)
+      : Number.isFinite(s.retained100k)
+        ? `n/a (keeps ${f0(s.retained100k)})`
+        : '–',
     Number.isFinite(s.retained100k) ? f0(s.retained100k) : 'not exposed',
-    f1(s.ramPerTerminal64),
+    s.lost64 ? 'n/c' : f1(s.ramPerTerminal64),
   ]),
 );
 
@@ -395,8 +411,12 @@ function rank(metricsList) {
         .filter((x) => Number.isFinite(x) && x > 0);
       if (Number.isFinite(s[k]) && vals.length) rel.push(Math.max(s[k], 1e-3) / Math.min(...vals));
     }
-    if (rel.length === metricsList.length)
-      out.push([t, Math.exp(rel.reduce((a, x) => a + Math.log(x), 0) / rel.length)]);
+    if (rel.length >= metricsList.length / 2)
+      out.push([
+        t,
+        Math.exp(rel.reduce((a, x) => a + Math.log(x), 0) / rel.length),
+        rel.length < metricsList.length ? `${rel.length}/${metricsList.length}` : '',
+      ]);
   }
   return out.sort((a, b) => a[1] - b[1]);
 }
@@ -410,22 +430,36 @@ const cpuKeys = [
   'multi16Cpu',
   'multi64Cpu',
 ];
-const ramKeys = ['idleRam', 'ramPerTerminal64'];
+const ramKeys = ['idleRam', 'ramPer10kLines', 'ramPerTerminal64'];
+const rendererRamKeys = ['idleRendererRam', 'ramPer10kLines', 'rendererRamPerTerminal64'];
 lines.push('### Efficiency ranking', '');
 lines.push(
-  `CPU: geometric mean over ${cpuKeys.length} CPU metrics (idle, typing, logs, CPU/MiB log, CPU/MiB Unicode, CPU/1k redraws, 16 and 64 terminals) of each renderer's value divided by the best renderer's. RAM: same over idle total RAM Δ and RAM per terminal at 64. 1.00 = best on every metric. Fleet is excluded (multi-terminal only).`,
+  `CPU: geometric mean over ${cpuKeys.length} CPU metrics (idle, typing, logs, CPU/MiB log, CPU/MiB Unicode, CPU/1k redraws, 16 and 64 terminals) of each renderer's value divided by the best renderer's. RAM, all processes: same over idle total RAM Δ, RAM per 10k scrollback lines and RAM per terminal at 64. RAM, renderer process only: the same with the renderer-process footprint (the page, its workers and their JS/Wasm heaps), leaving out the GPU process. 1.00 = best on every metric. A renderer missing a metric (not comparable or not applicable) is ranked over the metrics it has, marked with how many. Fleet is excluded (multi-terminal only; see the 16/64 tables).`,
   '',
 );
 const rc = rank(cpuKeys),
-  rr = rank(ramKeys);
+  rr = rank(ramKeys),
+  rp = rank(rendererRamKeys);
+const cell = (x) => (x ? `${NAMES[x[0]]}` : '');
+const rel = (x) => (x ? x[1].toFixed(2) + (x[2] ? ` (${x[2]})` : '') : '');
 table(
-  ['#', 'CPU', 'relative', 'RAM', 'relative'],
+  [
+    '#',
+    'CPU',
+    'relative',
+    'RAM, all processes',
+    'relative',
+    'RAM, renderer process only',
+    'relative',
+  ],
   rc.map((x, i) => [
     String(i + 1),
-    NAMES[x[0]],
-    x[1].toFixed(2),
-    rr[i] ? NAMES[rr[i][0]] : '',
-    rr[i] ? rr[i][1].toFixed(2) : '',
+    cell(x),
+    rel(x),
+    cell(rr[i]),
+    rel(rr[i]),
+    cell(rp[i]),
+    rel(rp[i]),
   ]),
 );
 
