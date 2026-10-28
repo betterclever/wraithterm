@@ -125,6 +125,10 @@ mode grows one pipe, or a chosen count, then clears and starts a new layout. Cho
 xterm WebGL or DOM, switch between live geometry and replay, or run the same
 scene in another terminal with `npm run pipes -- --preset inferno`.
 
+Open **http://127.0.0.1:5173/replay.html** for the Replay lab: drop an asciinema
+`.cast` file, play it, drag the timeline, record a live terminal, and measure
+seeks on a generated 10-minute session.
+
 ## Drop-in xterm API
 
 Wraith 0.2 exports a complete xterm.js **6.0.0** `Terminal` with original public
@@ -211,16 +215,27 @@ per font configuration. Each terminal is drawn at its host's on-screen
 rectangle, clipped to scrolling ancestors. Only terminals with new content are
 redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
 focus, selection and accessibility. Shared and per-canvas output are
-pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
-120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
-per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
-119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+pixel-identical at 1:1 (`npm run test:fleet`). Pooled terminals' messages
+cross to each worker in one batch per task, placements are re-measured only
+when something can have moved them, and each surface writes all its
+terminals' uniforms in one upload per frame. Headed on an Apple M5 Max at
+120 Hz with agent-log streams and 4 workers, every one of 1,000 shared
+terminals held at least 73 parsed updates per second (p10 73.7–115.5 driven
+from the main thread, 83.2–119.0 fed inside the workers; the display held
+120 frames per second), against p10 43–45 before. At 1,500 terminals, worker-fed
+streams held p10 63–74 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
 [`demo/fleet.html`](demo/fleet.html).
 
 Limits: the shared canvases sit at `z-index: 1` by default
 (`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
 must stack above them. Placement follows layout one animation frame later
-than the DOM. Rotation and perspective transforms are not modelled, and partial
+than the DOM. By default (`sharedSurface: { tracking: 'observe' }`) the pool
+re-measures terminals after scrolling, resizing, DOM and style changes outside
+the terminals and while CSS animations run, plus a rolling sweep that covers
+every terminal about every 30 frames; call `pool.updatePlacements()` after
+moving terminals in a way the page cannot observe (for example a Web
+Animations API animation), or pass `tracking: 'frame'` to measure every
+terminal every frame. Rotation and perspective transforms are not modelled, and partial
 CSS opacity or filters on a host are not applied (`visibility: hidden` and
 `opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
 terminal is created. A worker's terminals with the same fonts share one
@@ -713,6 +728,81 @@ with screen reader mode on) and checks the browser's accessibility tree. Try it 
 **http://127.0.0.1:5173/accessibility.html** with `npm run dev`. It has not yet been tested
 with VoiceOver, NVDA or JAWS by a person.
 
+## Record, replay and scrub
+
+The engine is deterministic: the same bytes produce the same screen. A native
+terminal records what it parses, and a player replays it with a scrubbable
+timeline.
+
+```ts
+import { Wraith, toAsciicast } from 'wraithterm';
+
+const recorder = terminal.record(); // output and resizes, timestamped
+// … the session runs …
+const cast = toAsciicast(recorder.stop()); // asciinema .cast (v2) text
+
+const player = await Wraith.player(document.querySelector('#replay')!, '/session.cast', {
+  autoplay: true,
+});
+await player.seek(42); // resolves when the screen at 0:42 has been parsed
+player.onTimeUpdate((seconds) => console.log(seconds));
+```
+
+`Wraith.player(host, source, options)` accepts a `Recording`, asciicast text, or a
+URL, `Blob` or bytes of a `.cast` file (asciicast v1, v2 and v3; v2 or v3 export).
+It mounts a native terminal at the recording's size, shrinking the font to fit the
+host's width, with a built-in timeline: play/pause, a scrub bar on which every
+pointer move applies the exact state at that time, marker ticks, a time tooltip
+and a speed button. `controls: false` hides it.
+
+| Player                                         | Contract                                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `play()`, `pause()`, `toggle()`                | Playback follows wall time × `speed`; `loop` restarts at the end.                          |
+| `seek(seconds)`                                | Resolves once the terminal parsed that state; rapid seeks coalesce to the latest target.   |
+| `step(n)`                                      | Pause and move by whole output events (`-1` steps back).                                   |
+| `nextMarker()`, `previousMarker()`             | Jump between recorded markers (`recorder.marker(label)`, asciicast `m` events).            |
+| `currentTime`, `duration`, `playing`, `speed`  | Seconds after idle compression (`idleTimeLimit` option or the recording's limit).          |
+| `onTimeUpdate`, `onPlayStateChange`, `onEnded` | Disposable subscriptions; `onMarker` fires when playback crosses a marker.                 |
+| `terminal`, `element`, `dispose()`             | The underlying native terminal (selection, copy, search work), the root element, teardown. |
+
+Other options: `startAt`, `speed`, `loop`, `keyboard`, `scale: 'none'`, and the
+usual `fontSize`, `font`, `theme` and `scrollback` (default 1,000 lines). A
+recording's asciicast theme sets the colours unless `theme` overrides them.
+
+Keyboard, while the player has focus: <kbd>Space</kbd>/<kbd>k</kbd> play/pause,
+<kbd>←</kbd>/<kbd>→</kbd> 5 s, <kbd>Shift</kbd>+arrows 10%, <kbd>0</kbd>–<kbd>9</kbd>
+jump to 0–90%, <kbd>Home</kbd>/<kbd>End</kbd>, <kbd>,</kbd>/<kbd>.</kbd> one output
+event back/forward, <kbd>&lt;</kbd>/<kbd>&gt;</kbd> speed, <kbd>[</kbd>/<kbd>]</kbd>
+previous/next marker.
+
+Seeking restores **verified keyframes**. A worker with its own headless libghostty
+replays the recording and takes VT snapshots (palette, modes, tabstops, history,
+screen, cursor, style, charsets; alternate-screen keyframes restore the primary
+screen beneath) where the parser is idle. A keyframe is used only over the range
+in which an engine restored from it matched the linear replay: a digest of the
+drawn grid at sampled points and the full snapshot at the range end. Elsewhere,
+and until keyframes arrive, a seek replays from the start, which is always exact.
+On a 10-minute, 6.6 MB session (Apple M5 Max, headless Chrome), random seeks
+parsed in 1.4 ms p50 / 2.6 ms p95 and reached a GPU fence in 2.5 / 3.9 ms, versus
+12.9 / 35.4 ms parsed when replaying from the start
+([report](docs/benchmarks/replay/REPORT.md)). Display presentation is not
+included.
+
+Limits: the player needs WebGPU (native profile). Recording works with any
+terminal through `new WraithRecorder({ cols, rows })` and `recorder.output(data)`
+beside your own writes, including the xterm-compatible profile. A recording
+starts empty: start it before the first write, because content already on screen
+and the terminal's theme are not captured (pass `theme` to the player). Input is recorded
+(`record({ input: true })`) but not replayed. asciicast stores text, so invalid
+UTF-8 becomes U+FFFD on export; in-memory recordings keep exact bytes. Saved
+cursors, titles and Kitty images are not snapshot state: verification rejects a
+keyframe when they change the drawn grid at a checked point, recordings stop
+taking keyframes at their first Kitty graphics command, and the title is not
+restored after a seek. Inside an
+open synchronized update a seek shows the last complete frame. When even the
+smallest font (6 device pixels) is too wide, the player scales the canvas down,
+and pointer selection is then offset.
+
 ## API contracts
 
 | Method / event                                              | Contract                                                                                                             |
@@ -744,6 +834,8 @@ with VoiceOver, NVDA or JAWS by a person.
 | `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
 | `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
+| `record({ input?, title? })`                                | Timestamped recorder of parsed output and resizes; `stop()` returns a `Recording`.                                   |
+| `Wraith.player(element, source, options)`                   | Mount a scrubbable player for a recording or `.cast` file; see [Record, replay and scrub](#record-replay-and-scrub). |
 | `commands()`                                                | OSC 133 command blocks, oldest first; `block.output()` reads text lazily.                                            |
 | `onCommand(listener)`                                       | Fires when a command finishes (OSC 133;D, or the next prompt).                                                       |
 | `jumpToPrompt(-1 \| 1)`                                     | Scroll the previous/next prompt to the viewport top; resolves false when there is none.                              |

@@ -138,18 +138,58 @@ Geometry changes (scroll, pan, zoom, resize, disposal) clear the backing and
 redraw every visible terminal. Off-screen terminals do not render; their
 parsing and history continue.
 
-Placement comes from the main thread. Once per animation frame the pool
-measures each intersecting terminal's element (one `getBoundingClientRect`
-plus `offsetWidth` for the transform scale), intersects it with the element
-and its overflow-clipping ancestors, and posts changed records (id, origin,
-scale, clip, in device pixels) to the owning worker. Terminals hidden by
-`visibility: hidden` or `opacity: 0` on the host or an ancestor
-(`checkVisibility`) are placed as hidden, and a host moved to another parent
-after mount has its clipping ancestors recomputed. Unscaled placements are
-rounded to whole device pixels, so they match per-canvas output exactly; a
-CSS-scaled placement samples the atlas with a linear sampler. The vertex
-shaders map terminal pixels to the target through that placement; with a
-zero target size they keep the original own-canvas path.
+Placement comes from the main thread. The pool measures a terminal's element
+(one `getBoundingClientRect` plus `offsetWidth` for the transform scale),
+intersects it with the element and its overflow-clipping ancestors, and posts
+changed records (id, origin, scale, clip, in device pixels) to the owning
+worker. Terminals hidden by `visibility: hidden` or `opacity: 0` on the host
+or an ancestor (`checkVisibility`) are placed as hidden, and a host moved to
+another parent after mount has its clipping ancestors recomputed. Unscaled
+placements are rounded to whole device pixels, so they match per-canvas output
+exactly; a CSS-scaled placement samples the atlas with a linear sampler. The
+vertex shaders map terminal pixels to the target through that placement; with
+a zero target size they keep the original own-canvas path.
+
+Measuring every terminal every frame forced style and layout and took about
+two thirds of the main thread at 1,000 terminals, so by default
+(`sharedSurface.tracking: 'observe'`, `placement.ts`) the pool measures only
+when something can have moved: every terminal on the next frame after a
+scroll of any container, a window or visual-viewport resize, a font load, a
+`ResizeObserver` change of a host or placeholder, or a DOM or attribute
+mutation outside the terminals (pure text replacements excepted), and every
+frame while a CSS animation or transition runs. An intersection change
+re-measures that terminal. A rolling sweep measures 1/30 of the terminals each
+frame so changes that raise no event (hover styles, Web Animations, text
+reflow) still land within about 30 frames; `pool.updatePlacements()` forces a
+full pass and `tracking: 'frame'` restores measuring everything every frame.
+
+Pooled terminals do not have their own `MessagePort`. Each pool worker has
+one ordered command queue on the main thread (`batch.ts`). Commands carry the
+terminal id and leave as one `postMessage` per task. Write bytes are copied
+into one `WriteArena` buffer per batch, which is transferred once; each write
+arrives in the worker as a view of it, and terminals reuse their own batch
+buffers. The worker answers with one message per task holding all replies
+(acknowledgements, cursor, output). At 1,000 streaming terminals this
+replaces about 2,000 messages and 1,000 buffer allocations per frame with one
+message and one buffer per worker in each direction. Workers send per-terminal
+stats only while the page has `onStats` listeners, and a single page-wide timer
+checks display resolution changes.
+
+Each terminal's DOM stays out of compositor layers: its hidden input textarea
+has `overflow: hidden` (a user-scrollable textarea is a composited scroller,
+three layers per terminal), the IME preedit span is shown only while
+composing, and the terminal element has `contain: layout paint style`. A page
+of 1,000 shared terminals has 17 compositor layers, eight of them the surfaces.
+
+On the GPU side, the shared context holds every terminal's frame uniforms in
+one buffer of fixed 256-byte slots. Each terminal's bind group points at its
+slot, draws stage their uniforms in a CPU mirror, and `Surface::end` writes
+the touched range with one `writeBuffer` before submitting. The terminal
+pipeline is set once per pass, and again only after an image layer replaced
+it. A terminal's draw is then a scissor, a bind group and three draw calls.
+Terminals beyond 4,096 per surface keep their own uniform buffer, and a
+terminal with Kitty images also writes it, because the image pipeline reads
+it.
 
 A shared atlas reset (a neighbour's visible glyph set overflowed) makes every
 other terminal on it stale; a stale terminal repacks before it is drawn, and
@@ -160,8 +200,9 @@ on the premultiplied canvas.
 Limits: the canvases sit above page content at their z-index, so overlays
 meant to cover terminals must stack above them. Placements follow layout one
 animation frame later than the DOM, so a terminal can trail a scroll or pan
-by a frame. Rotation and perspective transforms are not modelled (placement
-is a translation plus uniform scale). Fallback fonts and ligatures are fixed
+by a frame; with observation-based tracking, a move no event reports can take
+up to about 30 frames. Rotation and perspective transforms are not modelled
+(placement is a translation plus uniform scale). Fallback fonts and ligatures are fixed
 when a shared terminal is created. Partial CSS opacity and filters on a host
 are not applied. Each worker draws all of its terminals in
 one pass, so heavy output in one terminal shares that worker's frame.
@@ -321,6 +362,48 @@ Horspool skip tables are reused across pages; non-ASCII matching stays byte exac
 Soft-wrap overlap pages belong to the active search frontier so history does not
 count their matches again.
 
+## Replay
+
+`Timeline` indexes a recording's output and resize events into typed arrays:
+one concatenated byte buffer, per-event offsets, sizes and idle-compressed times.
+It cuts an event wherever a synchronized update (DEC 2026) begins or the
+alternate screen opens, including when the sequence started in an earlier write,
+and maps every state inside an open synchronized update to the state before it:
+the frame a live terminal still shows.
+
+Keyframes come from `Headless.snapshot()`: libghostty's VT formatter with every
+extra (palette, modes, tabstops, history and screen, scrolling region, keyboard
+modes, working directory, cursor, style, hyperlink, protection, charsets). The
+bridge splices its output around the content: it appends the trailing blank rows
+the formatter trims, repaints viewport rows that hold only background-erased
+cells, and applies autowrap-off and insert modes after the content. The formatter
+covers only the active screen, so an alternate-screen keyframe is the primary
+screen's snapshot from the moment the alternate screen opened, followed by the
+alternate snapshot, whose modes switch screens. A resize while the alternate
+screen is open invalidates that primary snapshot.
+
+A dedicated worker owns its own headless Wasm instance and replays the timeline
+linearly. Candidates are taken every 256 KiB of output (or twice the last
+snapshot's size) where a conservative parser tracker sees no pending escape
+sequence, control string or UTF-8 continuation, no synchronized update is open
+and no Kitty graphics command has appeared. Each candidate is restored into a
+second engine (`RIS` + state) and must reproduce the snapshot and the grid digest
+(`Headless.digest()`: FNV-1a over cell text, resolved colours, attributes and the
+cursor, read through a synchronized update without ending it). The restored
+engine then follows the linear replay, compared by digest every eighth of the
+interval and by full snapshot at the next candidate. The keyframe is valid for
+exactly that range; the newest verified engine keeps extending across candidates
+that fail. At most three engines run at once.
+
+`ReplayCursor` applies the cheaper of forward replay from the current state or a
+restore of the latest keyframe valid at the target: resize to the keyframe's
+size, then one write of `RIS`, the state and the bytes up to the next resize.
+The start of the recording is a keyframe valid everywhere. Playback that crosses
+the end of a keyframe's range restores the next valid keyframe, so continued
+playback never relies on unverified state. The player coalesces seeks: only the
+latest target is applied after the one in flight. Recording copies written bytes
+only while a recorder is attached.
+
 ## Bounds and failures
 
 The grid is limited to 512 per dimension and 65,536 cells, and pixel dimensions
@@ -359,6 +442,10 @@ wait.
 | Browser API, input, transport               | `packages/wraith/src/index.ts`                                |
 | ARIA, mirror, live region, keyboard exit    | `packages/wraith/src/accessibility.ts`                        |
 | Screen sampling and announcement diffing    | `packages/wraith/src/worker-accessibility.ts`, `announcer.ts` |
+| Recording and asciicast                     | `packages/wraith/src/recording.ts`                            |
+| Timeline, keyframes, seeking                | `packages/wraith/src/replay.ts`                               |
+| Player UI and keyframe worker               | `packages/wraith/src/player.ts`                               |
+| VT snapshots and grid digests               | `native/bridge.c` (`wraith_bridge_snapshot`)                  |
 
 Performance work should be driven by a recorded workload and percentile evidence.
 Broad compatibility additions should add a failing protocol fixture and, where

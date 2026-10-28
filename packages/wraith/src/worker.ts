@@ -111,6 +111,8 @@ function createSession(
   let observeStats = false;
   let observeRender = false,
     renderedFrames = 0;
+  // A page recorder wants socket output, which otherwise stays in the worker.
+  let observeOutput = false;
   // Latency tracing (benchmarks only).
   let tracing = false,
     traceFrame = false;
@@ -255,13 +257,17 @@ function createSession(
     serial = serial
       .then(() => {
         if (link !== from || !engine || disposed) return;
-        engine.write(
+        const bytes =
           typeof data === 'string'
             ? encoder.encode(data)
             : data instanceof Uint8Array
               ? data
-              : new Uint8Array(data),
-        );
+              : new Uint8Array(data);
+        engine.write(bytes);
+        if (observeOutput) {
+          const copy = bytes.slice();
+          post({ type: 'output', bytes: copy }, [copy.buffer]);
+        }
         // Socket output reaches screen readers like written output does.
         a11y.changed();
         drain();
@@ -855,6 +861,9 @@ function createSession(
           if (feedChunks.length) startFeeding(feedStep);
         }
         result(command.id, fed);
+        break;
+      case 'observe-output':
+        observeOutput = command.enabled;
         break;
       case 'a11y':
         reducedMotion = command.reducedMotion;

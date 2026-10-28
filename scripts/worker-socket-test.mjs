@@ -140,12 +140,26 @@ try {
   assert.equal(invalid.closed.code, 1006);
   assert(invalid.error);
   // The terminal still works afterwards: a fresh session streams in order.
+  // A recorder started first captures the output parsed in the worker.
   await page.evaluate(async () => {
     await window.wraith.write('\x1b[2J\x1b[H');
+    window.wraithRecorder = window.wraith.record();
     window.wraithSocket = window.wraith.connect('/pty' + location.search);
   });
   await until((t) => t.includes('tail-marker'), 'reconnected output');
   ordered(await read());
+  const recorded = await page.evaluate(() => {
+    const recording = window.wraithRecorder.stop();
+    const decoder = new TextDecoder();
+    const text = recording.events
+      .filter((e) => e.type === 'output')
+      .map((e) => decoder.decode(e.data, { stream: true }))
+      .join('');
+    return { head: text.slice(0, 32), tail: text.includes('tail-marker'), length: text.length };
+  });
+  assert(recorded.tail, `recording of worker-socket output: ${JSON.stringify(recorded)}`);
+  assert.match(recorded.head, /^1\r?\n2\r?\n/);
+  assert(recorded.length > 2_000_000, `recorded ${recorded.length} characters`);
   // Disposing the terminal resolves the open connection's closed promise.
   const disposed = await page.evaluate(async () => {
     await window.wraith.dispose();
@@ -154,7 +168,7 @@ try {
   assert.equal(disposed.wasClean, false);
   assert.deepEqual(errors, []);
   console.log(
-    'worker socket passed: ordered flood, replace and reconnect, input during a parser stall, send(), clean close, refused and invalid URLs, dispose; stream and events transports.',
+    'worker socket passed: ordered flood, replace and reconnect, input during a parser stall, send(), clean close, refused and invalid URLs, record(), dispose; stream and events transports.',
   );
 } finally {
   await browser.close();

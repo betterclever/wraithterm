@@ -26,13 +26,16 @@ await writeFile(
 );
 await writeFile(
   join(app, 'index.html'),
-  '<!doctype html><html><head><link rel="icon" href="data:,"></head><body><div id="terminal" style="width:800px;height:400px"></div><script type="module" src="/main.js"></script></body></html>',
+  '<!doctype html><html><head><link rel="icon" href="data:,"></head><body><div id="terminal" style="width:800px;height:400px"></div><div id="player" style="width:800px"></div><script type="module" src="/main.js"></script></body></html>',
 );
 await writeFile(
   join(app, 'main.js'),
   `import {Wraith} from 'wraithterm';
 try {window.term=await Wraith.mount(document.querySelector('#terminal'));
-await window.term.write('Installed package works\\r\\n\\x1b[36mRust / Wasm / WebGPU\\x1b[0m');await window.term.flush();}
+await window.term.write('Installed package works\\r\\n\\x1b[36mRust / Wasm / WebGPU\\x1b[0m');await window.term.flush();
+// Top-level await on the lazily loaded player must not deadlock the bundle.
+window.recordingPlayer=await Wraith.player(document.querySelector('#player'),'{"version":2,"width":40,"height":4}\\n[0.5,"o","player works"]\\n',{keyframes:false});
+await window.recordingPlayer.seek(window.recordingPlayer.duration);}
 catch(error){window.failure=String(error);}`,
 );
 await writeFile(
@@ -77,7 +80,9 @@ try {
     assert(healthy, `Consumer server ${port} failed to start`);
     const page = await browser.newPage();
     await page.goto(url);
-    await page.waitForFunction(() => window.term || window.failure, { timeout: 30000 });
+    await page.waitForFunction(() => (window.term && window.recordingPlayer) || window.failure, {
+      timeout: 30000,
+    });
     const text = await page.evaluate(async () => {
       if (window.failure) throw new Error(window.failure);
       await window.term.flush();
@@ -85,6 +90,8 @@ try {
       return window.term.getText();
     });
     assert.equal(text, 'Installed package works\nRust / Wasm / WebGPU');
+    const played = await page.evaluate(() => window.recordingPlayer.terminal.getText());
+    assert.equal(played, 'player works');
     const pixels = pixelSummary(await page.locator('#terminal canvas').screenshot());
     assert(pixels.bright > 200 && pixels.colors > 20);
     console.log(

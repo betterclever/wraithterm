@@ -1,0 +1,2228 @@
+{
+  "measured": "2026-10-28T02:11:51.887Z",
+  "url": "http://127.0.0.1:5391",
+  "build": "d0d7f5a",
+  "head": "d0d7f5a463cf6a93446606987d44e248fa713f59",
+  "dirty": "M README.md\n M docs/ARCHITECTURE.md\n M packages/wraith/README.md\n M packages/wraith/docs/ARCHITECTURE.md",
+  "sources": {
+    "packages/wraith/wasm/wraith_engine_bg.wasm": "9f20bd5cbd2fc4f3d36661028dd33b1676ba66fce6aae31bf5ab44dc45518b09",
+    "packages/wraith/src/index.ts": "f97b52354c69eda474200493dc779de67b69497e6ed002be77053cff5ee3fabb",
+    "packages/wraith/src/pool.ts": "830067764fc62019eb6258872bba5ad7a038e0f06ea9b6b6778a0999acb1dab7",
+    "packages/wraith/src/surface.ts": "4ecab05a2a45b3f80adc19b1af5415e851a8004d984d8db0b7c73bded57aa34e",
+    "packages/wraith/src/shared-host.ts": "b37c78ec07be153d7d9f5035a6d30195fee7aab90516be36e049c6bbcf7f71f5",
+    "packages/wraith/src/worker.ts": "83776d9301dff8117b09b92efeceaf58def896656a7733873ed50784c02a7f5e",
+    "packages/wraith/src/batch.ts": "5d16f2654dfea74f807ef04f9ec1c7ba930f4926ae67aef6ea4713be10dfdcdd",
+    "packages/wraith/src/placement.ts": "4dfc74ce2639ff0d890dbedb7238ee7785ce57898af16a6829f2d4393c199452",
+    "demo/fleet.js": "20a50eb255e1e4916575869aad7d1c55ab1513489e89d403b1aeb540e70929ec",
+    "scripts/fleet-benchmark.mjs": "6426af323999e287711f51ae27c8b4cc56391e8c271171e950b2d3a7e610cf4b"
+  },
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "cpu": "Apple M5 Max",
+  "headed": true,
+  "method": {
+    "page": "demo/fleet.html, 1600x900 CSS px at DPR 2, grid fitted to the window (terminals CSS-scaled below 1:1)",
+    "terminals": "80x24, JetBrains Mono 7 px, line height 1.2, scrollback 1000, Wraith.pool({ workers: 6 })",
+    "update": "logUpdate from demo/rival-bench.js: two colored agent-log lines and a rewritten status row",
+    "feeds": {
+      "main": "one main-thread requestAnimationFrame driver: each terminal writes its next update once the previous write resolved (parsed), at most once per display frame",
+      "worker": "shared only: each pool worker replays its terminals' updates itself (64 precomputed logUpdate chunks per terminal, internal 'feed' command), one per terminal per worker animation frame; nothing crosses the main thread while streaming. Parsed counts are read from the workers at the window edges."
+    },
+    "warm": 3,
+    "seconds": 8,
+    "displayFps": "main-thread requestAnimationFrame callbacks per second during the window",
+    "updatesPerTerminal": "updates parsed per terminal per second (main: write() resolved; worker: chunks parsed in the worker)",
+    "submittedPerTerminal": "per-canvas (or TERMINAL_STATS=1): frames each terminal submitted (Wraith stats frames, reported every 500 ms) per second; shared pools by default: terminal updates drawn into surface frames (worker counters) per terminal per second. Not display presentation.",
+    "gpuCompletedUpdatesPerTerminal": "shared only: terminal updates drawn into presented surface frames whose GPU work completed (onSubmittedWorkDone)",
+    "surfaceFrames": "shared only: frames each worker presented to its canvas per second",
+    "longTasks": "PerformanceObserver longtask entries (>50 ms) on the main thread during the window",
+    "longAnimationFrames": "PerformanceObserver 'long-animation-frame' entries (>50 ms) in the window: total and blocking duration, time from render start and from style/layout start to frame end, and the five scripts with the most attributed time",
+    "memory": "summed RSS of the browser and all its processes, sampled mid-window",
+    "browserCpuCores": "CPU time of the browser and all its processes (ps) over the window, divided by wall time",
+    "loadAverage1m": "os.loadavg() 1-minute value before and after the window (whole machine)",
+    "power": "pmset -g batt power source after the window"
+  },
+  "summary": {
+    "256 shared main": {
+      "runs": 3,
+      "displayFps": [
+        119.93062474603683,
+        120.07135387832932
+      ],
+      "updatesPerTerminal": [
+        119.93209998040741,
+        120.07135387833017
+      ],
+      "updatesP10": [
+        119.93209998040676,
+        120.07135387832932
+      ],
+      "submittedPerTerminal": [
+        118.08505772019737,
+        118.10297102786491
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        118.08553821148242,
+        118.10297102786491
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        172,
+        179
+      ],
+      "memoryMiB": [
+        1950,
+        1965
+      ],
+      "browserCpuCores": [
+        1.8542269409081926,
+        1.8746082673383975
+      ],
+      "loadAverage1m": [
+        7.3330078125,
+        8.8837890625
+      ]
+    },
+    "256 shared worker": {
+      "runs": 3,
+      "displayFps": [
+        119.9867091644353,
+        120.01967535661585
+      ],
+      "updatesPerTerminal": [
+        119.98670916443466,
+        120.01967535661605
+      ],
+      "updatesP10": [
+        119.9867091644353,
+        120.01967535661585
+      ],
+      "submittedPerTerminal": [
+        118.05165933964585,
+        118.19149443592791
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        118.01130948721102,
+        118.1506230149181
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        157,
+        172
+      ],
+      "memoryMiB": [
+        1841,
+        1855
+      ],
+      "browserCpuCores": [
+        1.6987459930638114,
+        1.7019903122002058
+      ],
+      "loadAverage1m": [
+        6.3662109375,
+        8.43017578125
+      ]
+    },
+    "512 shared main": {
+      "runs": 3,
+      "displayFps": [
+        119.41656828037972,
+        119.95128132556256
+      ],
+      "updatesPerTerminal": [
+        119.4165682803796,
+        119.95128132556371
+      ],
+      "updatesP10": [
+        119.41656828037972,
+        119.95128132556256
+      ],
+      "submittedPerTerminal": [
+        117.34627307487196,
+        118.06478791673445
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        117.44883903992033,
+        118.06454762971256
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        218,
+        228
+      ],
+      "memoryMiB": [
+        2416,
+        2433
+      ],
+      "browserCpuCores": [
+        2.8674098457655033,
+        2.903954564986372
+      ],
+      "loadAverage1m": [
+        6.314453125,
+        7.89794921875
+      ]
+    },
+    "512 shared worker": {
+      "runs": 3,
+      "displayFps": [
+        119.12526612428037,
+        120.07283106137545
+      ],
+      "updatesPerTerminal": [
+        119.12526612428151,
+        120.07283106137618
+      ],
+      "updatesP10": [
+        119.12526612428037,
+        120.07283106137545
+      ],
+      "submittedPerTerminal": [
+        117.23845589403034,
+        118.07092669400716
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        117.11539260257963,
+        118.13219234726135
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        214,
+        239
+      ],
+      "memoryMiB": [
+        2282,
+        2306
+      ],
+      "browserCpuCores": [
+        2.5084034231702947,
+        2.5838948352340023
+      ],
+      "loadAverage1m": [
+        6.03173828125,
+        8.1337890625
+      ]
+    },
+    "1000 shared main": {
+      "runs": 3,
+      "displayFps": [
+        117.88299745655236,
+        118.79651853502466
+      ],
+      "updatesPerTerminal": [
+        102.8002036514718,
+        107.72492598286166
+      ],
+      "updatesP10": [
+        99.52238950740332,
+        105.94827375256759
+      ],
+      "submittedPerTerminal": [
+        100.99595122098674,
+        104.70723531267609
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        101.1576599513191,
+        104.56421737732187
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        363,
+        369
+      ],
+      "memoryMiB": [
+        3334,
+        3385
+      ],
+      "browserCpuCores": [
+        5.692050025617545,
+        7.245062872845313
+      ],
+      "loadAverage1m": [
+        5.94873046875,
+        8.81591796875
+      ]
+    },
+    "1000 shared worker": {
+      "runs": 3,
+      "displayFps": [
+        117.05562894432326,
+        119.2201371211647
+      ],
+      "updatesPerTerminal": [
+        105.92470277380042,
+        109.70091454851496
+      ],
+      "updatesP10": [
+        105.68031704064293,
+        109.23438508445837
+      ],
+      "submittedPerTerminal": [
+        110.49121776962738,
+        112.76568798153654
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        110.34847595251347,
+        112.88746544539882
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        355,
+        369
+      ],
+      "memoryMiB": [
+        3267,
+        3295
+      ],
+      "browserCpuCores": [
+        5.239299951305478,
+        6.313855875587345
+      ],
+      "loadAverage1m": [
+        6.533203125,
+        8.91064453125
+      ]
+    },
+    "1500 shared main": {
+      "runs": 3,
+      "displayFps": [
+        116.9888714943626,
+        119.37657552814929
+      ],
+      "updatesPerTerminal": [
+        58.21126766265105,
+        59.89027858561116
+      ],
+      "updatesP10": [
+        57.76628924410435,
+        59.105528248073306
+      ],
+      "submittedPerTerminal": [
+        55.82456523589916,
+        57.83117907640027
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        55.78411265239489,
+        57.83117907640027
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        569,
+        584
+      ],
+      "memoryMiB": [
+        4172,
+        4200
+      ],
+      "browserCpuCores": [
+        6.071202564857517,
+        6.3485867306606165
+      ],
+      "loadAverage1m": [
+        6.83056640625,
+        9.341796875
+      ]
+    },
+    "1500 shared worker": {
+      "runs": 3,
+      "displayFps": [
+        112.43219943221015,
+        114.42690591581874
+      ],
+      "updatesPerTerminal": [
+        72.18650546156938,
+        72.50278166602469
+      ],
+      "updatesP10": [
+        70.88377216599405,
+        72.02421545040755
+      ],
+      "submittedPerTerminal": [
+        69.08773064151785,
+        72.2236180402481
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        69.10768665845647,
+        72.2236180402481
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        544,
+        563
+      ],
+      "memoryMiB": [
+        4099,
+        4135
+      ],
+      "browserCpuCores": [
+        6.935526669251921,
+        6.950234361620587
+      ],
+      "loadAverage1m": [
+        7.46484375,
+        9.3642578125
+      ]
+    },
+    "2000 shared main": {
+      "runs": 3,
+      "displayFps": [
+        100.43197851019396,
+        102.69327649687706
+      ],
+      "updatesPerTerminal": [
+        46.04621099006462,
+        46.421962797942484
+      ],
+      "updatesP10": [
+        45.39771554804496,
+        46.13931408645066
+      ],
+      "submittedPerTerminal": [
+        45.31826954583588,
+        47.210774052350985
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        45.41932194742344,
+        47.170419757371285
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        814,
+        821
+      ],
+      "memoryMiB": [
+        5059,
+        5140
+      ],
+      "browserCpuCores": [
+        6.8137938728734495,
+        6.849139507318407
+      ],
+      "loadAverage1m": [
+        8.53662109375,
+        9.13525390625
+      ]
+    },
+    "2000 shared worker": {
+      "runs": 3,
+      "displayFps": [
+        99.80686412118314,
+        107.16876999773011
+      ],
+      "updatesPerTerminal": [
+        55.161886253802635,
+        55.57720548718534
+      ],
+      "updatesP10": [
+        54.58187881627203,
+        54.80138973447235
+      ],
+      "submittedPerTerminal": [
+        55.62624148073635,
+        56.25368625893885
+      ],
+      "gpuCompletedUpdatesPerTerminal": [
+        55.665909388388116,
+        56.21392838795502
+      ],
+      "longTasks": [
+        0,
+        0
+      ],
+      "longTaskMs": [
+        0,
+        0
+      ],
+      "mountMs": [
+        778,
+        809
+      ],
+      "memoryMiB": [
+        4973,
+        4997
+      ],
+      "browserCpuCores": [
+        6.984677190732273,
+        7.156460025281968
+      ],
+      "loadAverage1m": [
+        8.3505859375,
+        8.76513671875
+      ]
+    }
+  },
+  "runs": [
+    {
+      "round": 0,
+      "count": 256,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 179,
+      "seconds": 8.12959999999404,
+      "displayFps": 119.93209998040676,
+      "updatesPerTerminal": 119.93209998040741,
+      "updatesP10": 119.93209998040676,
+      "submittedPerTerminal": 118.08699074993896,
+      "gpuCompletedUpdatesPerTerminal": 118.08699074993896,
+      "surfaceFrames": [
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896
+      ],
+      "surfaceCompletedFrames": [
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896,
+        118.08699074993896
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1955,
+      "browserCpuCores": 1.8699275044791759,
+      "loadAverage1m": [
+        7.3623046875,
+        7.3330078125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 256,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 163,
+      "seconds": 8.12380000001192,
+      "displayFps": 120.01772569469576,
+      "updatesPerTerminal": 120.01772569469546,
+      "updatesP10": 120.01772569469576,
+      "submittedPerTerminal": 118.19149443592791,
+      "gpuCompletedUpdatesPerTerminal": 118.1506230149181,
+      "surfaceFrames": [
+        118.17129914554658,
+        118.17129914554658,
+        118.17129914554658,
+        118.17129914554658,
+        118.2943942488232,
+        118.17129914554658
+      ],
+      "surfaceCompletedFrames": [
+        118.17129914554658,
+        118.17129914554658,
+        118.04820404226997,
+        118.17129914554658,
+        118.17129914554658,
+        118.17129914554658
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1841,
+      "browserCpuCores": 1.7019903122002058,
+      "loadAverage1m": [
+        6.98583984375,
+        6.3662109375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 512,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 228,
+      "seconds": 8.12830000001192,
+      "displayFps": 119.95128132556256,
+      "updatesPerTerminal": 119.95128132556371,
+      "updatesP10": 119.95128132556256,
+      "submittedPerTerminal": 118.06478791673445,
+      "gpuCompletedUpdatesPerTerminal": 118.06454762971256,
+      "surfaceFrames": [
+        117.98285004227127,
+        118.10587699747698,
+        117.98285004227127,
+        118.10587699747698,
+        118.10587699747698,
+        118.10587699747698
+      ],
+      "surfaceCompletedFrames": [
+        117.98285004227127,
+        117.98285004227127,
+        118.10587699747698,
+        118.10587699747698,
+        118.10587699747698,
+        118.10587699747698
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2424,
+      "browserCpuCores": 2.8775258004249404,
+      "loadAverage1m": [
+        6.57666015625,
+        6.314453125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 512,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 229,
+      "seconds": 8.12840000000596,
+      "displayFps": 120.07283106137545,
+      "updatesPerTerminal": 120.07283106137618,
+      "updatesP10": 120.07283106137545,
+      "submittedPerTerminal": 117.98139855313428,
+      "gpuCompletedUpdatesPerTerminal": 117.98139855313428,
+      "surfaceFrames": [
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428
+      ],
+      "surfaceCompletedFrames": [
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428,
+        117.98139855313428
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2306,
+      "browserCpuCores": 2.5178308021092537,
+      "loadAverage1m": [
+        6.208984375,
+        6.03173828125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 363,
+      "seconds": 8.173800000011921,
+      "displayFps": 118.67185397227547,
+      "updatesPerTerminal": 107.72492598286166,
+      "updatesP10": 105.94827375256759,
+      "submittedPerTerminal": 104.70723531267609,
+      "gpuCompletedUpdatesPerTerminal": 104.56421737732187,
+      "surfaceFrames": [
+        110.84195845245524,
+        103.99079987261253,
+        103.25674716762938,
+        103.50143140262377,
+        103.50143140262377,
+        103.13440505013219
+      ],
+      "surfaceCompletedFrames": [
+        110.71961633495805,
+        103.74611563761815,
+        103.012062932635,
+        103.25674716762938,
+        103.50143140262377,
+        103.13440505013219
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3352,
+      "browserCpuCores": 5.692050025617545,
+      "loadAverage1m": [
+        5.94873046875,
+        6.16455078125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 355,
+      "seconds": 8.211700000017881,
+      "displayFps": 119.2201371211647,
+      "updatesPerTerminal": 109.70091454851496,
+      "updatesP10": 109.23438508445837,
+      "submittedPerTerminal": 112.76568798153654,
+      "gpuCompletedUpdatesPerTerminal": 112.88746544539882,
+      "surfaceFrames": [
+        112.52237660873972,
+        113.25304139191336,
+        112.27882168101517,
+        112.76593153646427,
+        112.76593153646427,
+        113.00948646418881
+      ],
+      "surfaceCompletedFrames": [
+        112.64415407260199,
+        113.37481885577563,
+        112.40059914487745,
+        112.88770900032654,
+        112.88770900032654,
+        113.13126392805108
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3267,
+      "browserCpuCores": 6.313855875587345,
+      "loadAverage1m": [
+        6.6318359375,
+        6.81591796875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 569,
+      "seconds": 8.2395,
+      "displayFps": 119.1819891983737,
+      "updatesPerTerminal": 59.611222363816765,
+      "updatesP10": 59.105528248073306,
+      "submittedPerTerminal": 57.83117907640027,
+      "gpuCompletedUpdatesPerTerminal": 57.83117907640027,
+      "surfaceFrames": [
+        57.28502943139754,
+        56.920929668062385,
+        57.28502943139754,
+        60.804660476970696,
+        57.28502943139754,
+        57.40639601917592
+      ],
+      "surfaceCompletedFrames": [
+        57.28502943139754,
+        57.04229625584077,
+        57.28502943139754,
+        60.804660476970696,
+        57.16366284361916,
+        57.40639601917592
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4200,
+      "browserCpuCores": 6.071202564857517,
+      "loadAverage1m": [
+        6.83056640625,
+        7.1572265625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 544,
+      "seconds": 8.351700000017882,
+      "displayFps": 112.43219943221015,
+      "updatesPerTerminal": 72.26073733475926,
+      "updatesP10": 70.88377216599405,
+      "submittedPerTerminal": 69.08773064151785,
+      "gpuCompletedUpdatesPerTerminal": 69.10768665845647,
+      "surfaceFrames": [
+        69.56667504804483,
+        68.84825843825435,
+        68.84825843825435,
+        69.44693894641308,
+        70.04561945457182,
+        67.77063352356863
+      ],
+      "surfaceCompletedFrames": [
+        69.80614725130833,
+        68.84825843825435,
+        68.7285223366226,
+        69.44693894641308,
+        70.16535555620356,
+        67.65089742193689
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4135,
+      "browserCpuCores": 6.950234361620587,
+      "loadAverage1m": [
+        7.46484375,
+        7.90771484375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 118,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 814,
+      "seconds": 8.238300000011922,
+      "displayFps": 100.8703251883031,
+      "updatesPerTerminal": 46.04621099006462,
+      "updatesP10": 45.39771554804496,
+      "submittedPerTerminal": 45.31826954583588,
+      "gpuCompletedUpdatesPerTerminal": 45.41932194742344,
+      "surfaceFrames": [
+        48.068169403812306,
+        45.519099814216204,
+        43.698335821647554,
+        46.61155820975739,
+        44.18387288633252,
+        43.819720087818794
+      ],
+      "surfaceCompletedFrames": [
+        48.068169403812306,
+        45.519099814216204,
+        43.819720087818794,
+        46.85432674209988,
+        44.30525715250377,
+        43.94110435399004
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 5140,
+      "browserCpuCores": 6.845712065503124,
+      "loadAverage1m": [
+        8.53662109375,
+        8.6533203125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 0,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 809,
+      "seconds": 8.407299999982119,
+      "displayFps": 107.16876999773011,
+      "updatesPerTerminal": 55.309017163772296,
+      "updatesP10": 54.714355381749,
+      "submittedPerTerminal": 55.62624148073635,
+      "gpuCompletedUpdatesPerTerminal": 55.665909388388116,
+      "surfaceFrames": [
+        56.14168639170767,
+        55.07118813423867,
+        56.61746339502723,
+        55.546965137558225,
+        55.19013238506856,
+        55.19013238506856
+      ],
+      "surfaceCompletedFrames": [
+        56.260630642537556,
+        55.07118813423867,
+        56.61746339502723,
+        55.665909388388116,
+        55.19013238506856,
+        55.19013238506856
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4997,
+      "browserCpuCores": 7.156460025281968,
+      "loadAverage1m": [
+        8.3505859375,
+        8.5625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 107,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 256,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 172,
+      "seconds": 8.125900000005961,
+      "displayFps": 119.9867091644353,
+      "updatesPerTerminal": 119.98670916443466,
+      "updatesP10": 119.9867091644353,
+      "submittedPerTerminal": 118.14075979267474,
+      "gpuCompletedUpdatesPerTerminal": 118.14075979267474,
+      "surfaceFrames": [
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474
+      ],
+      "surfaceCompletedFrames": [
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474,
+        118.14075979267474
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1855,
+      "browserCpuCores": 1.7001883615540576,
+      "loadAverage1m": [
+        7.95654296875,
+        7.98193359375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 256,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 174,
+      "seconds": 8.12970000001788,
+      "displayFps": 119.93062474603683,
+      "updatesPerTerminal": 120.05363051500632,
+      "updatesP10": 120.05363051500711,
+      "submittedPerTerminal": 118.08505772019737,
+      "gpuCompletedUpdatesPerTerminal": 118.08553821148242,
+      "surfaceFrames": [
+        118.08553821148242,
+        118.08553821148242,
+        118.08553821148242,
+        117.96253244251211,
+        118.08553821148242,
+        118.2085439804527
+      ],
+      "surfaceCompletedFrames": [
+        118.08553821148242,
+        118.08553821148242,
+        118.08553821148242,
+        118.08553821148242,
+        118.08553821148242,
+        118.08553821148242
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1950,
+      "browserCpuCores": 1.8746082673383975,
+      "loadAverage1m": [
+        7.74267578125,
+        7.419921875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 512,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 239,
+      "seconds": 8.129300000011922,
+      "displayFps": 119.93652589996312,
+      "updatesPerTerminal": 119.93652589996212,
+      "updatesP10": 119.93652589996312,
+      "submittedPerTerminal": 118.07092669400716,
+      "gpuCompletedUpdatesPerTerminal": 118.13219234726135,
+      "surfaceFrames": [
+        118.09134857842523,
+        118.09134857842523,
+        118.09134857842523,
+        118.09134857842523,
+        118.09134857842523,
+        117.96833675698936
+      ],
+      "surfaceCompletedFrames": [
+        118.09134857842523,
+        118.09134857842523,
+        118.09134857842523,
+        118.09134857842523,
+        118.21436039986108,
+        118.21436039986108
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2301,
+      "browserCpuCores": 2.5084034231702947,
+      "loadAverage1m": [
+        7.30615234375,
+        7.6015625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 512,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 223,
+      "seconds": 8.127400000005961,
+      "displayFps": 119.71848315565695,
+      "updatesPerTerminal": 119.84152373443843,
+      "updatesP10": 119.84152373443975,
+      "submittedPerTerminal": 117.70849995069743,
+      "gpuCompletedUpdatesPerTerminal": 117.64697966130603,
+      "surfaceFrames": [
+        117.5037527375667,
+        117.74983389513228,
+        117.74983389513228,
+        117.74983389513228,
+        117.74983389513228,
+        117.74983389513228
+      ],
+      "surfaceCompletedFrames": [
+        117.5037527375667,
+        117.62679331634949,
+        117.62679331634949,
+        117.62679331634949,
+        117.74983389513228,
+        117.74983389513228
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2433,
+      "browserCpuCores": 2.8674098457655033,
+      "loadAverage1m": [
+        6.90673828125,
+        6.75390625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 360,
+      "seconds": 8.175600000023842,
+      "displayFps": 117.05562894432326,
+      "updatesPerTerminal": 105.92470277380042,
+      "updatesP10": 105.68031704064293,
+      "submittedPerTerminal": 110.49121776962738,
+      "gpuCompletedUpdatesPerTerminal": 110.34847595251347,
+      "surfaceFrames": [
+        110.32829394752306,
+        110.69523949280308,
+        110.32829394752306,
+        110.45060912928307,
+        110.57292431104308,
+        110.57292431104308
+      ],
+      "surfaceCompletedFrames": [
+        110.32829394752306,
+        110.57292431104308,
+        110.08366358400306,
+        110.20597876576306,
+        110.45060912928307,
+        110.45060912928307
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3295,
+      "browserCpuCores": 5.239299951305478,
+      "loadAverage1m": [
+        6.533203125,
+        6.97900390625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 363,
+      "seconds": 8.249399999976157,
+      "displayFps": 118.79651853502466,
+      "updatesPerTerminal": 102.8002036514718,
+      "updatesP10": 99.52238950740332,
+      "submittedPerTerminal": 100.99595122098674,
+      "gpuCompletedUpdatesPerTerminal": 101.1576599513191,
+      "surfaceFrames": [
+        100.97704075477095,
+        99.76483138196458,
+        101.34070356661287,
+        100.61337794292905,
+        101.94680825301606,
+        101.34070356661287
+      ],
+      "surfaceCompletedFrames": [
+        101.0982616920516,
+        100.00727325652586,
+        101.58314544117415,
+        100.73459888020969,
+        102.0680291902967,
+        101.46192450389351
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3334,
+      "browserCpuCores": 7.245062872845313,
+      "loadAverage1m": [
+        7.861328125,
+        8.34326171875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 563,
+      "seconds": 8.358300000011921,
+      "displayFps": 113.18090999349758,
+      "updatesPerTerminal": 72.50278166602469,
+      "updatesP10": 72.02421545040755,
+      "submittedPerTerminal": 72.2236180402481,
+      "gpuCompletedUpdatesPerTerminal": 72.2236180402481,
+      "surfaceFrames": [
+        73.69919720506819,
+        73.69919720506819,
+        69.03317660279926,
+        74.17776342068551,
+        73.93848031287685,
+        68.7938934949906
+      ],
+      "surfaceCompletedFrames": [
+        73.69919720506819,
+        73.69919720506819,
+        69.15281815670359,
+        74.05812186678118,
+        73.93848031287685,
+        68.7938934949906
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4122,
+      "browserCpuCores": 6.935526669251921,
+      "loadAverage1m": [
+        8.4755859375,
+        9.0234375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 118,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 584,
+      "seconds": 8.24009999999404,
+      "displayFps": 116.9888714943626,
+      "updatesPerTerminal": 58.21126766265105,
+      "updatesP10": 57.76628924410435,
+      "submittedPerTerminal": 55.82456523589916,
+      "gpuCompletedUpdatesPerTerminal": 55.78411265239489,
+      "surfaceFrames": [
+        55.824565235899165,
+        56.067280736924815,
+        55.824565235899165,
+        55.703207485386336,
+        55.703207485386336,
+        55.824565235899165
+      ],
+      "surfaceCompletedFrames": [
+        55.703207485386336,
+        56.188638487437636,
+        55.945922986411986,
+        55.581849734873515,
+        55.460491984360694,
+        55.824565235899165
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4172,
+      "browserCpuCores": 6.3485867306606165,
+      "loadAverage1m": [
+        9.341796875,
+        8.91357421875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 795,
+      "seconds": 8.33609999999404,
+      "displayFps": 99.80686412118314,
+      "updatesPerTerminal": 55.161886253802635,
+      "updatesP10": 54.58187881627203,
+      "submittedPerTerminal": 55.801633857599185,
+      "gpuCompletedUpdatesPerTerminal": 55.84164057536891,
+      "surfaceFrames": [
+        56.741161934278395,
+        55.18167968238491,
+        56.261321241388096,
+        55.541560202052636,
+        55.541560202052636,
+        55.541560202052636
+      ],
+      "surfaceCompletedFrames": [
+        56.741161934278395,
+        55.30163985560749,
+        56.261321241388096,
+        55.541560202052636,
+        55.66152037527522,
+        55.541560202052636
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4979,
+      "browserCpuCores": 6.984677190732273,
+      "loadAverage1m": [
+        8.65771484375,
+        8.76513671875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 116,
+      "terminalErrors": 0
+    },
+    {
+      "round": 1,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 818,
+      "seconds": 8.25759999999404,
+      "displayFps": 102.69327649687706,
+      "updatesPerTerminal": 46.421962797942484,
+      "updatesP10": 46.13931408645066,
+      "submittedPerTerminal": 45.65545679135246,
+      "gpuCompletedUpdatesPerTerminal": 45.67555948462898,
+      "surfaceFrames": [
+        47.83472195314439,
+        44.56500678166363,
+        44.928308467383715,
+        44.68610734357033,
+        47.350319705517606,
+        44.56500678166363
+      ],
+      "surfaceCompletedFrames": [
+        47.71362139123769,
+        44.56500678166363,
+        44.928308467383715,
+        44.68610734357033,
+        47.4714202674243,
+        44.68610734357033
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 5059,
+      "browserCpuCores": 6.849139507318407,
+      "loadAverage1m": [
+        9.06005859375,
+        9.13525390625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 119,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 256,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 172,
+      "seconds": 8.1285,
+      "displayFps": 120.07135387832932,
+      "updatesPerTerminal": 120.07135387833017,
+      "updatesP10": 120.07135387832932,
+      "submittedPerTerminal": 118.10297102786491,
+      "gpuCompletedUpdatesPerTerminal": 118.10297102786491,
+      "surfaceFrames": [
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491
+      ],
+      "surfaceCompletedFrames": [
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491,
+        118.10297102786491
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1965,
+      "browserCpuCores": 1.8542269409081926,
+      "loadAverage1m": [
+        8.8837890625,
+        8.20654296875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 256,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 157,
+      "seconds": 8.132,
+      "displayFps": 120.01967535661585,
+      "updatesPerTerminal": 120.01967535661605,
+      "updatesP10": 120.01967535661585,
+      "submittedPerTerminal": 118.05165933964585,
+      "gpuCompletedUpdatesPerTerminal": 118.01130948721102,
+      "surfaceFrames": [
+        118.05213969503198,
+        117.92916871618299,
+        118.05213969503198,
+        118.05213969503198,
+        118.17511067388097,
+        118.05213969503198
+      ],
+      "surfaceCompletedFrames": [
+        118.05213969503198,
+        118.05213969503198,
+        118.05213969503198,
+        117.92916871618299,
+        118.05213969503198,
+        117.92916871618299
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 1848,
+      "browserCpuCores": 1.6987459930638114,
+      "loadAverage1m": [
+        8.43017578125,
+        7.58837890625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 512,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 218,
+      "seconds": 8.131199999988079,
+      "displayFps": 119.41656828037972,
+      "updatesPerTerminal": 119.4165682803796,
+      "updatesP10": 119.41656828037972,
+      "submittedPerTerminal": 117.34627307487196,
+      "gpuCompletedUpdatesPerTerminal": 117.44883903992033,
+      "surfaceFrames": [
+        117.32585596239161,
+        117.32585596239161,
+        117.32585596239161,
+        117.32585596239161,
+        117.32585596239161,
+        117.44883903992033
+      ],
+      "surfaceCompletedFrames": [
+        117.44883903992033,
+        117.44883903992033,
+        117.44883903992033,
+        117.44883903992033,
+        117.44883903992033,
+        117.44883903992033
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2416,
+      "browserCpuCores": 2.903954564986372,
+      "loadAverage1m": [
+        7.541015625,
+        7.89794921875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 512,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 214,
+      "seconds": 8.125900000005961,
+      "displayFps": 119.12526612428037,
+      "updatesPerTerminal": 119.12526612428151,
+      "updatesP10": 119.12526612428037,
+      "submittedPerTerminal": 117.23845589403034,
+      "gpuCompletedUpdatesPerTerminal": 117.11539260257963,
+      "surfaceFrames": [
+        117.27931675251983,
+        117.27931675251983,
+        117.27931675251983,
+        117.27931675251983,
+        117.15625346106913,
+        117.15625346106913
+      ],
+      "surfaceCompletedFrames": [
+        117.15625346106913,
+        117.15625346106913,
+        117.15625346106913,
+        117.15625346106913,
+        117.03319016961842,
+        117.03319016961842
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 2282,
+      "browserCpuCores": 2.5838948352340023,
+      "loadAverage1m": [
+        7.82568359375,
+        8.1337890625
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 369,
+      "seconds": 8.17759999999404,
+      "displayFps": 117.88299745655236,
+      "updatesPerTerminal": 107.63561436125984,
+      "updatesP10": 105.04304441408556,
+      "submittedPerTerminal": 103.80417237338811,
+      "gpuCompletedUpdatesPerTerminal": 103.62062218751437,
+      "surfaceFrames": [
+        110.54588143228561,
+        103.20876540801886,
+        102.84190960680553,
+        102.96419487387664,
+        101.86362747023664,
+        101.37448640195218
+      ],
+      "surfaceCompletedFrames": [
+        110.30131089814338,
+        102.96419487387664,
+        102.71962433973442,
+        102.71962433973442,
+        101.74134220316552,
+        101.25220113488106
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3385,
+      "browserCpuCores": 5.802343674901178,
+      "loadAverage1m": [
+        7.802734375,
+        8.81591796875
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 1000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 369,
+      "seconds": 8.220300000011921,
+      "displayFps": 118.9737600815763,
+      "updatesPerTerminal": 108.73447441075145,
+      "updatesP10": 108.14690461402999,
+      "submittedPerTerminal": 111.5324258237133,
+      "gpuCompletedUpdatesPerTerminal": 111.59337250449128,
+      "surfaceFrames": [
+        111.43145627272382,
+        111.91805651845624,
+        111.55310633415692,
+        110.8232059655583,
+        111.67475639559002,
+        111.79640645702314
+      ],
+      "surfaceCompletedFrames": [
+        111.30980621129072,
+        112.03970657988934,
+        111.79640645702314,
+        110.9448560269914,
+        111.67475639559002,
+        111.79640645702314
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 3269,
+      "browserCpuCores": 6.307128418709199,
+      "loadAverage1m": [
+        8.91064453125,
+        8.83740234375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 121,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 569,
+      "seconds": 8.251200000017882,
+      "displayFps": 119.37657552814929,
+      "updatesPerTerminal": 59.89027858561116,
+      "updatesP10": 58.41574558839386,
+      "submittedPerTerminal": 56.416036455181214,
+      "gpuCompletedUpdatesPerTerminal": 56.35543920872022,
+      "surfaceFrames": [
+        57.32499515209605,
+        56.59782819456418,
+        56.23424471579824,
+        56.11305022287626,
+        56.11305022287626,
+        56.11305022287626
+      ],
+      "surfaceCompletedFrames": [
+        57.32499515209605,
+        56.4766337016422,
+        56.11305022287626,
+        56.11305022287626,
+        56.11305022287626,
+        55.99185572995428
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4194,
+      "browserCpuCores": 6.149036497686107,
+      "loadAverage1m": [
+        8.83642578125,
+        8.84912109375
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 1500,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 559,
+      "seconds": 8.33719999998808,
+      "displayFps": 114.42690591581874,
+      "updatesPerTerminal": 72.18650546156938,
+      "updatesP10": 71.6067744567545,
+      "submittedPerTerminal": 70.04749796104628,
+      "gpuCompletedUpdatesPerTerminal": 69.98752578813442,
+      "surfaceFrames": [
+        72.80621791499159,
+        69.80760926939885,
+        69.68766492357514,
+        69.20788754028031,
+        69.0879431944566,
+        69.68766492357514
+      ],
+      "surfaceCompletedFrames": [
+        72.92616226081529,
+        69.56772057775143,
+        69.56772057775143,
+        69.32783188610402,
+        69.0879431944566,
+        69.44777623192772
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4099,
+      "browserCpuCores": 6.94553755373826,
+      "loadAverage1m": [
+        8.22021484375,
+        9.3642578125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 120,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "main",
+      "workers": 6,
+      "mountMs": 821,
+      "seconds": 8.264299999982118,
+      "displayFps": 100.43197851019396,
+      "updatesPerTerminal": 46.404474668251396,
+      "updatesP10": 45.859903440197,
+      "submittedPerTerminal": 47.210774052350985,
+      "gpuCompletedUpdatesPerTerminal": 47.170419757371285,
+      "surfaceFrames": [
+        46.948924893922,
+        46.82792251017477,
+        48.037946347646994,
+        47.43293442891088,
+        47.069927277669215,
+        46.948924893922
+      ],
+      "surfaceCompletedFrames": [
+        46.82792251017477,
+        46.82792251017477,
+        48.15894873139421,
+        47.31193204516366,
+        47.069927277669215,
+        46.82792251017477
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 5128,
+      "browserCpuCores": 6.8137938728734495,
+      "loadAverage1m": [
+        8.7744140625,
+        8.89501953125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 119,
+      "terminalErrors": 0
+    },
+    {
+      "round": 2,
+      "count": 2000,
+      "mode": "shared",
+      "feed": "worker",
+      "workers": 6,
+      "mountMs": 778,
+      "seconds": 8.375700000017881,
+      "displayFps": 104.23009420085918,
+      "updatesPerTerminal": 55.57720548718534,
+      "updatesP10": 54.80138973447235,
+      "submittedPerTerminal": 56.25368625893885,
+      "gpuCompletedUpdatesPerTerminal": 56.21392838795502,
+      "surfaceFrames": [
+        56.5922848238342,
+        55.27896175830218,
+        56.711677829791654,
+        55.63714077617455,
+        57.42803586553639,
+        55.87592678808946
+      ],
+      "surfaceCompletedFrames": [
+        56.35349881191928,
+        55.51774777021709,
+        56.5922848238342,
+        55.51774777021709,
+        57.42803586553639,
+        55.87592678808946
+      ],
+      "longTasks": 0,
+      "longAnimationFrames": {
+        "count": 0,
+        "ms": 0,
+        "blockingMs": 0,
+        "renderMs": 0,
+        "styleLayoutMs": 0,
+        "topScripts": []
+      },
+      "longTaskMs": 0,
+      "atlases": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "memoryMiB": 4973,
+      "browserCpuCores": 7.098013961473608,
+      "loadAverage1m": [
+        8.6630859375,
+        8.42626953125
+      ],
+      "power": "AC Power",
+      "idleDisplayHz": 118,
+      "terminalErrors": 0
+    }
+  ]
+}
