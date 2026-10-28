@@ -1,6 +1,18 @@
 // Prose for docs/benchmarks/resource-efficiency/REPORT.md. The method text is
 // fixed; findings() is filled in from the measured summary after a run.
 
+const SHORT = {
+  wraith: 'Wraith',
+  'wraith-xterm': 'Wraith xterm-compatible',
+  'xterm-webgl': 'xterm.js WebGL',
+  'xterm-dom': 'xterm.js DOM',
+  restty: 'restty',
+  zem: 'zem',
+  'ghostty-web': 'ghostty-web',
+  wterm: 'wterm',
+  'wterm-ghostty': 'wterm + Ghostty',
+};
+const n = (t) => SHORT[t] ?? t;
 const r = (x, d = 0) =>
   Number.isFinite(x)
     ? x.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d })
@@ -20,7 +32,7 @@ export function findings(s, agg, ranks) {
   const best = (key, skip) => rank(s, key, skip);
   const order = (key, skip, digits = 0) =>
     best(key, skip)
-      .map(([t, v]) => `${t} ${r(v[key], digits)}`)
+      .map(([t, v]) => `${n(t)} ${r(v[key], digits)}`)
       .join(', ');
   const pool64 = a('multi64', 'wraith-pool'),
     fleet64 = a('multi64', 'wraith-fleet');
@@ -28,18 +40,23 @@ export function findings(s, agg, ranks) {
     `${r(a('throughput', t)?.bytes / 2 ** 20 / a('throughput', t)?.elapsedS)} MiB/s`;
   return `## Findings
 
-All figures are medians of 3 rounds, as the change over the same page with no terminal.
+All figures are medians of 3 rounds, as the change over the same page with no terminal. Wraith is the SDK and engine of \`${ranks.base}\` (this branch adds only benchmark files).
 
 - **CPU: Wraith's native profile is the most CPU-efficient overall** (rank ${pos(ranks.cpu, 'wraith')}
   by the geometric mean of 8 CPU metrics). It costs the least CPU per MiB of
   output (${r(w.throughputCpuPerMB)} CPU-ms/MiB for the colored log, ${r(w.unicodeCpuPerMB)} for
   Unicode; next are ${order('throughputCpuPerMB', ['wraith']).split(', ').slice(0, 2).join(' and ')}),
   the least for a 200 lines/s log stream (${r(w.logsCpu)} CPU-ms/s; xterm.js WebGL
-  ${r(x.logsCpu)}, xterm.js DOM ${r(d.logsCpu)}) and the least per full-screen
-  truecolor redraw (${r(w.denseCpuPer1k / 1000, 1)} CPU-s per 1,000 frames while
-  holding ${r(a('dense', 'wraith')?.updatesPerS)} frames/s; restty ${r(s.restty.denseCpuPer1k / 1000, 1)},
-  zem ${r(s.zem.denseCpuPer1k / 1000, 1)}, xterm.js DOM ${r(d.denseCpuPer1k / 1000, 1)},
-  xterm.js WebGL ${r(x.denseCpuPer1k / 1000, 1)} at ${r(a('dense', 'xterm-webgl')?.updatesPerS)} frames/s).
+  ${r(x.logsCpu)}, xterm.js DOM ${r(d.logsCpu)}). For a full-screen truecolor
+  redraw every frame the lowest CPU per 1,000 frames is
+  ${best('denseCpuPer1k')
+    .slice(0, 4)
+    .map(([t, v]) => `${n(t)} ${r(v.denseCpuPer1k / 1000, 1)} CPU-s`)
+    .join(', ')}
+  (Wraith holding ${r(a('dense', 'wraith')?.updatesPerS)} frames/s, its range over rounds
+  ${r(a('dense', 'wraith')?.cpuMin)}–${r(a('dense', 'wraith')?.cpuMax)} CPU-ms/s); xterm.js DOM needs
+  ${r(d.denseCpuPer1k / 1000, 1)} and xterm.js WebGL ${r(x.denseCpuPer1k / 1000, 1)} at
+  ${r(a('dense', 'xterm-webgl')?.updatesPerS)} frames/s.
   It parses and draws the 20 MiB log at ${mb('wraith')} (restty ${mb('restty')},
   xterm.js DOM ${mb('xterm-dom')}).
 - **Idle, xterm.js WebGL is cheapest** (${r(x.idleCpu)} CPU-ms/s) and Wraith second
@@ -51,12 +68,16 @@ All figures are medians of 3 rounds, as the change over the same page with no te
   ghostty-web redraws continuously and idles at ${r(s['ghostty-web'].idleCpu)} CPU-ms/s
   with ${r(a('idle', 'ghostty-web')?.gpuMs)} GPU-ms/s. Typing echo is also cheapest
   on xterm.js WebGL (${r(x.typingCpu)} CPU-ms/s); Wraith is ${r(w.typingCpu)}.
-- **Many terminals: Fleet is the cheapest way to run 64.** At 64 terminals ×
+- **Many terminals: Fleet uses the least CPU at 64.** At 64 terminals ×
   20 lines/s, Fleet uses ${r(fleet64?.cpu.total)} CPU-ms/s and ${r(fleet64?.mem.total)} MiB
   (${r(fleet64?.mem.total / 64, 1)} MiB per terminal) against the per-canvas pool's
-  ${r(pool64?.cpu.total)} CPU-ms/s and ${r(pool64?.mem.total)} MiB. Among the others,
-  xterm.js DOM is lowest in CPU (${r(d.multi64Cpu)}) and RAM per terminal
-  (${r(d.ramPerTerminal64, 1)} MiB); ghostty-web and wterm need more than a core.
+  ${r(pool64?.cpu.total)} CPU-ms/s and ${r(pool64?.mem.total)} MiB. xterm.js DOM is next in CPU
+  (${r(d.multi64Cpu)}) and uses the least RAM per terminal (${r(d.ramPerTerminal64, 1)} MiB),
+  followed by ${best('ramPerTerminal64', ['xterm-dom'])
+    .slice(0, 3)
+    .map(([t, v]) => `${n(t)} ${r(v.ramPerTerminal64, 1)}`)
+    .join(', ')};
+  ghostty-web and wterm need more than a core.
   xterm.js WebGL cannot run 64: Chrome keeps 16 WebGL contexts and the other
   ${a('multi64', 'xterm-webgl')?.lost} terminals stop drawing. At 16, xterm.js WebGL is cheapest
   (${r(x.multi16Cpu)} CPU-ms/s), then Fleet (${r(s['wraith-fleet'].multi16Cpu)}).
@@ -83,8 +104,9 @@ All figures are medians of 3 rounds, as the change over the same page with no te
   xterm.js WebGL is the cheapest at idle, typing and 16 terminals, but its
   dense redraw grew Chrome's GPU process to ${r(a('dense', 'xterm-webgl')?.mem.gpu)} MiB.
   The Wraith xterm-compatible profile (xterm.js's parser and buffer on the
-  main thread, Wraith's WebGPU renderer) costs more than the native profile
-  everywhere, and against xterm.js WebGL it is cheaper on the colored log
+  main thread, Wraith's WebGPU renderer) costs more CPU than the native profile
+  on ${['idleCpu', 'logsCpu', 'throughputCpuPerMB', 'unicodeCpuPerMB', 'denseCpuPer1k', 'multi16Cpu'].filter((k) => s['wraith-xterm'][k] > w[k]).length} of 6 CPU metrics (not on dense redraw, where it is
+  ${r(s['wraith-xterm'].denseCpuPer1k / 1000, 1)} vs ${r(w.denseCpuPer1k / 1000, 1)} CPU-s per 1,000 frames), and against xterm.js WebGL it is cheaper on the colored log
   (${r(s['wraith-xterm'].throughputCpuPerMB)} vs ${r(x.throughputCpuPerMB)} CPU-ms/MiB) and dense redraw
   (${r(s['wraith-xterm'].denseCpuPer1k / 1000, 1)} vs ${r(x.denseCpuPer1k / 1000, 1)} CPU-s per 1,000 frames) but
   costlier idle (${r(s['wraith-xterm'].idleCpu)} vs ${r(x.idleCpu)} CPU-ms/s), on Unicode

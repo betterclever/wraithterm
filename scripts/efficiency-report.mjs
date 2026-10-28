@@ -4,6 +4,7 @@
 // workload and round, and the median of the rounds is shown.
 //
 //   node scripts/efficiency-report.mjs [results.json]
+import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -483,6 +484,12 @@ lines.push(
 
 const report = resolve(dir, 'REPORT.md');
 const { findings, method } = await import('./efficiency-report-text.mjs');
+const mergeBase = execFileSync('git', ['merge-base', data.head, 'origin/main'], {
+  cwd: root,
+  encoding: 'utf8',
+})
+  .trim()
+  .slice(0, 7);
 const v = data.versions;
 const provenance = [
   `Measured ${data.measured.slice(0, 10)} on ${data.machine.cpu} (${data.machine.logicalCpus} logical CPUs, ${Math.round(data.machine.memoryGB)} GB), macOS ${data.machine.os}, ${data.chrome}, headed, DPR 2, AC power.`,
@@ -491,7 +498,7 @@ const provenance = [
 ].join(' ');
 await writeFile(
   report,
-  `# Resource efficiency: what a web terminal costs in Chrome\n\n${provenance}\n\n${findings(summary, agg, { cpu: rc, ram: rr, rendererRam: rp })}\n\n## Results\n\n${lines.join('\n')}\n${method}\n`,
+  `# Resource efficiency: what a web terminal costs in Chrome\n\n${provenance}\n\n${findings(summary, agg, { cpu: rc, ram: rr, rendererRam: rp, base: mergeBase })}\n\n## Results\n\n${lines.join('\n')}\n${method}\n`,
 );
 const csv = [['renderer', ...Object.keys(summary.wraith)].join(',')];
 for (const [t, s] of Object.entries(summary))
