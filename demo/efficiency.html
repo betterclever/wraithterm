@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Wraith · resource efficiency</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Every renderer, and the no-terminal baseline, loads the same module, so
+         each run parses and holds the same JavaScript, CSS and font. -->
+    <script type="module">
+      import * as bench from '/efficiency-bench.js';
+      window.efficiency = bench;
+      window.efficiencyReady = true;
+    </script>
+  </body>
+</html>
