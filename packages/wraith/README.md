@@ -211,16 +211,27 @@ per font configuration. Each terminal is drawn at its host's on-screen
 rectangle, clipped to scrolling ancestors. Only terminals with new content are
 redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
 focus, selection and accessibility. Shared and per-canvas output are
-pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
-120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
-per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
-119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+pixel-identical at 1:1 (`npm run test:fleet`). Pooled terminals' messages
+cross to each worker in one batch per task, placements are re-measured only
+when something can have moved them, and each surface writes all its
+terminals' uniforms in one upload per frame. Headed on an Apple M5 Max at
+120 Hz with agent-log streams and 4 workers, every one of 1,000 shared
+terminals held at least 73 parsed updates per second (p10 73.7–115.5 driven
+from the main thread, 83.2–119.0 fed inside the workers; the display held
+120 frames per second), against p10 43–45 before. At 1,500 terminals, worker-fed
+streams held p10 63–74 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
 [`demo/fleet.html`](demo/fleet.html).
 
 Limits: the shared canvases sit at `z-index: 1` by default
 (`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
 must stack above them. Placement follows layout one animation frame later
-than the DOM. Rotation and perspective transforms are not modelled, and partial
+than the DOM. By default (`sharedSurface: { tracking: 'observe' }`) the pool
+re-measures terminals after scrolling, resizing, DOM and style changes outside
+the terminals and while CSS animations run, plus a rolling sweep that covers
+every terminal about every 30 frames; call `pool.updatePlacements()` after
+moving terminals in a way the page cannot observe (for example a Web
+Animations API animation), or pass `tracking: 'frame'` to measure every
+terminal every frame. Rotation and perspective transforms are not modelled, and partial
 CSS opacity or filters on a host are not applied (`visibility: hidden` and
 `opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
 terminal is created. A worker's terminals with the same fonts share one
