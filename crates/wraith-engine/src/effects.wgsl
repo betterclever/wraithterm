@@ -11,7 +11,7 @@ struct Fx {
     mouse: vec4<f32>, // Shadertoy iMouse in px
     cursor: vec4<f32>, // current (target) cursor rect
     previous: vec4<f32>, // previous cursor rect
-    flags: vec4<u32>, // bit 0: CRT, bit 1: bloom, bit 2: trail visible
+    flags: vec4<u32>, // x: bit 0 CRT, bit 1 bloom, bit 2 trail visible; y: shared surface
 }
 @group(0) @binding(0) var<uniform> fx: Fx;
 @group(0) @binding(1) var source: texture_2d<f32>;
@@ -82,7 +82,8 @@ fn trail(p: vec2<f32>) -> f32 {
         c *= 1. + fx.crt.x * 0.12 * (c.yx * c.yx);
         uv = c * 0.5 + 0.5;
         if any(uv < vec2<f32>(0.)) || any(uv > vec2<f32>(1.)) {
-            return vec4<f32>(0., 0., 0., 1.);
+            // A shared surface lies over the page: leave it see-through.
+            return vec4<f32>(0., 0., 0., select(1., 0., fx.flags.y != 0u));
         }
     }
     var color = textureSampleLevel(source, smooth_sampler, uv, 0.);

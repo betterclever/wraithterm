@@ -32,8 +32,23 @@
         >
         <label
           >Surface<select id="mode">
-            <option value="shared" selected>Shared · one per worker</option>
-            <option value="canvas">Per-terminal canvases</option>
+            <option value="shared" selected>Shared</option>
+            <option value="canvas">Per-canvas</option>
+          </select></label
+        >
+        <label title="GPU post-process effects over each worker's shared surface"
+          >Effects<select id="effects">
+            <option value="off" selected>Off</option>
+            <option value="crt,bloom">CRT + bloom</option>
+            <option value="crt,bloom,synthwave">CRT + bloom + synthwave</option>
+            <option value="synthwave">Synthwave</option>
+            <option value="matrix">Matrix</option>
+            <option value="warp">Warp</option>
+            <option value="rain">Rain</option>
+            <option value="hologram">Hologram</option>
+            <option value="glitch">Glitch</option>
+            <option value="crt">CRT</option>
+            <option value="bloom">Bloom</option>
           </select></label
         >
         <label

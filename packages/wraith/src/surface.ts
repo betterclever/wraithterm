@@ -6,6 +6,8 @@
 // animation or transition) plus a rolling sweep, or every animation frame
 // with `tracking: 'frame'`.
 import { Invalidation, place, STRIDE, type PlacementTracking } from './placement.js';
+import type { PackedEffects } from './effects.js';
+import { Fanout } from './fanout.js';
 import type { PoolMessage, SurfaceReply } from './protocol.js';
 export type { PlacementTracking } from './placement.js';
 
@@ -37,6 +39,8 @@ export interface SharedSurfaceStats {
   completedUpdates: number;
   /** Distinct live glyph atlases on this worker. */
   atlases: number;
+  /** Post-process passes in the surface's last frame (zero with effects off). */
+  effectPasses: number;
   terminals: number;
   width: number;
   height: number;
@@ -109,6 +113,13 @@ export class SharedSurfaces {
   private size: [number, number] = [0, 0];
   private stats: SharedSurfaceStats[] = [];
   private disposed = false;
+  /** Effects applied to every worker surface, and to workers spawned later. */
+  private effects?: PackedEffects;
+  private effectRequests = new Fanout();
+  private effectQueue = Promise.resolve();
+  private pointer?: AbortController;
+  private mouse = [0, 0, 0, 0];
+  private mouseFrame = 0;
   constructor(
     private options: SharedSurfaceOptions = {},
     private onError: (worker: number, error: Error) => void,
@@ -202,6 +213,17 @@ export class SharedSurfaces {
       { type: 'surface', canvas: offscreen, width, height } satisfies PoolMessage,
       [offscreen],
     );
+    // A worker spawned after effects were set starts with them too.
+    if (this.effects) {
+      const { id, done } = this.effectRequests.start(1);
+      worker.postMessage({
+        type: 'surface-effects',
+        id,
+        params: this.effects.params,
+        shader: this.effects.shader,
+      } satisfies PoolMessage);
+      done.catch((error) => this.onError(index, error));
+    }
     this.canvases.push(canvas);
     this.workers.push(worker);
     this.size = [width, height];
@@ -213,6 +235,8 @@ export class SharedSurfaces {
       const { type: _, ...stats } = reply;
       this.stats[index] = stats;
     } else if (reply.type === 'surface-error') this.onError(index, new Error(reply.error));
+    else if (reply.type === 'surface-effects-result')
+      this.effectRequests.settle(reply.id, reply.error);
   }
   private measure(canvas: HTMLCanvasElement): [number, number] {
     const dpr = window.devicePixelRatio || 1;
@@ -368,8 +392,66 @@ export class SharedSurfaces {
       ]);
     });
   }
+  /**
+   * Apply packed effects to every worker surface. Resolves once every worker
+   * validated and installed them; rejects with the first worker's error (an
+   * invalid shader is rejected by all, and each keeps its previous effects).
+   */
+  setEffects(packed: PackedEffects): Promise<void> {
+    const run = this.effectQueue.then(async () => {
+      if (this.disposed) throw new Error('Wraith pool has been disposed');
+      const { id, done } = this.effectRequests.start(this.workers.length);
+      for (const worker of this.workers)
+        worker.postMessage({
+          type: 'surface-effects',
+          id,
+          params: packed.params,
+          shader: packed.shader,
+        } satisfies PoolMessage);
+      await done;
+      this.effects = packed.active ? packed : undefined;
+      this.trackPointer(packed.active && packed.mouse);
+    });
+    this.effectQueue = run.catch(() => {});
+    return run;
+  }
+  /** Forward the pointer (Shadertoy iMouse, surface pixels) while a shader reads it. */
+  private trackPointer(enabled: boolean) {
+    if (!enabled) {
+      this.pointer?.abort();
+      this.pointer = undefined;
+      return;
+    }
+    if (this.pointer || typeof window === 'undefined') return;
+    this.pointer = new AbortController();
+    const update = (event: PointerEvent) => {
+      const dpr = window.devicePixelRatio || 1;
+      const origin = this.canvases[0]?.getBoundingClientRect() ?? { left: 0, top: 0 };
+      const x = (event.clientX - origin.left) * dpr,
+        y = (event.clientY - origin.top) * dpr;
+      if (event.type === 'pointerdown') this.mouse = [x, y, x, y];
+      else if (event.type === 'pointerup')
+        this.mouse = [x, y, -Math.abs(this.mouse[2]!), -Math.abs(this.mouse[3]!)];
+      else this.mouse = [x, y, this.mouse[2]!, this.mouse[3]!];
+      if (this.mouseFrame) return;
+      this.mouseFrame = requestAnimationFrame(() => {
+        this.mouseFrame = 0;
+        for (const worker of this.workers)
+          worker.postMessage({
+            type: 'surface-effect-mouse',
+            mouse: this.mouse,
+          } satisfies PoolMessage);
+      });
+    };
+    const options = { capture: true, passive: true, signal: this.pointer.signal };
+    for (const type of ['pointerdown', 'pointermove', 'pointerup'])
+      window.addEventListener(type, update as EventListener, options);
+  }
   dispose() {
     this.disposed = true;
+    this.effectRequests.cancel(new Error('Wraith pool has been disposed'));
+    this.pointer?.abort();
+    if (this.mouseFrame) cancelAnimationFrame(this.mouseFrame);
     cancelAnimationFrame(this.raf);
     this.observer?.disconnect();
     this.resizes?.disconnect();

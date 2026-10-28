@@ -133,6 +133,21 @@ Measured on its own commit, the HUD change slowed that page, adding about 4 s of
 
 Reproduce with `HEADED=1 WRAITH_URL=http://127.0.0.1:5173 MODES=shared FEEDS=main,worker WORKERS=4 COUNTS=256,512,1000,1500,2000 caffeinate -u -d npm run benchmark:fleet`. `BUILD` and `RESULTS` label another build, and `npm run profile:fleet` records traces.
 
+## Effects on the shared surface (#68)
+
+Measured at 1,000 shared terminals with 4 workers. Each effect setting was applied with `pool.setEffects()` before mounting, and every setting was measured in both feeds over 3 rounds. The build was `42ff896` (clean tree); the session and conditions match the update above (07:47–07:51 IST, load 5.5–9.4, AC power). Raw runs are in [effects-w4.json](effects-w4.json). Each run also records every surface's `effectPasses`, which confirms the effects were active: 0 with effects off, 3 for CRT + bloom (two bloom blur passes and the composite) and 4 with synthwave added (plus the custom-shader pass).
+
+| Feed   | Effects                 | Parsed / terminal / s |        p10 | GPU-completed / terminal / s | Page rAF / s | Long tasks | Browser CPU (cores) | RSS (GiB) | Load 1m |
+| ------ | ----------------------- | --------------------: | ---------: | ---------------------------: | -----------: | ---------: | ------------------: | --------: | ------: |
+| main   | off                     |            80.5–118.8 | 80.1–118.6 |                   83.6–117.6 |  119.6–120.0 |          0 |             4.4–5.1 | 3.13–3.25 | 5.5–8.9 |
+| main   | CRT + bloom             |            81.0–117.8 | 80.8–117.7 |                   84.1–116.7 |  119.1–120.0 |          0 |             4.4–5.5 | 3.16–3.25 | 5.6–7.5 |
+| main   | CRT + bloom + synthwave |            89.3–116.7 | 89.0–116.6 |                   92.7–121.0 |  119.5–120.1 |          0 |             4.7–5.4 |      3.15 | 6.6–9.1 |
+| worker | off                     |            99.8–119.6 | 99.4–119.5 |                  104.2–123.9 |  120.0–120.1 |          0 |             4.4–4.7 | 3.15–3.21 | 6.9–9.4 |
+| worker | CRT + bloom             |            92.9–119.7 | 92.6–119.6 |                   94.5–123.9 |  119.9–120.0 |          0 |             4.2–4.9 | 3.08–3.27 | 7.1–9.0 |
+| worker | CRT + bloom + synthwave |            85.8–119.4 | 85.6–119.1 |                   87.8–123.8 |  119.6–120.0 |          0 |             4.2–4.8 | 3.08–3.27 | 6.9–9.1 |
+
+Effects run once per worker surface: three full-surface passes for CRT + bloom, four with synthwave. At 1,000 terminals they cost less than the run-to-run spread caused by machine load: every setting held p10 ≥ 80 in both feeds, and the display held 120 Hz. Device-wide GPU utilization was not sampled, so no GPU-time cost is claimed. GPU-completed counts are reported as above.
+
 ## Original #54 measurements
 
 Apple M5 Max, macOS 27.2, Chrome 155.0.0.0 (`Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36`), **headed** on the built-in Liquid Retina XDR display at 120 Hz (idle rAF re-measured after each shared run: 118–121 Hz). Build `df8b8db` (clean tree); Wasm, SDK, page and runner SHA-256 hashes and every run are in [results.json](results.json). Measured 2026-10-26.

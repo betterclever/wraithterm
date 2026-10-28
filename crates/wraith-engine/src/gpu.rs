@@ -290,7 +290,7 @@ impl Renderer {
         // draws every terminal in one pass, with no per-terminal image to
         // process.
         if self.surface.is_none() && !off {
-            return Err("effects need the terminal's own canvas; a shared-surface terminal does not support them".into());
+            return Err("effects need the terminal's own canvas; on a shared-surface pool use pool.setEffects()".into());
         }
         if off {
             // Off: drop every effect resource and return to the direct path.

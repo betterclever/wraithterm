@@ -36,6 +36,8 @@ export class SharedHost {
   private scheduled = false;
   private failed = false;
   private updates = 0;
+  /** An effects change is awaiting pipeline validation and holds the surface. */
+  private configuring = false;
   private statsTimer: ReturnType<typeof setInterval>;
   constructor(
     private scope: DedicatedWorkerGlobalScope,
@@ -43,6 +45,9 @@ export class SharedHost {
     canvas: OffscreenCanvas,
     width: number,
     height: number,
+    /** Runs device work one task at a time with terminal creation, whose
+     * validation error scopes and surface borrows must not interleave. */
+    private exclusive: <T>(run: () => Promise<T>) => Promise<T> = (run) => run(),
   ) {
     this.ready = wasm
       .then(() => Surface.create(canvas, width, height))
@@ -65,7 +70,8 @@ export class SharedHost {
   }
   private postStats() {
     const s = this.surface;
-    if (!s || this.failed) return;
+    // set_effects holds the surface across its await; reading it then throws.
+    if (!s || this.failed || this.configuring) return;
     this.post({
       type: 'surface-stats',
       frames: s.frames,
@@ -73,6 +79,7 @@ export class SharedHost {
       completedUpdates: s.completed_updates,
       updates: this.updates,
       atlases: s.atlases,
+      effectPasses: s.effect_passes,
       terminals: this.slots.size,
       width: s.width,
       height: s.height,
@@ -109,12 +116,19 @@ export class SharedHost {
   resize(width: number, height: number) {
     this.ready.then(
       (surface) => {
+        // While effects are configured the surface is borrowed: apply the
+        // latest size once they are done.
+        if (this.configuring) {
+          this.pendingSize = [width, height];
+          return;
+        }
         surface.resize(width, height);
         this.invalidate();
       },
       () => {},
     );
   }
+  private pendingSize?: [number, number];
   geometry(data: Float32Array) {
     for (let i = 0; i + GEOMETRY_STRIDE <= data.length; i += GEOMETRY_STRIDE) {
       const id = data[i]!;
@@ -132,6 +146,10 @@ export class SharedHost {
   /** Draw `slot` now (flush and benchmarks), with any pending full redraw. */
   presentNow(slot: SharedSlot) {
     if (!this.surface || this.failed) return;
+    if (this.configuring) {
+      this.request(slot);
+      return;
+    }
     this.dirty.delete(slot);
     this.compose(this.full ? this.visibleSlots() : [slot], new Set([slot]), performance.now());
   }
@@ -145,7 +163,8 @@ export class SharedHost {
   }
   private frame(time: number) {
     const surface = this.surface;
-    if (!surface || this.failed) return;
+    // Effects being configured: their completion requests the next frame.
+    if (!surface || this.failed || this.configuring) return;
     const fresh = new Set<SharedSlot>();
     // Rendering can request another frame for the same terminal; take this
     // frame's set first so those land in the next one.
@@ -159,11 +178,39 @@ export class SharedHost {
       if (slot.render(time)) fresh.add(slot);
     }
     if (!this.full && !fresh.size) {
-      // A canvas texture that was unavailable last frame still needs presenting.
-      if (surface.unpresented) this.compose([], fresh, time);
-      return;
-    }
-    this.compose(this.full ? this.visibleSlots() : [...fresh], fresh, time);
+      // A canvas texture that was unavailable last frame still needs
+      // presenting, and an animated effect needs its next frame.
+      if (surface.unpresented || surface.effects_due) this.compose([], fresh, time);
+    } else this.compose(this.full ? this.visibleSlots() : [...fresh], fresh, time);
+    if (surface.effects_due) this.request();
+  }
+  /**
+   * Replace the surface's post-process effects (packed parameters and an
+   * optional WGSL shader; see effects.ts). Frames pause while pipelines are
+   * validated; on success every visible terminal is redrawn. Rejects with
+   * compiler messages and keeps the previous effects.
+   */
+  async setEffects(params: number[], shader?: string): Promise<void> {
+    const surface = await this.ready;
+    return this.exclusive(async () => {
+      if (this.failed) throw new Error('Shared surface failed');
+      this.configuring = true;
+      try {
+        await surface.set_effects(new Float32Array(params), shader);
+      } finally {
+        this.configuring = false;
+        if (this.pendingSize) {
+          surface.resize(...this.pendingSize);
+          this.pendingSize = undefined;
+        }
+        this.invalidate();
+      }
+    });
+  }
+  setEffectMouse(mouse: number[]) {
+    if (!this.surface || this.configuring) return;
+    this.surface.set_effect_mouse(mouse[0]!, mouse[1]!, mouse[2]!, mouse[3]!);
+    this.request();
   }
   private compose(list: SharedSlot[], fresh: Set<SharedSlot>, time: number) {
     const surface = this.surface!;

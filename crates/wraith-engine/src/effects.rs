@@ -73,6 +73,9 @@ pub struct Effects {
     scene_hid_cursor: bool,
     /// Post passes per presented frame, for diagnostics and tests.
     pub passes: u32,
+    /// Post-processing a shared surface: the scene is the surface's backing,
+    /// areas outside terminals stay transparent and there is no single cursor.
+    shared: bool,
 }
 
 fn texture(
@@ -286,7 +289,28 @@ impl Effects {
             scene_valid: false,
             scene_hid_cursor: false,
             passes: 0,
+            shared: false,
         })
+    }
+    /// Post-process a shared surface: its retained backing is the scene (see
+    /// `external_scene`), the cursor trail is dropped (a surface draws many
+    /// terminals, not one cursor), CRT corners outside the tube and custom
+    /// shader output outside terminal coverage stay transparent.
+    pub fn for_shared_surface(&mut self) {
+        self.shared = true;
+        self.settings.trail = None;
+    }
+    /// Use `scene` (a texture the caller draws and keeps) as the post-process
+    /// source. Call again after replacing that texture.
+    pub fn external_scene(
+        &mut self,
+        device: &wgpu::Device,
+        scene: &wgpu::TextureView,
+        width: u32,
+        height: u32,
+    ) {
+        self.targets = Some(self.build_targets(device, width, height, Some(scene)));
+        self.scene_valid = true;
     }
     /// Keep cursor and timing state when settings change at runtime.
     pub fn inherit(&mut self, previous: &Effects) {
@@ -366,7 +390,7 @@ impl Effects {
             .as_ref()
             .is_none_or(|t| t.width != width || t.height != height)
         {
-            self.targets = Some(self.build_targets(device, width, height));
+            self.targets = Some(self.build_targets(device, width, height, None));
             self.scene_valid = false;
         }
     }
@@ -411,8 +435,17 @@ impl Effects {
             ],
         })
     }
-    fn build_targets(&self, device: &wgpu::Device, width: u32, height: u32) -> Targets {
-        let scene_view = texture(device, self.format, width, height, "Wraith effect scene");
+    fn build_targets(
+        &self,
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
+        scene: Option<&wgpu::TextureView>,
+    ) -> Targets {
+        let scene_view = match scene {
+            Some(view) => view.clone(),
+            None => texture(device, self.format, width, height, "Wraith effect scene"),
+        };
         let (mut half_a, mut half_b) = (None, None);
         let (mut blur_h, mut blur_v) = (None, None);
         if self.blur.is_some() {
@@ -493,7 +526,7 @@ impl Effects {
                 crt.is_some() as u32
                     | (self.settings.bloom.is_some() as u32) << 1
                     | (trail.is_some() as u32) << 2,
-                0,
+                self.shared as u32,
                 0,
                 0,
             ],
