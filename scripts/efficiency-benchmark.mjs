@@ -268,7 +268,7 @@ async function run(type, workload, round) {
     at: new Date().toISOString(),
     gate,
     loadBefore: loadavg(),
-    power: power().line,
+    power: power(),
   };
   const context = await chromium.launchPersistentContext(dataDir, {
     executablePath: chromePath,
@@ -417,9 +417,10 @@ for (let round = 1; round <= rounds; round++)
       const key = `${round}|${workload}|${type}`;
       if (done.has(key)) continue;
       let r = await run(type, workload, round);
-      // A Fleet benchmark that started during the run invalidates it: repeat.
-      while (otherBench()) {
-        console.log(`  discarding r${round} ${workload} ${type}: fleet benchmark overlapped`);
+      // A Fleet benchmark that started during the run, or a switch to battery,
+      // invalidates it: repeat once the machine is ready again.
+      while (otherBench() || !power().ac) {
+        console.log(`  discarding r${round} ${workload} ${type}: fleet benchmark or battery power`);
         r = await run(type, workload, round);
       }
       await appendFile(raw, JSON.stringify(r) + '\n');
