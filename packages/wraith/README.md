@@ -567,7 +567,10 @@ its output is kept to where terminals (and their glow) are drawn. CRT corners
 outside the tube are transparent rather than black. The cursor trail and
 cursor uniforms need a single terminal's cursor, so they do not apply on a
 shared surface. With effects off the surface creates no extra textures or
-passes. `npm run dev`, then open `/fleet.html?effects=crt,bloom,synthwave`.
+passes. `npm run dev`, then open `/fleet.html?effects=crt,bloom,synthwave`. At 1,000 shared terminals with CRT + bloom +
+synthwave, every terminal held 85+ parsed updates per second, and the
+display held 120 Hz
+([report](docs/benchmarks/fleet/REPORT.md#effects-on-the-shared-surface-68)).
 
 On an Apple M5 Max (headless Chrome 155, 160x50 at DPR 2), a GPU-bound update
 took 0.077 ms with effects off. CRT added 0.028 ms, bloom 0.059 ms, a custom
