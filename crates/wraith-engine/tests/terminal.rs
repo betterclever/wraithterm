@@ -536,6 +536,41 @@ fn box_drawing_is_geometry_whatever_the_font() {
     }
 }
 #[test]
+fn double_line_joins_stay_open_where_an_arm_enters() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.tile_width, atlas.cell_height);
+    let across = box_tile(&mut atlas, 0x2550);
+    let rows: Vec<u32> = (0..h).filter(|&y| across(0, y) > 127).collect();
+    let down = box_tile(&mut atlas, 0x2551);
+    let columns: Vec<u32> = (0..w).filter(|&x| down(x, 0) > 127).collect();
+    let (top, bottom) = (rows[0], *rows.last().unwrap());
+    let (left, right) = (columns[0], *columns.last().unwrap());
+    let (gap_x, gap_y) = ((left + right) / 2, (top + bottom) / 2);
+    assert!(gap_x > left && gap_x < right && gap_y > top && gap_y < bottom);
+    // Character, then which arms it has: up, right, down, left.
+    for (c, arms) in [
+        ('╔', [false, true, true, false]),
+        ('╗', [false, false, true, true]),
+        ('╚', [true, true, false, false]),
+        ('╝', [true, false, false, true]),
+        ('╠', [true, true, true, false]),
+        ('╣', [true, false, true, true]),
+        ('╦', [false, true, true, true]),
+        ('╩', [true, true, false, true]),
+        ('╬', [true, true, true, true]),
+    ] {
+        let tile = box_tile(&mut atlas, c as u32);
+        let lit = [
+            tile(gap_x, top),
+            tile(right, gap_y),
+            tile(gap_x, bottom),
+            tile(left, gap_y),
+        ]
+        .map(|alpha| alpha > 127);
+        assert_eq!(lit, arms.map(|arm| !arm), "{c}: up, right, down, left");
+    }
+}
+#[test]
 fn box_lines_reach_the_cell_edges_so_rows_and_columns_join() {
     let mut atlas = box_atlas(JETBRAINS);
     let (w, h) = (atlas.cell_width, atlas.cell_height);

@@ -174,6 +174,10 @@ pub fn draw(cp: u32, w: u32, h: u32, tw: u32, th: u32) -> Option<Vec<u8>> {
     };
     let h_reach = width(up).max(width(down));
     let v_reach = width(left).max(width(right));
+    // A double stroke stops at the near line of a double arm crossing it, and
+    // otherwise runs on to the far line, so corners and tees stay open.
+    let (near_x, far_x) = (cx.saturating_sub(light), cx + light);
+    let (near_y, far_y) = (cy.saturating_sub(light), cy + light);
     let mut h_arm = |s: u8, to_right: bool| {
         if s == 0 {
             return;
@@ -189,7 +193,14 @@ pub fn draw(cp: u32, w: u32, h: u32, tw: u32, th: u32) -> Option<Vec<u8>> {
             (w + h_reach).div_ceil(2)
         };
         if s == 3 {
-            for y in [cy.saturating_sub(light), cy + light] {
+            for (y, crossed) in [(near_y, up == 3), (far_y, down == 3)] {
+                let (x0, x1) = match (to_right, crossed, up == 3 || down == 3) {
+                    (true, true, _) => (far_x, x1),
+                    (true, false, true) => (near_x, x1),
+                    (false, true, _) => (x0, near_x + light),
+                    (false, false, true) => (x0, far_x + light),
+                    _ => (x0, x1),
+                };
                 rect(&mut pixels, x0, y, x1, y + light);
             }
         } else {
@@ -214,7 +225,14 @@ pub fn draw(cp: u32, w: u32, h: u32, tw: u32, th: u32) -> Option<Vec<u8>> {
             (h + v_reach).div_ceil(2)
         };
         if s == 3 {
-            for x in [cx.saturating_sub(light), cx + light] {
+            for (x, crossed) in [(near_x, left == 3), (far_x, right == 3)] {
+                let (y0, y1) = match (to_bottom, crossed, left == 3 || right == 3) {
+                    (true, true, _) => (far_y, y1),
+                    (true, false, true) => (near_y, y1),
+                    (false, true, _) => (y0, near_y + light),
+                    (false, false, true) => (y0, far_y + light),
+                    _ => (y0, y1),
+                };
                 rect(&mut pixels, x, y0, x + light, y1);
             }
         } else {
