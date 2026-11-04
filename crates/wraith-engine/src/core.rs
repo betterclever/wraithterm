@@ -192,6 +192,7 @@ extern "C" {
     fn wraith_bridge_update(b: *mut c_void, frame: *mut Frame) -> i32;
     fn wraith_bridge_theme(b: *mut c_void, fg: u32, bg: u32, cursor: u32);
     fn wraith_bridge_scroll(b: *mut c_void, delta: i32);
+    fn wraith_bridge_scroll_bottom(b: *mut c_void);
     fn wraith_bridge_key(
         b: *mut c_void,
         key: u32,
@@ -407,6 +408,10 @@ impl Core {
     }
     pub fn scroll(&mut self, delta: i32) {
         unsafe { wraith_bridge_scroll(self.bridge.as_ptr(), delta) }
+    }
+    /// The viewport back at the active area, as typing brings it.
+    pub fn scroll_to_bottom(&mut self) {
+        unsafe { wraith_bridge_scroll_bottom(self.bridge.as_ptr()) }
     }
     pub fn key(
         &mut self,

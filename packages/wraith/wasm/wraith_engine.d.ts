@@ -118,6 +118,7 @@ export class Engine {
      */
     screen(): Float64Array;
     scroll(delta: number): void;
+    scroll_to_bottom(): void;
     search(needle: string, action: number): Uint32Array;
     select(x1: number, y1: number, x2: number, y2: number): void;
     select_mode(x1: number, y1: number, x2: number, y2: number, mode: number): void;
@@ -198,6 +199,7 @@ export class Headless {
      */
     screen(): Float64Array;
     scroll(delta: number): void;
+    scroll_to_bottom(): void;
     search(needle: string, action: number): Uint32Array;
     /**
      * Terminal state as VT sequences for replay keyframes; see `Core::snapshot`.
@@ -340,6 +342,7 @@ export interface InitOutput {
     readonly engine_row_map_upload_bytes: (a: number) => bigint;
     readonly engine_screen: (a: number) => [number, number];
     readonly engine_scroll: (a: number, b: number) => void;
+    readonly engine_scroll_to_bottom: (a: number) => void;
     readonly engine_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_select_mode: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
@@ -366,6 +369,7 @@ export interface InitOutput {
     readonly headless_resize: (a: number, b: number, c: number) => [number, number];
     readonly headless_screen: (a: number) => [number, number];
     readonly headless_scroll: (a: number, b: number) => void;
+    readonly headless_scroll_to_bottom: (a: number) => void;
     readonly headless_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly headless_snapshot: (a: number) => [number, number, number, number];
     readonly headless_take_events: (a: number) => any;
@@ -392,14 +396,14 @@ export interface InitOutput {
     readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly surface_unpresented: (a: number) => number;
     readonly surface_width: (a: number) => number;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__101: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__104: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__105: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__103: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___js_sys_b91aa96f45f170e___Function_fn_wasm_bindgen_e55f43a67788dd27___JsValue_____wasm_bindgen_e55f43a67788dd27___sys__Undefined___js_sys_b91aa96f45f170e___Function_fn_wasm_bindgen_e55f43a67788dd27___JsValue_____wasm_bindgen_e55f43a67788dd27___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___JsValue__core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__103: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__106: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__107: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__105: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

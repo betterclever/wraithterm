@@ -197,8 +197,11 @@ function createSession(
     link = undefined;
     post({ type: 'error', error: String(error) });
   }
+  /** Output events so far: whether a key sent the program anything. */
+  let outputs = 0;
   /** Engine output: replies, keys, paste. The worker socket sends it first. */
   function output(bytes: Uint8Array) {
+    outputs++;
     link?.send(bytes);
     post({ type: 'data', bytes }, [bytes.buffer as ArrayBuffer]);
   }
@@ -692,7 +695,7 @@ function createSession(
         schedule();
         result(command.id);
         break;
-      case 'key':
+      case 'key': {
         if (tracing) trace('key', command.text);
         engine.key(command.key, command.mods, command.action, command.text, command.unshifted);
         // Printable keys, Backspace and Delete echo into the cursor row.
@@ -700,8 +703,16 @@ function createSession(
           a11y.typed(
             (!!command.text && !(command.mods & 6)) || command.key === 53 || command.key === 68,
           );
+        const sent = outputs;
         drain();
+        // A key that sends the program something brings a scrolled-back
+        // viewport to the prompt, as Ghostty's scroll-to-bottom=keystroke.
+        if (command.action !== 0 && outputs !== sent) {
+          engine.scroll_to_bottom();
+          schedule();
+        }
         break;
+      }
       case 'font':
         result(
           command.id,
@@ -745,6 +756,8 @@ function createSession(
           : text.replace(/\r?\n/g, '\r');
         a11y.typed(true);
         output(encoder.encode(framed));
+        engine.scroll_to_bottom();
+        schedule();
         result(command.id);
         break;
       }

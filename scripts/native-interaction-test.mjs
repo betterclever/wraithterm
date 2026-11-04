@@ -121,6 +121,38 @@ try {
   await page.keyboard.press('q');
   await page.waitForFunction(() => window.inputBytes.length > 0);
   assert.equal(await page.evaluate(() => String.fromCharCode(...window.inputBytes)), 'q');
+
+  // Typing or pasting while scrolled back brings the prompt back; a modifier
+  // alone sends nothing and leaves the view.
+  const scrollBack = () =>
+    page.evaluate(async () => {
+      const term = window.featureTerm;
+      term.scroll(-15);
+      await term.flush();
+      return term.readText();
+    });
+  const viewportText = () =>
+    page.evaluate(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+      await window.featureTerm.flush();
+      return window.featureTerm.readText();
+    });
+  await page.evaluate(async () => {
+    const term = window.featureTerm;
+    await term.write(
+      '\x1b[2J\x1b[H' + Array.from({ length: 40 }, (_, i) => `row ${i}`).join('\r\n'),
+    );
+    await term.flush();
+  });
+  const scrolledBack = await scrollBack();
+  assert(!scrolledBack.includes('row 39'), 'scrolled back from the last row');
+  await page.keyboard.press('Shift');
+  assert.equal(await viewportText(), scrolledBack, 'a modifier alone keeps the view');
+  await page.keyboard.press('a');
+  assert.match(await viewportText(), /row 39/, 'a typed key returns to the prompt');
+  await scrollBack();
+  await page.evaluate(() => window.featureTerm.paste('x'));
+  assert.match(await viewportText(), /row 39/, 'a paste returns to the prompt');
   const renderObservation = await page.evaluate(async () => {
     const term = window.featureTerm;
     let messages = 0;
@@ -190,7 +222,7 @@ try {
   });
   assert.deepEqual(errors, []);
   console.log(
-    'Native interactions passed: history search, Unicode, reflow, cancellation, word/line/block gestures, keyboard interception and disposal.',
+    'Native interactions passed: history search, Unicode, reflow, cancellation, word/line/block gestures, keyboard interception, returning to the prompt on input and disposal.',
   );
 } finally {
   await browser.close();

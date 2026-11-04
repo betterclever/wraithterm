@@ -148,6 +148,18 @@ fn scrollback_and_viewport() {
     assert_eq!(text(&mut c), "two\nthree");
 }
 #[test]
+fn scroll_to_bottom_returns_from_history() {
+    let mut c = term(10, 3);
+    for i in 0..12 {
+        c.write(format!("line {i}\r\n").as_bytes());
+    }
+    let bottom = text(&mut c);
+    c.scroll(-5);
+    assert_ne!(text(&mut c), bottom, "scrolled back");
+    c.scroll_to_bottom();
+    assert_eq!(text(&mut c), bottom);
+}
+#[test]
 fn configured_history_retains_several_pages_and_zero_disables_it() {
     let mut c = Core::new(120, 40, 10_000).unwrap();
     let mut input = String::from("\x1bc");
