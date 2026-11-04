@@ -54,6 +54,7 @@ export const engine_mode: (a: number, b: number) => number;
 export const engine_mouse: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
 export const engine_needs_present: (a: number) => number;
 export const engine_on_submitted_work_done: (a: number, b: any) => void;
+export const engine_palette: (a: number, b: number, c: number) => void;
 export const engine_prefill_glyphs: (a: number, b: number, c: number) => number;
 export const engine_release_hold: (a: number) => void;
 export const engine_render: (a: number, b: number, c: number) => [number, number, number];

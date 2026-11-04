@@ -2,6 +2,17 @@ export interface WraithTheme {
   foreground?: string;
   background?: string;
   cursor?: string;
+  /**
+   * The default palette's first entries, `#rrggbb`: ANSI 0-15, or up to all
+   * 256. Entries not given keep the built-in palette; programs' OSC 4 colors
+   * still override them.
+   */
+  palette?: string[];
+}
+/** fg, bg and cursor, then the palette, packed: the engine's theme colors. */
+export function themeColors(theme: WraithTheme, palette = theme.palette): number[] {
+  if (palette && palette.length > 256) throw new RangeError('A palette has at most 256 colors');
+  return [theme.foreground!, theme.background!, theme.cursor!, ...(palette ?? [])].map(packColor);
 }
 export interface WraithOptions {
   cols?: number;

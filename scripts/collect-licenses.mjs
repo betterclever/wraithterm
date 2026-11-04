@@ -42,7 +42,7 @@ for (const pkg of metadata.packages.filter((p) => p.source)) {
 }
 lines.push(
   '',
-  'Ghostty: MIT (see Ghostty-MIT.txt). xterm.js 6.0.0: MIT (see xterm-MIT.txt). JetBrains Mono: SIL OFL 1.1 (see JetBrainsMono-OFL.txt).',
+  'Ghostty: MIT (see Ghostty-MIT.txt). xterm.js 6.0.0: MIT (see xterm-MIT.txt). restty box drawing line table: MIT (see restty-MIT.txt). JetBrains Mono: SIL OFL 1.1 (see JetBrainsMono-OFL.txt).',
   '',
 );
 await writeFile(join(root, 'licenses/NOTICE.md'), lines.join('\n'));

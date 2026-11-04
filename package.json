@@ -48,6 +48,7 @@
     "benchmark:serve-share": "node scripts/serve-share-benchmark.mjs",
     "test:worker-socket": "node scripts/worker-socket-test.mjs",
     "test:native-shaping": "node scripts/native-shaping-test.mjs",
+    "test:native-box-palette": "node scripts/native-box-palette-test.mjs",
     "test:native-effects": "node scripts/native-effects-test.mjs",
     "benchmark:effects": "node scripts/effects-benchmark.mjs",
     "benchmark:workflows": "node scripts/workflow-benchmark.mjs",

@@ -230,6 +230,7 @@ extern "C" {
     fn wraith_bridge_resize(b: *mut c_void, cols: u16, rows: u16, cw: u32, ch: u32) -> i32;
     fn wraith_bridge_update(b: *mut c_void, frame: *mut Frame) -> i32;
     fn wraith_bridge_theme(b: *mut c_void, fg: u32, bg: u32, cursor: u32);
+    fn wraith_bridge_palette(b: *mut c_void, colors: *const u32, count: u32);
     fn wraith_bridge_scroll(b: *mut c_void, delta: i32);
     fn wraith_bridge_scroll_bottom(b: *mut c_void);
     fn wraith_bridge_key(
@@ -442,6 +443,14 @@ impl Core {
     }
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         unsafe { wraith_bridge_theme(self.bridge.as_ptr(), fg, bg, cursor) }
+        self.state.dirty.fill(true);
+        self.state.keys.iter_mut().for_each(|k| k.reusable = false);
+    }
+    /// The default palette's first entries (packed 0xBBGGRR, up to 256); an
+    /// empty slice restores the built-in palette. Programs' OSC 4 colors stay.
+    pub fn palette(&mut self, colors: &[u32]) {
+        let count = colors.len().min(256) as u32;
+        unsafe { wraith_bridge_palette(self.bridge.as_ptr(), colors.as_ptr(), count) }
         self.state.dirty.fill(true);
         self.state.keys.iter_mut().for_each(|k| k.reusable = false);
     }

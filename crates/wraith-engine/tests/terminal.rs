@@ -496,6 +496,144 @@ fn scalar_table_and_cluster_cache_return_stable_glyph_words() {
         assert!(glyph >> 20 & 2047 <= atlas.tile_width);
     }
 }
+fn box_atlas(font: &[u8]) -> Atlas {
+    Atlas::new(font.to_vec(), 16., 1.3).unwrap()
+}
+const JETBRAINS: &[u8] = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf");
+/// The tile of a box drawing character.
+fn box_pixels(atlas: &mut Atlas, cp: u32) -> Vec<u8> {
+    let c = char::from_u32(cp).unwrap().to_string();
+    atlas.tile(&wraith_engine::core::Cell::with_text(&c));
+    atlas.uploads.last().unwrap().pixels.clone()
+}
+/// Alpha of the tile pixel (x, y), for a box drawing character.
+fn box_tile(atlas: &mut Atlas, cp: u32) -> impl Fn(u32, u32) -> u8 {
+    let pixels = box_pixels(atlas, cp);
+    let tw = atlas.tile_width;
+    move |x, y| pixels[((y * tw + x) * 4 + 3) as usize]
+}
+#[test]
+fn box_drawing_is_geometry_whatever_the_font() {
+    // This font has no box drawing glyphs at all.
+    let no_box_glyphs = include_bytes!("fonts/NotoSansDevanagari.ttf");
+    let (mut with, mut without) = (box_atlas(JETBRAINS), box_atlas(no_box_glyphs));
+    for atlas in [&mut with, &mut without] {
+        // Ink alone would also pass with a font's missing-glyph box: the line
+        // has to be the drawn one, edge to edge.
+        let (w, h) = (atlas.cell_width, atlas.cell_height);
+        let across = box_tile(atlas, 0x2500);
+        assert!(
+            (0..h).any(|y| (0..w).all(|x| across(x, y) == 255)),
+            "─ spans the whole width"
+        );
+        for cp in 0x2501..=0x257f {
+            let pixels = box_pixels(atlas, cp);
+            assert!(
+                pixels.chunks_exact(4).any(|p| p[3] > 0),
+                "U+{cp:04X} draws something"
+            );
+        }
+    }
+}
+#[test]
+fn box_lines_reach_the_cell_edges_so_rows_and_columns_join() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let across = box_tile(&mut atlas, 0x2500); // ─
+    let row = (0..h)
+        .find(|&y| across(0, y) == 255)
+        .expect("a covered row");
+    assert!(
+        (0..w).all(|x| across(x, row) == 255),
+        "─ spans the whole width"
+    );
+    assert_eq!(across(0, 0), 0);
+    let down = box_tile(&mut atlas, 0x2502); // │
+    let col = (0..w)
+        .find(|&x| down(x, 0) == 255)
+        .expect("a covered column");
+    assert!(
+        (0..h).all(|y| down(col, y) == 255),
+        "│ spans the whole height"
+    );
+    let cross = box_tile(&mut atlas, 0x253c); // ┼
+    assert!(cross(0, row) == 255 && cross(w - 1, row) == 255);
+    assert!(cross(col, 0) == 255 && cross(col, h - 1) == 255);
+    // ┌ joins only rightwards and downwards.
+    let corner = box_tile(&mut atlas, 0x250c);
+    assert!(corner(w - 1, row) == 255 && corner(col, h - 1) == 255);
+    assert!(corner(0, row) == 0 && corner(col, 0) == 0);
+}
+#[test]
+fn box_weights_doubles_and_dashes() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let rows = |atlas: &mut Atlas, cp: u32| {
+        let t = box_tile(atlas, cp);
+        (0..h).filter(|&y| t(w / 2, y) == 255).collect::<Vec<_>>()
+    };
+    let light = rows(&mut atlas, 0x2500);
+    let heavy = rows(&mut atlas, 0x2501);
+    assert_eq!(heavy.len(), light.len() * 2, "heavy is twice light");
+    let double = rows(&mut atlas, 0x2550); // ═
+    assert_eq!(double.len(), light.len() * 2);
+    assert!(
+        double.windows(2).any(|p| p[1] > p[0] + 1),
+        "═ is two lines with a gap: {double:?}"
+    );
+    let dashed = box_tile(&mut atlas, 0x2504); // ┄
+    let row = light[0];
+    let covered = (0..w).filter(|&x| dashed(x, row) == 255).count() as u32;
+    assert!(covered > 0 && covered < w, "┄ has gaps");
+}
+#[test]
+fn rounded_corners_and_diagonals_are_antialiased_strokes() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let line = box_tile(&mut atlas, 0x2500);
+    let row = (0..h).find(|&y| line(0, y) == 255).unwrap();
+    let down = box_tile(&mut atlas, 0x2502);
+    let col = (0..w).find(|&x| down(x, 0) == 255).unwrap();
+    let arc = box_tile(&mut atlas, 0x256d); // ╭
+    assert!(arc(w - 1, row) > 200, "╭ meets the next cell's line");
+    assert!(arc(col, h - 1) > 200, "╭ meets the line below");
+    assert_eq!(arc(0, 0), 0);
+    assert_eq!(arc(col, 0), 0, "nothing above the turn");
+    let partial = (0..h)
+        .flat_map(|y| (0..w).map(move |x| (x, y)))
+        .any(|(x, y)| (1..255).contains(&arc(x, y)));
+    assert!(partial, "the curve is antialiased");
+    let rising = box_tile(&mut atlas, 0x2571); // ╱
+    assert!(rising(w - 1, 0) > 0 && rising(0, h - 1) > 0);
+    assert_eq!(rising(0, 0), 0);
+    let cross = box_tile(&mut atlas, 0x2573); // ╳
+    assert!(cross(0, 0) > 0 && cross(w - 1, 0) > 0);
+}
+#[test]
+fn a_theme_palette_colors_ansi_text_and_osc_4_still_overrides() {
+    let mut c = term(20, 2);
+    c.palette(&[0x000000, 0x0000aa, 0x00aa00]);
+    c.write(b"\x1b[31mR\x1b[32mG\x1b[33mY\x1b[38;5;196mX");
+    c.update().unwrap();
+    assert_eq!(c.cells()[0].foreground, 0x0000aa, "red is the theme's");
+    assert_eq!(c.cells()[1].foreground, 0x00aa00);
+    let yellow = c.cells()[2].foreground;
+    assert_ne!(yellow, 0, "entries not given keep the built-in palette");
+    assert_eq!(c.cells()[3].foreground, 255, "256-colour entries too");
+    // A program's own colour for an index survives a new theme palette.
+    c.write(b"\x1b]4;1;rgb:12/34/56\x1b\\\r\x1b[31mR");
+    c.palette(&[0x000000, 0x0000bb]);
+    c.update().unwrap();
+    assert_eq!(c.cells()[0].foreground, 0x12 | 0x34 << 8 | 0x56 << 16);
+    c.palette(&[]);
+    c.write(b"\x1b]104\x1b\\\r\x1b[31mR\x1b[33mY");
+    c.update().unwrap();
+    assert_eq!(
+        c.cells()[1].foreground,
+        yellow,
+        "an empty palette restores the built-in"
+    );
+}
 #[test]
 fn blink_count_tracks_visible_cells() {
     let mut c = term(10, 2);

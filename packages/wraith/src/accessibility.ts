@@ -26,7 +26,7 @@ export interface AccessibilityHost {
   send(command: Command): boolean;
   /** CSS pixels of one row and of the grid width. */
   geometry(): { rowHeight: number; width: number };
-  setForcedTheme(theme: Required<WraithTheme> | undefined): void;
+  setForcedTheme(theme: Required<Omit<WraithTheme, 'palette'>> | undefined): void;
   announced(text: string): void;
 }
 
@@ -39,7 +39,9 @@ function hex(color: string): string | undefined {
     .join('')}`;
 }
 /** System colors resolved through a probe that opts out of forced overrides. */
-export function systemTheme(parent: HTMLElement): Required<WraithTheme> | undefined {
+export function systemTheme(
+  parent: HTMLElement,
+): Required<Omit<WraithTheme, 'palette'>> | undefined {
   const probe = document.createElement('span');
   probe.setAttribute('aria-hidden', 'true');
   probe.style.cssText =
@@ -53,7 +55,7 @@ export function systemTheme(parent: HTMLElement): Required<WraithTheme> | undefi
   };
   probe.remove();
   return theme.foreground && theme.background && theme.cursor
-    ? (theme as Required<WraithTheme>)
+    ? (theme as Required<Omit<WraithTheme, 'palette'>>)
     : undefined;
 }
 

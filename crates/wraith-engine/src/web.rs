@@ -473,6 +473,10 @@ impl Engine {
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         self.core.theme(fg, bg, cursor);
     }
+    /// The default palette's first entries; empty restores the built-in one.
+    pub fn palette(&mut self, colors: Vec<u32>) {
+        self.core.palette(&colors);
+    }
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
     }

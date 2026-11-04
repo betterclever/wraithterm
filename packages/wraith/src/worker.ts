@@ -693,6 +693,7 @@ function createSession(
       if (command.imageStorageLimit !== undefined)
         engine.set_image_limit(Math.max(0, Math.floor(command.imageStorageLimit)));
       engine.theme(command.theme[0]!, command.theme[1]!, command.theme[2]!);
+      if (command.theme.length > 3) engine.palette(Uint32Array.from(command.theme.slice(3)));
       post({
         type: 'ready',
         width: engine.cell_width,
@@ -827,6 +828,7 @@ function createSession(
         break;
       case 'theme':
         engine.theme(command.colors[0]!, command.colors[1]!, command.colors[2]!);
+        engine.palette(Uint32Array.from(command.colors.slice(3)));
         schedule();
         break;
       case 'flush':

@@ -104,6 +104,10 @@ export class Engine {
      */
     on_submitted_work_done(done: Function): void;
     /**
+     * The default palette's first entries; empty restores the built-in one.
+     */
+    palette(colors: Uint32Array): void;
+    /**
      * Rasterize printable ASCII ahead of first use, `count` glyphs per call,
      * so idle time after creation absorbs that work. Returns where to
      * continue, or -1 when done.
@@ -337,6 +341,7 @@ export interface InitOutput {
     readonly engine_mouse: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_needs_present: (a: number) => number;
     readonly engine_on_submitted_work_done: (a: number, b: any) => void;
+    readonly engine_palette: (a: number, b: number, c: number) => void;
     readonly engine_prefill_glyphs: (a: number, b: number, c: number) => number;
     readonly engine_release_hold: (a: number) => void;
     readonly engine_render: (a: number, b: number, c: number) => [number, number, number];
