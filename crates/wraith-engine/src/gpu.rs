@@ -145,6 +145,9 @@ pub struct Renderer {
     shared: Option<Rc<SharedContext>>,
     /// Shared surfaces: the uniforms of the last staged frame, placed when drawn.
     staged: Option<Uniforms>,
+    /// Shared surfaces: this terminal's slot in the surface's uniform ring
+    /// (None on its own canvas, or when the ring is full).
+    ring_slot: Option<u32>,
     pipeline: wgpu::RenderPipeline,
     bind: wgpu::BindGroup,
     cell_buffer: wgpu::Buffer,
@@ -187,6 +190,13 @@ pub struct Renderer {
     /// The last terminal uniforms, kept only while effects are on so an
     /// animation can redraw the retained scene without new cell data.
     effect_uniforms: Option<Uniforms>,
+}
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        if let (Some(context), Some(slot)) = (&self.shared, self.ring_slot.take()) {
+            context.uniforms.release(slot);
+        }
+    }
 }
 #[derive(Clone)]
 pub struct SharedGpu {
@@ -483,17 +493,21 @@ impl Renderer {
             ),
             None => ImageLayer::new(&device, config.format, &uniform),
         };
+        let ring_slot = shared.as_ref().and_then(|c| c.uniforms.alloc());
         let bind = Self::bind(
             &device,
             &pipeline,
             &cell_buffer,
-            &uniform,
+            Self::uniform_binding(&uniform, shared.as_deref().zip(ring_slot)),
             &text.view,
             &sampler,
             &scaled,
             &row_buffer,
         );
         if let Some(error) = error_scope.pop().await {
+            if let (Some(context), Some(slot)) = (&shared, ring_slot) {
+                context.uniforms.release(slot);
+            }
             return Err(format!("WebGPU pipeline initialization: {error}"));
         }
         Ok(Self {
@@ -504,6 +518,7 @@ impl Renderer {
             canvas,
             shared,
             staged: None,
+            ring_slot,
             pipeline,
             bind,
             cell_buffer,
@@ -552,7 +567,7 @@ impl Renderer {
         device: &wgpu::Device,
         pipeline: &wgpu::RenderPipeline,
         cells: &wgpu::Buffer,
-        uniform: &wgpu::Buffer,
+        uniform: wgpu::BindingResource<'_>,
         texture: &wgpu::TextureView,
         sampler: &wgpu::Sampler,
         scaled: &wgpu::Sampler,
@@ -568,7 +583,7 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: uniform.as_entire_binding(),
+                    resource: uniform,
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
@@ -589,12 +604,28 @@ impl Renderer {
             ],
         })
     }
+    /// The uniform binding: the terminal's ring slot on a shared surface,
+    /// else its own buffer.
+    fn uniform_binding<'a>(
+        uniform: &'a wgpu::Buffer,
+        ring: Option<(&'a SharedContext, u32)>,
+    ) -> wgpu::BindingResource<'a> {
+        match ring {
+            Some((context, slot)) => wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &context.uniforms.buffer,
+                offset: slot as u64 * crate::shared::UniformRing::SLOT,
+                size: wgpu::BufferSize::new(std::mem::size_of::<Uniforms>() as u64),
+            }),
+            None => uniform.as_entire_binding(),
+        }
+    }
     fn rebind(&mut self) {
+        let ring = self.shared.as_deref().zip(self.ring_slot);
         self.bind = Self::bind(
             &self.device,
             &self.pipeline,
             &self.cell_buffer,
-            &self.uniform,
+            Self::uniform_binding(&self.uniform, ring),
             &self.text.view,
             &self.sampler,
             &self.scaled,
@@ -1046,6 +1077,7 @@ impl Renderer {
     pub fn draw_shared(
         &self,
         pass: &mut wgpu::RenderPass<'static>,
+        pipeline_bound: &mut bool,
         target: (u32, u32),
         origin: (f32, f32),
         scale: f32,
@@ -1061,22 +1093,44 @@ impl Renderer {
         uniforms.images[3] = target.1;
         let scaled = (scale - 1.).abs() > 1e-3;
         uniforms.place = [origin.0, origin.1, scale, scaled as u32 as f32];
-        self.queue
-            .write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniforms));
+        let bytes = bytemuck::bytes_of(&uniforms);
+        match (self.ring_slot, &self.shared) {
+            (Some(slot), Some(context)) => {
+                context.uniforms.stage(slot, bytes);
+                // Image placements read the terminal's own uniform buffer.
+                if self.images.any() {
+                    self.queue.write_buffer(&self.uniform, 0, bytes);
+                }
+            }
+            _ => self.queue.write_buffer(&self.uniform, 0, bytes),
+        }
         pass.set_scissor_rect(scissor.0, scissor.1, scissor.2, scissor.3);
-        pass.set_pipeline(&self.pipeline);
+        // Every terminal on a surface shares the pipeline: set it once per
+        // pass, and again only after an image layer replaced it.
+        let bind = |pass: &mut wgpu::RenderPass<'static>, bound: &mut bool| {
+            if !*bound {
+                pass.set_pipeline(&self.pipeline);
+                *bound = true;
+            }
+        };
+        bind(pass, pipeline_bound);
         pass.set_bind_group(0, &self.bind, &[]);
         // Default background first: a redraw replaces every previous pixel.
         pass.draw(12..18, 0..1);
-        self.images.draw(pass, 1);
-        pass.set_pipeline(&self.pipeline);
-        pass.set_bind_group(0, &self.bind, &[]);
+        let rebind = |pass: &mut wgpu::RenderPass<'static>, layer: u32, bound: &mut bool| {
+            if self.images.draw(pass, layer) {
+                *bound = false;
+                bind(pass, bound);
+                pass.set_bind_group(0, &self.bind, &[]);
+            }
+        };
+        rebind(pass, 1, pipeline_bound);
         pass.draw(0..6, 0..self.cell_count as u32);
-        self.images.draw(pass, 2);
-        pass.set_pipeline(&self.pipeline);
-        pass.set_bind_group(0, &self.bind, &[]);
+        rebind(pass, 2, pipeline_bound);
         pass.draw(6..12, 0..self.cell_count as u32);
-        self.images.draw(pass, 3);
+        if self.images.draw(pass, 3) {
+            *pipeline_bound = false;
+        }
         true
     }
     fn clear_color(&self, rgb: u32) -> wgpu::Color {

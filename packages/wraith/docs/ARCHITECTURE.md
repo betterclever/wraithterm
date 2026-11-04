@@ -138,18 +138,58 @@ Geometry changes (scroll, pan, zoom, resize, disposal) clear the backing and
 redraw every visible terminal. Off-screen terminals do not render; their
 parsing and history continue.
 
-Placement comes from the main thread. Once per animation frame the pool
-measures each intersecting terminal's element (one `getBoundingClientRect`
-plus `offsetWidth` for the transform scale), intersects it with the element
-and its overflow-clipping ancestors, and posts changed records (id, origin,
-scale, clip, in device pixels) to the owning worker. Terminals hidden by
-`visibility: hidden` or `opacity: 0` on the host or an ancestor
-(`checkVisibility`) are placed as hidden, and a host moved to another parent
-after mount has its clipping ancestors recomputed. Unscaled placements are
-rounded to whole device pixels, so they match per-canvas output exactly; a
-CSS-scaled placement samples the atlas with a linear sampler. The vertex
-shaders map terminal pixels to the target through that placement; with a
-zero target size they keep the original own-canvas path.
+Placement comes from the main thread. The pool measures a terminal's element
+(one `getBoundingClientRect` plus `offsetWidth` for the transform scale),
+intersects it with the element and its overflow-clipping ancestors, and posts
+changed records (id, origin, scale, clip, in device pixels) to the owning
+worker. Terminals hidden by `visibility: hidden` or `opacity: 0` on the host
+or an ancestor (`checkVisibility`) are placed as hidden, and a host moved to
+another parent after mount has its clipping ancestors recomputed. Unscaled
+placements are rounded to whole device pixels, so they match per-canvas output
+exactly; a CSS-scaled placement samples the atlas with a linear sampler. The
+vertex shaders map terminal pixels to the target through that placement; with
+a zero target size they keep the original own-canvas path.
+
+Measuring every terminal every frame forced style and layout and took about
+two thirds of the main thread at 1,000 terminals, so by default
+(`sharedSurface.tracking: 'observe'`, `placement.ts`) the pool measures only
+when something can have moved: every terminal on the next frame after a
+scroll of any container, a window or visual-viewport resize, a font load, a
+`ResizeObserver` change of a host or placeholder, or a DOM or attribute
+mutation outside the terminals (pure text replacements excepted), and every
+frame while a CSS animation or transition runs. An intersection change
+re-measures that terminal. A rolling sweep measures 1/30 of the terminals each
+frame so changes that raise no event (hover styles, Web Animations, text
+reflow) still land within about 30 frames; `pool.updatePlacements()` forces a
+full pass and `tracking: 'frame'` restores measuring everything every frame.
+
+Pooled terminals do not have their own `MessagePort`. Each pool worker has
+one ordered command queue on the main thread (`batch.ts`). Commands carry the
+terminal id and leave as one `postMessage` per task. Write bytes are copied
+into one `WriteArena` buffer per batch, which is transferred once; each write
+arrives in the worker as a view of it, and terminals reuse their own batch
+buffers. The worker answers with one message per task holding all replies
+(acknowledgements, cursor, output). At 1,000 streaming terminals this
+replaces about 2,000 messages and 1,000 buffer allocations per frame with one
+message and one buffer per worker in each direction. Workers send per-terminal
+stats only while the page has `onStats` listeners, and a single page-wide timer
+checks display resolution changes.
+
+Each terminal's DOM stays out of compositor layers: its hidden input textarea
+has `overflow: hidden` (a user-scrollable textarea is a composited scroller,
+three layers per terminal), the IME preedit span is shown only while
+composing, and the terminal element has `contain: layout paint style`. A page
+of 1,000 shared terminals has 17 compositor layers, eight of them the surfaces.
+
+On the GPU side, the shared context holds every terminal's frame uniforms in
+one buffer of fixed 256-byte slots. Each terminal's bind group points at its
+slot, draws stage their uniforms in a CPU mirror, and `Surface::end` writes
+the touched range with one `writeBuffer` before submitting. The terminal
+pipeline is set once per pass, and again only after an image layer replaced
+it. A terminal's draw is then a scissor, a bind group and three draw calls.
+Terminals beyond 4,096 per surface keep their own uniform buffer, and a
+terminal with Kitty images also writes it, because the image pipeline reads
+it.
 
 A shared atlas reset (a neighbour's visible glyph set overflowed) makes every
 other terminal on it stale; a stale terminal repacks before it is drawn, and
@@ -160,8 +200,9 @@ on the premultiplied canvas.
 Limits: the canvases sit above page content at their z-index, so overlays
 meant to cover terminals must stack above them. Placements follow layout one
 animation frame later than the DOM, so a terminal can trail a scroll or pan
-by a frame. Rotation and perspective transforms are not modelled (placement
-is a translation plus uniform scale). Fallback fonts and ligatures are fixed
+by a frame; with observation-based tracking, a move no event reports can take
+up to about 30 frames. Rotation and perspective transforms are not modelled
+(placement is a translation plus uniform scale). Fallback fonts and ligatures are fixed
 when a shared terminal is created. Partial CSS opacity and filters on a host
 are not applied. Each worker draws all of its terminals in
 one pass, so heavy output in one terminal shares that worker's frame.

@@ -61,6 +61,12 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  /** Post 'stats' every 500 ms only while the page has stats listeners. */
+  | { type: 'observe-stats'; enabled: boolean }
+  /** Internal (benchmarks): replay `chunks` in the worker, one per worker
+   * animation frame, as if a worker-side source produced them; `null` stops.
+   * Resolves with the number of chunks parsed so far. */
+  | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
   /** Copy output parsed from a worker-owned socket back to the page (recording). */
   | { type: 'observe-output'; enabled: boolean }
   | {
@@ -132,13 +138,18 @@ export type Reply =
       wasClean?: boolean;
       error?: string;
     };
-/** Messages a pool sends to its workers directly, outside terminal ports. */
+/** Messages a pool sends to its workers on the worker scope. */
 export type PoolMessage =
-  | { type: 'attach'; port: MessagePort; id: number; shared?: boolean }
+  /** A pooled terminal joins the worker; its commands arrive in `batch`. */
+  | { type: 'attach'; id: number; shared?: boolean }
+  /** Commands for the worker's terminals, in order, batched per task. */
+  | { type: 'batch'; items: [id: number, command: Command][] }
   | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
   | { type: 'surface-size'; width: number; height: number }
   /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
   | { type: 'geometry'; data: Float32Array };
+/** Replies from a pooled worker's terminals, in order, batched per task. */
+export type PoolReply = { type: 'replies'; items: [id: number, reply: Reply][] };
 /** Messages a shared-surface worker sends its pool. */
 export type SurfaceReply =
   | {
