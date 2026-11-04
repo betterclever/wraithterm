@@ -378,6 +378,10 @@ void wraith_bridge_scroll(WraithBridge* b, int32_t delta) {
   GhosttyTerminalScrollViewport v = {.tag = GHOSTTY_SCROLL_VIEWPORT_DELTA, .value = {.delta = delta}};
   ghostty_terminal_scroll_viewport(b->terminal, v);
 }
+void wraith_bridge_scroll_bottom(WraithBridge* b) {
+  GhosttyTerminalScrollViewport v = {.tag = GHOSTTY_SCROLL_VIEWPORT_BOTTOM};
+  ghostty_terminal_scroll_viewport(b->terminal, v);
+}
 int wraith_bridge_key(WraithBridge* b, uint32_t key, uint32_t mods, uint32_t action,
                      const char* text, size_t len, uint32_t unshifted) {
   if (key > GHOSTTY_KEY_PASTE || action > GHOSTTY_KEY_ACTION_REPEAT || mods > UINT16_MAX)

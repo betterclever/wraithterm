@@ -31,6 +31,8 @@ int wraith_bridge_update(WraithBridge*, WraithFrame*);
 int wraith_bridge_update_content(WraithBridge*, WraithFrame*);
 void wraith_bridge_theme(WraithBridge*, uint32_t, uint32_t, uint32_t);
 void wraith_bridge_scroll(WraithBridge*, int32_t);
+/* The viewport back at the active area (the bottom). */
+void wraith_bridge_scroll_bottom(WraithBridge*);
 int wraith_bridge_key(WraithBridge*, uint32_t, uint32_t, uint32_t, const char*, size_t, uint32_t);
 int wraith_bridge_mouse(WraithBridge*, uint32_t, uint32_t, uint32_t, float, float, uint32_t);
 int wraith_bridge_mode(WraithBridge*, uint16_t);

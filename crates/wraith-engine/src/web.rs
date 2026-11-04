@@ -135,6 +135,9 @@ impl Headless {
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
     }
+    pub fn scroll_to_bottom(&mut self) {
+        self.core.scroll_to_bottom();
+    }
     /// OSC 133 command blocks; see `commands.rs`.
     #[wasm_bindgen(getter)]
     pub fn has_commands(&self) -> bool {
@@ -444,6 +447,9 @@ impl Engine {
     }
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
+    }
+    pub fn scroll_to_bottom(&mut self) {
+        self.core.scroll_to_bottom();
     }
     pub fn mode(&self, mode: u16) -> bool {
         self.core.mode(mode)
