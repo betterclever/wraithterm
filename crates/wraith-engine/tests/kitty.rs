@@ -201,3 +201,169 @@ fn placements_on_the_first_and_last_rows_and_sub_cell_images_are_visible() {
         .collect();
     assert_eq!(at, [(1, 0, 0), (2, 18 * 9, 3 * 18)]);
 }
+
+#[test]
+fn clearing_the_screen_and_scrollback_takes_its_images_along() {
+    // `clear`: home, erase the display, erase the scrollback.
+    for clear in [
+        &b"\x1b[H\x1b[2J\x1b[3J"[..],
+        b"\x1b[H\x1b[2J",
+        b"\x1b[3J\x1b[H\x1b[2J",
+    ] {
+        let mut c = term(20, 8);
+        c.write(b"line one\r\n");
+        c.write(&apc("a=T,f=32,s=9,v=18,i=1,q=2", &rgba(9, 18)));
+        c.write(b"\r\nmore\r\n\r\n");
+        c.update().unwrap();
+        assert_eq!(c.placements().len(), 1);
+        c.write(clear);
+        c.update().unwrap();
+        let at: Vec<_> = c.placements().iter().map(|p| (p.x, p.y)).collect();
+        assert!(
+            at.is_empty(),
+            "{:?}: placements still drawn at {at:?}",
+            String::from_utf8_lossy(clear)
+        );
+    }
+}
+
+#[test]
+fn clearing_removes_placements_made_by_id_and_scrolled_ones_too() {
+    let mut c = term(20, 8);
+    c.write(&apc("a=T,f=32,s=9,v=18,i=101,q=2", &rgba(9, 18)));
+    c.write(b"\r\n\r\n");
+    c.write(&apc("a=t,f=32,s=4,v=4,i=102,q=2", &rgba(4, 4)));
+    c.write(b"  \x1b_Ga=p,i=102,p=1,c=2,r=2,q=2\x1b\\  \x1b_Ga=p,i=102,p=2,c=1,r=1,q=2\x1b\\\r\n\r\n\r\n");
+    c.write(&apc("a=t,f=32,s=4,v=4,i=103,q=2", &rgba(4, 4)));
+    c.write(b"  \x1b_Ga=p,i=103,p=1,c=2,r=2,z=1,C=1,q=2\x1b\\TEXT\r\n");
+    c.write(b"  \x1b_Ga=p,i=103,p=2,c=2,r=2,z=-1,C=1,q=2\x1b\\TEXT\r\n\r\n\r\nprompt$ ");
+    c.update().unwrap();
+    assert!(!c.placements().is_empty());
+    c.write(b"\x1b[H\x1b[2J\x1b[3J");
+    c.update().unwrap();
+    let left: Vec<_> = c
+        .placements()
+        .iter()
+        .map(|p| (p.image_id, p.placement_id, p.x, p.y))
+        .collect();
+    assert!(left.is_empty(), "still drawn after clear: {left:?}");
+}
+
+#[test]
+fn erasing_scrollback_keeps_unplaced_images_and_visible_placements() {
+    let mut c = term(20, 4);
+    c.write(&apc("a=t,f=32,s=2,v=2,i=200,q=2", &rgba(2, 2)));
+    c.write(&apc("a=T,f=32,s=2,v=2,i=201,q=2", &rgba(2, 2)));
+    c.write(b"\r\n\r\n\r\n\r\n\r\n\r\n");
+    c.write(&apc("a=T,f=32,s=2,v=2,i=202,q=2", &rgba(2, 2)));
+    c.update().unwrap();
+    c.write(b"\x1b[3J");
+    c.update().unwrap();
+    let ids: Vec<_> = c.placements().iter().map(|p| p.image_id).collect();
+    assert_eq!(
+        ids,
+        [202],
+        "the visible placement stays, the scrolled-out one goes"
+    );
+    assert!(
+        c.image(200).is_some(),
+        "transmitted, never placed: kept for later"
+    );
+    assert!(c.image(201).is_none(), "only its erased placement used it");
+    c.write(b"\x1b[H\x1b_Ga=p,i=200,q=2\x1b\\");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 2);
+}
+
+#[test]
+fn clear_at_a_shell_prompt_keeps_images_off_the_new_screen() {
+    // ncurses `clear`: E3 first, then home and ED2; at an OSC 133 prompt
+    // Ghostty scrolls the screen into history before clearing it.
+    let mut c = term(20, 8);
+    c.write(b"\x1b]133;A\x07$ \x1b]133;B\x07spec\r\n\x1b]133;C\x07");
+    c.write(&apc("a=t,f=32,s=4,v=4,i=103,q=2", &rgba(4, 4)));
+    c.write(b"  \x1b_Ga=p,i=103,p=1,c=2,r=2,z=1,C=1,q=2\x1b\\TEXT\r\n");
+    c.write(b"  \x1b_Ga=p,i=103,p=2,c=2,r=2,z=-1,C=1,q=2\x1b\\TEXT\r\n\r\n");
+    c.write(b"\x1b]133;D;0\x07\x1b]133;A\x07$ \x1b]133;B\x07");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 2);
+    // Scrolled back a little (reading earlier output), then typing returns.
+    c.scroll(-2);
+    c.update().unwrap();
+    c.scroll(2);
+    c.write(b"clear\r\n\x1b]133;C\x07\x1b[3J\x1b[H\x1b[2J");
+    c.write(b"\x1b]133;D;0\x07\x1b]133;A\x07$ \x1b]133;B\x07");
+    c.update().unwrap();
+    let left: Vec<_> = c
+        .placements()
+        .iter()
+        .map(|p| (p.placement_id, p.x, p.y))
+        .collect();
+    assert!(left.is_empty(), "after clear: {left:?}");
+    for i in 0..30 {
+        c.write(format!("out {i}\r\n").as_bytes());
+    }
+    c.update().unwrap();
+    let left: Vec<_> = c
+        .placements()
+        .iter()
+        .map(|p| (p.placement_id, p.x, p.y))
+        .collect();
+    assert!(left.is_empty(), "after more output: {left:?}");
+}
+
+#[test]
+fn clear_while_scrolled_back_keeps_images_off_the_new_screen() {
+    let mut c = term(20, 8);
+    c.write(b"\x1b]133;A\x07$ \x1b]133;B\x07spec\r\n\x1b]133;C\x07");
+    for i in 0..10 {
+        c.write(format!("pre {i}\r\n").as_bytes());
+    }
+    c.write(&apc("a=t,f=32,s=4,v=4,i=103,q=2", &rgba(4, 4)));
+    c.write(b"  \x1b_Ga=p,i=103,p=1,c=2,r=2,z=1,C=1,q=2\x1b\\TEXT\r\n");
+    c.write(b"  \x1b_Ga=p,i=103,p=2,c=2,r=2,z=-1,C=1,q=2\x1b\\TEXT\r\n\r\n");
+    c.write(b"\x1b]133;D;0\x07\x1b]133;A\x07$ \x1b]133;B\x07");
+    c.scroll(-3);
+    c.update().unwrap();
+    // The viewport stays scrolled back while the command runs.
+    c.write(b"clear\r\n\x1b]133;C\x07\x1b[3J\x1b[H\x1b[2J");
+    c.write(b"\x1b]133;D;0\x07\x1b]133;A\x07$ \x1b]133;B\x07");
+    c.update().unwrap();
+    c.scroll(10_000);
+    for i in 0..30 {
+        c.write(format!("out {i}\r\n").as_bytes());
+    }
+    c.update().unwrap();
+    let left: Vec<_> = c
+        .placements()
+        .iter()
+        .map(|p| (p.placement_id, p.x, p.y))
+        .collect();
+    assert!(left.is_empty(), "after clear while scrolled back: {left:?}");
+}
+
+#[test]
+fn busybox_clear_erasing_below_from_home_takes_the_images() {
+    // busybox `clear`: CSI H CSI J (erase below, from the home position).
+    let mut c = term(20, 8);
+    c.write(b"text\r\n");
+    c.write(&apc("a=T,f=32,s=9,v=18,i=1,q=2", &rgba(9, 18)));
+    c.write(b"\r\nmore\r\n");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 1);
+    c.write(b"\x1b[H\x1b[J");
+    c.update().unwrap();
+    assert!(c.placements().is_empty(), "busybox clear leaves no image");
+
+    // Erasing below from elsewhere keeps what is above the cursor.
+    let mut c = term(20, 8);
+    c.write(&apc("a=T,f=32,s=9,v=18,i=1,q=2", &rgba(9, 18)));
+    c.write(b"\r\n\r\n\r\nrest\r\n");
+    c.write(b"\x1b[4;1H\x1b[J");
+    c.update().unwrap();
+    assert_eq!(
+        c.placements().len(),
+        1,
+        "an image above the erased rows stays"
+    );
+}

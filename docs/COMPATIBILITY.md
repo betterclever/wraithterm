@@ -41,6 +41,7 @@ renderer, input path, effects, fonts, and browser integration.
 | Programming ligatures (opt-in) and complex-script run shaping (native profile)  | Native atlas tests; Chrome WebGPU pixels for ligatures, cursor split and joined Arabic.             |
 | Kitty graphics (native profile): RGB/RGBA/PNG, zlib, chunked direct transfer    | Native protocol tests; Chrome WebGPU pixels for placement, scaling, z-layers and deletion.          |
 | Kitty graphics crop, offsets, layers, retransmission, scrolling, replies, limit | Native protocol tests (`tests/kitty.rs`), including first/last-row and sub-cell placements.         |
+| Kitty graphics and clearing: ED3 and ED0 from home delete placements (patched)  | Native protocol tests (OSC 133, busybox `clear`); Chrome WebGPU pixels after both kinds of `clear`. |
 | SGR mouse encoding, focus reports, bracketed paste                              | Native encoder path; browser paste test and sanitized frame contents.                               |
 | IME commits and preedit placement                                               | Browser composition test; cursor coordinates anchor the input element.                              |
 | Accessible viewport mirror                                                      | Optional role=log mirror, exercised in browser lifecycle test.                                      |
