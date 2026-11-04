@@ -260,6 +260,7 @@ export class Wraith {
   private keyHandlers = new Set<KeyEventHandler>();
   private interceptedKeys = new Set<string>();
   private composing = false;
+  private adapterName = '';
   private preedit: HTMLSpanElement;
   private theme: Required<WraithTheme>;
   /** System colors while forced-colors mode is active; overrides `theme`. */
@@ -494,6 +495,7 @@ export class Wraith {
       case 'ready':
         this.cellWidth = reply.width;
         this.cellHeight = reply.height;
+        this.adapterName = reply.adapter ?? '';
         this.readyResolve();
         break;
       case 'written':
@@ -788,6 +790,10 @@ export class Wraith {
   }
   focus(): void {
     this.input.focus({ preventScroll: true });
+  }
+  /** The adapter the engine reports, as in `onStats`. Browsers may give a generic name. */
+  get adapter(): string {
+    return this.adapterName;
   }
   onData(listener: Listener<string>): Disposable {
     return this.data.on(listener);
