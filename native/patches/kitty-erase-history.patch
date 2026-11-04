@@ -1,5 +1,5 @@
 diff --git a/src/terminal/Terminal.zig b/src/terminal/Terminal.zig
-index cd4a597..50758c2 100644
+index cd4a597..977ef6b 100644
 --- a/src/terminal/Terminal.zig
 +++ b/src/terminal/Terminal.zig
 @@ -3749,6 +3749,18 @@ pub fn eraseDisplay(
@@ -12,7 +12,7 @@ index cd4a597..50758c2 100644
 +            // and the screen's images go with it.
 +            if (comptime build_options.kitty_graphics) {
 +                const cursor = self.screens.active.cursor;
-+                if (cursor.x == 0 and cursor.y == 0) self.screens.active.kitty_images.clearScreen(
++                if (cursor.x == 0 and cursor.y == 0) self.screens.active.kitty_images.clearOnScreen(
 +                    self.io(),
 +                    self.screens.active.alloc,
 +                    self,
@@ -43,10 +43,36 @@ index cd4a597..50758c2 100644
  }
  
 diff --git a/src/terminal/kitty/graphics_storage.zig b/src/terminal/kitty/graphics_storage.zig
-index 897c894..3458a7b 100644
+index 897c894..16f0e95 100644
 --- a/src/terminal/kitty/graphics_storage.zig
 +++ b/src/terminal/kitty/graphics_storage.zig
-@@ -1190,6 +1190,42 @@ pub const ImageStorage = struct {
+@@ -1163,6 +1163,25 @@ pub const ImageStorage = struct {
+         return min_delay;
+     }
+ 
++    /// Clear placements intersecting the active screen, and the images only
++    /// they used. Unlike clearScreen, images never placed are kept, so a
++    /// program repainting with CSI H CSI J can still place what it uploaded.
++    pub fn clearOnScreen(
++        self: *ImageStorage,
++        io: std.Io,
++        alloc: Allocator,
++        t: *terminal.Terminal,
++    ) void {
++        const placements_before = self.placements.count();
++        const images_before = self.images.count();
++
++        self.deleteVisiblePlacements(alloc, t, true);
++        _ = self.removeOrphans(t.screens.active, null);
++
++        if (self.placements.count() != placements_before or
++            self.images.count() != images_before) self.markMutated(io);
++    }
++
+     /// Clear placements intersecting the active screen, then reclaim every
+     /// image with no remaining placement. Unlike protocol d=A, a terminal
+     /// clear also reclaims images that were already unplaced.
+@@ -1190,6 +1209,46 @@ pub const ImageStorage = struct {
              self.images.count() != images_before) self.markMutated(io);
      }
  
@@ -76,6 +102,10 @@ index 897c894..3458a7b 100644
 +            };
 +            if (pin.garbage) continue;
 +            if (t.screens.active.pages.pointFromPin(.active, pin.*) != null) continue;
++            // Anchored in history, but its lower rows may still be on screen.
++            const image = self.imageById(entry.key_ptr.image_id) orelse continue;
++            const rect = entry.value_ptr.rect(image, t) orelse continue;
++            if (t.screens.active.pages.pointFromPin(.active, rect.bottom_right) != null) continue;
 +            unplaced.append(alloc, entry.key_ptr.image_id) catch {};
 +            self.removePlacement(t.screens.active, entry);
 +        }

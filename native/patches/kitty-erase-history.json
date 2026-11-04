@@ -4,11 +4,11 @@
   "files": {
     "src/terminal/Terminal.zig": {
       "before": "48b951d255f0e2f54f54eff6e09a4e2576315f8c2da321751d11109ede42becf",
-      "after": "25232871b31267113e03a9cbd0bd64f11e70b7739abc58800eb36419fc12b5cf"
+      "after": "5f706cf8d089c96e414a6c0158ce24907e85e6caddfc51354d6baf7313f21612"
     },
     "src/terminal/kitty/graphics_storage.zig": {
       "before": "a2c29c02531f00b939485a9e45eeb8198d55648f116282c31e37bed84677328d",
-      "after": "a4a1d4dcaf6a62937b75b50a03f84f6367556d1f6a38e5e58af127bfb27be37d"
+      "after": "366f826c2d17e33c15b6295177a1c4f4707ffc5e4323cfe08cc4a2cbdbf283eb"
     }
   }
 }

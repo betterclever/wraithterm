@@ -13,7 +13,8 @@ export async function applyGhosttyPatches(directory, revision, enabled = true) {
   await applyPatch(directory, revision, true, 'search-pages');
   // Kitty graphics in the freestanding Wasm build: direct transmission only.
   await applyPatch(directory, revision, true, 'kitty-freestanding');
-  // ED3 deletes Kitty placements anchored in the scrollback it erases.
+  // ED3 deletes Kitty placements wholly in the scrollback it erases, and ED0
+  // from the home position deletes the screen's placements, as ED2 does.
   await applyPatch(directory, revision, true, 'kitty-erase-history');
 }
 async function applyPatch(directory, revision, enabled, name) {

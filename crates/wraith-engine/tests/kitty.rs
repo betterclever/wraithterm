@@ -525,6 +525,36 @@ fn clear_while_scrolled_back_keeps_images_off_the_new_screen() {
 }
 
 #[test]
+fn erasing_below_from_home_keeps_images_never_placed() {
+    // A program can upload once and repaint with CSI H CSI J between frames.
+    let mut c = term(20, 8);
+    c.write(&apc("a=t,f=32,s=2,v=2,i=7,q=2", &rgba(2, 2)));
+    c.write(&apc("a=T,f=32,s=2,v=2,i=8,q=2", &rgba(2, 2)));
+    c.update().unwrap();
+    c.write(b"\x1b[H\x1b[J");
+    c.update().unwrap();
+    assert!(c.placements().is_empty());
+    assert!(c.image(7).is_some(), "transmitted, never placed: kept");
+    assert!(c.image(8).is_none(), "only its erased placement used it");
+    c.write(b"\x1b_Ga=p,i=7,q=2\x1b\\");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 1);
+}
+
+#[test]
+fn erasing_scrollback_keeps_a_placement_still_partly_on_screen() {
+    let mut c = term(20, 4);
+    c.write(&apc("a=T,f=32,s=2,v=2,i=9,r=4,c=2,q=2", &rgba(2, 2)));
+    c.write(b"\r\n");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 1, "its lower rows are on screen");
+    c.write(b"\x1b[3J");
+    c.update().unwrap();
+    assert_eq!(c.placements().len(), 1, "so it stays");
+    assert!(c.image(9).is_some());
+}
+
+#[test]
 fn busybox_clear_erasing_below_from_home_takes_the_images() {
     // busybox `clear`: CSI H CSI J (erase below, from the home position).
     let mut c = term(20, 8);
