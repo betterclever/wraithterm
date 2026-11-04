@@ -1,8 +1,27 @@
 diff --git a/src/terminal/Terminal.zig b/src/terminal/Terminal.zig
-index cd4a597..5100c84 100644
+index cd4a597..50758c2 100644
 --- a/src/terminal/Terminal.zig
 +++ b/src/terminal/Terminal.zig
-@@ -3768,7 +3768,19 @@ pub fn eraseDisplay(
+@@ -3749,6 +3749,18 @@ pub fn eraseDisplay(
+ 
+             // Unsets pending wrap state. Should be done by eraseLine.
+             assert(!self.screens.active.cursor.pending_wrap);
++
++            // From the home position this erases the whole screen, as ED2:
++            // busybox `clear` (and `tput clear` without ED2) send CSI H CSI J,
++            // and the screen's images go with it.
++            if (comptime build_options.kitty_graphics) {
++                const cursor = self.screens.active.cursor;
++                if (cursor.x == 0 and cursor.y == 0) self.screens.active.kitty_images.clearScreen(
++                    self.io(),
++                    self.screens.active.alloc,
++                    self,
++                );
++            }
+         },
+ 
+         .above => {
+@@ -3768,7 +3780,19 @@ pub fn eraseDisplay(
              assert(!self.screens.active.cursor.pending_wrap);
          },
  
