@@ -566,6 +566,53 @@ fn synthetic_bold_never_loses_coverage() {
     }
 }
 
+/// Leftmost and rightmost inked columns of the last tile drawn.
+fn ink_span(atlas: &Atlas) -> (u32, u32) {
+    let pixels = &atlas.uploads.last().unwrap().pixels;
+    let (mut left, mut right) = (u32::MAX, 0);
+    for row in pixels.chunks_exact(atlas.tile_width as usize * 4) {
+        for x in 0..atlas.tile_width {
+            if row[x as usize * 4 + 3] > 64 {
+                left = left.min(x);
+                right = right.max(x);
+            }
+        }
+    }
+    (left, right)
+}
+#[test]
+fn glyphs_narrower_than_their_cells_are_centred() {
+    let atlas = || {
+        let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+        Atlas::new(data, 16., 1.3).unwrap()
+    };
+    let with_fallback = || {
+        let mut atlas = atlas();
+        atlas
+            .add_font(include_bytes!("fonts/NotoSansDevanagari.ttf").to_vec())
+            .unwrap();
+        atlas
+    };
+    const WIDE: u32 = 1 << 16;
+    let span = |mut atlas: Atlas, text: &str, flags: u32| {
+        let mut cell = wraith_engine::core::Cell::with_text(text);
+        cell.flags |= flags;
+        atlas.tile(&cell);
+        (ink_span(&atlas), atlas.cell_width)
+    };
+    // A fallback glyph narrower than its slot moves right by half a cell when
+    // the slot is a wide (two-cell) one.
+    let (narrow, width) = span(with_fallback(), "क", 0);
+    let (wide, _) = span(with_fallback(), "क", WIDE);
+    let shift = wide.0 as i32 - narrow.0 as i32;
+    assert!(
+        (shift - width as i32 / 2).abs() <= 1,
+        "centred in two cells: {narrow:?} -> {wide:?}"
+    );
+    // The regular font's glyphs fill their cell exactly and stay in it.
+    let (m, width) = span(atlas(), "M", 0);
+    assert!(m.1 < width + 2, "M stays in its own cell: {m:?}");
+}
 #[test]
 fn native_search_cache_tracks_mutations_and_wrapped_page_overlap() {
     let mut c = Core::new(120, 40, 27000).unwrap();

@@ -387,7 +387,21 @@ impl Atlas {
             render.transform(Some(Transform::new(1., 0., 0.2, 1., 0., 0.)));
         }
         let mut pixels = vec![0u8; (self.tile_width * self.tile_height * 4) as usize];
-        let mut pen = 0f32;
+        // A glyph narrower than its cells (a CJK ideograph's em in two cells,
+        // a fallback font's narrower symbol) is centred in them, as Ghostty
+        // and kitty draw it; the regular font's glyphs fill their cell.
+        let advance: f32 = glyphs
+            .glyph_positions()
+            .iter()
+            .map(|p| p.x_advance as f32 * factor)
+            .sum();
+        let cells = if cell.flags & (1 << 16) != 0 { 2. } else { 1. };
+        let span = self.cell_width as f32 * cells;
+        let mut pen = if advance < span - 0.5 {
+            ((span - advance) / 2.).round()
+        } else {
+            0.
+        };
         let mut colored = false;
         let (width, height, baseline) = (self.tile_width, self.tile_height, self.baseline);
         for (info, pos) in glyphs.glyph_infos().iter().zip(glyphs.glyph_positions()) {
