@@ -129,6 +129,23 @@ fn wide_and_combining_cells() {
     assert_eq!(c.text(false), "界e\u{301}");
 }
 #[test]
+fn emoji_sequences_and_flags_are_one_grapheme_even_after_a_reset() {
+    for reset in [&b""[..], b"\x1bc"] {
+        let mut c = term(20, 2);
+        c.write(reset);
+        assert!(c.mode(2027), "grapheme clustering is on by default");
+        c.write("👍🏽|👨\u{200d}👩\u{200d}👧|🇯🇵|e\u{301}|".as_bytes());
+        c.update().unwrap();
+        let cells = c.cells();
+        let texts: Vec<&str> = cells[..9].iter().map(|c| c.text.as_str()).collect();
+        assert_eq!(texts[0], "👍🏽", "{texts:?}");
+        assert_eq!(texts[2], "|");
+        assert_eq!(texts[3], "👨\u{200d}👩\u{200d}👧", "{texts:?}");
+        assert_eq!(texts[6], "🇯🇵", "{texts:?}");
+        assert_eq!(texts[8], "|");
+    }
+}
+#[test]
 fn delayed_autowrap() {
     let mut c = term(4, 2);
     c.write(b"abcd");
