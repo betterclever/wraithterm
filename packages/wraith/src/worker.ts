@@ -110,6 +110,7 @@ function createSession(
   // 500 ms; send them only while the page listens.
   let observeStats = false;
   let alternateScroll = false;
+  let scrolledBack = false;
   let observeRender = false,
     renderedFrames = 0;
   // A page recorder wants socket output, which otherwise stays in the worker.
@@ -152,6 +153,16 @@ function createSession(
   };
   let searchGeneration = 0;
   let reducedMotion = false;
+  // Input brings a scrolled-back viewport to the prompt; the jump is not output
+  // to announce, so the screen reader's baseline moves with it.
+  const scrollToPrompt = () => {
+    engine!.scroll_to_bottom();
+    if (scrolledBack) {
+      scrolledBack = false;
+      a11y.rebaseline();
+    }
+    schedule();
+  };
   // Screen-reader mirror and announcements; inert until a mounted terminal enables them.
   const a11y = createAccessibility(
     () =>
@@ -761,10 +772,7 @@ function createSession(
         drain();
         // A key that sends the program something brings a scrolled-back
         // viewport to the prompt, as Ghostty's scroll-to-bottom=keystroke.
-        if (command.action !== 0 && outputs !== sent) {
-          engine.scroll_to_bottom();
-          schedule();
-        }
+        if (command.action !== 0 && outputs !== sent) scrollToPrompt();
         break;
       }
       case 'font':
@@ -796,6 +804,7 @@ function createSession(
         break;
       case 'scroll':
         engine.scroll(command.delta);
+        scrolledBack = true;
         a11y.rebaseline();
         schedule();
         break;
@@ -816,8 +825,7 @@ function createSession(
           : text.replace(/\r?\n/g, '\r');
         a11y.typed(true);
         output(encoder.encode(framed));
-        engine.scroll_to_bottom();
-        schedule();
+        scrollToPrompt();
         result(command.id);
         break;
       }
