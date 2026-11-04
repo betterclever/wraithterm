@@ -205,6 +205,12 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
       ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &history)) {
     wraith_bridge_free(b); return NULL;
   }
+  /* Grapheme clustering (DEC 2027) on, as a reset default: an emoji with a
+   * skin tone, a ZWJ family, a flag or a letter with combining marks takes
+   * one cell (or two), as Ghostty's own grapheme-width-method = unicode.
+   * Programs can still turn it off. */
+  GhosttyTerminalModeConfig grapheme = {.mode = ghostty_mode_new(2027, false), .value = true};
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_MODE_DEFAULT, &grapheme);
   /* Browser hosts have no filesystem. Never enable file/shared-memory images. */
   bool disabled = false;
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_FILE, &disabled);
