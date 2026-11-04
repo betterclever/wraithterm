@@ -73,7 +73,14 @@ export class WraithDisposedError extends Error {
   }
 }
 
-const NATIVE_LIVE = new Set(['theme', 'fontSize', 'lineHeight', 'font', 'fallbackFonts']);
+const NATIVE_LIVE = new Set([
+  'theme',
+  'fontSize',
+  'lineHeight',
+  'font',
+  'fallbackFonts',
+  'fontFaces',
+]);
 const XTERM_INIT_ONLY = new Set(['cols', 'rows']);
 function same(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -294,13 +301,19 @@ export class WraithController {
       const t = terminal as Wraith;
       const next = after as WraithOptions;
       if (changed.has('theme') && next.theme) t.setTheme(next.theme as WraithTheme);
-      if (changed.has('font') || changed.has('fallbackFonts') || changed.has('lineHeight')) {
+      if (
+        changed.has('font') ||
+        changed.has('fallbackFonts') ||
+        changed.has('fontFaces') ||
+        changed.has('lineHeight')
+      ) {
         await t.setFont(
           next.font ?? new URL('../wasm/JetBrainsMono-Regular.ttf', import.meta.url),
           {
             fontSize: next.fontSize,
             lineHeight: next.lineHeight,
             fallbackFonts: next.fallbackFonts ?? [],
+            fontFaces: next.fontFaces ?? {},
           },
         );
       } else if (changed.has('fontSize') && next.fontSize !== undefined)

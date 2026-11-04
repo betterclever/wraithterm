@@ -38,8 +38,10 @@ renderer, input path, effects, fonts, and browser integration.
 | Word, logical-line, block and select-all gestures/APIs                          | Ghostty selection rules, native tests and real Chrome double/triple-click and Alt-drag.             |
 | Custom keyboard event handlers                                                  | Disposable hooks; Chrome verifies intercepted keys emit no terminal bytes.                          |
 | Legacy / application arrows and Kitty keyboard disambiguation                   | Packaged Wasm byte-for-byte encoding tests.                                                         |
+| Kitty keyboard flags stack (push, pop, set, query), event types, all-keys, text | Native protocol tests (`tests/kitty_keyboard.rs`), per screen and across resets.                    |
 | Programming ligatures (opt-in) and complex-script run shaping (native profile)  | Native atlas tests; Chrome WebGPU pixels for ligatures, cursor split and joined Arabic.             |
 | Kitty graphics (native profile): RGB/RGBA/PNG, zlib, chunked direct transfer    | Native protocol tests; Chrome WebGPU pixels for placement, scaling, z-layers and deletion.          |
+| Kitty graphics queries, image numbers, palette/16-bit PNGs, errors, placements  | Native protocol tests; Chrome WebGPU pixels for PNG alpha, chunked scaling and scrolling.           |
 | Kitty graphics crop, offsets, layers, retransmission, scrolling, replies, limit | Native protocol tests (`tests/kitty.rs`), including first/last-row and sub-cell placements.         |
 | SGR mouse encoding, focus reports, bracketed paste                              | Native encoder path; browser paste test and sanitized frame contents.                               |
 | IME commits and preedit placement                                               | Browser composition test; cursor coordinates anchor the input element.                              |
