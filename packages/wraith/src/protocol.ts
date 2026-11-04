@@ -19,6 +19,8 @@ export type Command =
       canvas?: OffscreenCanvas;
       font: Uint8Array;
       fonts: Uint8Array[];
+      /** Bold, italic and bold italic faces; `null` where a style has none. */
+      faces: (Uint8Array | null)[];
       cols: number;
       rows: number;
       size: number;
@@ -34,6 +36,7 @@ export type Command =
       type: 'font';
       font: Uint8Array;
       fonts: Uint8Array[];
+      faces: (Uint8Array | null)[];
       size: number;
       lineHeight: number;
       id: number;

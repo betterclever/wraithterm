@@ -815,7 +815,7 @@ and pointer selection is then offset.
 | `flush()`                                                   | Renders pending state and waits for a GPU completion fence.                                                          |
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
 | `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
-| `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
+| `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts (also `fontFaces`) and optional geometry; invalid fonts leave the renderer usable. |
 | `connect(url, options)`                                     | Worker-owned WebSocket; output parsed off the main thread. `closed` resolves after the last byte is parsed.          |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
@@ -891,7 +891,12 @@ conjuncts form, but text stays in the terminal's left-to-right cell order: there
 is no bidi reordering. Supply a font for these scripts with `fallbackFonts`.
 
 The bundled JetBrains Mono font covers the demo. Supply `font` and `fallbackFonts`
-as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pixels;
+as URLs or Uint8Arrays for other scripts or color emoji. `fontFaces: { bold,
+italic, boldItalic }` gives styles faces of their own (a monospace's bold file, a
+separate italic family), drawn in the regular font's cell and on its baseline; a
+style without a face, or a character its face lacks, is synthesized from the
+regular fonts as before, and bold italic first tries the italic face made bolder.
+Font size is in CSS pixels;
 rasterization automatically follows devicePixelRatio changes, including with
 `fit: false`. Font sizes must resolve to 6..96 physical pixels at the current
 display scale (capped at 3); line height must be 1..2. Live changes preserve the

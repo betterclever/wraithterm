@@ -772,3 +772,92 @@ fn vt_snapshots_restore_screen_history_modes_and_cursor() {
         assert_eq!(text(&mut restored), text(&mut source), "{label:?} history");
     }
 }
+/// A cell's glyph word and its uploaded pixels, rasterized fresh.
+fn styled_tile(atlas: &mut Atlas, text: &str, style: u32) -> (u32, Vec<u8>) {
+    let mut cell = wraith_engine::core::Cell::with_text(text);
+    cell.flags |= style;
+    let word = atlas.tile(&cell);
+    assert_ne!(
+        word & wraith_engine::text::GLYPH_SLOT,
+        0,
+        "{text:?} style {style}"
+    );
+    let pixels = atlas.uploads.last().unwrap().pixels.clone();
+    (word, pixels)
+}
+fn ink(pixels: &[u8]) -> u32 {
+    pixels.chunks_exact(4).map(|p| p[3] as u32).sum()
+}
+fn regular_atlas() -> Atlas {
+    let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+    Atlas::new(data, 16., 1.3).unwrap()
+}
+const LILEX_ITALIC: &[u8] = include_bytes!("fonts/Lilex-MediumItalic.otf");
+const LILEX_BOLD_ITALIC: &[u8] = include_bytes!("fonts/Lilex-BoldItalic.otf");
+#[test]
+fn style_faces_draw_their_own_glyphs() {
+    let mut synthetic = regular_atlas();
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    // Regular cells never touch a style face.
+    assert_eq!(
+        styled_tile(&mut synthetic, "a", 0).1,
+        styled_tile(&mut faced, "a", 0).1
+    );
+    // An italic cell draws the italic face's own `a` (single-storey in
+    // Lilex), not JetBrains Mono's slanted.
+    assert_ne!(
+        styled_tile(&mut synthetic, "a", 2).1,
+        styled_tile(&mut faced, "a", 2).1
+    );
+    // Bold has no face here: still synthesized from the regular font.
+    assert_eq!(
+        styled_tile(&mut synthetic, "a", 1).1,
+        styled_tile(&mut faced, "a", 1).1
+    );
+}
+#[test]
+fn bold_italic_falls_back_to_the_italic_face_emboldened() {
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    let italic = styled_tile(&mut faced, "a", 2).1;
+    let bold_italic = styled_tile(&mut faced, "a", 3).1;
+    assert!(
+        ink(&bold_italic) > ink(&italic),
+        "synthetic bold on the italic face"
+    );
+    // A face of its own wins over the emboldened italic.
+    let mut full = regular_atlas();
+    full.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    full.set_face(3, LILEX_BOLD_ITALIC.to_vec()).unwrap();
+    assert_ne!(styled_tile(&mut full, "a", 3).1, bold_italic);
+}
+#[test]
+fn a_face_without_the_character_falls_back_to_synthetic_style() {
+    let devanagari = include_bytes!("fonts/NotoSansDevanagari.ttf").to_vec();
+    let mut synthetic = regular_atlas();
+    synthetic.add_font(devanagari.clone()).unwrap();
+    let mut faced = regular_atlas();
+    faced.add_font(devanagari).unwrap();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    // Lilex has no Devanagari: the fallback font, slanted, as without a face.
+    assert_eq!(
+        styled_tile(&mut synthetic, "क", 2).1,
+        styled_tile(&mut faced, "क", 2).1
+    );
+}
+#[test]
+fn style_faces_keep_their_cache_slots_apart_and_reject_bad_input() {
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    let regular = styled_tile(&mut faced, "x", 0).0;
+    let italic = styled_tile(&mut faced, "x", 2).0;
+    assert_ne!(regular, italic);
+    assert_eq!(
+        faced.tile(&wraith_engine::core::Cell::with_text("x")),
+        regular
+    );
+    assert!(faced.set_face(0, LILEX_ITALIC.to_vec()).is_err());
+    assert!(faced.set_face(4, LILEX_ITALIC.to_vec()).is_err());
+    assert!(faced.set_face(2, b"not a font".to_vec()).is_err());
+}

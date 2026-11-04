@@ -666,6 +666,7 @@ function createSession(
               surface.context(),
               command.font,
               command.fonts,
+              command.faces,
               cols,
               rows,
               command.size,
@@ -686,6 +687,7 @@ function createSession(
       engine = await created;
       if (!surface) {
         for (const font of command.fonts) engine.add_font(font);
+        command.faces.forEach((face, i) => face && engine!.set_face(i + 1, face));
         if (command.ligatures) engine.set_ligatures(true);
       }
       if (command.imageStorageLimit !== undefined)
@@ -764,7 +766,13 @@ function createSession(
         result(
           command.id,
           Array.from(
-            engine.configure_font(command.font, command.fonts, command.size, command.lineHeight),
+            engine.configure_font(
+              command.font,
+              command.fonts,
+              command.faces,
+              command.size,
+              command.lineHeight,
+            ),
           ),
         );
         cursor = '';

@@ -5,6 +5,7 @@ import {
   BackpressureError,
   packColor,
   type WraithOptions,
+  type WraithFontFaces,
   type WraithStats,
   type WraithTheme,
   type Disposable,
@@ -158,6 +159,14 @@ interface Pending {
   reject: (error: Error) => void;
   bytes: number;
 }
+/** Bold, italic and bold italic, in the engine's style order. */
+async function loadFaces(faces: WraithFontFaces | undefined): Promise<(Uint8Array | null)[]> {
+  return Promise.all(
+    [faces?.bold, faces?.italic, faces?.boldItalic].map((face) =>
+      face === undefined ? null : loadFont(face),
+    ),
+  );
+}
 async function loadFont(value: string | URL | Uint8Array): Promise<Uint8Array> {
   if (value instanceof Uint8Array) return value.slice();
   const response = await fetch(value);
@@ -227,6 +236,7 @@ export class Wraith {
   private dpr: number;
   private fontBytes?: Uint8Array;
   private fallbackBytes: Uint8Array[] = [];
+  private faceBytes: (Uint8Array | null)[] = [null, null, null];
   private displayUpdates = Promise.resolve();
   private dprQuery?: MediaQueryList;
   private dprListener?: () => void;
@@ -441,12 +451,15 @@ export class Wraith {
       throw new Error('Wraith requires OffscreenCanvas support.');
     const terminal = new Wraith(host, options);
     try {
-      const [font, ...fonts] = await Promise.all(
-        [
-          options.font ?? new URL('../wasm/JetBrainsMono-Regular.ttf', import.meta.url),
-          ...(options.fallbackFonts ?? []),
-        ].map(loadFont),
-      );
+      const [[font, ...fonts], faces] = await Promise.all([
+        Promise.all(
+          [
+            options.font ?? new URL('../wasm/JetBrainsMono-Regular.ttf', import.meta.url),
+            ...(options.fallbackFonts ?? []),
+          ].map(loadFont),
+        ),
+        loadFaces(options.fontFaces),
+      ]);
       // A shared-surface pool draws into its own canvas; this one stays a
       // placeholder for layout, pointer input and visibility.
       const canvas = terminal.worker.surface
@@ -454,12 +467,14 @@ export class Wraith {
         : terminal.canvas.transferControlToOffscreen();
       terminal.fontBytes = font!.slice();
       terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
+      terminal.faceBytes = faces.map((bytes) => bytes?.slice() ?? null);
       terminal.send(
         {
           type: 'init',
           canvas,
           font: font!,
           fonts,
+          faces,
           cols: terminal.cols,
           rows: terminal.rows,
           size: (options.fontSize ?? 14) * terminal.dpr,
@@ -469,7 +484,12 @@ export class Wraith {
           ligatures: options.ligatures,
           theme: Object.values(terminal.forcedTheme ?? terminal.theme).map(packColor),
         },
-        [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
+        [
+          ...(canvas ? [canvas] : []),
+          ...[font!, ...fonts, ...faces.filter((f) => f !== null)].map(
+            (f) => f.buffer as ArrayBuffer,
+          ),
+        ],
       );
       terminal.started = true;
       terminal.syncStats();
@@ -634,6 +654,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.faceBytes = [null, null, null];
     this.effectsController.dispose();
     this.worker.terminate();
   }
@@ -758,12 +779,15 @@ export class Wraith {
   /** Replace supplied OpenType fonts and optionally the text geometry atomically. */
   setFont(
     font: string | URL | Uint8Array,
-    options: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'fallbackFonts'> = {},
+    options: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'fallbackFonts' | 'fontFaces'> = {},
   ): Promise<void> {
     return this.configureDisplay({ ...options, font });
   }
   private configureDisplay(
-    changes: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'font' | 'fallbackFonts'>,
+    changes: Pick<
+      WraithOptions,
+      'fontSize' | 'lineHeight' | 'font' | 'fallbackFonts' | 'fontFaces'
+    >,
   ): Promise<void> {
     this.assertLive();
     const update = this.displayUpdates.then(async () => {
@@ -788,17 +812,21 @@ export class Wraith {
         changes.fallbackFonts !== undefined
           ? await Promise.all(changes.fallbackFonts.map(loadFont))
           : this.fallbackBytes;
+      const faces =
+        changes.fontFaces !== undefined ? await loadFaces(changes.fontFaces) : this.faceBytes;
       this.assertLive();
       const dimensions = await this.request<number[]>({
         type: 'font',
         font,
         fonts,
+        faces,
         size,
         lineHeight,
       } as Omit<Extract<Command, { type: 'font' }>, 'id'>);
       this.options = next;
       this.fontBytes = font;
       this.fallbackBytes = fonts;
+      this.faceBytes = faces;
       this.dpr = dpr;
       [this.cellWidth, this.cellHeight] = dimensions as [number, number];
       this.dimensions();
@@ -1548,6 +1576,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.faceBytes = [null, null, null];
     this.a11y.dispose();
     this.effectsController.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));

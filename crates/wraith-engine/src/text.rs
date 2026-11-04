@@ -187,8 +187,35 @@ pub struct Upload {
     pub y: u32,
     pub pixels: Vec<u8>,
 }
+/// Where a cell's glyphs come from: a style's own face (bold, italic, bold
+/// italic) or the regular font and its fallbacks.
+#[derive(Clone, Copy)]
+enum Pick {
+    Face(usize),
+    Fallback(usize),
+}
+/// Whether `font` maps every character of `text` (joiners and variation
+/// selectors need no glyph of their own).
+fn covers(font: &Font, text: &str) -> bool {
+    let cmap = font.raster().charmap();
+    text.chars()
+        .all(|c| c == '\u{200d}' || ('\u{fe00}'..='\u{fe0f}').contains(&c) || cmap.map(c) != 0)
+}
+/// The faces a style may draw from, best first, with the synthetic bold and
+/// italic each still needs: bold italic falls back to the italic face made
+/// bolder, then the bold face slanted.
+const FACE_ORDER: [&[(usize, bool, bool)]; 4] = [
+    &[],
+    &[(0, false, false)],
+    &[(1, false, false)],
+    &[(2, false, false), (1, true, false), (0, false, true)],
+];
 pub struct Atlas {
+    /// The regular font, then its fallbacks.
     fonts: Vec<Font>,
+    /// Faces of their own for bold, italic and bold italic. A style without
+    /// one (or whose face lacks a character) is synthesized from `fonts`.
+    faces: [Option<Font>; 3],
     context: ScaleContext,
     cache: FxMap<String, [u32; 4]>,
     /// Shaped runs (text and bold/italic style) to one glyph word per cell.
@@ -220,6 +247,7 @@ impl Atlas {
     pub(crate) fn external() -> Self {
         Self {
             fonts: Vec::new(),
+            faces: [None, None, None],
             context: ScaleContext::new(),
             cache: FxMap::default(),
             runs: FxMap::default(),
@@ -267,6 +295,7 @@ impl Atlas {
         let capacity = ((ATLAS_SIZE / tw) * (ATLAS_SIZE / th)).min(MAX_SLOTS);
         Ok(Self {
             fonts: vec![font],
+            faces: [None, None, None],
             context: ScaleContext::new(),
             cache: FxMap::default(),
             runs: FxMap::default(),
@@ -314,6 +343,32 @@ impl Atlas {
         self.reset();
         Ok(())
     }
+    /// Give `style` (1 bold, 2 italic, 3 bold italic) a face of its own, drawn
+    /// in the regular font's cell and on its baseline.
+    pub fn set_face(&mut self, style: u8, bytes: Vec<u8>) -> Result<(), String> {
+        if !(1..=3).contains(&style) {
+            return Err("a face's style is 1 (bold), 2 (italic) or 3 (bold italic)".into());
+        }
+        self.faces[style as usize - 1] = Some(Font::new(bytes)?);
+        self.reset();
+        Ok(())
+    }
+    /// The face for `text` in `style`, and the synthetic bold and italic it
+    /// still needs; None when no font maps all of it.
+    fn choose(&self, text: &str, style: usize) -> Option<(Pick, bool, bool)> {
+        for &(index, bold, italic) in FACE_ORDER[style] {
+            if self.faces[index]
+                .as_ref()
+                .is_some_and(|face| covers(face, text))
+            {
+                return Some((Pick::Face(index), bold, italic));
+            }
+        }
+        self.fonts
+            .iter()
+            .position(|font| covers(font, text))
+            .map(|index| (Pick::Fallback(index), style & 1 != 0, style & 2 != 0))
+    }
     pub fn reset(&mut self) {
         self.cache.clear();
         self.runs.clear();
@@ -353,17 +408,15 @@ impl Atlas {
         if let Some(pixels) = self.procedural(&cell.text) {
             return self.place(cell, style, pixels, false);
         }
-        let font_index = self
-            .fonts
-            .iter()
-            .position(|f| {
-                let cmap = f.raster().charmap();
-                cell.text.chars().all(|c| {
-                    c == '\u{200d}' || ('\u{fe00}'..='\u{fe0f}').contains(&c) || cmap.map(c) != 0
-                })
-            })
-            .unwrap_or(0);
-        let font = &self.fonts[font_index];
+        let (pick, bold, italic) = self.choose(&cell.text, style).unwrap_or((
+            Pick::Fallback(0),
+            style & 1 != 0,
+            style & 2 != 0,
+        ));
+        let font = match pick {
+            Pick::Face(index) => self.faces[index].as_ref().unwrap(),
+            Pick::Fallback(index) => &self.fonts[index],
+        };
         let shape_font = ShapeFont::new(&font.data).unwrap();
         let shaper = font.shape.shaper(&shape_font).build();
         let factor = self.font_size / shaper.units_per_em() as f32;
@@ -383,7 +436,7 @@ impl Atlas {
             Source::Outline,
         ]);
         render.format(Format::Alpha);
-        if cell.flags & 2 != 0 {
+        if italic {
             render.transform(Some(Transform::new(1., 0., 0.2, 1., 0., 0.)));
         }
         let mut pixels = vec![0u8; (self.tile_width * self.tile_height * 4) as usize];
@@ -413,7 +466,7 @@ impl Atlas {
             }
             pen += pos.x_advance as f32 * factor;
         }
-        if cell.flags & 1 != 0 && !colored {
+        if bold && !colored {
             embolden(
                 &mut pixels,
                 self.tile_width,
@@ -503,18 +556,16 @@ impl Atlas {
             return Some(words.clone());
         }
         self.misses += 1;
-        let font_index = self.fonts.iter().position(|f| {
-            let cmap = f.raster().charmap();
-            text.chars().all(|c| {
-                c == '\u{200d}' || ('\u{fe00}'..='\u{fe0f}').contains(&c) || cmap.map(c) != 0
-            })
-        })?;
+        let (pick, bold, italic) = self.choose(&text, style as usize)?;
         let n = cells.len() as u32;
         if self.next + n > self.capacity {
             self.overflow = true;
             return Some(vec![0; cells.len()]);
         }
-        let font = &self.fonts[font_index];
+        let font = match pick {
+            Pick::Face(index) => self.faces[index].as_ref().unwrap(),
+            Pick::Fallback(index) => &self.fonts[index],
+        };
         let shape_font = ShapeFont::new(&font.data).unwrap();
         let shaper = font.shape.shaper(&shape_font).build();
         let factor = self.font_size / shaper.units_per_em() as f32;
@@ -536,7 +587,7 @@ impl Atlas {
             Source::Outline,
         ]);
         render.format(Format::Alpha);
-        if style & 2 != 0 {
+        if italic {
             render.transform(Some(Transform::new(1., 0., 0.2, 1., 0., 0.)));
         }
         // One cell of margin on each side for glyphs that overhang the run.
@@ -564,7 +615,7 @@ impl Atlas {
             }
             pen += pos.x_advance as f32 * factor;
         }
-        if style & 1 != 0 && !colored {
+        if bold && !colored {
             embolden(
                 &mut canvas,
                 width,

@@ -109,11 +109,12 @@ fn hash(state: &mut u64, bytes: &[u8]) {
     }
     *state = (*state ^ bytes.len() as u64).wrapping_mul(0x100_0000_01b3);
 }
-/// Identifies a glyph atlas: font bytes, fallbacks, size, line height and
-/// ligature shaping all change rasterized tiles.
+/// Identifies a glyph atlas: font bytes, fallbacks, style faces, size, line
+/// height and ligature shaping all change rasterized tiles.
 pub fn atlas_key(
     font: &[u8],
     fallbacks: &[Vec<u8>],
+    faces: &[(u8, Vec<u8>)],
     size: f32,
     line_height: f32,
     ligatures: bool,
@@ -121,6 +122,10 @@ pub fn atlas_key(
     let mut state = 0xcbf2_9ce4_8422_2325;
     hash(&mut state, font);
     for bytes in fallbacks {
+        hash(&mut state, bytes);
+    }
+    for (style, bytes) in faces {
+        hash(&mut state, &[*style]);
         hash(&mut state, bytes);
     }
     hash(&mut state, &size.to_bits().to_le_bytes());
