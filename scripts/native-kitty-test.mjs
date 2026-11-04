@@ -123,6 +123,16 @@ try {
   near(at(image, 1, 1), [0, 0, 0], 'deleted RGBA');
   near(at(image, 10 * cw + 2, 2 * ch + 2), [0, 0, 0], 'deleted PNG');
 
+  // 6. `clear` (ED2 then ED3) with an image scrolled into history: it does not
+  // come back at the top of the cleared screen.
+  await write(`\x1b[H\x1b[2J${apc('a=T,f=100,i=5,c=4,r=2', png(2, 2, [255, 0, 255]))}`);
+  image = await shot();
+  near(at(image, cw, ch / 2), [255, 0, 255], 'image before clear');
+  await write('\r\n'.repeat(20));
+  await write('\x1b[H\x1b[2J\x1b[3J');
+  image = await shot();
+  near(at(image, cw, ch / 2), [0, 0, 0], 'no image after clear');
+
   const replies = await page.evaluate(() => window.kittyReplies);
   for (const id of [1, 2, 3, 4]) assert.match(replies, new RegExp(`\\x1b_Gi=${id};OK\\x1b\\\\`));
   const stats = await page.evaluate(async () => {
@@ -133,7 +143,7 @@ try {
   assert(stats);
   assert.deepEqual(errors, []);
   console.log(
-    `Kitty graphics passed on WebGPU (${cw}×${ch} px cells): RGBA, scaled PNG, chunked zlib RGB, below-background layering, deletion and replies.`,
+    `Kitty graphics passed on WebGPU (${cw}×${ch} px cells): RGBA, scaled PNG, chunked zlib RGB, below-background layering, deletion, clear and replies.`,
   );
 } finally {
   await browser.close();

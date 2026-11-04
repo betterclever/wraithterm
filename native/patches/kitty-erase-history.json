@@ -1,0 +1,14 @@
+{
+  "upstream": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "patch": "kitty-erase-history.patch",
+  "files": {
+    "src/terminal/Terminal.zig": {
+      "before": "48b951d255f0e2f54f54eff6e09a4e2576315f8c2da321751d11109ede42becf",
+      "after": "236b577d24fc91a3c17b06d7098e7858a5ea3f4301f232a496c90379f5dd541f"
+    },
+    "src/terminal/kitty/graphics_storage.zig": {
+      "before": "a2c29c02531f00b939485a9e45eeb8198d55648f116282c31e37bed84677328d",
+      "after": "a4a1d4dcaf6a62937b75b50a03f84f6367556d1f6a38e5e58af127bfb27be37d"
+    }
+  }
+}

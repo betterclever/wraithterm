@@ -1,0 +1,72 @@
+diff --git a/src/terminal/Terminal.zig b/src/terminal/Terminal.zig
+index cd4a597..5100c84 100644
+--- a/src/terminal/Terminal.zig
++++ b/src/terminal/Terminal.zig
+@@ -3768,7 +3768,19 @@ pub fn eraseDisplay(
+             assert(!self.screens.active.cursor.pending_wrap);
+         },
+ 
+-        .scrollback => self.screens.active.eraseHistory(null),
++        .scrollback => {
++            if (comptime build_options.kitty_graphics) {
++                // Placements anchored in the history go with it. Erasing
++                // moves pins on erased rows to the top of what remains
++                // (not marked garbage), which would show them again there.
++                self.screens.active.kitty_images.clearHistory(
++                    self.io(),
++                    self.screens.active.alloc,
++                    self,
++                );
++            }
++            self.screens.active.eraseHistory(null);
++        },
+     }
+ }
+ 
+diff --git a/src/terminal/kitty/graphics_storage.zig b/src/terminal/kitty/graphics_storage.zig
+index 897c894..3458a7b 100644
+--- a/src/terminal/kitty/graphics_storage.zig
++++ b/src/terminal/kitty/graphics_storage.zig
+@@ -1190,6 +1190,42 @@ pub const ImageStorage = struct {
+             self.images.count() != images_before) self.markMutated(io);
+     }
+ 
++    /// Delete placements anchored in scrollback, before ED3 erases it, and
++    /// the images only they used. Erasing history moves pins on the erased
++    /// rows to the top of what remains without marking them garbage, so
++    /// these placements would otherwise reappear at the top of the screen.
++    /// Images transmitted but never placed are kept.
++    pub fn clearHistory(
++        self: *ImageStorage,
++        io: std.Io,
++        alloc: Allocator,
++        t: *terminal.Terminal,
++    ) void {
++        const placements_before = self.placements.count();
++        const images_before = self.images.count();
++
++        var unplaced: std.ArrayList(u32) = .empty;
++        defer unplaced.deinit(alloc);
++        var it = self.placements.iterator();
++        while (it.next()) |entry| {
++            const pin = switch (entry.value_ptr.location) {
++                .pin => |pin| pin,
++                // Virtual placements have no row; relative ones go with
++                // their parents (removeOrphans).
++                .virtual, .relative => continue,
++            };
++            if (pin.garbage) continue;
++            if (t.screens.active.pages.pointFromPin(.active, pin.*) != null) continue;
++            unplaced.append(alloc, entry.key_ptr.image_id) catch {};
++            self.removePlacement(t.screens.active, entry);
++        }
++        _ = self.removeOrphans(t.screens.active, null);
++        for (unplaced.items) |image_id| self.deleteIfUnused(alloc, image_id);
++
++        if (self.placements.count() != placements_before or
++            self.images.count() != images_before) self.markMutated(io);
++    }
++
+     /// Delete placements, images.
+     pub fn delete(
+         self: *ImageStorage,
