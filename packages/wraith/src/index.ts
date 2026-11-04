@@ -278,6 +278,8 @@ export class Wraith {
   private readyResolve!: () => void;
   private readyReject!: (error: Error) => void;
   private mouseTracking = false;
+  /** The alternate screen is active and wheel scrolling there sends arrow keys (DEC 1007). */
+  private alternateScroll = false;
   private dragging = false;
   private selected = false;
   private anchor: [number, number] = [0, 0];
@@ -581,6 +583,7 @@ export class Wraith {
         break;
       case 'modes':
         this.mouseTracking = reply.mouse;
+        this.alternateScroll = reply.alternateScroll;
         break;
       case 'cursor':
         this.cursorCell = [reply.x, reply.y];
@@ -856,6 +859,33 @@ export class Wraith {
     if (this.disposed || this.failed) return;
     if (this.dprQuery && !this.dprQuery.matches) this.dprListener?.();
   }
+  /**
+   * Press and release a key as if typed, encoded by the terminal for its
+   * current modes (application cursor keys, the Kitty keyboard protocol):
+   * for on-screen key panels. `code` is a `KeyboardEvent.code` (`ArrowUp`,
+   * `Escape`, `KeyC`…); `text` is what the key types, if anything.
+   */
+  pressKey(
+    code: string,
+    options: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean; text?: string } = {},
+  ): void {
+    this.assertLive();
+    const key = KEY_CODES[code];
+    if (key === undefined) throw new RangeError(`Unknown key code ${code}`);
+    const mods =
+      Number(!!options.shift) |
+      (Number(!!options.ctrl) << 1) |
+      (Number(!!options.alt) << 2) |
+      (Number(!!options.meta) << 3);
+    const text = options.text ?? '';
+    const unshifted = code.startsWith('Key')
+      ? (code.slice(3).toLowerCase().codePointAt(0) ?? 0)
+      : code.startsWith('Digit')
+        ? (code.slice(5).codePointAt(0) ?? 0)
+        : (text.toLowerCase().codePointAt(0) ?? 0);
+    this.send({ type: 'key', key, mods, action: 1, text, unshifted });
+    this.send({ type: 'key', key, mods, action: 0, text: '', unshifted });
+  }
   focus(): void {
     this.input.focus({ preventScroll: true });
   }
@@ -980,6 +1010,10 @@ export class Wraith {
   }
   selectWord(x: number, y: number): Promise<void> {
     return this.selection({ x, y }, { x, y }, 2);
+  }
+  /** Select from the word at `start` through the word at `end` (word-snapped ends). */
+  selectWords(start: SelectionPosition, end: SelectionPosition): Promise<void> {
+    return this.selection(start, end, 2);
   }
   selectLine(y: number): Promise<void> {
     return this.selection({ x: 0, y }, { x: 0, y }, 3);
@@ -1509,16 +1543,22 @@ export class Wraith {
             ),
             pressed: 0,
           });
-        } else
-          this.scroll(
+        } else {
+          const lines =
             Math.sign(event.deltaY) *
-              Math.max(
-                1,
-                Math.round(
-                  Math.abs(event.deltaY) / (event.deltaMode === 0 ? this.cellHeight / this.dpr : 1),
-                ),
+            Math.max(
+              1,
+              Math.round(
+                Math.abs(event.deltaY) / (event.deltaMode === 0 ? this.cellHeight / this.dpr : 1),
               ),
-          );
+            );
+          // A full-screen program without mouse reporting (less, man, vim)
+          // scrolls by arrow keys, as xterm and Ghostty send them.
+          if (this.alternateScroll) {
+            const key = lines < 0 ? 'ArrowUp' : 'ArrowDown';
+            for (let i = 0; i < Math.min(Math.abs(lines), 50); i++) this.pressKey(key);
+          } else this.scroll(lines);
+        }
       },
       { ...options, passive: false },
     );

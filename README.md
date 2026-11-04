@@ -821,7 +821,9 @@ and pointer selection is then offset.
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
 | `paste(text)`                                               | Removes terminal control characters and follows bracketed paste mode.                                                |
+| `pressKey(code, { shift?, ctrl?, alt?, meta?, text? })`     | Press and release a key (`KeyboardEvent.code`) as if typed, encoded for the current modes; for on-screen key panels. |
 | `scroll(lines)`                                             | Negative moves toward history; positive moves toward the active area.                                                |
+| Mouse wheel                                                 | Scrolls history; sends arrow keys on the alternate screen (DEC 1007, on by default); mouse reports under tracking.   |
 | `getText()`                                                 | Plain text for the current viewport, with visual row breaks.                                                         |
 | `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                                                           |
 | `readText({ scope?, lastLines? })`                          | Visible screen (default) or `'all'` retained output with soft wraps joined; `'all'` clears an active selection.      |
@@ -832,6 +834,7 @@ and pointer selection is then offset.
 | `clearSearch()`                                             | Cancel pending search and clear its selection.                                                                       |
 | `select(start, end, rectangular?)`                          | Select inclusive viewport cell endpoints `{ x, y }`; optional block selection.                                       |
 | `selectWord(x, y)`, `selectLine(y)`, `selectAll()`          | Use Ghostty's word, logical-line and complete active-screen/history selection rules.                                 |
+| `selectWords(start, end)`                                   | Select from the word at `start` through the word at `end`, both ends word-snapped (touch selection).                 |
 | `clearSelection()`                                          | Remove the current selection.                                                                                        |
 | `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
 | `setTheme({ foreground, background, cursor, palette })`     | Colors use `#rrggbb`. `palette`: the default palette's first entries, up to 256; OSC 4 still overrides them.         |

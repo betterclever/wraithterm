@@ -109,6 +109,7 @@ function createSession(
   // Stats cost a message (with up to 512 render samples) per terminal every
   // 500 ms; send them only while the page listens.
   let observeStats = false;
+  let alternateScroll = false;
   let observeRender = false,
     renderedFrames = 0;
   // A page recorder wants socket output, which otherwise stays in the worker.
@@ -425,9 +426,12 @@ function createSession(
       if (kind === 5) commands.event(bytes);
     }
     const mouse = engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9);
-    if (mouse !== mouseTracking) {
+    const alternate =
+      (engine!.mode(1049) || engine!.mode(1047) || engine!.mode(47)) && engine!.mode(1007);
+    if (mouse !== mouseTracking || alternate !== alternateScroll) {
       mouseTracking = mouse;
-      post({ type: 'modes', mouse });
+      alternateScroll = alternate;
+      post({ type: 'modes', mouse, alternateScroll });
     }
   }
   function draw(time: number, force = false): boolean {
