@@ -828,6 +828,7 @@ and pointer selection is then offset.
 | `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                                                           |
 | `readText({ scope?, lastLines? })`                          | Visible screen (default) or `'all'` retained output with soft wraps joined; `'all'` clears an active selection.      |
 | `pause()` / `resume()` / `paused`                           | Stop and restart painting; parsing, replies and the accessible mirror continue.                                      |
+| `adapter`                                                   | The adapter the engine reports, as in `onStats`, once mounted. Browsers may give a generic name.                     |
 | `setScreenReaderMode(on)` / `setAccessibility(options)`     | Add or remove the mirror and announcements; change labels, announcements or preferences without remounting.          |
 | `announce(text)` / `onAnnounce(listener)`                   | Speak a host message through the live region; observe every announcement.                                            |
 | `findNext(needle)` / `findPrevious(needle)`                 | Search older/newer matches across scrollback, wrap around, reveal and select the match. Resolves `{ total, index }`. |

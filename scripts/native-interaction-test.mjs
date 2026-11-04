@@ -216,6 +216,21 @@ try {
   assert.equal(renderObservation.duplicatesIndependent, true);
   assert.equal(renderObservation.duplicateRemains, true);
   assert.equal(renderObservation.finalMessages, 0);
+  // `adapter` is what the stats heartbeat reports, from the moment of mounting.
+  const adapters = await page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const term = window.featureTerm;
+        const subscription = term.onStats((stats) => {
+          subscription.dispose();
+          resolve({ getter: term.adapter, stats: stats.adapter });
+        });
+        setTimeout(() => reject(new Error('no stats heartbeat')), 10000);
+        void term.write('stats\r\n');
+      }),
+  );
+  assert(adapters.getter, 'adapter is set once mounted');
+  assert.equal(adapters.getter, adapters.stats);
   await page.evaluate(async () => {
     window.inputSubscription.dispose();
     await window.featureTerm.dispose();
