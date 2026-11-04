@@ -129,6 +129,23 @@ fn wide_and_combining_cells() {
     assert_eq!(c.text(false), "界e\u{301}");
 }
 #[test]
+fn emoji_sequences_and_flags_are_one_grapheme_even_after_a_reset() {
+    for reset in [&b""[..], b"\x1bc"] {
+        let mut c = term(20, 2);
+        c.write(reset);
+        assert!(c.mode(2027), "grapheme clustering is on by default");
+        c.write("👍🏽|👨\u{200d}👩\u{200d}👧|🇯🇵|e\u{301}|".as_bytes());
+        c.update().unwrap();
+        let cells = c.cells();
+        let texts: Vec<&str> = cells[..9].iter().map(|c| c.text.as_str()).collect();
+        assert_eq!(texts[0], "👍🏽", "{texts:?}");
+        assert_eq!(texts[2], "|");
+        assert_eq!(texts[3], "👨\u{200d}👩\u{200d}👧", "{texts:?}");
+        assert_eq!(texts[6], "🇯🇵", "{texts:?}");
+        assert_eq!(texts[8], "|");
+    }
+}
+#[test]
 fn delayed_autowrap() {
     let mut c = term(4, 2);
     c.write(b"abcd");
@@ -146,6 +163,18 @@ fn scrollback_and_viewport() {
     assert_eq!(text(&mut c), "one\ntwo");
     c.scroll(100);
     assert_eq!(text(&mut c), "two\nthree");
+}
+#[test]
+fn scroll_to_bottom_returns_from_history() {
+    let mut c = term(10, 3);
+    for i in 0..12 {
+        c.write(format!("line {i}\r\n").as_bytes());
+    }
+    let bottom = text(&mut c);
+    c.scroll(-5);
+    assert_ne!(text(&mut c), bottom, "scrolled back");
+    c.scroll_to_bottom();
+    assert_eq!(text(&mut c), bottom);
 }
 #[test]
 fn configured_history_retains_several_pages_and_zero_disables_it() {
@@ -323,6 +352,21 @@ fn custom_shader_prelude_accepts_gallery_shaders() {
             include_str!("../../../demo/effects/spotlight.wgsl"),
         ),
         ("glitch", include_str!("../../../demo/effects/glitch.wgsl")),
+        (
+            "synthwave",
+            include_str!("../../../demo/effects/synthwave.wgsl"),
+        ),
+        ("rain", include_str!("../../../demo/effects/rain.wgsl")),
+        (
+            "shockwave",
+            include_str!("../../../demo/effects/shockwave.wgsl"),
+        ),
+        (
+            "hologram",
+            include_str!("../../../demo/effects/hologram.wgsl"),
+        ),
+        ("warp", include_str!("../../../demo/effects/warp.wgsl")),
+        ("matrix", include_str!("../../../demo/effects/matrix.wgsl")),
     ] {
         let code = format!("{source}\n{prelude}");
         let module = naga::front::wgsl::parse_str(&code)
@@ -452,6 +496,179 @@ fn scalar_table_and_cluster_cache_return_stable_glyph_words() {
         assert!(glyph >> 20 & 2047 <= atlas.tile_width);
     }
 }
+fn box_atlas(font: &[u8]) -> Atlas {
+    Atlas::new(font.to_vec(), 16., 1.3).unwrap()
+}
+const JETBRAINS: &[u8] = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf");
+/// The tile of a box drawing character.
+fn box_pixels(atlas: &mut Atlas, cp: u32) -> Vec<u8> {
+    let c = char::from_u32(cp).unwrap().to_string();
+    atlas.tile(&wraith_engine::core::Cell::with_text(&c));
+    atlas.uploads.last().unwrap().pixels.clone()
+}
+/// Alpha of the tile pixel (x, y), for a box drawing character.
+fn box_tile(atlas: &mut Atlas, cp: u32) -> impl Fn(u32, u32) -> u8 {
+    let pixels = box_pixels(atlas, cp);
+    let tw = atlas.tile_width;
+    move |x, y| pixels[((y * tw + x) * 4 + 3) as usize]
+}
+#[test]
+fn box_drawing_is_geometry_whatever_the_font() {
+    // This font has no box drawing glyphs at all.
+    let no_box_glyphs = include_bytes!("fonts/NotoSansDevanagari.ttf");
+    let (mut with, mut without) = (box_atlas(JETBRAINS), box_atlas(no_box_glyphs));
+    for atlas in [&mut with, &mut without] {
+        // Ink alone would also pass with a font's missing-glyph box: the line
+        // has to be the drawn one, edge to edge.
+        let (w, h) = (atlas.cell_width, atlas.cell_height);
+        let across = box_tile(atlas, 0x2500);
+        assert!(
+            (0..h).any(|y| (0..w).all(|x| across(x, y) == 255)),
+            "─ spans the whole width"
+        );
+        for cp in 0x2501..=0x257f {
+            let pixels = box_pixels(atlas, cp);
+            assert!(
+                pixels.chunks_exact(4).any(|p| p[3] > 0),
+                "U+{cp:04X} draws something"
+            );
+        }
+    }
+}
+#[test]
+fn double_line_joins_stay_open_where_an_arm_enters() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.tile_width, atlas.cell_height);
+    let across = box_tile(&mut atlas, 0x2550);
+    let rows: Vec<u32> = (0..h).filter(|&y| across(0, y) > 127).collect();
+    let down = box_tile(&mut atlas, 0x2551);
+    let columns: Vec<u32> = (0..w).filter(|&x| down(x, 0) > 127).collect();
+    let (top, bottom) = (rows[0], *rows.last().unwrap());
+    let (left, right) = (columns[0], *columns.last().unwrap());
+    let (gap_x, gap_y) = ((left + right) / 2, (top + bottom) / 2);
+    assert!(gap_x > left && gap_x < right && gap_y > top && gap_y < bottom);
+    // Character, then which arms it has: up, right, down, left.
+    for (c, arms) in [
+        ('╔', [false, true, true, false]),
+        ('╗', [false, false, true, true]),
+        ('╚', [true, true, false, false]),
+        ('╝', [true, false, false, true]),
+        ('╠', [true, true, true, false]),
+        ('╣', [true, false, true, true]),
+        ('╦', [false, true, true, true]),
+        ('╩', [true, true, false, true]),
+        ('╬', [true, true, true, true]),
+    ] {
+        let tile = box_tile(&mut atlas, c as u32);
+        let lit = [
+            tile(gap_x, top),
+            tile(right, gap_y),
+            tile(gap_x, bottom),
+            tile(left, gap_y),
+        ]
+        .map(|alpha| alpha > 127);
+        assert_eq!(lit, arms.map(|arm| !arm), "{c}: up, right, down, left");
+    }
+}
+#[test]
+fn box_lines_reach_the_cell_edges_so_rows_and_columns_join() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let across = box_tile(&mut atlas, 0x2500); // ─
+    let row = (0..h)
+        .find(|&y| across(0, y) == 255)
+        .expect("a covered row");
+    assert!(
+        (0..w).all(|x| across(x, row) == 255),
+        "─ spans the whole width"
+    );
+    assert_eq!(across(0, 0), 0);
+    let down = box_tile(&mut atlas, 0x2502); // │
+    let col = (0..w)
+        .find(|&x| down(x, 0) == 255)
+        .expect("a covered column");
+    assert!(
+        (0..h).all(|y| down(col, y) == 255),
+        "│ spans the whole height"
+    );
+    let cross = box_tile(&mut atlas, 0x253c); // ┼
+    assert!(cross(0, row) == 255 && cross(w - 1, row) == 255);
+    assert!(cross(col, 0) == 255 && cross(col, h - 1) == 255);
+    // ┌ joins only rightwards and downwards.
+    let corner = box_tile(&mut atlas, 0x250c);
+    assert!(corner(w - 1, row) == 255 && corner(col, h - 1) == 255);
+    assert!(corner(0, row) == 0 && corner(col, 0) == 0);
+}
+#[test]
+fn box_weights_doubles_and_dashes() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let rows = |atlas: &mut Atlas, cp: u32| {
+        let t = box_tile(atlas, cp);
+        (0..h).filter(|&y| t(w / 2, y) == 255).collect::<Vec<_>>()
+    };
+    let light = rows(&mut atlas, 0x2500);
+    let heavy = rows(&mut atlas, 0x2501);
+    assert_eq!(heavy.len(), light.len() * 2, "heavy is twice light");
+    let double = rows(&mut atlas, 0x2550); // ═
+    assert_eq!(double.len(), light.len() * 2);
+    assert!(
+        double.windows(2).any(|p| p[1] > p[0] + 1),
+        "═ is two lines with a gap: {double:?}"
+    );
+    let dashed = box_tile(&mut atlas, 0x2504); // ┄
+    let row = light[0];
+    let covered = (0..w).filter(|&x| dashed(x, row) == 255).count() as u32;
+    assert!(covered > 0 && covered < w, "┄ has gaps");
+}
+#[test]
+fn rounded_corners_and_diagonals_are_antialiased_strokes() {
+    let mut atlas = box_atlas(JETBRAINS);
+    let (w, h) = (atlas.cell_width, atlas.cell_height);
+    let line = box_tile(&mut atlas, 0x2500);
+    let row = (0..h).find(|&y| line(0, y) == 255).unwrap();
+    let down = box_tile(&mut atlas, 0x2502);
+    let col = (0..w).find(|&x| down(x, 0) == 255).unwrap();
+    let arc = box_tile(&mut atlas, 0x256d); // ╭
+    assert!(arc(w - 1, row) > 200, "╭ meets the next cell's line");
+    assert!(arc(col, h - 1) > 200, "╭ meets the line below");
+    assert_eq!(arc(0, 0), 0);
+    assert_eq!(arc(col, 0), 0, "nothing above the turn");
+    let partial = (0..h)
+        .flat_map(|y| (0..w).map(move |x| (x, y)))
+        .any(|(x, y)| (1..255).contains(&arc(x, y)));
+    assert!(partial, "the curve is antialiased");
+    let rising = box_tile(&mut atlas, 0x2571); // ╱
+    assert!(rising(w - 1, 0) > 0 && rising(0, h - 1) > 0);
+    assert_eq!(rising(0, 0), 0);
+    let cross = box_tile(&mut atlas, 0x2573); // ╳
+    assert!(cross(0, 0) > 0 && cross(w - 1, 0) > 0);
+}
+#[test]
+fn a_theme_palette_colors_ansi_text_and_osc_4_still_overrides() {
+    let mut c = term(20, 2);
+    c.palette(&[0x000000, 0x0000aa, 0x00aa00]);
+    c.write(b"\x1b[31mR\x1b[32mG\x1b[33mY\x1b[38;5;196mX");
+    c.update().unwrap();
+    assert_eq!(c.cells()[0].foreground, 0x0000aa, "red is the theme's");
+    assert_eq!(c.cells()[1].foreground, 0x00aa00);
+    let yellow = c.cells()[2].foreground;
+    assert_ne!(yellow, 0, "entries not given keep the built-in palette");
+    assert_eq!(c.cells()[3].foreground, 255, "256-colour entries too");
+    // A program's own colour for an index survives a new theme palette.
+    c.write(b"\x1b]4;1;rgb:12/34/56\x1b\\\r\x1b[31mR");
+    c.palette(&[0x000000, 0x0000bb]);
+    c.update().unwrap();
+    assert_eq!(c.cells()[0].foreground, 0x12 | 0x34 << 8 | 0x56 << 16);
+    c.palette(&[]);
+    c.write(b"\x1b]104\x1b\\\r\x1b[31mR\x1b[33mY");
+    c.update().unwrap();
+    assert_eq!(
+        c.cells()[1].foreground,
+        yellow,
+        "an empty palette restores the built-in"
+    );
+}
 #[test]
 fn blink_count_tracks_visible_cells() {
     let mut c = term(10, 2);
@@ -566,6 +783,53 @@ fn synthetic_bold_never_loses_coverage() {
     }
 }
 
+/// Leftmost and rightmost inked columns of the last tile drawn.
+fn ink_span(atlas: &Atlas) -> (u32, u32) {
+    let pixels = &atlas.uploads.last().unwrap().pixels;
+    let (mut left, mut right) = (u32::MAX, 0);
+    for row in pixels.chunks_exact(atlas.tile_width as usize * 4) {
+        for x in 0..atlas.tile_width {
+            if row[x as usize * 4 + 3] > 64 {
+                left = left.min(x);
+                right = right.max(x);
+            }
+        }
+    }
+    (left, right)
+}
+#[test]
+fn glyphs_narrower_than_their_cells_are_centred() {
+    let atlas = || {
+        let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+        Atlas::new(data, 16., 1.3).unwrap()
+    };
+    let with_fallback = || {
+        let mut atlas = atlas();
+        atlas
+            .add_font(include_bytes!("fonts/NotoSansDevanagari.ttf").to_vec())
+            .unwrap();
+        atlas
+    };
+    const WIDE: u32 = 1 << 16;
+    let span = |mut atlas: Atlas, text: &str, flags: u32| {
+        let mut cell = wraith_engine::core::Cell::with_text(text);
+        cell.flags |= flags;
+        atlas.tile(&cell);
+        (ink_span(&atlas), atlas.cell_width)
+    };
+    // A fallback glyph narrower than its slot moves right by half a cell when
+    // the slot is a wide (two-cell) one.
+    let (narrow, width) = span(with_fallback(), "क", 0);
+    let (wide, _) = span(with_fallback(), "क", WIDE);
+    let shift = wide.0 as i32 - narrow.0 as i32;
+    assert!(
+        (shift - width as i32 / 2).abs() <= 1,
+        "centred in two cells: {narrow:?} -> {wide:?}"
+    );
+    // The regular font's glyphs fill their cell exactly and stay in it.
+    let (m, width) = span(atlas(), "M", 0);
+    assert!(m.1 < width + 2, "M stays in its own cell: {m:?}");
+}
 #[test]
 fn native_search_cache_tracks_mutations_and_wrapped_page_overlap() {
     let mut c = Core::new(120, 40, 27000).unwrap();
@@ -680,4 +944,93 @@ fn vt_snapshots_restore_screen_history_modes_and_cursor() {
         restored.scroll(-6);
         assert_eq!(text(&mut restored), text(&mut source), "{label:?} history");
     }
+}
+/// A cell's glyph word and its uploaded pixels, rasterized fresh.
+fn styled_tile(atlas: &mut Atlas, text: &str, style: u32) -> (u32, Vec<u8>) {
+    let mut cell = wraith_engine::core::Cell::with_text(text);
+    cell.flags |= style;
+    let word = atlas.tile(&cell);
+    assert_ne!(
+        word & wraith_engine::text::GLYPH_SLOT,
+        0,
+        "{text:?} style {style}"
+    );
+    let pixels = atlas.uploads.last().unwrap().pixels.clone();
+    (word, pixels)
+}
+fn ink(pixels: &[u8]) -> u32 {
+    pixels.chunks_exact(4).map(|p| p[3] as u32).sum()
+}
+fn regular_atlas() -> Atlas {
+    let data = include_bytes!("../../../demo/fonts/JetBrainsMono-Regular.ttf").to_vec();
+    Atlas::new(data, 16., 1.3).unwrap()
+}
+const LILEX_ITALIC: &[u8] = include_bytes!("fonts/Lilex-MediumItalic.otf");
+const LILEX_BOLD_ITALIC: &[u8] = include_bytes!("fonts/Lilex-BoldItalic.otf");
+#[test]
+fn style_faces_draw_their_own_glyphs() {
+    let mut synthetic = regular_atlas();
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    // Regular cells never touch a style face.
+    assert_eq!(
+        styled_tile(&mut synthetic, "a", 0).1,
+        styled_tile(&mut faced, "a", 0).1
+    );
+    // An italic cell draws the italic face's own `a` (single-storey in
+    // Lilex), not JetBrains Mono's slanted.
+    assert_ne!(
+        styled_tile(&mut synthetic, "a", 2).1,
+        styled_tile(&mut faced, "a", 2).1
+    );
+    // Bold has no face here: still synthesized from the regular font.
+    assert_eq!(
+        styled_tile(&mut synthetic, "a", 1).1,
+        styled_tile(&mut faced, "a", 1).1
+    );
+}
+#[test]
+fn bold_italic_falls_back_to_the_italic_face_emboldened() {
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    let italic = styled_tile(&mut faced, "a", 2).1;
+    let bold_italic = styled_tile(&mut faced, "a", 3).1;
+    assert!(
+        ink(&bold_italic) > ink(&italic),
+        "synthetic bold on the italic face"
+    );
+    // A face of its own wins over the emboldened italic.
+    let mut full = regular_atlas();
+    full.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    full.set_face(3, LILEX_BOLD_ITALIC.to_vec()).unwrap();
+    assert_ne!(styled_tile(&mut full, "a", 3).1, bold_italic);
+}
+#[test]
+fn a_face_without_the_character_falls_back_to_synthetic_style() {
+    let devanagari = include_bytes!("fonts/NotoSansDevanagari.ttf").to_vec();
+    let mut synthetic = regular_atlas();
+    synthetic.add_font(devanagari.clone()).unwrap();
+    let mut faced = regular_atlas();
+    faced.add_font(devanagari).unwrap();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    // Lilex has no Devanagari: the fallback font, slanted, as without a face.
+    assert_eq!(
+        styled_tile(&mut synthetic, "क", 2).1,
+        styled_tile(&mut faced, "क", 2).1
+    );
+}
+#[test]
+fn style_faces_keep_their_cache_slots_apart_and_reject_bad_input() {
+    let mut faced = regular_atlas();
+    faced.set_face(2, LILEX_ITALIC.to_vec()).unwrap();
+    let regular = styled_tile(&mut faced, "x", 0).0;
+    let italic = styled_tile(&mut faced, "x", 2).0;
+    assert_ne!(regular, italic);
+    assert_eq!(
+        faced.tile(&wraith_engine::core::Cell::with_text("x")),
+        regular
+    );
+    assert!(faced.set_face(0, LILEX_ITALIC.to_vec()).is_err());
+    assert!(faced.set_face(4, LILEX_ITALIC.to_vec()).is_err());
+    assert!(faced.set_face(2, b"not a font".to_vec()).is_err());
 }

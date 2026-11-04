@@ -31,7 +31,10 @@ body {
   border-radius: 3px;
   box-shadow: 0 0 0 1px #2a1f19;
 }
-/* Above the shared terminal surfaces (z-index 1 by default). */
+/* Above the shared terminal surfaces (z-index 1 by default). The HUD is one
+   fixed line on wide windows and a fixed two-row layout on narrow ones; its
+   readouts have fixed widths so changing numbers never re-wrap it, and
+   containment keeps their text updates from invalidating the page. */
 .hud {
   position: fixed;
   left: 12px;
@@ -39,15 +42,17 @@ body {
   top: 12px;
   z-index: 10;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 10px 18px;
+  gap: 10px 16px;
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: rgba(18, 13, 10, 0.88);
   backdrop-filter: blur(8px);
   font: 11px var(--mono);
+  white-space: nowrap;
+  contain: layout paint style;
 }
 .hud .mark {
   display: flex;
@@ -68,7 +73,7 @@ body {
 }
 .controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
   gap: 8px;
 }
@@ -83,21 +88,27 @@ body {
 }
 .readout {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
+  flex-wrap: nowrap;
+  gap: 4px 12px;
   margin: 0 0 0 auto;
+  contain: layout paint style;
 }
 .readout div {
   display: grid;
+  width: var(--w, 72px);
+  flex: none;
 }
 .readout dt {
   color: var(--faint);
+  overflow: hidden;
 }
 .readout dd {
   margin: 0;
+  overflow: hidden;
   color: var(--gold);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 .hint {
   position: fixed;
@@ -113,8 +124,15 @@ body {
   font: 11px var(--mono);
   pointer-events: none;
 }
-@media (max-width: 720px) {
+/* Narrow windows: a fixed second row for the readouts (chosen by window
+   width only, so it never toggles while values change). */
+@media (max-width: 1499px) {
+  .hud {
+    flex-wrap: wrap;
+  }
   .readout {
+    flex-basis: 100%;
+    flex-wrap: wrap;
     margin-left: 0;
   }
 }

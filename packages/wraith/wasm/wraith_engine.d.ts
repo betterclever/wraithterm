@@ -70,13 +70,13 @@ export class Engine {
     /**
      * Construct and validate the entire new atlas before changing live state.
      */
-    configure_font(font: Uint8Array, fallbacks: Array<any>, size: number, line_height: number): Uint32Array;
+    configure_font(font: Uint8Array, fallbacks: Array<any>, faces: Array<any>, size: number, line_height: number): Uint32Array;
     static create(canvas: OffscreenCanvas, font: Uint8Array, cols: number, rows: number, font_size: number, line_height: number, history: number): Promise<Engine>;
     /**
      * A terminal drawn into a worker's shared surface. Terminals with the
      * same fonts, size, line height and ligature setting share one atlas.
      */
-    static create_shared(context: SurfaceContext, font: Uint8Array, fallbacks: Array<any>, cols: number, rows: number, font_size: number, line_height: number, history: number, ligatures: boolean): Promise<Engine>;
+    static create_shared(context: SurfaceContext, font: Uint8Array, fallbacks: Array<any>, faces: Array<any>, cols: number, rows: number, font_size: number, line_height: number, history: number, ligatures: boolean): Promise<Engine>;
     /**
      * Draw this terminal's staged frame into `surface`'s open frame at device
      * pixel `x`, `y` and `scale`, clipped to the given rectangle. Returns
@@ -104,6 +104,10 @@ export class Engine {
      */
     on_submitted_work_done(done: Function): void;
     /**
+     * The default palette's first entries; empty restores the built-in one.
+     */
+    palette(colors: Uint32Array): void;
+    /**
      * Rasterize printable ASCII ahead of first use, `count` glyphs per call,
      * so idle time after creation absorbs that work. Returns where to
      * continue, or -1 when done.
@@ -118,6 +122,7 @@ export class Engine {
      */
     screen(): Float64Array;
     scroll(delta: number): void;
+    scroll_to_bottom(): void;
     search(needle: string, action: number): Uint32Array;
     select(x1: number, y1: number, x2: number, y2: number): void;
     select_mode(x1: number, y1: number, x2: number, y2: number, mode: number): void;
@@ -131,6 +136,10 @@ export class Engine {
      * custom shader is invalid. Call only while rendering is paused.
      */
     set_effects(params: Float32Array, shader?: string | null): Promise<void>;
+    /**
+     * A face of its own for `style` (1 bold, 2 italic, 3 bold italic).
+     */
+    set_face(style: number, bytes: Uint8Array): void;
     /**
      * Decoded Kitty graphics bytes each screen may store; zero disables them.
      */
@@ -198,6 +207,7 @@ export class Headless {
      */
     screen(): Float64Array;
     scroll(delta: number): void;
+    scroll_to_bottom(): void;
     search(needle: string, action: number): Uint32Array;
     /**
      * Terminal state as VT sequences for replay keyframes; see `Core::snapshot`.
@@ -243,6 +253,18 @@ export class Surface {
      */
     resize(width: number, height: number): void;
     /**
+     * Shadertoy `iMouse` in physical pixels of the surface.
+     */
+    set_effect_mouse(x: number, y: number, z: number, w: number): void;
+    /**
+     * Replace post-process effects over the whole surface (parameters as in
+     * `Engine::set_effects`; the cursor trail does not apply). Pipelines are
+     * validated first, so an invalid shader rejects and keeps the current
+     * effects. Turning effects on or off empties the backing: redraw every
+     * visible terminal next frame. Call only between frames.
+     */
+    set_effects(params: Float32Array, shader?: string | null): Promise<void>;
+    /**
      * Distinct live glyph atlases on this surface.
      */
     readonly atlases: number;
@@ -254,6 +276,14 @@ export class Surface {
      * Terminal updates (new content drawn) whose GPU work has completed.
      */
     readonly completed_updates: number;
+    /**
+     * Post-process passes in the last frame; zero with effects off.
+     */
+    readonly effect_passes: number;
+    /**
+     * An effect animation wants a frame even though no terminal changed.
+     */
+    readonly effects_due: boolean;
     /**
      * Frames submitted and presented to the canvas.
      */
@@ -313,9 +343,9 @@ export interface InitOutput {
     readonly engine_command_marks: (a: number) => [number, number];
     readonly engine_command_text: (a: number, b: number, c: number) => [number, number, number];
     readonly engine_commands: (a: number) => any;
-    readonly engine_configure_font: (a: number, b: number, c: number, d: any, e: number, f: number) => [number, number, number, number];
+    readonly engine_configure_font: (a: number, b: number, c: number, d: any, e: any, f: number, g: number) => [number, number, number, number];
     readonly engine_create: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => any;
-    readonly engine_create_shared: (a: number, b: number, c: number, d: any, e: number, f: number, g: number, h: number, i: number, j: number) => any;
+    readonly engine_create_shared: (a: number, b: number, c: number, d: any, e: any, f: number, g: number, h: number, i: number, j: number, k: number) => any;
     readonly engine_cursor_x: (a: number) => number;
     readonly engine_cursor_y: (a: number) => number;
     readonly engine_draw: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => number;
@@ -333,6 +363,7 @@ export interface InitOutput {
     readonly engine_mouse: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_needs_present: (a: number) => number;
     readonly engine_on_submitted_work_done: (a: number, b: any) => void;
+    readonly engine_palette: (a: number, b: number, c: number) => void;
     readonly engine_prefill_glyphs: (a: number, b: number, c: number) => number;
     readonly engine_release_hold: (a: number) => void;
     readonly engine_render: (a: number, b: number, c: number) => [number, number, number];
@@ -340,11 +371,13 @@ export interface InitOutput {
     readonly engine_row_map_upload_bytes: (a: number) => bigint;
     readonly engine_screen: (a: number) => [number, number];
     readonly engine_scroll: (a: number, b: number) => void;
+    readonly engine_scroll_to_bottom: (a: number) => void;
     readonly engine_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly engine_select: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly engine_select_mode: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly engine_set_effect_mouse: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly engine_set_effects: (a: number, b: number, c: number, d: number, e: number) => any;
+    readonly engine_set_face: (a: number, b: number, c: number, d: number) => [number, number];
     readonly engine_set_image_limit: (a: number, b: number) => [number, number];
     readonly engine_set_ligatures: (a: number, b: number) => [number, number];
     readonly engine_take_events: (a: number) => any;
@@ -366,6 +399,7 @@ export interface InitOutput {
     readonly headless_resize: (a: number, b: number, c: number) => [number, number];
     readonly headless_screen: (a: number) => [number, number];
     readonly headless_scroll: (a: number, b: number) => void;
+    readonly headless_scroll_to_bottom: (a: number) => void;
     readonly headless_search: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly headless_snapshot: (a: number) => [number, number, number, number];
     readonly headless_take_events: (a: number) => any;
@@ -377,8 +411,12 @@ export interface InitOutput {
     readonly surface_completed_updates: (a: number) => number;
     readonly surface_context: (a: number) => number;
     readonly surface_create: (a: any, b: number, c: number) => any;
+    readonly surface_effect_passes: (a: number) => number;
+    readonly surface_effects_due: (a: number) => number;
     readonly surface_end: (a: number, b: number) => [number, number, number];
     readonly surface_frames: (a: number) => number;
+    readonly surface_height: (a: number) => number;
+    readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly wraith_alloc: (a: number, b: number) => number;
     readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
@@ -388,18 +426,18 @@ export interface InitOutput {
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
     readonly wraith_semantic: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => void;
-    readonly surface_height: (a: number) => number;
-    readonly surface_resize: (a: number, b: number, c: number) => void;
+    readonly surface_set_effect_mouse: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly surface_set_effects: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly surface_unpresented: (a: number) => number;
     readonly surface_width: (a: number) => number;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__101: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__104: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__105: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__109: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__112: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__113: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__103: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__111: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

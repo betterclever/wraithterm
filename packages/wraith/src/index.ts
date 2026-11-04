@@ -4,7 +4,9 @@ import { TerminalAccessibility } from './accessibility.js';
 import {
   BackpressureError,
   packColor,
+  themeColors,
   type WraithOptions,
+  type WraithFontFaces,
   type WraithStats,
   type WraithTheme,
   type Disposable,
@@ -37,6 +39,22 @@ export type {
   WraithCursorTrailOptions,
 } from './effects.js';
 type Listener<T> = (value: T) => void;
+/** Some browser/display transitions change resolution without a media-query
+ * change event; one page-wide 500 ms heartbeat checks every live terminal. */
+const displayWatchers = new Set<{ checkDisplayNow(): void }>();
+let displayTimer: ReturnType<typeof setInterval> | undefined;
+function watchDisplays(terminal: { checkDisplayNow(): void }, watch: boolean) {
+  if (watch) displayWatchers.add(terminal);
+  else displayWatchers.delete(terminal);
+  if (displayWatchers.size && !displayTimer)
+    displayTimer = setInterval(() => {
+      for (const t of displayWatchers) t.checkDisplayNow();
+    }, 500);
+  else if (!displayWatchers.size && displayTimer) {
+    clearInterval(displayTimer);
+    displayTimer = undefined;
+  }
+}
 class Signal<T> {
   private listeners = new Set<Listener<T>>();
   get size() {
@@ -142,6 +160,14 @@ interface Pending {
   reject: (error: Error) => void;
   bytes: number;
 }
+/** Bold, italic and bold italic, in the engine's style order. */
+async function loadFaces(faces: WraithFontFaces | undefined): Promise<(Uint8Array | null)[]> {
+  return Promise.all(
+    [faces?.bold, faces?.italic, faces?.boldItalic].map((face) =>
+      face === undefined ? null : loadFont(face),
+    ),
+  );
+}
 async function loadFont(value: string | URL | Uint8Array): Promise<Uint8Array> {
   if (value instanceof Uint8Array) return value.slice();
   const response = await fetch(value);
@@ -173,6 +199,7 @@ function validateGrid(cols: number, rows: number) {
 export {
   WraithPool,
   type WraithPoolOptions,
+  type PlacementTracking,
   type SharedSurfaceOptions,
   type SharedSurfaceStats,
 } from './pool.js';
@@ -210,6 +237,7 @@ export class Wraith {
   private dpr: number;
   private fontBytes?: Uint8Array;
   private fallbackBytes: Uint8Array[] = [];
+  private faceBytes: (Uint8Array | null)[] = [null, null, null];
   private displayUpdates = Promise.resolve();
   private dprQuery?: MediaQueryList;
   private dprListener?: () => void;
@@ -250,6 +278,8 @@ export class Wraith {
   private readyResolve!: () => void;
   private readyReject!: (error: Error) => void;
   private mouseTracking = false;
+  /** The alternate screen is active and wheel scrolling there sends arrow keys (DEC 1007). */
+  private alternateScroll = false;
   private dragging = false;
   private selected = false;
   private anchor: [number, number] = [0, 0];
@@ -260,10 +290,11 @@ export class Wraith {
   private keyHandlers = new Set<KeyEventHandler>();
   private interceptedKeys = new Set<string>();
   private composing = false;
+  private adapterName = '';
   private preedit: HTMLSpanElement;
-  private theme: Required<WraithTheme>;
+  private theme: Required<Omit<WraithTheme, 'palette'>> & Pick<WraithTheme, 'palette'>;
   /** System colors while forced-colors mode is active; overrides `theme`. */
-  private forcedTheme?: Required<WraithTheme>;
+  private forcedTheme?: Required<Omit<WraithTheme, 'palette'>>;
   private started = false;
   private hostPaused: boolean;
   private a11y: TerminalAccessibility;
@@ -284,7 +315,7 @@ export class Wraith {
       cursor: '#91d6f0',
       ...options.theme,
     };
-    for (const color of Object.values(this.theme)) packColor(color);
+    themeColors(this.theme);
     this.ready = new Promise((resolve, reject) => {
       this.readyResolve = resolve;
       this.readyReject = reject;
@@ -299,6 +330,9 @@ export class Wraith {
       height: '100%',
       overflow: 'hidden',
       background: this.theme.background,
+      // Its layout and painting never affect the page outside it, so style,
+      // layout and paint invalidations stop here (size still follows the host).
+      contain: 'layout paint style',
     });
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('aria-hidden', 'true');
@@ -317,6 +351,10 @@ export class Wraith {
       padding: '0',
       border: '0',
       resize: 'none',
+      // A user-scrollable textarea is a composited scroller: three compositor
+      // layers (scroller, contents, scrollbar) per terminal, which dominated
+      // Chrome's layerization and GPU process with hundreds of terminals.
+      overflow: 'hidden',
     });
     this.preedit = document.createElement('span');
     Object.assign(this.preedit.style, {
@@ -327,6 +365,9 @@ export class Wraith {
       color: this.theme.foreground,
       pointerEvents: 'none',
       fontFamily: 'monospace',
+      // Shown only while an IME composes: a positioned, z-indexed span above a
+      // shared surface would otherwise be its own compositor layer per terminal.
+      display: 'none',
     });
     this.element.append(this.canvas, this.input, this.preedit);
     host.append(this.element);
@@ -414,12 +455,15 @@ export class Wraith {
       throw new Error('Wraith requires OffscreenCanvas support.');
     const terminal = new Wraith(host, options);
     try {
-      const [font, ...fonts] = await Promise.all(
-        [
-          options.font ?? new URL('../wasm/JetBrainsMono-Regular.ttf', import.meta.url),
-          ...(options.fallbackFonts ?? []),
-        ].map(loadFont),
-      );
+      const [[font, ...fonts], faces] = await Promise.all([
+        Promise.all(
+          [
+            options.font ?? new URL('../wasm/JetBrainsMono-Regular.ttf', import.meta.url),
+            ...(options.fallbackFonts ?? []),
+          ].map(loadFont),
+        ),
+        loadFaces(options.fontFaces),
+      ]);
       // A shared-surface pool draws into its own canvas; this one stays a
       // placeholder for layout, pointer input and visibility.
       const canvas = terminal.worker.surface
@@ -427,12 +471,14 @@ export class Wraith {
         : terminal.canvas.transferControlToOffscreen();
       terminal.fontBytes = font!.slice();
       terminal.fallbackBytes = fonts.map((bytes) => bytes.slice());
+      terminal.faceBytes = faces.map((bytes) => bytes?.slice() ?? null);
       terminal.send(
         {
           type: 'init',
           canvas,
           font: font!,
           fonts,
+          faces,
           cols: terminal.cols,
           rows: terminal.rows,
           size: (options.fontSize ?? 14) * terminal.dpr,
@@ -440,11 +486,18 @@ export class Wraith {
           history: options.scrollback ?? 10000,
           imageStorageLimit: options.imageStorageLimit,
           ligatures: options.ligatures,
-          theme: Object.values(terminal.forcedTheme ?? terminal.theme).map(packColor),
+          theme: themeColors(terminal.forcedTheme ?? terminal.theme, terminal.theme.palette),
         },
-        [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
+        [
+          ...(canvas ? [canvas] : []),
+          ...[font!, ...fonts, ...faces.filter((f) => f !== null)].map(
+            (f) => f.buffer as ArrayBuffer,
+          ),
+        ],
       );
       terminal.started = true;
+      terminal.syncStats();
+      watchDisplays(terminal, true);
       await terminal.ready;
       terminal.dimensions();
       terminal.worker.surface?.track(terminal.canvas, terminal.element);
@@ -494,6 +547,7 @@ export class Wraith {
       case 'ready':
         this.cellWidth = reply.width;
         this.cellHeight = reply.height;
+        this.adapterName = reply.adapter ?? '';
         this.readyResolve();
         break;
       case 'written':
@@ -531,6 +585,7 @@ export class Wraith {
         break;
       case 'modes':
         this.mouseTracking = reply.mouse;
+        this.alternateScroll = reply.alternateScroll;
         break;
       case 'cursor':
         this.cursorCell = [reply.x, reply.y];
@@ -557,9 +612,6 @@ export class Wraith {
         this.links.get(reply.link)?.event(reply);
         break;
       case 'stats': {
-        // Some browser/display transitions update resolution without delivering
-        // a media-query change event. Reuse the existing stats heartbeat.
-        this.checkDisplay();
         if (!this.statistics.size) break;
         // Sort the render samples once for all three percentiles.
         const sorted = Float64Array.from(reply.samples).sort();
@@ -594,6 +646,7 @@ export class Wraith {
   private fail(error: Error) {
     if (this.failed) return;
     this.failed = true;
+    watchDisplays(this, false);
     this.readyReject(error);
     this.errors.emit(error);
     for (const pending of this.pending.values()) pending.reject(error);
@@ -607,6 +660,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.faceBytes = [null, null, null];
     this.effectsController.dispose();
     this.worker.terminate();
   }
@@ -645,7 +699,11 @@ export class Wraith {
   }
   private reserve(bytes: number) {
     if (this.batchLength + bytes <= this.batch.length) return;
-    const next = new Uint8Array(Math.max(1024, (this.batchLength + bytes) * 2));
+    // The batch buffer is transferred on every flush, so most writes start a
+    // new one: size the first to the write, grow later ones geometrically.
+    const next = new Uint8Array(
+      this.batchLength ? Math.max(1024, (this.batchLength + bytes) * 2) : Math.max(64, bytes),
+    );
     next.set(this.batch.subarray(0, this.batchLength));
     this.batch = next;
   }
@@ -655,8 +713,14 @@ export class Wraith {
     // Writes keep their order and each promise still resolves after its bytes
     // are parsed; a burst crosses the worker boundary once.
     const bytes = this.batch.subarray(0, this.batchLength);
-    this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
-    this.batch = new Uint8Array(0);
+    if (this.worker.write) {
+      // A pool copies the bytes into one buffer per worker per task, so this
+      // terminal keeps (and reuses) its batch buffer.
+      this.worker.write(this.batchIds, bytes);
+    } else {
+      this.send({ type: 'write', ids: this.batchIds, bytes }, [bytes.buffer as ArrayBuffer]);
+      this.batch = new Uint8Array(0);
+    }
     this.batchLength = 0;
     this.batchIds = [];
   }
@@ -721,12 +785,15 @@ export class Wraith {
   /** Replace supplied OpenType fonts and optionally the text geometry atomically. */
   setFont(
     font: string | URL | Uint8Array,
-    options: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'fallbackFonts'> = {},
+    options: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'fallbackFonts' | 'fontFaces'> = {},
   ): Promise<void> {
     return this.configureDisplay({ ...options, font });
   }
   private configureDisplay(
-    changes: Pick<WraithOptions, 'fontSize' | 'lineHeight' | 'font' | 'fallbackFonts'>,
+    changes: Pick<
+      WraithOptions,
+      'fontSize' | 'lineHeight' | 'font' | 'fallbackFonts' | 'fontFaces'
+    >,
   ): Promise<void> {
     this.assertLive();
     const update = this.displayUpdates.then(async () => {
@@ -751,17 +818,21 @@ export class Wraith {
         changes.fallbackFonts !== undefined
           ? await Promise.all(changes.fallbackFonts.map(loadFont))
           : this.fallbackBytes;
+      const faces =
+        changes.fontFaces !== undefined ? await loadFaces(changes.fontFaces) : this.faceBytes;
       this.assertLive();
       const dimensions = await this.request<number[]>({
         type: 'font',
         font,
         fonts,
+        faces,
         size,
         lineHeight,
       } as Omit<Extract<Command, { type: 'font' }>, 'id'>);
       this.options = next;
       this.fontBytes = font;
       this.fallbackBytes = fonts;
+      this.faceBytes = faces;
       this.dpr = dpr;
       [this.cellWidth, this.cellHeight] = dimensions as [number, number];
       this.dimensions();
@@ -782,12 +853,47 @@ export class Wraith {
     };
     this.dprQuery.addEventListener('change', this.dprListener, { once: true });
   }
+  /** @internal Display heartbeat. */
+  checkDisplayNow() {
+    this.checkDisplay();
+  }
   private checkDisplay() {
     if (this.disposed || this.failed) return;
     if (this.dprQuery && !this.dprQuery.matches) this.dprListener?.();
   }
+  /**
+   * Press and release a key as if typed, encoded by the terminal for its
+   * current modes (application cursor keys, the Kitty keyboard protocol):
+   * for on-screen key panels. `code` is a `KeyboardEvent.code` (`ArrowUp`,
+   * `Escape`, `KeyC`…); `text` is what the key types, if anything.
+   */
+  pressKey(
+    code: string,
+    options: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean; text?: string } = {},
+  ): void {
+    this.assertLive();
+    const key = KEY_CODES[code];
+    if (key === undefined) throw new RangeError(`Unknown key code ${code}`);
+    const mods =
+      Number(!!options.shift) |
+      (Number(!!options.ctrl) << 1) |
+      (Number(!!options.alt) << 2) |
+      (Number(!!options.meta) << 3);
+    const text = options.text ?? '';
+    const unshifted = code.startsWith('Key')
+      ? (code.slice(3).toLowerCase().codePointAt(0) ?? 0)
+      : code.startsWith('Digit')
+        ? (code.slice(5).codePointAt(0) ?? 0)
+        : (text.toLowerCase().codePointAt(0) ?? 0);
+    this.send({ type: 'key', key, mods, action: 1, text, unshifted });
+    this.send({ type: 'key', key, mods, action: 0, text: '', unshifted });
+  }
   focus(): void {
     this.input.focus({ preventScroll: true });
+  }
+  /** The adapter the engine reports, as in `onStats`. Browsers may give a generic name. */
+  get adapter(): string {
+    return this.adapterName;
   }
   onData(listener: Listener<string>): Disposable {
     return this.data.on(listener);
@@ -806,7 +912,22 @@ export class Wraith {
     return this.errors.on(listener);
   }
   onStats(listener: Listener<WraithStats>): Disposable {
-    return this.statistics.on(listener);
+    const subscription = this.statistics.on(listener);
+    this.syncStats();
+    return {
+      dispose: () => {
+        subscription.dispose();
+        this.syncStats();
+      },
+    };
+  }
+  private statsObserved = false;
+  /** Ask the worker for stats only while someone listens. */
+  private syncStats() {
+    const wanted = this.statistics.size > 0;
+    if (!this.started || this.disposed || this.failed || wanted === this.statsObserved) return;
+    this.statsObserved = wanted;
+    this.send({ type: 'observe-stats', enabled: wanted });
   }
   onResize(listener: Listener<{ cols: number; rows: number }>): Disposable {
     return this.resizes.on(listener);
@@ -895,6 +1016,10 @@ export class Wraith {
   }
   selectWord(x: number, y: number): Promise<void> {
     return this.selection({ x, y }, { x, y }, 2);
+  }
+  /** Select from the word at `start` through the word at `end` (word-snapped ends). */
+  selectWords(start: SelectionPosition, end: SelectionPosition): Promise<void> {
+    return this.selection(start, end, 2);
   }
   selectLine(y: number): Promise<void> {
     return this.selection({ x: 0, y }, { x: 0, y }, 3);
@@ -993,7 +1118,7 @@ export class Wraith {
   setTheme(theme: WraithTheme): void {
     this.assertLive();
     const next = { ...this.theme, ...theme };
-    Object.values(next).forEach(packColor);
+    themeColors(next);
     this.theme = next;
     this.applyTheme();
   }
@@ -1004,7 +1129,7 @@ export class Wraith {
     this.preedit.style.color = theme.foreground;
     // Before init the engine takes the effective theme with its other settings.
     if (this.started && !this.disposed && !this.failed)
-      this.send({ type: 'theme', colors: Object.values(theme).map(packColor) });
+      this.send({ type: 'theme', colors: themeColors(theme, this.theme.palette) });
   }
   /**
    * Plain text of the visible screen (default), or of retained scrollback plus
@@ -1205,6 +1330,7 @@ export class Wraith {
       'compositionstart',
       () => {
         this.composing = true;
+        this.preedit.style.display = '';
       },
       options,
     );
@@ -1220,6 +1346,7 @@ export class Wraith {
       (event) => {
         this.composing = false;
         this.preedit.textContent = '';
+        this.preedit.style.display = 'none';
         if (event.data)
           this.send({ type: 'key', key: 0, mods: 0, action: 1, text: event.data, unshifted: 0 });
         this.input.value = '';
@@ -1422,16 +1549,22 @@ export class Wraith {
             ),
             pressed: 0,
           });
-        } else
-          this.scroll(
+        } else {
+          const lines =
             Math.sign(event.deltaY) *
-              Math.max(
-                1,
-                Math.round(
-                  Math.abs(event.deltaY) / (event.deltaMode === 0 ? this.cellHeight / this.dpr : 1),
-                ),
+            Math.max(
+              1,
+              Math.round(
+                Math.abs(event.deltaY) / (event.deltaMode === 0 ? this.cellHeight / this.dpr : 1),
               ),
-          );
+            );
+          // A full-screen program without mouse reporting (less, man, vim)
+          // scrolls by arrow keys, as xterm and Ghostty send them.
+          if (this.alternateScroll) {
+            const key = lines < 0 ? 'ArrowUp' : 'ArrowDown';
+            for (let i = 0; i < Math.min(Math.abs(lines), 50); i++) this.pressKey(key);
+          } else this.scroll(lines);
+        }
       },
       { ...options, passive: false },
     );
@@ -1482,6 +1615,7 @@ export class Wraith {
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    watchDisplays(this, false);
     this.abort.abort();
     this.blocks.dispose();
     this.observer?.disconnect();
@@ -1489,6 +1623,7 @@ export class Wraith {
     this.dprQuery?.removeEventListener('change', this.dprListener!);
     this.fontBytes = undefined;
     this.fallbackBytes = [];
+    this.faceBytes = [null, null, null];
     this.a11y.dispose();
     this.effectsController.dispose();
     for (const pending of this.pending.values()) pending.reject(new Error('Wraith disposed'));

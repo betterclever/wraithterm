@@ -19,6 +19,8 @@ export type Command =
       canvas?: OffscreenCanvas;
       font: Uint8Array;
       fonts: Uint8Array[];
+      /** Bold, italic and bold italic faces; `null` where a style has none. */
+      faces: (Uint8Array | null)[];
       cols: number;
       rows: number;
       size: number;
@@ -34,6 +36,7 @@ export type Command =
       type: 'font';
       font: Uint8Array;
       fonts: Uint8Array[];
+      faces: (Uint8Array | null)[];
       size: number;
       lineHeight: number;
       id: number;
@@ -61,6 +64,12 @@ export type Command =
   | { type: 'benchmark'; options: BenchmarkOptions; id: number }
   | { type: 'visibility'; visible: boolean }
   | { type: 'observe-render'; enabled: boolean }
+  /** Post 'stats' every 500 ms only while the page has stats listeners. */
+  | { type: 'observe-stats'; enabled: boolean }
+  /** Internal (benchmarks): replay `chunks` in the worker, one per worker
+   * animation frame, as if a worker-side source produced them; `null` stops.
+   * Resolves with the number of chunks parsed so far. */
+  | { type: 'feed'; chunks?: Uint8Array[] | null; id: number }
   /** Copy output parsed from a worker-owned socket back to the page (recording). */
   | { type: 'observe-output'; enabled: boolean }
   | {
@@ -91,7 +100,7 @@ export type Reply =
   | { type: 'data'; bytes: Uint8Array }
   | { type: 'title'; title: string }
   | { type: 'bell' }
-  | { type: 'modes'; mouse: boolean }
+  | { type: 'modes'; mouse: boolean; alternateScroll: boolean }
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
   /** Output the worker parsed from its own socket, sent only while observed. */
@@ -132,13 +141,21 @@ export type Reply =
       wasClean?: boolean;
       error?: string;
     };
-/** Messages a pool sends to its workers directly, outside terminal ports. */
+/** Messages a pool sends to its workers on the worker scope. */
 export type PoolMessage =
-  | { type: 'attach'; port: MessagePort; id: number; shared?: boolean }
+  /** A pooled terminal joins the worker; its commands arrive in `batch`. */
+  | { type: 'attach'; id: number; shared?: boolean }
+  /** Commands for the worker's terminals, in order, batched per task. */
+  | { type: 'batch'; items: [id: number, command: Command][] }
   | { type: 'surface'; canvas: OffscreenCanvas; width: number; height: number }
   | { type: 'surface-size'; width: number; height: number }
   /** Records of id, x, y, scale (0: hidden), clip x, y, width, height in device pixels. */
-  | { type: 'geometry'; data: Float32Array };
+  | { type: 'geometry'; data: Float32Array }
+  /** Post-process effects over the worker's whole surface (see effects.ts). */
+  | { type: 'surface-effects'; id: number; params: number[]; shader?: string }
+  | { type: 'surface-effect-mouse'; mouse: number[] };
+/** Replies from a pooled worker's terminals, in order, batched per task. */
+export type PoolReply = { type: 'replies'; items: [id: number, reply: Reply][] };
 /** Messages a shared-surface worker sends its pool. */
 export type SurfaceReply =
   | {
@@ -148,8 +165,10 @@ export type SurfaceReply =
       completedUpdates: number;
       updates: number;
       atlases: number;
+      effectPasses: number;
       terminals: number;
       width: number;
       height: number;
     }
-  | { type: 'surface-error'; error: string };
+  | { type: 'surface-error'; error: string }
+  | { type: 'surface-effects-result'; id: number; error?: string };

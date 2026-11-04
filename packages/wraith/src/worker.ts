@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import init, { Engine, Headless } from '../wasm/wraith_engine.js';
-import type { Command, PoolMessage, Reply } from './protocol.js';
+import { MessageBatch, nextTask } from './batch.js';
+import type { Command, PoolMessage, PoolReply, Reply, SurfaceReply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 import { createAccessibility } from './worker-accessibility.js';
@@ -8,6 +9,15 @@ import { createCommandTracker } from './worker-commands.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
 let initializing: Promise<unknown> = Promise.resolve();
+/** Run device setup (terminal creation, shared-surface effects) one at a time. */
+function exclusive<T>(run: () => Promise<T>): Promise<T> {
+  const next = initializing.then(run);
+  initializing = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
 // V8 runs each Wasm function on its baseline compiler first and switches to
 // optimized code only on a later call, after enough work has run. The parser
 // is entered once per write batch, so a terminal's first multi-megabyte burst
@@ -56,8 +66,27 @@ const yieldTask = () =>
     yields.port2.postMessage(null);
   });
 
+// Benchmark feeds (see the 'feed' command): every feeding terminal parses its
+// next chunk once per worker animation frame, before that frame renders.
+const feeders = new Set<() => void>();
+let feeding = false;
+function startFeeding(step: () => void) {
+  feeders.add(step);
+  if (feeding) return;
+  feeding = true;
+  const frame = () => {
+    if (!feeders.size) {
+      feeding = false;
+      return;
+    }
+    for (const feed of feeders) feed();
+    scope.requestAnimationFrame(frame);
+  };
+  scope.requestAnimationFrame(frame);
+}
+
 /** One terminal: its engine, scheduling, search and fences, replying through
- * `endpoint`. A dedicated worker runs one; a pooled worker runs one per port. */
+ * `endpoint`. A dedicated worker runs one; a pooled worker one per attached terminal. */
 function createSession(
   endpoint: Endpoint,
   onClose: () => void,
@@ -77,6 +106,11 @@ function createSession(
     frameTimes: number[] = [];
   let cursor = '';
   let mouseTracking = false;
+  // Stats cost a message (with up to 512 render samples) per terminal every
+  // 500 ms; send them only while the page listens.
+  let observeStats = false;
+  let alternateScroll = false;
+  let scrolledBack = false;
   let observeRender = false,
     renderedFrames = 0;
   // A page recorder wants socket output, which otherwise stays in the worker.
@@ -100,8 +134,35 @@ function createSession(
     frameInterval = 1000 / 60;
   let serial = Promise.resolve();
   let link: Link | undefined;
+  // Benchmark feed: chunks replayed in this worker, one per animation frame.
+  let feedChunks: Uint8Array[] = [],
+    fed = 0;
+  const feedStep = () => {
+    if (disposed || !engine) return feeders.delete(feedStep);
+    // A benchmark or flush holds the engine; skip this frame.
+    if (busy) return;
+    try {
+      engine.write(feedChunks[fed % feedChunks.length]!);
+      fed++;
+      drain();
+      schedule();
+    } catch (error) {
+      feeders.delete(feedStep);
+      fatal(error);
+    }
+  };
   let searchGeneration = 0;
   let reducedMotion = false;
+  // Input brings a scrolled-back viewport to the prompt; the jump is not output
+  // to announce, so the screen reader's baseline moves with it.
+  const scrollToPrompt = () => {
+    engine!.scroll_to_bottom();
+    if (scrolledBack) {
+      scrolledBack = false;
+      a11y.rebaseline();
+    }
+    schedule();
+  };
   // Screen-reader mirror and announcements; inert until a mounted terminal enables them.
   const a11y = createAccessibility(
     () =>
@@ -197,8 +258,11 @@ function createSession(
     link = undefined;
     post({ type: 'error', error: String(error) });
   }
+  /** Output events so far: whether a key sent the program anything. */
+  let outputs = 0;
   /** Engine output: replies, keys, paste. The worker socket sends it first. */
   function output(bytes: Uint8Array) {
+    outputs++;
     link?.send(bytes);
     post({ type: 'data', bytes }, [bytes.buffer as ArrayBuffer]);
   }
@@ -373,9 +437,12 @@ function createSession(
       if (kind === 5) commands.event(bytes);
     }
     const mouse = engine!.mode(1000) || engine!.mode(1002) || engine!.mode(1003) || engine!.mode(9);
-    if (mouse !== mouseTracking) {
+    const alternate =
+      (engine!.mode(1049) || engine!.mode(1047) || engine!.mode(47)) && engine!.mode(1007);
+    if (mouse !== mouseTracking || alternate !== alternateScroll) {
       mouseTracking = mouse;
-      post({ type: 'modes', mouse });
+      alternateScroll = alternate;
+      post({ type: 'modes', mouse, alternateScroll });
     }
   }
   function draw(time: number, force = false): boolean {
@@ -456,7 +523,7 @@ function createSession(
   }
   const blinkTimer = setInterval(() => schedule(), 250);
   const statsTimer = setInterval(() => {
-    if (engine && !disposed && !busy)
+    if (observeStats && engine && !disposed && !busy)
       post({
         type: 'stats',
         values: Array.from(engine.metrics()),
@@ -606,12 +673,15 @@ function createSession(
       // Terminals in a pooled worker share one GPU device; initialize them one
       // at a time so their pipeline validation scopes cannot interleave.
       const surface = shared ? await shared.host.ready : undefined;
-      const created = initializing.then(() =>
+      // Shared-surface effects are configured through the same queue: they
+      // borrow the surface (context()) and push validation scopes too.
+      const created = exclusive(() =>
         surface
           ? Engine.create_shared(
               surface.context(),
               command.font,
               command.fonts,
+              command.faces,
               cols,
               rows,
               command.size,
@@ -629,18 +699,16 @@ function createSession(
               command.history,
             ),
       );
-      initializing = created.then(
-        () => undefined,
-        () => undefined,
-      );
       engine = await created;
       if (!surface) {
         for (const font of command.fonts) engine.add_font(font);
+        command.faces.forEach((face, i) => face && engine!.set_face(i + 1, face));
         if (command.ligatures) engine.set_ligatures(true);
       }
       if (command.imageStorageLimit !== undefined)
         engine.set_image_limit(Math.max(0, Math.floor(command.imageStorageLimit)));
       engine.theme(command.theme[0]!, command.theme[1]!, command.theme[2]!);
+      if (command.theme.length > 3) engine.palette(Uint32Array.from(command.theme.slice(3)));
       post({
         type: 'ready',
         width: engine.cell_width,
@@ -692,7 +760,7 @@ function createSession(
         schedule();
         result(command.id);
         break;
-      case 'key':
+      case 'key': {
         if (tracing) trace('key', command.text);
         engine.key(command.key, command.mods, command.action, command.text, command.unshifted);
         // Printable keys, Backspace and Delete echo into the cursor row.
@@ -700,13 +768,24 @@ function createSession(
           a11y.typed(
             (!!command.text && !(command.mods & 6)) || command.key === 53 || command.key === 68,
           );
+        const sent = outputs;
         drain();
+        // A key that sends the program something brings a scrolled-back
+        // viewport to the prompt, as Ghostty's scroll-to-bottom=keystroke.
+        if (command.action !== 0 && outputs !== sent) scrollToPrompt();
         break;
+      }
       case 'font':
         result(
           command.id,
           Array.from(
-            engine.configure_font(command.font, command.fonts, command.size, command.lineHeight),
+            engine.configure_font(
+              command.font,
+              command.fonts,
+              command.faces,
+              command.size,
+              command.lineHeight,
+            ),
           ),
         );
         cursor = '';
@@ -725,6 +804,7 @@ function createSession(
         break;
       case 'scroll':
         engine.scroll(command.delta);
+        scrolledBack = true;
         a11y.rebaseline();
         schedule();
         break;
@@ -745,6 +825,7 @@ function createSession(
           : text.replace(/\r?\n/g, '\r');
         a11y.typed(true);
         output(encoder.encode(framed));
+        scrollToPrompt();
         result(command.id);
         break;
       }
@@ -759,6 +840,7 @@ function createSession(
         break;
       case 'theme':
         engine.theme(command.colors[0]!, command.colors[1]!, command.colors[2]!);
+        engine.palette(Uint32Array.from(command.colors.slice(3)));
         schedule();
         break;
       case 'flush':
@@ -803,6 +885,17 @@ function createSession(
       }
       case 'observe-render':
         observeRender = command.enabled;
+        break;
+      case 'observe-stats':
+        observeStats = command.enabled;
+        break;
+      case 'feed':
+        if (command.chunks !== undefined) {
+          feeders.delete(feedStep);
+          feedChunks = command.chunks ?? [];
+          if (feedChunks.length) startFeeding(feedStep);
+        }
+        result(command.id, fed);
         break;
       case 'observe-output':
         observeOutput = command.enabled;
@@ -877,6 +970,7 @@ function createSession(
         break;
       case 'dispose':
         disposed = true;
+        feeders.delete(feedStep);
         a11y.dispose();
         link?.close(1000, 'Terminal disposed');
         link = undefined;
@@ -909,32 +1003,72 @@ function createSession(
   };
 }
 
-// Pooled workers receive one MessagePort per terminal; dedicated workers take
-// commands on the worker scope itself.
+// Pooled workers multiplex their terminals over the worker scope: commands
+// arrive in per-task batches tagged with the terminal's id, and replies leave
+// the same way. Dedicated workers take commands on the worker scope itself.
 let dedicated: ((command: Command) => void) | undefined;
+const sessions = new Map<number, (command: Command) => void>();
+const replies = new MessageBatch<[number, Reply]>((items, transfers) => {
+  try {
+    scope.postMessage({ type: 'replies', items } satisfies PoolReply, transfers);
+  } catch {
+    // Resend individually so one uncloneable reply cannot drop the rest.
+    for (const item of items)
+      try {
+        scope.postMessage({ type: 'replies', items: [item] } satisfies PoolReply);
+      } catch (error) {
+        scope.postMessage({
+          type: 'replies',
+          items: [[item[0], { type: 'error', error: String(error) }]],
+        } satisfies PoolReply);
+      }
+  }
+}, nextTask());
 // A shared-surface pool sends this worker one page-sized canvas first.
 let host: SharedHost | undefined;
 scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
   const message = event.data;
   switch (message.type) {
     case 'attach': {
-      const port = message.port;
-      const receive = createSession(
-        port,
-        () => port.close(),
-        message.shared && host ? { host, id: message.id } : undefined,
+      const id = message.id;
+      sessions.set(
+        id,
+        createSession(
+          { postMessage: (reply, transfers) => replies.push([id, reply], transfers) },
+          () => sessions.delete(id),
+          message.shared && host ? { host, id } : undefined,
+        ),
       );
-      port.onmessage = (e: MessageEvent<Command>) => receive(e.data);
       return;
     }
+    case 'batch':
+      for (const [id, command] of message.items) sessions.get(id)?.(command);
+      return;
     case 'surface':
-      host = new SharedHost(scope, ready, message.canvas, message.width, message.height);
+      host = new SharedHost(scope, ready, message.canvas, message.width, message.height, exclusive);
       return;
     case 'surface-size':
       host?.resize(message.width, message.height);
       return;
     case 'geometry':
       host?.geometry(message.data);
+      return;
+    case 'surface-effects': {
+      const id = message.id;
+      const done = (error?: unknown) =>
+        scope.postMessage({
+          type: 'surface-effects-result',
+          id,
+          ...(error !== undefined && {
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        } satisfies SurfaceReply);
+      if (!host) done(new Error('This worker has no shared surface'));
+      else host.setEffects(message.params, message.shader).then(() => done(), done);
+      return;
+    }
+    case 'surface-effect-mouse':
+      host?.setEffectMouse(message.mouse);
       return;
   }
   dedicated ??= createSession(scope, () => scope.close());

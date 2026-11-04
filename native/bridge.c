@@ -205,6 +205,12 @@ WraithBridge* wraith_bridge_new(void* user, uint16_t cols, uint16_t rows, size_t
       ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &history)) {
     wraith_bridge_free(b); return NULL;
   }
+  /* Grapheme clustering (DEC 2027) on, as a reset default: an emoji with a
+   * skin tone, a ZWJ family, a flag or a letter with combining marks takes
+   * one cell (or two), as Ghostty's own grapheme-width-method = unicode.
+   * Programs can still turn it off. */
+  GhosttyTerminalModeConfig grapheme = {.mode = ghostty_mode_new(2027, false), .value = true};
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_MODE_DEFAULT, &grapheme);
   /* Browser hosts have no filesystem. Never enable file/shared-memory images. */
   bool disabled = false;
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_MEDIUM_FILE, &disabled);
@@ -243,6 +249,15 @@ void wraith_bridge_theme(WraithBridge* b, uint32_t fg, uint32_t bg, uint32_t cur
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND, &f);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &g);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_CURSOR, &c);
+}
+void wraith_bridge_palette(WraithBridge* b, const uint32_t* colors, uint32_t count) {
+  /* From the built-in palette, so entries past `count` keep their defaults. */
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, NULL);
+  if (!count) return;
+  GhosttyColorRgb palette[256];
+  if (ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_COLOR_PALETTE_DEFAULT, &palette)) return;
+  for (uint32_t i = 0; i < count && i < 256; i++) palette[i] = unpack(colors[i]);
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, &palette);
 }
 int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
   frame->held = b->held;
@@ -376,6 +391,10 @@ int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
 }
 void wraith_bridge_scroll(WraithBridge* b, int32_t delta) {
   GhosttyTerminalScrollViewport v = {.tag = GHOSTTY_SCROLL_VIEWPORT_DELTA, .value = {.delta = delta}};
+  ghostty_terminal_scroll_viewport(b->terminal, v);
+}
+void wraith_bridge_scroll_bottom(WraithBridge* b) {
+  GhosttyTerminalScrollViewport v = {.tag = GHOSTTY_SCROLL_VIEWPORT_BOTTOM};
   ghostty_terminal_scroll_viewport(b->terminal, v);
 }
 int wraith_bridge_key(WraithBridge* b, uint32_t key, uint32_t mods, uint32_t action,

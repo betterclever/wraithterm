@@ -3,11 +3,13 @@
 //! surface at its host's rectangle. A retained backing texture keeps terminals
 //! that did not change, so a frame redraws only those with new content unless
 //! the geometry changed. Terminals with the same fonts share one glyph atlas.
+use crate::effect_state::Settings;
+use crate::effects::{self, Effects};
 use crate::gpu::{scaled_sampler, shared_gpu, terminal_pipeline, Glyphs, SharedGpu};
 use crate::images::ImageLayer;
 use crate::text::Atlas;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -27,6 +29,76 @@ pub struct SharedContext {
     pub image_pipeline: wgpu::RenderPipeline,
     pub image_sampler: wgpu::Sampler,
     atlases: RefCell<Vec<(u64, Weak<Glyphs>)>>,
+    /// Every terminal's frame uniforms in one buffer, written once per frame.
+    pub uniforms: UniformRing,
+}
+
+/// Terminal uniforms for a whole shared surface. Each terminal owns a fixed
+/// 256-byte slot (the uniform offset alignment) its bind group points at;
+/// draws stage their uniforms here and `flush` writes the touched range with
+/// one `write_buffer` per frame instead of one per terminal. Terminals beyond
+/// `SLOTS` keep their own uniform buffer.
+pub struct UniformRing {
+    pub buffer: wgpu::Buffer,
+    free: RefCell<Vec<u32>>,
+    next: Cell<u32>,
+    mirror: RefCell<Vec<u8>>,
+    /// Touched slots this frame: first and one past the last.
+    dirty: Cell<(u32, u32)>,
+}
+impl UniformRing {
+    pub const SLOT: u64 = 256;
+    pub const SLOTS: u32 = 4096;
+    fn new(device: &wgpu::Device) -> Self {
+        Self {
+            buffer: device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Wraith shared terminal uniforms"),
+                size: Self::SLOT * Self::SLOTS as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+            free: RefCell::new(Vec::new()),
+            next: Cell::new(0),
+            mirror: RefCell::new(vec![0; (Self::SLOT * Self::SLOTS as u64) as usize]),
+            dirty: Cell::new((u32::MAX, 0)),
+        }
+    }
+    pub fn alloc(&self) -> Option<u32> {
+        if let Some(slot) = self.free.borrow_mut().pop() {
+            return Some(slot);
+        }
+        let slot = self.next.get();
+        (slot < Self::SLOTS).then(|| {
+            self.next.set(slot + 1);
+            slot
+        })
+    }
+    pub fn release(&self, slot: u32) {
+        self.free.borrow_mut().push(slot);
+    }
+    /// Stage a slot's uniforms for this frame's `flush`.
+    pub fn stage(&self, slot: u32, bytes: &[u8]) {
+        let start = (slot as u64 * Self::SLOT) as usize;
+        self.mirror.borrow_mut()[start..start + bytes.len()].copy_from_slice(bytes);
+        let (first, end) = self.dirty.get();
+        self.dirty.set((first.min(slot), end.max(slot + 1)));
+    }
+    /// Write every slot staged since the last flush, in one copy.
+    pub fn flush(&self, queue: &wgpu::Queue) {
+        let (first, end) = self.dirty.replace((u32::MAX, 0));
+        if first >= end {
+            return;
+        }
+        let (start, stop) = (
+            (first as u64 * Self::SLOT) as usize,
+            (end as u64 * Self::SLOT) as usize,
+        );
+        queue.write_buffer(
+            &self.buffer,
+            start as u64,
+            &self.mirror.borrow()[start..stop],
+        );
+    }
 }
 /// FNV-1a over 8-byte words: font bytes are hashed once per terminal mount.
 fn hash(state: &mut u64, bytes: &[u8]) {
@@ -37,11 +109,12 @@ fn hash(state: &mut u64, bytes: &[u8]) {
     }
     *state = (*state ^ bytes.len() as u64).wrapping_mul(0x100_0000_01b3);
 }
-/// Identifies a glyph atlas: font bytes, fallbacks, size, line height and
-/// ligature shaping all change rasterized tiles.
+/// Identifies a glyph atlas: font bytes, fallbacks, style faces, size, line
+/// height and ligature shaping all change rasterized tiles.
 pub fn atlas_key(
     font: &[u8],
     fallbacks: &[Vec<u8>],
+    faces: &[(u8, Vec<u8>)],
     size: f32,
     line_height: f32,
     ligatures: bool,
@@ -49,6 +122,10 @@ pub fn atlas_key(
     let mut state = 0xcbf2_9ce4_8422_2325;
     hash(&mut state, font);
     for bytes in fallbacks {
+        hash(&mut state, bytes);
+    }
+    for (style, bytes) in faces {
+        hash(&mut state, &[*style]);
         hash(&mut state, bytes);
     }
     hash(&mut state, &size.to_bits().to_le_bytes());
@@ -96,21 +173,28 @@ pub struct Surface {
     backing_view: wgpu::TextureView,
     encoder: Option<wgpu::CommandEncoder>,
     pub(crate) pass: Option<wgpu::RenderPass<'static>>,
+    /// The terminal pipeline is set on the open pass (draws skip resetting it).
+    pub(crate) pipeline_bound: bool,
     /// The backing holds content the canvas has not shown yet.
     unpresented: bool,
     frames: u64,
     completed_frames: Arc<AtomicU64>,
     completed_updates: Arc<AtomicU64>,
+    /// Post-process effects over the whole surface. None (the default) keeps
+    /// the direct path: the backing is copied to the canvas, nothing else.
+    effects: Option<Box<Effects>>,
 }
 fn error(e: String) -> JsValue {
     js_sys::Error::new(&e).into()
 }
 impl Surface {
+    /// The retained backing. With effects it is also sampled as their scene.
     fn backing(
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         width: u32,
         height: u32,
+        sampled: bool,
     ) -> (wgpu::Texture, wgpu::TextureView) {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Wraith shared surface backing"),
@@ -123,7 +207,11 @@ impl Surface {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            usage: if sampled {
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
+            } else {
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC
+            },
             view_formats: &[],
         });
         let view = texture.create_view(&Default::default());
@@ -131,6 +219,21 @@ impl Surface {
     }
     pub(crate) fn target(&self) -> (u32, u32) {
         (self.config.width, self.config.height)
+    }
+    /// Recreate the backing (empty) for the current size and effect state.
+    fn rebuild_backing(&mut self) {
+        let device = &self.context.gpu.device;
+        let (width, height) = (self.config.width, self.config.height);
+        (self.backing, self.backing_view) = Self::backing(
+            device,
+            self.config.format,
+            width,
+            height,
+            self.effects.is_some(),
+        );
+        if let Some(fx) = &mut self.effects {
+            fx.external_scene(device, &self.backing_view, width, height);
+        }
     }
 }
 #[wasm_bindgen]
@@ -169,7 +272,8 @@ impl Surface {
             ..Default::default()
         });
         let scaled = scaled_sampler(&gpu.device);
-        let (backing, backing_view) = Self::backing(&gpu.device, config.format, width, height);
+        let (backing, backing_view) =
+            Self::backing(&gpu.device, config.format, width, height, false);
         if let Some(e) = error_scope.pop().await {
             return Err(error(format!("WebGPU shared surface initialization: {e}")));
         }
@@ -182,6 +286,7 @@ impl Surface {
                 image_pipeline,
                 image_sampler,
                 atlases: RefCell::new(Vec::new()),
+                uniforms: UniformRing::new(&gpu.device),
                 gpu,
             }),
             surface,
@@ -191,10 +296,12 @@ impl Surface {
             backing_view,
             encoder: None,
             pass: None,
+            pipeline_bound: false,
             unpresented: false,
             frames: 0,
             completed_frames: Arc::new(AtomicU64::new(0)),
             completed_updates: Arc::new(AtomicU64::new(0)),
+            effects: None,
         })
     }
     /// Resize to the page's device-pixel size. The backing starts empty, so
@@ -213,8 +320,73 @@ impl Surface {
         self.canvas.set_height(height);
         self.surface
             .configure(&self.context.gpu.device, &self.config);
-        (self.backing, self.backing_view) =
-            Self::backing(&self.context.gpu.device, self.config.format, width, height);
+        self.rebuild_backing();
+    }
+    /// Replace post-process effects over the whole surface (parameters as in
+    /// `Engine::set_effects`; the cursor trail does not apply). Pipelines are
+    /// validated first, so an invalid shader rejects and keeps the current
+    /// effects. Turning effects on or off empties the backing: redraw every
+    /// visible terminal next frame. Call only between frames.
+    pub async fn set_effects(
+        &mut self,
+        params: Vec<f32>,
+        shader: Option<String>,
+    ) -> Result<(), JsValue> {
+        let mut settings = Settings::parse(&params).map_err(error)?;
+        settings.trail = None;
+        if !settings.composite() && shader.is_none() {
+            if self.effects.take().is_some() {
+                self.pass = None;
+                self.encoder = None;
+                self.rebuild_backing();
+            }
+            return Ok(());
+        }
+        let context = self.context.clone();
+        let mut next = Effects::new(
+            &context.gpu.device,
+            context.format,
+            settings,
+            shader.as_deref(),
+        )
+        .await
+        .map_err(error)?;
+        next.for_shared_surface();
+        if let Some(previous) = &self.effects {
+            next.inherit(previous);
+        }
+        let was_on = self.effects.is_some();
+        self.effects = Some(Box::new(next));
+        self.pass = None;
+        self.encoder = None;
+        if was_on {
+            let (width, height) = (self.config.width, self.config.height);
+            let device = &self.context.gpu.device;
+            if let Some(fx) = &mut self.effects {
+                fx.external_scene(device, &self.backing_view, width, height);
+            }
+        } else {
+            self.rebuild_backing();
+        }
+        Ok(())
+    }
+    /// Shadertoy `iMouse` in physical pixels of the surface.
+    pub fn set_effect_mouse(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        if let Some(fx) = &mut self.effects {
+            fx.set_mouse([x, y, z, w]);
+        }
+    }
+    /// An effect animation wants a frame even though no terminal changed.
+    #[wasm_bindgen(getter)]
+    pub fn effects_due(&self) -> bool {
+        self.effects
+            .as_ref()
+            .is_some_and(|fx| fx.wants_post(effects::now()))
+    }
+    /// Post-process passes in the last frame; zero with effects off.
+    #[wasm_bindgen(getter)]
+    pub fn effect_passes(&self) -> u32 {
+        self.effects.as_ref().map_or(0, |fx| fx.passes)
     }
     #[wasm_bindgen(getter)]
     pub fn width(&self) -> u32 {
@@ -259,6 +431,7 @@ impl Surface {
             .forget_lifetime();
         self.encoder = Some(encoder);
         self.pass = Some(pass);
+        self.pipeline_bound = false;
         self.unpresented = true;
         Ok(())
     }
@@ -282,7 +455,11 @@ impl Surface {
             }
             status => return Err(error(format!("WebGPU surface failure: {status:?}"))),
         };
-        if let Some(texture) = &texture {
+        if let (Some(texture), Some(fx)) = (&texture, &mut self.effects) {
+            // Effects read the backing as their scene and write the canvas.
+            let view = texture.texture.create_view(&Default::default());
+            fx.post(&self.context.gpu.queue, &mut encoder, &view, effects::now());
+        } else if let Some(texture) = &texture {
             encoder.copy_texture_to_texture(
                 self.backing.as_image_copy(),
                 texture.texture.as_image_copy(),
@@ -294,6 +471,8 @@ impl Surface {
             );
         }
         let queue = &self.context.gpu.queue;
+        // The frame's terminal uniforms, written before its commands run.
+        self.context.uniforms.flush(queue);
         queue.submit([encoder.finish()]);
         let (frames, total) = (
             self.completed_frames.clone(),

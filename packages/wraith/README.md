@@ -215,16 +215,27 @@ per font configuration. Each terminal is drawn at its host's on-screen
 rectangle, clipped to scrolling ancestors. Only terminals with new content are
 redrawn, and off-screen terminals do no GPU work. Hosts keep their DOM input,
 focus, selection and accessibility. Shared and per-canvas output are
-pixel-identical at 1:1 (`npm run test:fleet`). Headed on an Apple M5 Max at
-120 Hz with agent-log streams, 1,000 shared terminals sustained 41–49 updates
-per terminal per second against 5.9–6.8 for a per-canvas pool, and 256 held
-119/s against 23–28 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
+pixel-identical at 1:1 (`npm run test:fleet`). Pooled terminals' messages
+cross to each worker in one batch per task, placements are re-measured only
+when something can have moved them, and each surface writes all its
+terminals' uniforms in one upload per frame. Headed on an Apple M5 Max at
+120 Hz with agent-log streams and 4 workers, every one of 1,000 shared
+terminals held at least 73 parsed updates per second (p10 73.7–115.5 driven
+from the main thread, 83.2–119.0 fed inside the workers; the display held
+120 frames per second), against p10 43–45 before. At 1,500 terminals, worker-fed
+streams held p10 63–74 ([report](docs/benchmarks/fleet/REPORT.md)). Try it in
 [`demo/fleet.html`](demo/fleet.html).
 
 Limits: the shared canvases sit at `z-index: 1` by default
 (`sharedSurface: { zIndex, container }`), so overlays meant to cover terminals
 must stack above them. Placement follows layout one animation frame later
-than the DOM. Rotation and perspective transforms are not modelled, and partial
+than the DOM. By default (`sharedSurface: { tracking: 'observe' }`) the pool
+re-measures terminals after scrolling, resizing, DOM and style changes outside
+the terminals and while CSS animations run, plus a rolling sweep that covers
+every terminal about every 30 frames; call `pool.updatePlacements()` after
+moving terminals in a way the page cannot observe (for example a Web
+Animations API animation), or pass `tracking: 'frame'` to measure every
+terminal every frame. Rotation and perspective transforms are not modelled, and partial
 CSS opacity or filters on a host are not applied (`visibility: hidden` and
 `opacity: 0` do hide it). Fallback fonts and ligatures are fixed when a shared
 terminal is created. A worker's terminals with the same fonts share one
@@ -539,7 +550,27 @@ shader passed to `mount()` fails, the terminal mounts without effects and
 reports the error through `onError`. The xterm-compatible `Terminal` has the same
 `setEffects()` as a Wraith extension. Effects post-process a terminal's own
 canvas, so a terminal in a shared-surface pool (`surface: 'shared'`) rejects
-them the same way and keeps drawing without them.
+`terminal.setEffects()` and keeps drawing without them. Apply effects to the
+whole pool instead:
+
+```ts
+const pool = Wraith.pool({ surface: 'shared' });
+await pool.setEffects({ crt: true, bloom: true, shader: synthwave });
+await pool.setEffects(null); // back to the direct path
+```
+
+`pool.setEffects()` post-processes each worker's whole shared surface, reading
+the retained backing in place of the per-frame copy to the canvas. Its cost
+per frame does not grow with the number of terminals. The custom shader sees
+the page as one image (`iResolution` is the surface in device pixels), and
+its output is kept to where terminals (and their glow) are drawn. CRT corners
+outside the tube are transparent rather than black. The cursor trail and
+cursor uniforms need a single terminal's cursor, so they do not apply on a
+shared surface. With effects off the surface creates no extra textures or
+passes. `npm run dev`, then open `/fleet.html?effects=crt,bloom,synthwave`. At 1,000 shared terminals with CRT + bloom +
+synthwave, every terminal held 85+ parsed updates per second, and the
+display held 120 Hz
+([report](docs/benchmarks/fleet/REPORT.md#effects-on-the-shared-surface-68)).
 
 On an Apple M5 Max (headless Chrome 155, 160x50 at DPR 2), a GPU-bound update
 took 0.077 ms with effects off. CRT added 0.028 ms, bloom 0.059 ms, a custom
@@ -784,26 +815,30 @@ and pointer selection is then offset.
 | `flush()`                                                   | Renders pending state and waits for a GPU completion fence.                                                          |
 | `resize(cols, rows)` / `fit()`                              | Preserves state through Ghostty's reflow.                                                                            |
 | `setFontSize(cssPixels)`                                    | Change text size while retaining the worker, terminal state and scrollback.                                          |
-| `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts and optional geometry; invalid fonts leave the renderer usable.                    |
+| `setFont(font, { fontSize?, lineHeight?, fallbackFonts? })` | Atomically replace OpenType fonts (also `fontFaces`) and optional geometry; invalid fonts leave the renderer usable. |
 | `connect(url, options)`                                     | Worker-owned WebSocket; output parsed off the main thread. `closed` resolves after the last byte is parsed.          |
 | `onBytes(listener)`                                         | Byte-accurate PTY input and terminal query responses; preferred for transports.                                      |
 | `onData(listener)`                                          | UTF-8 text view of output. Use `onBytes` for binary mouse protocols.                                                 |
 | `onResize`, `onTitleChange`, `onBell`, `onStats`, `onError` | Return disposable subscriptions.                                                                                     |
 | `paste(text)`                                               | Removes terminal control characters and follows bracketed paste mode.                                                |
+| `pressKey(code, { shift?, ctrl?, alt?, meta?, text? })`     | Press and release a key (`KeyboardEvent.code`) as if typed, encoded for the current modes; for on-screen key panels. |
 | `scroll(lines)`                                             | Negative moves toward history; positive moves toward the active area.                                                |
+| Mouse wheel                                                 | Scrolls history; sends arrow keys on the alternate screen (DEC 1007, on by default); mouse reports under tracking.   |
 | `getText()`                                                 | Plain text for the current viewport, with visual row breaks.                                                         |
 | `getText(true)`                                             | Ghostty's selection formatter; unwraps soft-wrapped lines.                                                           |
 | `readText({ scope?, lastLines? })`                          | Visible screen (default) or `'all'` retained output with soft wraps joined; `'all'` clears an active selection.      |
 | `pause()` / `resume()` / `paused`                           | Stop and restart painting; parsing, replies and the accessible mirror continue.                                      |
+| `adapter`                                                   | The adapter the engine reports, as in `onStats`, once mounted. Browsers may give a generic name.                     |
 | `setScreenReaderMode(on)` / `setAccessibility(options)`     | Add or remove the mirror and announcements; change labels, announcements or preferences without remounting.          |
 | `announce(text)` / `onAnnounce(listener)`                   | Speak a host message through the live region; observe every announcement.                                            |
 | `findNext(needle)` / `findPrevious(needle)`                 | Search older/newer matches across scrollback, wrap around, reveal and select the match. Resolves `{ total, index }`. |
 | `clearSearch()`                                             | Cancel pending search and clear its selection.                                                                       |
 | `select(start, end, rectangular?)`                          | Select inclusive viewport cell endpoints `{ x, y }`; optional block selection.                                       |
 | `selectWord(x, y)`, `selectLine(y)`, `selectAll()`          | Use Ghostty's word, logical-line and complete active-screen/history selection rules.                                 |
+| `selectWords(start, end)`                                   | Select from the word at `start` through the word at `end`, both ends word-snapped (touch selection).                 |
 | `clearSelection()`                                          | Remove the current selection.                                                                                        |
 | `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
-| `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
+| `setTheme({ foreground, background, cursor, palette })`     | Colors use `#rrggbb`. `palette`: the default palette's first entries, up to 256; OSC 4 still overrides them.         |
 | `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
 | `record({ input?, title? })`                                | Timestamped recorder of parsed output and resizes; `stop()` returns a `Recording`.                                   |
@@ -860,12 +895,21 @@ conjuncts form, but text stays in the terminal's left-to-right cell order: there
 is no bidi reordering. Supply a font for these scripts with `fallbackFonts`.
 
 The bundled JetBrains Mono font covers the demo. Supply `font` and `fallbackFonts`
-as URLs or Uint8Arrays for other scripts or color emoji. Font size is in CSS pixels;
+as URLs or Uint8Arrays for other scripts or color emoji. `fontFaces: { bold,
+italic, boldItalic }` gives styles faces of their own (a monospace's bold file, a
+separate italic family), drawn in the regular font's cell and on its baseline; a
+style without a face, or a character its face lacks, is synthesized from the
+regular fonts as before, and bold italic first tries the italic face made bolder.
+Font size is in CSS pixels;
 rasterization automatically follows devicePixelRatio changes, including with
 `fit: false`. Font sizes must resolve to 6..96 physical pixels at the current
 display scale (capped at 3); line height must be 1..2. Live changes preserve the
 worker, grid, terminal state and scrollback. Screen reader support is
 described under [Accessibility](#accessibility).
+
+Box drawing (U+2500–U+257F), block elements and braille are drawn as geometry
+rather than taken from the font, so borders and bars join across rows and cells
+at any line height.
 
 ## Architecture and compatibility
 

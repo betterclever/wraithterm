@@ -249,6 +249,7 @@ export class WraithPlayer {
         lineHeight: options.lineHeight,
         font: options.font,
         fallbackFonts: options.fallbackFonts,
+        fontFaces: options.fontFaces,
         screenReaderMode: options.screenReaderMode,
         maxPendingBytes: options.maxPendingBytes,
         imageStorageLimit: options.imageStorageLimit,

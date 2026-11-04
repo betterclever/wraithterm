@@ -135,6 +135,9 @@ impl Headless {
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
     }
+    pub fn scroll_to_bottom(&mut self) {
+        self.core.scroll_to_bottom();
+    }
     /// OSC 133 command blocks; see `commands.rs`.
     #[wasm_bindgen(getter)]
     pub fn has_commands(&self) -> bool {
@@ -234,6 +237,7 @@ impl Engine {
         context: SurfaceContext,
         font: Vec<u8>,
         fallbacks: js_sys::Array,
+        faces: js_sys::Array,
         cols: u16,
         rows: u16,
         font_size: f32,
@@ -250,6 +254,7 @@ impl Engine {
             &context.0,
             font,
             fallbacks,
+            style_faces(&faces),
             font_size,
             line_height,
             ligatures,
@@ -287,14 +292,15 @@ impl Engine {
         let y0 = clip_y.max(0.).floor().min(height as f32) as u32;
         let x1 = (clip_x + clip_width).ceil().clamp(0., width as f32) as u32;
         let y1 = (clip_y + clip_height).ceil().clamp(0., height as f32) as u32;
-        let Some(pass) = surface.pass.as_mut() else {
-            return false;
-        };
         if x1 <= x0 || y1 <= y0 {
             return false;
         }
+        let Some(pass) = surface.pass.as_mut() else {
+            return false;
+        };
         self.renderer.draw_shared(
             pass,
+            &mut surface.pipeline_bound,
             (width, height),
             (x, y),
             scale,
@@ -342,11 +348,26 @@ impl Engine {
         self.core.state.dirty.fill(true);
         Ok(())
     }
+    /// A face of its own for `style` (1 bold, 2 italic, 3 bold italic).
+    pub fn set_face(&mut self, style: u8, bytes: Vec<u8>) -> Result<(), JsValue> {
+        if self.renderer.shared_context().is_some() {
+            return Err(error(
+                "pass style faces when creating a shared-surface terminal".into(),
+            ));
+        }
+        self.renderer
+            .atlas()
+            .set_face(style, bytes)
+            .map_err(error)?;
+        self.core.state.dirty.fill(true);
+        Ok(())
+    }
     /// Construct and validate the entire new atlas before changing live state.
     pub fn configure_font(
         &mut self,
         font: Vec<u8>,
         fallbacks: js_sys::Array,
+        faces: js_sys::Array,
         size: f32,
         line_height: f32,
     ) -> Result<Vec<u32>, JsValue> {
@@ -359,7 +380,15 @@ impl Engine {
                 .iter()
                 .map(|bytes| js_sys::Uint8Array::new(&bytes).to_vec())
                 .collect();
-            let glyphs = shared_glyphs(&context, font, fallbacks, size, line_height, ligatures)?;
+            let glyphs = shared_glyphs(
+                &context,
+                font,
+                fallbacks,
+                style_faces(&faces),
+                size,
+                line_height,
+                ligatures,
+            )?;
             let (cell_width, cell_height) = {
                 let atlas = glyphs.atlas.borrow();
                 (atlas.cell_width, atlas.cell_height)
@@ -383,6 +412,9 @@ impl Engine {
             atlas
                 .add_font(js_sys::Uint8Array::new(&bytes).to_vec())
                 .map_err(error)?;
+        }
+        for (style, bytes) in style_faces(&faces) {
+            atlas.set_face(style, bytes).map_err(error)?;
         }
         self.renderer
             .validate_external(
@@ -441,8 +473,15 @@ impl Engine {
     pub fn theme(&mut self, fg: u32, bg: u32, cursor: u32) {
         self.core.theme(fg, bg, cursor);
     }
+    /// The default palette's first entries; empty restores the built-in one.
+    pub fn palette(&mut self, colors: Vec<u32>) {
+        self.core.palette(&colors);
+    }
     pub fn scroll(&mut self, delta: i32) {
         self.core.scroll(delta);
+    }
+    pub fn scroll_to_bottom(&mut self) {
+        self.core.scroll_to_bottom();
     }
     pub fn mode(&self, mode: u16) -> bool {
         self.core.mode(mode)
@@ -624,20 +663,35 @@ impl Surface {
         SurfaceContext(self.context.clone())
     }
 }
+/// Bold, italic and bold italic faces from a three-slot array (a missing
+/// slot is `undefined` or `null`), as (style, bytes).
+fn style_faces(faces: &js_sys::Array) -> Vec<(u8, Vec<u8>)> {
+    (0..faces.length().min(3))
+        .filter_map(|i| {
+            let value = faces.get(i);
+            (!value.is_undefined() && !value.is_null())
+                .then(|| (i as u8 + 1, js_sys::Uint8Array::new(&value).to_vec()))
+        })
+        .collect()
+}
 fn shared_glyphs(
     context: &SharedContext,
     font: Vec<u8>,
     fallbacks: Vec<Vec<u8>>,
+    faces: Vec<(u8, Vec<u8>)>,
     size: f32,
     line_height: f32,
     ligatures: bool,
 ) -> Result<Rc<crate::gpu::Glyphs>, JsValue> {
-    let key = atlas_key(&font, &fallbacks, size, line_height, ligatures);
+    let key = atlas_key(&font, &fallbacks, &faces, size, line_height, ligatures);
     context
         .glyphs(key, move || {
             let mut atlas = Atlas::new(font, size, line_height)?;
             for bytes in fallbacks {
                 atlas.add_font(bytes)?;
+            }
+            for (style, bytes) in faces {
+                atlas.set_face(style, bytes)?;
             }
             atlas.ligatures = ligatures;
             atlas.reset();

@@ -2,6 +2,17 @@ export interface WraithTheme {
   foreground?: string;
   background?: string;
   cursor?: string;
+  /**
+   * The default palette's first entries, `#rrggbb`: ANSI 0-15, or up to all
+   * 256. Entries not given keep the built-in palette; programs' OSC 4 colors
+   * still override them.
+   */
+  palette?: string[];
+}
+/** fg, bg and cursor, then the palette, packed: the engine's theme colors. */
+export function themeColors(theme: WraithTheme, palette = theme.palette): number[] {
+  if (palette && palette.length > 256) throw new RangeError('A palette has at most 256 colors');
+  return [theme.foreground!, theme.background!, theme.cursor!, ...(palette ?? [])].map(packColor);
 }
 export interface WraithOptions {
   cols?: number;
@@ -11,6 +22,14 @@ export interface WraithOptions {
   lineHeight?: number;
   font?: string | URL | Uint8Array;
   fallbackFonts?: (string | URL | Uint8Array)[];
+  /**
+   * Faces of their own for bold, italic and bold italic text, drawn in the
+   * regular font's cell and on its baseline. A style without one, or whose
+   * face lacks a character, is synthesized from `font` and `fallbackFonts`
+   * (bold italic first tries the italic face made bolder, then the bold face
+   * slanted).
+   */
+  fontFaces?: WraithFontFaces;
   scrollback?: number;
   fit?: boolean;
   theme?: WraithTheme;
@@ -54,6 +73,11 @@ export interface WraithOptions {
    * shaders. Off by default. Change them later with `setEffects()`.
    */
   effects?: import('./effects.js').WraithEffects;
+}
+export interface WraithFontFaces {
+  bold?: string | URL | Uint8Array;
+  italic?: string | URL | Uint8Array;
+  boldItalic?: string | URL | Uint8Array;
 }
 export interface WraithAccessibilityOptions {
   /** Accessible name of the terminal group. Defaults to the host's

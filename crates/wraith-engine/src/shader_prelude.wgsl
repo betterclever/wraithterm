@@ -48,5 +48,13 @@ struct WraithOut {
     iPreviousCursor = wraith_fx.previous;
     iCurrentCursorColor = vec4<f32>(wraith_fx.cursor_color.rgb, 1.);
     iTimeCursorChange = wraith_fx.time.w;
-    return mainImage(v.position.xy);
+    let color = mainImage(v.position.xy);
+    if wraith_fx.flags.y == 0u {
+        return color;
+    }
+    // On a shared surface, keep the result to where terminals (and their
+    // glow) are, premultiplied over the transparent page.
+    let uv = v.position.xy * wraith_fx.resolution.zw;
+    let coverage = clamp(textureSampleLevel(iChannel0, iChannel0Sampler, uv, 0.).a, 0., 1.);
+    return vec4<f32>(clamp(color.rgb, vec3<f32>(0.), vec3<f32>(1.)) * coverage, coverage);
 }

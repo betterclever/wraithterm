@@ -139,6 +139,23 @@ try {
   assert.ok(progress.length <= 4, 'a redrawn row is not spoken per frame');
   assert.ok(progress.join('\n').includes('Build finished'));
 
+  // A key typed while scrolled back jumps to the prompt without rereading it.
+  await page.evaluate(async () => {
+    for (let i = 0; i < 60; i++) await window.wraith.write(`history ${i}\r\n`);
+  });
+  await settle(page, 1200);
+  await page.evaluate(() => {
+    window.wraith.scroll(-20);
+  });
+  await settle(page, 600);
+  await page.evaluate(() => (window.said = []));
+  await page.keyboard.type('h');
+  await settle(page, 1200);
+  const jumped = await page.evaluate(() => window.said.map((s) => s.text));
+  check('scrollToPrompt', jumped);
+  assert.deepEqual(jumped, [], 'the jump to the prompt is not announced as output');
+  await page.keyboard.press('Backspace');
+
   // Throttling under a 10 MB burst.
   await page.evaluate(() => (window.said = []));
   const burst = await page.evaluate(async () => {

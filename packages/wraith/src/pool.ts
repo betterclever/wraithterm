@@ -1,10 +1,16 @@
-import type { Command, PoolMessage, Reply } from './protocol.js';
+import { MessageBatch, WriteArena } from './batch.js';
+import { packEffects, type WraithEffects } from './effects.js';
+import type { Command, PoolMessage, PoolReply, Reply, SurfaceReply } from './protocol.js';
+const EMPTY = new Uint8Array(0);
 import { SharedSurfaces, type SharedSurfaceOptions, type SharedSurfaceStats } from './surface.js';
-export type { SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
+export type { PlacementTracking, SharedSurfaceOptions, SharedSurfaceStats } from './surface.js';
 
 /** How a terminal reaches its engine: a dedicated worker or a port on a pooled one. */
 export interface Channel {
   postMessage(command: Command, transfer: Transferable[]): void;
+  /** Pooled channels: send a write, copying `bytes` before returning, so the
+   * caller can reuse its buffer. Ordered with `postMessage` commands. */
+  write?(ids: number[], bytes: Uint8Array): void;
   /** Stop delivering replies and release the terminal's share of the worker. */
   terminate(): void;
   /** Present on a shared-surface pool: the worker draws this terminal into its
@@ -53,8 +59,12 @@ export function dedicatedChannel(handlers: ChannelHandlers): Channel {
 
 interface Slot {
   worker: Worker;
-  terminals: Set<ChannelHandlers>;
+  terminals: Map<number, ChannelHandlers>;
   index: number;
+  /** Every terminal's commands to this worker, one message per task. */
+  commands: MessageBatch<[number, Command]>;
+  /** Every terminal's write bytes for the current batch, in one buffer. */
+  arena: WriteArena;
 }
 
 /**
@@ -67,6 +77,7 @@ export class WraithPool {
   private disposed = false;
   private surfaces?: SharedSurfaces;
   private nextId = 1;
+  private currentEffects: WraithEffects | null = null;
   readonly size: number;
   /** `'shared'` when workers draw into page-sized shared surfaces. */
   readonly surface: 'canvas' | 'shared';
@@ -77,12 +88,43 @@ export class WraithPool {
     if (this.surface === 'shared')
       this.surfaces = new SharedSurfaces(options.sharedSurface, (index, error) => {
         const slot = this.slots[index];
-        if (slot) for (const terminal of slot.terminals) terminal.fail(error);
+        if (slot) for (const terminal of [...slot.terminals.values()]) terminal.fail(error);
       });
   }
   /** Shared surfaces: each worker's latest frame and GPU-completion counters. */
   get surfaceStats(): readonly SharedSurfaceStats[] {
     return this.surfaces?.workerStats ?? [];
+  }
+  /**
+   * Shared surfaces: re-measure every terminal's placement on the next frame.
+   * Call after moving terminals in a way the page cannot observe; scrolling,
+   * resizing, DOM and style changes and CSS animations are picked up already.
+   */
+  updatePlacements(): void {
+    this.surfaces?.invalidate();
+  }
+  /** Effects applied with `setEffects()`, or null when none are on. */
+  get effects(): WraithEffects | null {
+    return this.currentEffects;
+  }
+  /**
+   * Shared surfaces: GPU post-process effects over each worker's whole
+   * surface (CRT, bloom, a custom WGSL shader); `null` or `{}` turns them off
+   * and returns to the direct path with no extra passes or textures. The
+   * cursor trail needs a terminal's own canvas and is ignored here; a custom
+   * shader sees the surface as one image (`iResolution` is the page in device
+   * pixels) and its output is kept to where terminals are. Rejects with the
+   * compiler's messages for an invalid shader, keeping the previous effects.
+   * Per-canvas pools take effects per terminal with `terminal.setEffects()`.
+   */
+  async setEffects(effects: WraithEffects | null): Promise<void> {
+    if (!this.surfaces)
+      throw new Error("pool.setEffects() needs surface: 'shared'; use terminal.setEffects()");
+    const reduced =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const packed = packEffects(effects, reduced);
+    await this.surfaces.setEffects(packed);
+    this.currentEffects = packed.active ? { ...effects } : null;
   }
   /** Terminals currently attached to each worker. */
   get load(): number[] {
@@ -92,36 +134,75 @@ export class WraithPool {
   connect(handlers: ChannelHandlers): Channel {
     if (this.disposed) throw new Error('Wraith pool has been disposed');
     if (this.slots.length < this.size) {
-      const slot: Slot = { worker: spawn(), terminals: new Set(), index: this.slots.length };
-      // The surface reaches the worker before any terminal attaches.
-      this.surfaces?.attach(slot.worker);
+      const worker = spawn();
+      const terminals = new Map<number, ChannelHandlers>();
       const failAll = (error: Error) => {
-        for (const terminal of slot.terminals) terminal.fail(error);
+        for (const terminal of [...terminals.values()]) terminal.fail(error);
       };
-      slot.worker.onerror = (event) => failAll(new Error(event.message || 'Wraith worker failed'));
-      slot.worker.onmessageerror = () =>
+      const arena = new WriteArena();
+      const commands = new MessageBatch<[number, Command]>((items, transfers) => {
+        const writes = arena.seal();
+        try {
+          worker.postMessage({ type: 'batch', items } satisfies PoolMessage, [
+            ...transfers,
+            ...(writes ? [writes] : []),
+          ]);
+        } catch {
+          // One uncloneable command must not take its neighbours down: resend
+          // individually (copying, not transferring) and fail only the
+          // terminals whose command was refused.
+          for (const item of items)
+            try {
+              worker.postMessage({ type: 'batch', items: [item] } satisfies PoolMessage);
+            } catch (error) {
+              terminals
+                .get(item[0])
+                ?.fail(error instanceof Error ? error : new Error(String(error)));
+            }
+        }
+      });
+      const slot: Slot = { worker, terminals, index: this.slots.length, commands, arena };
+      // The surface reaches the worker before any terminal attaches.
+      const surfaces = this.surfaces;
+      surfaces?.attach(worker);
+      // One listener per worker: terminal replies, else surface messages.
+      worker.onmessage = (event: MessageEvent<PoolReply | SurfaceReply>) => {
+        const message = event.data;
+        if (message.type === 'replies')
+          for (const [id, reply] of message.items) terminals.get(id)?.message(reply);
+        else surfaces?.receive(slot.index, message);
+      };
+      worker.onerror = (event) => failAll(new Error(event.message || 'Wraith worker failed'));
+      worker.onmessageerror = () =>
         failAll(new Error('Wraith worker message could not be decoded'));
       this.slots.push(slot);
     }
     const slot = this.slots.reduce((a, b) => (b.terminals.size < a.terminals.size ? b : a));
-    const { port1, port2 } = new MessageChannel();
     const id = this.nextId++;
     const surfaces = this.surfaces;
-    slot.worker.postMessage(
-      { type: 'attach', port: port2, id, shared: !!surfaces } satisfies PoolMessage,
-      [port2],
-    );
-    port1.onmessage = (event: MessageEvent<Reply>) => handlers.message(event.data);
-    port1.onmessageerror = () =>
-      handlers.fail(new Error('Wraith worker message could not be decoded'));
-    slot.terminals.add(handlers);
+    // Commands already queued for other terminals go first; attach must precede
+    // this terminal's own commands, which travel in the same ordered batch.
+    slot.commands.flush();
+    slot.worker.postMessage({ type: 'attach', id, shared: !!surfaces } satisfies PoolMessage);
+    slot.terminals.set(id, handlers);
+    let attached = true;
     return {
-      postMessage: (command, transfer) => port1.postMessage(command, transfer),
+      postMessage: (command, transfer) => {
+        if (attached) slot.commands.push([id, command], transfer);
+      },
+      write: (ids, bytes) => {
+        if (!attached) return;
+        const command = { type: 'write' as const, ids, bytes: EMPTY };
+        slot.arena.add(command, bytes);
+        slot.commands.push([id, command]);
+      },
       terminate: () => {
+        if (!attached) return;
+        // Deliver anything this terminal queued (its dispose) before detaching.
+        slot.commands.flush();
+        attached = false;
         surfaces?.untrack(id);
-        port1.onmessage = null;
-        port1.close();
-        slot.terminals.delete(handlers);
+        slot.terminals.delete(id);
       },
       surface: surfaces && {
         track: (placeholder, element) => surfaces.track(id, slot.index, placeholder, element),
@@ -134,7 +215,11 @@ export class WraithPool {
   dispose() {
     this.disposed = true;
     this.surfaces?.dispose();
-    for (const slot of this.slots) slot.worker.terminate();
+    for (const slot of this.slots) {
+      slot.commands.clear();
+      slot.arena.clear();
+      slot.worker.terminate();
+    }
     this.slots = [];
   }
 }

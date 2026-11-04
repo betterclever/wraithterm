@@ -3,6 +3,28 @@
 // page-sized WebGPU canvas; per-canvas mode gives every terminal its own.
 // window.fleet exposes start/stop/metrics/view for the browser test and benchmark.
 import { Wraith } from '../packages/wraith/dist/index.js';
+import glitch from './effects/glitch.wgsl?raw';
+import hologram from './effects/hologram.wgsl?raw';
+import matrix from './effects/matrix.wgsl?raw';
+import rain from './effects/rain.wgsl?raw';
+import synthwave from './effects/synthwave.wgsl?raw';
+import warp from './effects/warp.wgsl?raw';
+
+const shaders = { glitch, hologram, matrix, rain, synthwave, warp };
+/** 'off' or comma-separated crt, bloom and at most one shader name. */
+export function effectsFor(spec) {
+  const parts = new Set(
+    String(spec ?? 'off')
+      .split(',')
+      .filter(Boolean),
+  );
+  const effects = {};
+  if (parts.has('crt')) effects.crt = true;
+  if (parts.has('bloom')) effects.bloom = true;
+  const shader = [...parts].find((p) => p in shaders);
+  if (shader) effects.shader = shaders[shader];
+  return Object.keys(effects).length ? effects : null;
+}
 
 const encoder = new TextEncoder();
 /** Two coloured agent-log lines and a rewritten status row (demo/rival-bench.js). */
@@ -25,15 +47,24 @@ const viewport = document.getElementById('viewport');
 const world = document.getElementById('world');
 const $ = (id) => document.getElementById(id);
 const view = { x: 0, y: 0, z: 1 };
+/** Write a readout only when its text changes. */
+function show(id, text) {
+  const node = $(id);
+  if (node.textContent !== text) node.textContent = text;
+}
 function applyView() {
   world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
-  $('r-zoom').textContent = `${(view.z * 100).toFixed(view.z < 0.1 ? 1 : 0)}%`;
+  show('r-zoom', `${(view.z * 100).toFixed(view.z < 0.1 ? 1 : 0)}%`);
 }
-function hudHeight() {
-  return document.querySelector('.hud').getBoundingClientRect().bottom + 8;
+// The grid sits below the HUD. Its height is fixed by CSS for a given window
+// width, so measure it at load and on resize only, never as readouts change.
+let hudInset = 0;
+function measureHud() {
+  hudInset = document.querySelector('.hud').getBoundingClientRect().bottom + 8;
 }
+measureHud();
 function fit() {
-  const top = hudHeight();
+  const top = hudInset;
   const w = world.offsetWidth,
     h = world.offsetHeight;
   if (!w || !h) return;
@@ -58,7 +89,12 @@ class Fleet {
   rendered = [];
   frames = 0;
   longTasks = { count: 0, ms: 0 };
+  /** Long Animation Frames (>50 ms): count, durations, and time per phase and
+   * per attributed script, cumulative. */
+  loaf = { count: 0, ms: 0, blockingMs: 0, renderMs: 0, styleLayoutMs: 0, scripts: {} };
   pace = 'frame';
+  feed = 'main';
+  effects = 'off';
   mountMs = 0;
   errors = [];
   async start({
@@ -71,9 +107,15 @@ class Fleet {
     lineHeight = 1.2,
     pace = 'frame',
     scrollback = 1000,
+    feed = 'main',
+    effects = 'off',
+    // Per-terminal stats cost a message per terminal every 500 ms; shared
+    // pools report drawn updates per worker instead.
+    terminalStats = mode !== 'shared',
   } = {}) {
     await this.stop();
     this.pace = pace;
+    this.feed = mode === 'shared' && feed === 'worker' ? 'worker' : 'main';
     $('count').value = String(count);
     $('mode').value = mode;
     $('pace').value = pace;
@@ -81,6 +123,10 @@ class Fleet {
       await (await fetch('/fonts/JetBrainsMono-Regular.ttf')).arrayBuffer(),
     );
     this.pool = Wraith.pool({ workers, surface: mode });
+    this.effects = 'off';
+    $('effects').disabled = mode !== 'shared';
+    if (mode === 'shared') await this.setEffects(effects);
+    this.terminalStats = terminalStats;
     const options = {
       cols,
       rows,
@@ -98,7 +144,7 @@ class Fleet {
       world.append(host);
       const term = await Wraith.mount(host, options);
       term.onError((error) => this.errors.push(`${i}: ${error.message}`));
-      term.onStats((stats) => (this.rendered[i] = stats.frames));
+      if (terminalStats) term.onStats((stats) => (this.rendered[i] = stats.frames));
       return term;
     };
     // The first terminal sizes the grid; the rest mount in bounded batches.
@@ -114,16 +160,24 @@ class Fleet {
       const batch = [];
       for (let j = i; j < Math.min(count, i + 64); j++) batch.push(mountOne(j));
       this.terms.push(...(await Promise.all(batch)));
-      $('r-terminals').textContent = `${this.terms.length} / ${count}`;
+      show('r-terminals', `${this.terms.length} / ${count}`);
     }
     this.mountMs = performance.now() - started;
     this.acked = new Array(count).fill(0);
     this.rendered = new Array(count).fill(0);
-    $('r-terminals').textContent = String(count);
+    show('r-terminals', String(count));
     fit();
     this.running = true;
-    this.drive();
-    return { mountMs: this.mountMs, count };
+    // Display frames: main-thread animation frames, whatever feeds the terminals.
+    const frame = () => {
+      if (!this.running) return;
+      this.frames++;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    if (this.feed === 'worker') await this.feedWorkers();
+    else this.drive();
+    return { mountMs: this.mountMs, count, feed: this.feed };
   }
   /** One animation-frame driver: every terminal whose previous update was
    * parsed writes its next one, at most once per display frame (or at `pace`). */
@@ -133,7 +187,6 @@ class Fleet {
     const sequence = new Uint32Array(this.terms.length);
     const tick = (now) => {
       if (!this.running) return;
-      this.frames++;
       const interval =
         this.pace === 'frame' ? 0 : this.pace === '0' ? Infinity : 1000 / Number(this.pace);
       for (let i = 0; i < this.terms.length; i++) {
@@ -152,8 +205,34 @@ class Fleet {
     };
     requestAnimationFrame(tick);
   }
+  /** Worker-fed: each pool worker replays its terminals' updates itself, one
+   * per terminal per worker animation frame; nothing crosses the main thread
+   * while they stream. (Internal benchmark command; see protocol.ts 'feed'.) */
+  async feedWorkers() {
+    const cycle = 64;
+    await Promise.all(
+      this.terms.map((term, i) =>
+        term.request({
+          type: 'feed',
+          chunks: Array.from({ length: cycle }, (_, n) => logUpdate(i, n)),
+        }),
+      ),
+    );
+  }
+  /** Shared surfaces: apply an effects spec ('off', 'crt,bloom,synthwave', ...)
+   * to every worker surface, live, in either feed mode. */
+  async setEffects(spec) {
+    if (this.pool?.surface !== 'shared') return;
+    await this.pool.setEffects(effectsFor(spec));
+    this.effects = spec;
+    $('effects').value = spec;
+  }
   /** Cumulative counters; callers difference two snapshots. */
-  metrics() {
+  async metrics() {
+    if (this.feed === 'worker' && this.running)
+      this.acked = await Promise.all(
+        this.terms.map((term) => term.request({ type: 'feed' }).catch(() => 0)),
+      );
     const surfaces = this.pool?.surfaceStats ?? [];
     const sum = (key) => surfaces.reduce((a, s) => a + (s?.[key] ?? 0), 0);
     return {
@@ -162,11 +241,14 @@ class Fleet {
       acked: [...this.acked],
       rendered: [...this.rendered],
       longTasks: { ...this.longTasks },
+      loaf: { ...this.loaf, scripts: { ...this.loaf.scripts } },
       surfaceFrames: surfaces.map((s) => s?.frames ?? 0),
       surfaceCompletedFrames: surfaces.map((s) => s?.completedFrames ?? 0),
       surfaceUpdates: sum('updates'),
+      terminalStats: this.terminalStats,
       surfaceCompletedUpdates: sum('completedUpdates'),
       atlases: surfaces.map((s) => s?.atlases ?? 0),
+      effectPasses: surfaces.map((s) => s?.effectPasses ?? 0),
       errors: [...this.errors],
     };
   }
@@ -200,31 +282,64 @@ if (typeof PerformanceObserver !== 'undefined')
   } catch {
     // Long-task timing is unavailable outside Chromium.
   }
+// What stalled a frame: Long Animation Frames with script attribution.
+if (typeof PerformanceObserver !== 'undefined')
+  try {
+    new PerformanceObserver((list) => {
+      const loaf = fleet.loaf;
+      for (const entry of list.getEntries()) {
+        loaf.count++;
+        loaf.ms += entry.duration;
+        loaf.blockingMs += entry.blockingDuration ?? 0;
+        const end = entry.startTime + entry.duration;
+        if (entry.renderStart) loaf.renderMs += end - entry.renderStart;
+        if (entry.styleAndLayoutStart) loaf.styleLayoutMs += end - entry.styleAndLayoutStart;
+        for (const script of entry.scripts ?? []) {
+          const file = String(script.sourceURL ?? '')
+            .split('/')
+            .pop()
+            .split('?')[0];
+          const key = `${script.invokerType}:${script.invoker} ${script.sourceFunctionName || '(anonymous)'} ${file}`;
+          loaf.scripts[key] = (loaf.scripts[key] ?? 0) + script.duration;
+        }
+      }
+    }).observe({ type: 'long-animation-frame', buffered: false });
+  } catch {
+    // Long Animation Frames are Chromium-only.
+  }
 
 // Live readout, from differences between half-second snapshots.
-let previous = fleet.metrics();
-setInterval(() => {
-  const now = fleet.metrics();
+let previous = await fleet.metrics();
+setInterval(async () => {
+  const now = await fleet.metrics();
   const seconds = (now.time - previous.time) / 1000;
   if (fleet.terms.length && now.acked.length === previous.acked.length && seconds > 0) {
     const updates =
       now.acked.reduce((a, b) => a + b, 0) - previous.acked.reduce((a, b) => a + b, 0);
-    $('r-fps').textContent = ((now.frames - previous.frames) / seconds).toFixed(0);
-    $('r-updates').textContent = Math.round(updates / seconds).toLocaleString();
-    $('r-per').textContent = (updates / seconds / fleet.terms.length).toFixed(1);
+    show('r-fps', ((now.frames - previous.frames) / seconds).toFixed(0));
+    show('r-updates', Math.round(updates / seconds).toLocaleString());
+    show('r-per', (updates / seconds / fleet.terms.length).toFixed(1));
     const shared = fleet.pool?.surface === 'shared';
-    $('r-gpu').textContent = shared
-      ? Math.round(
-          (now.surfaceCompletedUpdates - previous.surfaceCompletedUpdates) / seconds,
-        ).toLocaleString()
-      : 'n/a';
-    $('r-surface').textContent = shared
-      ? now.surfaceFrames
-          .map((f, i) => ((f - (previous.surfaceFrames[i] ?? 0)) / seconds).toFixed(0))
-          .join(' · ')
-      : `${fleet.terms.length} canvases`;
-    $('r-long').textContent =
-      `${now.longTasks.count - previous.longTasks.count} · ${(now.longTasks.ms - previous.longTasks.ms).toFixed(0)} ms`;
+    show(
+      'r-gpu',
+      shared
+        ? Math.round(
+            (now.surfaceCompletedUpdates - previous.surfaceCompletedUpdates) / seconds,
+          ).toLocaleString()
+        : 'n/a',
+    );
+    // Slowest–fastest worker, so the width does not grow with the worker count.
+    const rates = now.surfaceFrames.map((f, i) => (f - (previous.surfaceFrames[i] ?? 0)) / seconds);
+    show(
+      'r-surface',
+      shared && rates.length
+        ? `${Math.min(...rates).toFixed(0)}–${Math.max(...rates).toFixed(0)}`
+        : `${fleet.terms.length} canvases`,
+    );
+    show(
+      'r-long',
+      `${now.longTasks.count - previous.longTasks.count} · ${(now.longTasks.ms - previous.longTasks.ms).toFixed(0)} ms`,
+    );
   }
   previous = now;
 }, 500);
@@ -286,20 +401,28 @@ viewport.addEventListener('dblclick', (e) => {
   view.y += innerHeight / 2 - (c.top + c.height / 2);
   applyView();
 });
-addEventListener('resize', () => fleet.terms.length && fit());
+addEventListener('resize', () => {
+  measureHud();
+  if (fleet.terms.length) fit();
+});
 
 const params = new URLSearchParams(location.search);
 for (const [id, key] of [
   ['count', 'count'],
   ['mode', 'mode'],
   ['pace', 'pace'],
+  ['effects', 'effects'],
 ]) {
   const select = $(id);
   if (params.has(key)) select.value = params.get(key);
   select.addEventListener('change', () => {
-    if (id === 'pace') {
-      fleet.pace = select.value;
-      params.set('pace', select.value);
+    if (id === 'pace' || id === 'effects') {
+      if (id === 'pace') fleet.pace = select.value;
+      else
+        fleet.setEffects(select.value).catch((error) => {
+          $('hint').textContent = `Effects failed: ${error.message}`;
+        });
+      params.set(key, select.value);
       history.replaceState(null, '', `?${params}`);
       return;
     }
@@ -317,6 +440,8 @@ if (params.get('auto') !== '0')
       mode: $('mode').value,
       pace: $('pace').value,
       workers: Number(params.get('workers') ?? 4),
+      feed: params.get('feed') ?? 'main',
+      effects: $('effects').value,
     })
     .catch((error) => {
       $('hint').textContent = `Could not start: ${error.message}`;
