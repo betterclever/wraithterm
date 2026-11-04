@@ -588,13 +588,23 @@ impl Atlas {
         self.runs.insert((text, style), words.clone());
         Some(words)
     }
-    /// Coverage for U+2580..U+259F (block elements) and U+2800..U+28FF (braille), filling exactly one cell; None for anything else.
+    /// Coverage for U+2500..U+257F (box drawing, box_drawing.rs), U+2580..U+259F (block elements) and U+2800..U+28FF (braille), filling exactly one cell; None for anything else.
     fn procedural(&self, text: &str) -> Option<Vec<u8>> {
         let mut chars = text.chars();
         let c = chars.next()? as u32;
-        if chars.next().is_some()
-            || !((0x2580..=0x259f).contains(&c) || (0x2800..=0x28ff).contains(&c))
-        {
+        if chars.next().is_some() {
+            return None;
+        }
+        if let Some(pixels) = crate::box_drawing::draw(
+            c,
+            self.cell_width,
+            self.cell_height,
+            self.tile_width,
+            self.tile_height,
+        ) {
+            return Some(pixels);
+        }
+        if !((0x2580..=0x259f).contains(&c) || (0x2800..=0x28ff).contains(&c)) {
             return None;
         }
         let (w, h, tw) = (self.cell_width, self.cell_height, self.tile_width);

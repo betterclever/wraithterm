@@ -4,6 +4,7 @@ import { TerminalAccessibility } from './accessibility.js';
 import {
   BackpressureError,
   packColor,
+  themeColors,
   type WraithOptions,
   type WraithStats,
   type WraithTheme,
@@ -261,9 +262,9 @@ export class Wraith {
   private interceptedKeys = new Set<string>();
   private composing = false;
   private preedit: HTMLSpanElement;
-  private theme: Required<WraithTheme>;
+  private theme: Required<Omit<WraithTheme, 'palette'>> & Pick<WraithTheme, 'palette'>;
   /** System colors while forced-colors mode is active; overrides `theme`. */
-  private forcedTheme?: Required<WraithTheme>;
+  private forcedTheme?: Required<Omit<WraithTheme, 'palette'>>;
   private started = false;
   private hostPaused: boolean;
   private a11y: TerminalAccessibility;
@@ -284,7 +285,7 @@ export class Wraith {
       cursor: '#91d6f0',
       ...options.theme,
     };
-    for (const color of Object.values(this.theme)) packColor(color);
+    themeColors(this.theme);
     this.ready = new Promise((resolve, reject) => {
       this.readyResolve = resolve;
       this.readyReject = reject;
@@ -440,7 +441,7 @@ export class Wraith {
           history: options.scrollback ?? 10000,
           imageStorageLimit: options.imageStorageLimit,
           ligatures: options.ligatures,
-          theme: Object.values(terminal.forcedTheme ?? terminal.theme).map(packColor),
+          theme: themeColors(terminal.forcedTheme ?? terminal.theme, terminal.theme.palette),
         },
         [...(canvas ? [canvas] : []), ...[font!, ...fonts].map((f) => f.buffer as ArrayBuffer)],
       );
@@ -993,7 +994,7 @@ export class Wraith {
   setTheme(theme: WraithTheme): void {
     this.assertLive();
     const next = { ...this.theme, ...theme };
-    Object.values(next).forEach(packColor);
+    themeColors(next);
     this.theme = next;
     this.applyTheme();
   }
@@ -1004,7 +1005,7 @@ export class Wraith {
     this.preedit.style.color = theme.foreground;
     // Before init the engine takes the effective theme with its other settings.
     if (this.started && !this.disposed && !this.failed)
-      this.send({ type: 'theme', colors: Object.values(theme).map(packColor) });
+      this.send({ type: 'theme', colors: themeColors(theme, this.theme.palette) });
   }
   /**
    * Plain text of the visible screen (default), or of retained scrollback plus

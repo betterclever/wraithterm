@@ -244,6 +244,15 @@ void wraith_bridge_theme(WraithBridge* b, uint32_t fg, uint32_t bg, uint32_t cur
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &g);
   ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_CURSOR, &c);
 }
+void wraith_bridge_palette(WraithBridge* b, const uint32_t* colors, uint32_t count) {
+  /* From the built-in palette, so entries past `count` keep their defaults. */
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, NULL);
+  if (!count) return;
+  GhosttyColorRgb palette[256];
+  if (ghostty_terminal_get(b->terminal, GHOSTTY_TERMINAL_DATA_COLOR_PALETTE_DEFAULT, &palette)) return;
+  for (uint32_t i = 0; i < count && i < 256; i++) palette[i] = unpack(colors[i]);
+  ghostty_terminal_set(b->terminal, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, &palette);
+}
 int wraith_bridge_update(WraithBridge* b, WraithFrame* frame) {
   frame->held = b->held;
   if (b->held) return 0;

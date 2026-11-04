@@ -104,6 +104,10 @@ export class Engine {
      */
     on_submitted_work_done(done: Function): void;
     /**
+     * The default palette's first entries; empty restores the built-in one.
+     */
+    palette(colors: Uint32Array): void;
+    /**
      * Rasterize printable ASCII ahead of first use, `count` glyphs per call,
      * so idle time after creation absorbs that work. Returns where to
      * continue, or -1 when done.
@@ -333,6 +337,7 @@ export interface InitOutput {
     readonly engine_mouse: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly engine_needs_present: (a: number) => number;
     readonly engine_on_submitted_work_done: (a: number, b: any) => void;
+    readonly engine_palette: (a: number, b: number, c: number) => void;
     readonly engine_prefill_glyphs: (a: number, b: number, c: number) => number;
     readonly engine_release_hold: (a: number) => void;
     readonly engine_render: (a: number, b: number, c: number) => [number, number, number];
@@ -392,14 +397,14 @@ export interface InitOutput {
     readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly surface_unpresented: (a: number) => number;
     readonly surface_width: (a: number) => number;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__101: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__104: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__105: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__103: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___js_sys_b91aa96f45f170e___Function_fn_wasm_bindgen_e55f43a67788dd27___JsValue_____wasm_bindgen_e55f43a67788dd27___sys__Undefined___js_sys_b91aa96f45f170e___Function_fn_wasm_bindgen_e55f43a67788dd27___JsValue_____wasm_bindgen_e55f43a67788dd27___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___JsValue__core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__102: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__105: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wasm_bindgen_e55f43a67788dd27___sys__JsNullable_wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_37ee0ce0c4cd57d5___result__Result_____wasm_bindgen_e55f43a67788dd27___JsError___true__106: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_e55f43a67788dd27___convert__closures_____invoke___wgpu_b959e8ac2deffb51___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__104: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

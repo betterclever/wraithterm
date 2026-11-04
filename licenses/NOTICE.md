@@ -90,4 +90,4 @@ The Wasm engine statically includes Ghostty and Rust dependencies. The list belo
 | zerocopy | 0.8.62 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | zerocopy-derive | 0.8.62 | BSD-2-Clause OR Apache-2.0 OR MIT |
 
-Ghostty: MIT (see Ghostty-MIT.txt). xterm.js 6.0.0: MIT (see xterm-MIT.txt). JetBrains Mono: SIL OFL 1.1 (see JetBrainsMono-OFL.txt).
+Ghostty: MIT (see Ghostty-MIT.txt). xterm.js 6.0.0: MIT (see xterm-MIT.txt). restty box drawing line table: MIT (see restty-MIT.txt). JetBrains Mono: SIL OFL 1.1 (see JetBrainsMono-OFL.txt).

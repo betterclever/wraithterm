@@ -803,7 +803,7 @@ and pointer selection is then offset.
 | `selectWord(x, y)`, `selectLine(y)`, `selectAll()`          | Use Ghostty's word, logical-line and complete active-screen/history selection rules.                                 |
 | `clearSelection()`                                          | Remove the current selection.                                                                                        |
 | `attachCustomKeyEventHandler(handler)`                      | Return false to exclude a key from terminal input; returns a disposable registration.                                |
-| `setTheme({ foreground, background, cursor })`              | Colors use `#rrggbb`.                                                                                                |
+| `setTheme({ foreground, background, cursor, palette })`     | Colors use `#rrggbb`. `palette`: the default palette's first entries, up to 256; OSC 4 still overrides them.         |
 | `setEffects(effects \| null)` / `effects`                   | GPU post-process effects; rejects on shader errors and keeps the previous effects.                                   |
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
 | `record({ input?, title? })`                                | Timestamped recorder of parsed output and resizes; `stop()` returns a `Recording`.                                   |
@@ -866,6 +866,10 @@ rasterization automatically follows devicePixelRatio changes, including with
 display scale (capped at 3); line height must be 1..2. Live changes preserve the
 worker, grid, terminal state and scrollback. Screen reader support is
 described under [Accessibility](#accessibility).
+
+Box drawing (U+2500–U+257F), block elements and braille are drawn as geometry
+rather than taken from the font, so borders and bars join across rows and cells
+at any line height.
 
 ## Architecture and compatibility
 

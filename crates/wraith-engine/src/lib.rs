@@ -1,4 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
+mod box_drawing;
 pub mod commands;
 pub mod core;
 #[cfg(any(target_arch = "wasm32", test))]
