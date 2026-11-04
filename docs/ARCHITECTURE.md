@@ -299,6 +299,24 @@ when the shader reads `iMouse`. The xterm-compatible compositor shares the same
 `Renderer`. Its `animate()` is driven by `requestAnimationFrame` only while
 `animating` is true.
 
+A shared surface (`pool.setEffects()`) takes effects per worker surface, not
+per terminal. Per-terminal effects inside the shared pass would need a scene
+texture, blur targets and three or four passes for every terminal, which is
+roughly 1,000 extra textures at Fleet sizes. Instead, the surface's retained
+backing becomes the effects' scene (`Effects::external_scene`), and its post
+passes write the canvas texture in place of the per-frame
+`copy_texture_to_texture`. That adds one composite pass, plus two
+half-resolution blur passes for bloom and one pass for a custom shader, per
+worker frame, whatever the terminal count. The backing gains `TEXTURE_BINDING`
+only while effects are on; turning them on or off rebuilds it empty, and every
+visible terminal redraws. A uniform flag marks shared post-processing: CRT
+corners return transparent instead of opaque black, and the custom-shader
+prelude premultiplies its result by the coverage alpha of its input, so the
+page between terminals stays see-through. The cursor trail is dropped (a
+surface has many cursors). While pipelines validate, the worker skips frames,
+since the surface is borrowed. An animated shader keeps the worker's frame
+loop requesting frames, which reuse the backing and run only the post passes.
+
 ## Input and output
 
 Keyboard and mouse events are encoded by Ghostty, using its current modes. This

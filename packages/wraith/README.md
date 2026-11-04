@@ -550,7 +550,27 @@ shader passed to `mount()` fails, the terminal mounts without effects and
 reports the error through `onError`. The xterm-compatible `Terminal` has the same
 `setEffects()` as a Wraith extension. Effects post-process a terminal's own
 canvas, so a terminal in a shared-surface pool (`surface: 'shared'`) rejects
-them the same way and keeps drawing without them.
+`terminal.setEffects()` and keeps drawing without them. Apply effects to the
+whole pool instead:
+
+```ts
+const pool = Wraith.pool({ surface: 'shared' });
+await pool.setEffects({ crt: true, bloom: true, shader: synthwave });
+await pool.setEffects(null); // back to the direct path
+```
+
+`pool.setEffects()` post-processes each worker's whole shared surface, reading
+the retained backing in place of the per-frame copy to the canvas. Its cost
+per frame does not grow with the number of terminals. The custom shader sees
+the page as one image (`iResolution` is the surface in device pixels), and
+its output is kept to where terminals (and their glow) are drawn. CRT corners
+outside the tube are transparent rather than black. The cursor trail and
+cursor uniforms need a single terminal's cursor, so they do not apply on a
+shared surface. With effects off the surface creates no extra textures or
+passes. `npm run dev`, then open `/fleet.html?effects=crt,bloom,synthwave`. At 1,000 shared terminals with CRT + bloom +
+synthwave, every terminal held 85+ parsed updates per second, and the
+display held 120 Hz
+([report](docs/benchmarks/fleet/REPORT.md#effects-on-the-shared-surface-68)).
 
 On an Apple M5 Max (headless Chrome 155, 160x50 at DPR 2), a GPU-bound update
 took 0.077 ms with effects off. CRT added 0.028 ms, bloom 0.059 ms, a custom

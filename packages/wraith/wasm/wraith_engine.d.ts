@@ -243,6 +243,18 @@ export class Surface {
      */
     resize(width: number, height: number): void;
     /**
+     * Shadertoy `iMouse` in physical pixels of the surface.
+     */
+    set_effect_mouse(x: number, y: number, z: number, w: number): void;
+    /**
+     * Replace post-process effects over the whole surface (parameters as in
+     * `Engine::set_effects`; the cursor trail does not apply). Pipelines are
+     * validated first, so an invalid shader rejects and keeps the current
+     * effects. Turning effects on or off empties the backing: redraw every
+     * visible terminal next frame. Call only between frames.
+     */
+    set_effects(params: Float32Array, shader?: string | null): Promise<void>;
+    /**
      * Distinct live glyph atlases on this surface.
      */
     readonly atlases: number;
@@ -254,6 +266,14 @@ export class Surface {
      * Terminal updates (new content drawn) whose GPU work has completed.
      */
     readonly completed_updates: number;
+    /**
+     * Post-process passes in the last frame; zero with effects off.
+     */
+    readonly effect_passes: number;
+    /**
+     * An effect animation wants a frame even though no terminal changed.
+     */
+    readonly effects_due: boolean;
     /**
      * Frames submitted and presented to the canvas.
      */
@@ -377,8 +397,12 @@ export interface InitOutput {
     readonly surface_completed_updates: (a: number) => number;
     readonly surface_context: (a: number) => number;
     readonly surface_create: (a: any, b: number, c: number) => any;
+    readonly surface_effect_passes: (a: number) => number;
+    readonly surface_effects_due: (a: number) => number;
     readonly surface_end: (a: number, b: number) => [number, number, number];
     readonly surface_frames: (a: number) => number;
+    readonly surface_height: (a: number) => number;
+    readonly surface_resize: (a: number, b: number, c: number) => void;
     readonly wraith_alloc: (a: number, b: number) => number;
     readonly wraith_cell: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
     readonly wraith_dealloc: (a: number, b: number, c: number) => void;
@@ -388,18 +412,18 @@ export interface InitOutput {
     readonly wraith_row_reuse: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number) => number;
     readonly wraith_row_store: (a: number, b: number, c: bigint, d: bigint, e: number, f: number, g: number, h: number) => void;
     readonly wraith_semantic: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => void;
-    readonly surface_height: (a: number) => number;
-    readonly surface_resize: (a: number, b: number, c: number) => void;
+    readonly surface_set_effect_mouse: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly surface_set_effects: (a: number, b: number, c: number, d: number, e: number) => any;
     readonly surface_unpresented: (a: number) => number;
     readonly surface_width: (a: number) => number;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined___js_sys_f456faec7bc9c5ad___Function_fn_wasm_bindgen_6325b3aeff69b3ec___JsValue_____wasm_bindgen_6325b3aeff69b3ec___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___JsValue__core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__101: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__104: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__105: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__108: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wasm_bindgen_6325b3aeff69b3ec___sys__JsNullable_wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuError__GpuError___core_ed718c3d60ebd546___result__Result_____wasm_bindgen_6325b3aeff69b3ec___JsError___true__109: (a: number, b: number, c: any) => [number, number];
     readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true_: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__103: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen_6325b3aeff69b3ec___convert__closures_____invoke___wgpu_766cd644c37f70b3___backend__webgpu__webgpu_sys__gen_GpuDeviceLostInfo__GpuDeviceLostInfo______true__107: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

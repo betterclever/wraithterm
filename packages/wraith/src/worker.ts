@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import init, { Engine, Headless } from '../wasm/wraith_engine.js';
 import { MessageBatch, nextTask } from './batch.js';
-import type { Command, PoolMessage, PoolReply, Reply } from './protocol.js';
+import type { Command, PoolMessage, PoolReply, Reply, SurfaceReply } from './protocol.js';
 import { SharedHost, type SharedSlot } from './shared-host.js';
 import { percentile, type BenchmarkResult, type Workload } from './types.js';
 import { createAccessibility } from './worker-accessibility.js';
@@ -9,6 +9,15 @@ import { createCommandTracker } from './worker-commands.js';
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const ready = init();
 let initializing: Promise<unknown> = Promise.resolve();
+/** Run device setup (terminal creation, shared-surface effects) one at a time. */
+function exclusive<T>(run: () => Promise<T>): Promise<T> {
+  const next = initializing.then(run);
+  initializing = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
 // V8 runs each Wasm function on its baseline compiler first and switches to
 // optimized code only on a later call, after enough work has run. The parser
 // is entered once per write batch, so a terminal's first multi-megabyte burst
@@ -646,7 +655,9 @@ function createSession(
       // Terminals in a pooled worker share one GPU device; initialize them one
       // at a time so their pipeline validation scopes cannot interleave.
       const surface = shared ? await shared.host.ready : undefined;
-      const created = initializing.then(() =>
+      // Shared-surface effects are configured through the same queue: they
+      // borrow the surface (context()) and push validation scopes too.
+      const created = exclusive(() =>
         surface
           ? Engine.create_shared(
               surface.context(),
@@ -668,10 +679,6 @@ function createSession(
               command.lineHeight,
               command.history,
             ),
-      );
-      initializing = created.then(
-        () => undefined,
-        () => undefined,
       );
       engine = await created;
       if (!surface) {
@@ -1003,13 +1010,30 @@ scope.onmessage = (event: MessageEvent<Command | PoolMessage>) => {
       for (const [id, command] of message.items) sessions.get(id)?.(command);
       return;
     case 'surface':
-      host = new SharedHost(scope, ready, message.canvas, message.width, message.height);
+      host = new SharedHost(scope, ready, message.canvas, message.width, message.height, exclusive);
       return;
     case 'surface-size':
       host?.resize(message.width, message.height);
       return;
     case 'geometry':
       host?.geometry(message.data);
+      return;
+    case 'surface-effects': {
+      const id = message.id;
+      const done = (error?: unknown) =>
+        scope.postMessage({
+          type: 'surface-effects-result',
+          id,
+          ...(error !== undefined && {
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        } satisfies SurfaceReply);
+      if (!host) done(new Error('This worker has no shared surface'));
+      else host.setEffects(message.params, message.shader).then(() => done(), done);
+      return;
+    }
+    case 'surface-effect-mouse':
+      host?.setEffectMouse(message.mouse);
       return;
   }
   dedicated ??= createSession(scope, () => scope.close());

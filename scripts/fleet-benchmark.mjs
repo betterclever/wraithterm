@@ -25,12 +25,18 @@ const counts = (process.env.COUNTS ?? '64,256,1000').split(',').map(Number);
 // produced: 'main' (a main-thread driver calling write()) or 'worker' (each
 // pool worker generates its terminals' stream itself; nothing crosses the
 // main thread). Every mode/feed pair is one configuration.
-const configs = (process.env.MODES ?? 'shared,canvas').split(',').flatMap((mode) =>
-  (mode === 'shared' ? (process.env.FEEDS ?? 'main').split(',') : ['main']).map((feed) => ({
-    mode,
-    feed,
-  })),
-);
+// EFFECTS: shared-surface effect specs separated by ';' (demo/fleet.js
+// effectsFor: 'off', 'crt,bloom', 'crt,bloom,synthwave', ...).
+const effectSpecs = (process.env.EFFECTS ?? 'off').split(';');
+const configs = (process.env.MODES ?? 'shared,canvas')
+  .split(',')
+  .flatMap((mode) =>
+    mode === 'shared'
+      ? (process.env.FEEDS ?? 'main')
+          .split(',')
+          .flatMap((feed) => effectSpecs.map((effects) => ({ mode, feed, effects })))
+      : [{ mode, feed: 'main', effects: 'off' }],
+  );
 const workers = Number(process.env.WORKERS ?? 4);
 const rounds = Number(process.env.ROUNDS ?? 3),
   seconds = Number(process.env.SECONDS ?? 8),
@@ -77,7 +83,7 @@ let userAgent;
 for (let round = 0; round < rounds; round++)
   for (const count of counts)
     for (let k = 0; k < configs.length; k++) {
-      const { mode, feed } = configs[(k + round) % configs.length];
+      const { mode, feed, effects } = configs[(k + round) % configs.length];
       const marker = `--wraith-fleet=${process.pid}-${runs.length}`;
       const browser = await chromium.launch({
         executablePath:
@@ -92,7 +98,7 @@ for (let round = 0; round < rounds; round++)
       page.setDefaultTimeout(240_000);
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
-      let run = { round, count, mode, feed, workers };
+      let run = { round, count, mode, feed, effects, workers };
       try {
         await page.goto(`${base}/fleet.html?auto=0`);
         await page.waitForFunction(() => window.fleet);
@@ -101,6 +107,7 @@ for (let round = 0; round < rounds; round++)
           mode,
           feed,
           workers,
+          effects,
           ...(process.env.TERMINAL_STATS && { terminalStats: process.env.TERMINAL_STATS === '1' }),
         });
         await page.waitForTimeout(warm * 1000);
@@ -178,6 +185,8 @@ for (let round = 0; round < rounds; round++)
           },
           longTaskMs: b.longTasks.ms - a.longTasks.ms,
           atlases: b.atlases,
+          // Post-process passes in each worker surface's last frame.
+          effectPasses: b.effectPasses,
           memoryMiB: Math.round(memory),
           browserCpuCores: (cpuB - cpuA) / ((wallB - wallA) / 1000),
           loadAverage1m: [loadBefore[0], loadAfter[0]],
@@ -193,8 +202,8 @@ for (let round = 0; round < rounds; round++)
       runs.push(run);
       console.log(
         run.failed
-          ? `${round} ${count} ${mode}/${feed}: FAILED ${run.failed}`
-          : `${round} ${count} ${mode}/${feed}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames ? `${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms)` : 'n/a'}, ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
+          ? `${round} ${count} ${mode}/${feed}/${effects}: FAILED ${run.failed}`
+          : `${round} ${count} ${mode}/${feed}/${effects}: ${run.power}, load ${run.loadAverage1m.map((l) => l.toFixed(1)).join('→')}, cpu ${run.browserCpuCores.toFixed(1)} cores, mount ${run.mountMs} ms, display ${run.displayFps.toFixed(1)} fps, ${run.updatesPerTerminal.toFixed(1)} updates/terminal/s (p10 ${run.updatesP10.toFixed(1)}), submitted ${run.submittedPerTerminal.toFixed(1)}, gpu ${run.gpuCompletedUpdatesPerTerminal?.toFixed(1) ?? '-'}, long tasks ${run.longTasks} (${run.longTaskMs.toFixed(0)} ms), LoAF ${run.longAnimationFrames ? `${run.longAnimationFrames.count} (${run.longAnimationFrames.ms} ms, render ${run.longAnimationFrames.renderMs} ms)` : 'n/a'}, ${run.memoryMiB} MiB, idle ${run.idleDisplayHz} Hz`,
       );
     }
 
@@ -204,9 +213,11 @@ const sha = async (f) =>
     .digest('hex');
 const summary = {};
 for (const count of counts)
-  for (const { mode, feed } of configs) {
-    const label = `${count} ${mode}${mode === 'shared' ? ` ${feed}` : ''}`;
-    const all = runs.filter((x) => x.count === count && x.mode === mode && x.feed === feed);
+  for (const { mode, feed, effects } of configs) {
+    const label = `${count} ${mode}${mode === 'shared' ? ` ${feed}${effects === 'off' ? '' : ` ${effects}`}` : ''}`;
+    const all = runs.filter(
+      (x) => x.count === count && x.mode === mode && x.feed === feed && x.effects === effects,
+    );
     const r = all.filter((x) => !x.failed);
     if (!r.length) {
       summary[label] = { failed: all.map((x) => x.failed) };
