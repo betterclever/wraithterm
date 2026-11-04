@@ -91,7 +91,7 @@ export type Reply =
   | { type: 'data'; bytes: Uint8Array }
   | { type: 'title'; title: string }
   | { type: 'bell' }
-  | { type: 'modes'; mouse: boolean }
+  | { type: 'modes'; mouse: boolean; alternateScroll: boolean }
   | { type: 'cursor'; x: number; y: number }
   | { type: 'render'; frame: number }
   /** Output the worker parsed from its own socket, sent only while observed. */

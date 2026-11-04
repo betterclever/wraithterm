@@ -36,6 +36,7 @@
     "deploy:site": "npm run build:sdk && npm run build:demo && wrangler deploy",
     "test:input": "node scripts/test-production-input.mjs",
     "test:native-interaction": "node scripts/native-interaction-test.mjs",
+    "test:native-keys": "node scripts/native-keys-test.mjs",
     "test:native-display": "node scripts/native-display-test.mjs",
     "test:native-kitty": "node scripts/native-kitty-test.mjs",
     "test:native-pool": "node scripts/native-pool-test.mjs",
