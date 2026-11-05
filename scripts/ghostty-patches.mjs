@@ -16,6 +16,9 @@ export async function applyGhosttyPatches(directory, revision, enabled = true) {
   // ED3 deletes Kitty placements wholly in the scrollback it erases, and ED0
   // from the home position deletes the screen's placements, as ED2 does.
   await applyPatch(directory, revision, true, 'kitty-erase-history');
+  // A saved cursor below the cursor doesn't hold blank rows on shrinking, which
+  // would push the screen's text into history. Last: it edits a patched file.
+  await applyPatch(directory, revision, true, 'resize-saved-cursor');
 }
 async function applyPatch(directory, revision, enabled, name) {
   const manifestUrl = new URL(`../native/patches/${name}.json`, import.meta.url);

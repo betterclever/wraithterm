@@ -1,0 +1,10 @@
+{
+  "upstream": "246f702876b924a1cb7cade1e99274d1470302fc",
+  "patch": "resize-saved-cursor.patch",
+  "files": {
+    "src/terminal/Screen.zig": {
+      "before": "2fe9a2a05e0568abfb20aff8e6c9e17f31db10cedc766a3fa5530c335d59a9c3",
+      "after": "789c7a4c85889498e82d34b6cbc1682b1d2fa5f99ca83b9e9335a0886713b3fb"
+    }
+  }
+}
