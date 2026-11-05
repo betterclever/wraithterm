@@ -28,6 +28,7 @@ renderer, input path, effects, fonts, and browser integration.
 | Single/double/curly/dotted/dashed underlines, underline color, strike, overline | Core style flags and WGSL implementations; underline/strike pixels in demo.                         |
 | DEC line drawing                                                                | Expected Unicode box drawing and Chrome sample.                                                     |
 | Wide and combining characters                                                   | Cell widths, tail cells, combined clusters, clipboard text fixtures.                                |
+| Emoji presentation: U+FE0F prefers a colour font over a text glyph              | Native atlas test (`tests/terminal.rs`) with a one-glyph Twemoji subset.                            |
 | OSC title and bell                                                              | Native and browser effect paths.                                                                    |
 | Device attributes, version, cursor, size, color-scheme reports                  | Registered effects and native fixtures.                                                             |
 | Synchronized output                                                             | Snapshot hold, release, and deadline recovery.                                                      |

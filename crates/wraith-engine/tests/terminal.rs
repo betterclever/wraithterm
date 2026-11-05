@@ -145,6 +145,31 @@ fn emoji_sequences_and_flags_are_one_grapheme_even_after_a_reset() {
         assert_eq!(texts[8], "|");
     }
 }
+/// A subset of Twemoji with one glyph, ▶, which JetBrains Mono also has.
+const TWEMOJI_PLAY: &[u8] = include_bytes!("fonts/Twemoji-play.ttf");
+fn colourful(pixels: &[u8]) -> usize {
+    pixels
+        .chunks_exact(4)
+        .filter(|p| p[3] > 64 && p[..3].iter().max().unwrap() - p[..3].iter().min().unwrap() > 60)
+        .count()
+}
+#[test]
+fn a_variation_selector_asks_for_the_colour_font_over_a_text_glyph() {
+    let mut atlas = regular_atlas();
+    atlas.add_font(TWEMOJI_PLAY.to_vec()).unwrap();
+    let text = styled_tile(&mut atlas, "▶", 0).1;
+    assert_eq!(colourful(&text), 0, "plain, the regular font's glyph");
+    let selected = styled_tile(&mut atlas, "▶\u{fe0e}", 0).1;
+    assert_eq!(colourful(&selected), 0, "U+FE0E asks for the text glyph");
+    let emoji = styled_tile(&mut atlas, "▶\u{fe0f}", 0).1;
+    assert!(colourful(&emoji) > 20, "U+FE0F asks for the emoji");
+    let mut plain = regular_atlas();
+    let fallback = styled_tile(&mut plain, "▶\u{fe0f}", 0).1;
+    assert!(
+        fallback.chunks_exact(4).any(|p| p[3] > 64) && colourful(&fallback) == 0,
+        "no colour font: still drawn, from the text font"
+    );
+}
 #[test]
 fn delayed_autowrap() {
     let mut c = term(4, 2);
