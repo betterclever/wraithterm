@@ -178,6 +178,10 @@ fn scroll_to_bottom_returns_from_history() {
 }
 #[test]
 fn a_cursor_saved_by_a_full_screen_program_does_not_hold_blank_rows_on_shrinking() {
+    // The patch for this needs batch-sgr's Screen.zig, so it goes with that switch.
+    if std::env::var_os("WRAITH_GHOSTTY_PATCHES").is_some_and(|v| v == "0") {
+        return;
+    }
     // `less` saved the cursor low on the screen (1049 keeps it after leaving);
     // the shell then cleared and printed near the top. Showing the
     // keyboard shrinks the screen: the blank rows below go, not the output.
