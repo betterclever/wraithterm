@@ -3,6 +3,15 @@
 Release notes are generated from conventional commits by
 [release-please](https://github.com/googleapis/release-please).
 
+## [0.6.1](https://github.com/betterclever/wraithterm/compare/v0.6.0...v0.6.1) (2026-11-06)
+
+
+### Bug fixes
+
+* a saved cursor below the cursor doesn't push text into history on shrinking ([c0b33c0](https://github.com/betterclever/wraithterm/commit/c0b33c057a87b7c1b0b69271d3db32a461b98e5c))
+* reapply the layered Ghostty patch on a tree already patched ([fb65486](https://github.com/betterclever/wraithterm/commit/fb65486a453169d49eebc9847f2519d9f592b92d))
+* U+FE0F prefers a colour font over the text font's glyph ([02d6283](https://github.com/betterclever/wraithterm/commit/02d6283e8e8b94863fb0dfaf511166fef8ab2a34))
+
 ## [0.6.0](https://github.com/betterclever/wraithterm/compare/v0.5.0...v0.6.0) (2026-11-04)
 
 
