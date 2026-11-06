@@ -24,12 +24,20 @@ import {
 import type { Command, Reply } from './protocol.js';
 import { loadRecording, WraithRecorder, type RecordingSource } from './recording.js';
 import type { PlayerOptions, WraithPlayer } from './player.js';
+import type { JoinShareOptions, WraithShareSession } from './share.js';
 import { CommandBlocks } from './command-blocks.js';
 import type { CommandBlock } from './command-types.js';
 import { EffectsController, type WraithEffects } from './effects.js';
 export * from './types.js';
 export * from './recording.js';
 export type { PlayerOptions, WraithPlayer, PlayerControlsOptions } from './player.js';
+export type {
+  JoinShareOptions,
+  ShareCloseEvent,
+  SharePresence,
+  ShareRole,
+  WraithShareSession,
+} from './share.js';
 export * from './command-types.js';
 export { parseOsc133, type Osc133Step } from './osc133.js';
 export type {
@@ -225,6 +233,21 @@ export class Wraith {
       loadRecording(source),
     ]);
     return WraithPlayer.create(Wraith, host, recording, options);
+  }
+  /**
+   * Join a shared terminal session at `url` (a link from `createShare` in
+   * `wraithterm/share`, or `wraithterm serve --share`). The server decides the
+   * role: the owner sets the size, collaborators type, viewers only watch.
+   * The share module loads on first use.
+   */
+  static async join(
+    host: HTMLElement,
+    url: string | URL,
+    options?: JoinShareOptions,
+  ): Promise<WraithShareSession> {
+    // Like the player, the share module must not import this module back.
+    const { WraithShareSession } = await import('./share.js');
+    return WraithShareSession.create(Wraith, host, url, options);
   }
   readonly element: HTMLDivElement;
   readonly canvas: HTMLCanvasElement;
@@ -1667,5 +1690,13 @@ export class Wraith {
   }
 }
 
+/** Join a shared terminal session; the same as `Wraith.join()`. */
+export function joinShare(
+  host: HTMLElement,
+  url: string | URL,
+  options?: JoinShareOptions,
+): Promise<WraithShareSession> {
+  return Wraith.join(host, url, options);
+}
 export { Terminal } from './xterm.js';
 export type * from './xterm-api.js';
