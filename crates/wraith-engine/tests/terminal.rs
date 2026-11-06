@@ -177,6 +177,42 @@ fn scroll_to_bottom_returns_from_history() {
     assert_eq!(text(&mut c), bottom);
 }
 #[test]
+fn a_cursor_saved_by_a_full_screen_program_does_not_hold_blank_rows_on_shrinking() {
+    // The patch for this needs batch-sgr's Screen.zig, so it goes with that switch.
+    if std::env::var_os("WRAITH_GHOSTTY_PATCHES").is_some_and(|v| v == "0") {
+        return;
+    }
+    // `less` saved the cursor low on the screen (1049 keeps it after leaving);
+    // the shell then cleared and printed near the top. Showing the
+    // keyboard shrinks the screen: the blank rows below go, not the output.
+    let mut c = term(64, 34);
+    for i in 0..300 {
+        c.write(format!("{i}\r\n").as_bytes());
+    }
+    c.write(b"$ \x1b[?1049h\x1b[H\x1b[2Jpager\x1b[?1049l");
+    c.write(b"\x1b[H\x1b[2J\x1b[3Joutput\r\n$ ");
+    c.update().unwrap();
+    assert_eq!(c.frame().cursor_y, 1);
+    for rows in [30, 25, 20, 17, 8, 4] {
+        c.resize(64, rows, 9, 18).unwrap();
+        c.update().unwrap();
+        assert_eq!(
+            c.frame().cursor_y,
+            1,
+            "the prompt stays where it was at {rows} rows"
+        );
+        assert_eq!(
+            text(&mut c).lines().next(),
+            Some("output"),
+            "at {rows} rows"
+        );
+    }
+    // A shell's redraw on each of those keeps one prompt, in no scrollback.
+    c.write(b"\r\x1b[K\r$ ");
+    c.select_mode(0, 0, 0, 0, 4).unwrap();
+    assert_eq!(c.selection_text().unwrap().matches('$').count(), 1);
+}
+#[test]
 fn configured_history_retains_several_pages_and_zero_disables_it() {
     let mut c = Core::new(120, 40, 10_000).unwrap();
     let mut input = String::from("\x1bc");
