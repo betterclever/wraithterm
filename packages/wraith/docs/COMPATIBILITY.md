@@ -23,11 +23,13 @@ renderer, input path, effects, fonts, and browser integration.
 | Insert/delete/erase, BCE, scrolling margins, origin mode                        | Native fixtures with expected visible contents.                                                     |
 | Alternate screen and main-screen restoration                                    | Native and packaged Wasm fixtures.                                                                  |
 | Bounded scrollback, viewport scrolling, resize reflow                           | Native contents checks.                                                                             |
+| Shrinking keeps text with a saved cursor below it (patched)                     | Native test (`tests/terminal.rs`): 1049, clear, then a shrink keeps the prompt in place.            |
 | ANSI indexed and 24-bit color, colon syntax                                     | Exact cell color assertions.                                                                        |
 | Bold, synthetic italic, faint, inverse, hidden, blink                           | Core styles and implemented renderer flags; visual sample in Chrome.                                |
 | Single/double/curly/dotted/dashed underlines, underline color, strike, overline | Core style flags and WGSL implementations; underline/strike pixels in demo.                         |
 | DEC line drawing                                                                | Expected Unicode box drawing and Chrome sample.                                                     |
 | Wide and combining characters                                                   | Cell widths, tail cells, combined clusters, clipboard text fixtures.                                |
+| Emoji presentation: U+FE0F prefers a colour font over a text glyph              | Native atlas test (`tests/terminal.rs`) with a one-glyph Twemoji subset.                            |
 | OSC title and bell                                                              | Native and browser effect paths.                                                                    |
 | Device attributes, version, cursor, size, color-scheme reports                  | Registered effects and native fixtures.                                                             |
 | Synchronized output                                                             | Snapshot hold, release, and deadline recovery.                                                      |

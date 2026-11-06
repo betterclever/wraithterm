@@ -145,6 +145,31 @@ fn emoji_sequences_and_flags_are_one_grapheme_even_after_a_reset() {
         assert_eq!(texts[8], "|");
     }
 }
+/// A subset of Twemoji with one glyph, ▶, which JetBrains Mono also has.
+const TWEMOJI_PLAY: &[u8] = include_bytes!("fonts/Twemoji-play.ttf");
+fn colourful(pixels: &[u8]) -> usize {
+    pixels
+        .chunks_exact(4)
+        .filter(|p| p[3] > 64 && p[..3].iter().max().unwrap() - p[..3].iter().min().unwrap() > 60)
+        .count()
+}
+#[test]
+fn a_variation_selector_asks_for_the_colour_font_over_a_text_glyph() {
+    let mut atlas = regular_atlas();
+    atlas.add_font(TWEMOJI_PLAY.to_vec()).unwrap();
+    let text = styled_tile(&mut atlas, "▶", 0).1;
+    assert_eq!(colourful(&text), 0, "plain, the regular font's glyph");
+    let selected = styled_tile(&mut atlas, "▶\u{fe0e}", 0).1;
+    assert_eq!(colourful(&selected), 0, "U+FE0E asks for the text glyph");
+    let emoji = styled_tile(&mut atlas, "▶\u{fe0f}", 0).1;
+    assert!(colourful(&emoji) > 20, "U+FE0F asks for the emoji");
+    let mut plain = regular_atlas();
+    let fallback = styled_tile(&mut plain, "▶\u{fe0f}", 0).1;
+    assert!(
+        fallback.chunks_exact(4).any(|p| p[3] > 64) && colourful(&fallback) == 0,
+        "no colour font: still drawn, from the text font"
+    );
+}
 #[test]
 fn delayed_autowrap() {
     let mut c = term(4, 2);
@@ -175,6 +200,42 @@ fn scroll_to_bottom_returns_from_history() {
     assert_ne!(text(&mut c), bottom, "scrolled back");
     c.scroll_to_bottom();
     assert_eq!(text(&mut c), bottom);
+}
+#[test]
+fn a_cursor_saved_by_a_full_screen_program_does_not_hold_blank_rows_on_shrinking() {
+    // The patch for this needs batch-sgr's Screen.zig, so it goes with that switch.
+    if std::env::var_os("WRAITH_GHOSTTY_PATCHES").is_some_and(|v| v == "0") {
+        return;
+    }
+    // `less` saved the cursor low on the screen (1049 keeps it after leaving);
+    // the shell then cleared and printed near the top. Showing the
+    // keyboard shrinks the screen: the blank rows below go, not the output.
+    let mut c = term(64, 34);
+    for i in 0..300 {
+        c.write(format!("{i}\r\n").as_bytes());
+    }
+    c.write(b"$ \x1b[?1049h\x1b[H\x1b[2Jpager\x1b[?1049l");
+    c.write(b"\x1b[H\x1b[2J\x1b[3Joutput\r\n$ ");
+    c.update().unwrap();
+    assert_eq!(c.frame().cursor_y, 1);
+    for rows in [30, 25, 20, 17, 8, 4] {
+        c.resize(64, rows, 9, 18).unwrap();
+        c.update().unwrap();
+        assert_eq!(
+            c.frame().cursor_y,
+            1,
+            "the prompt stays where it was at {rows} rows"
+        );
+        assert_eq!(
+            text(&mut c).lines().next(),
+            Some("output"),
+            "at {rows} rows"
+        );
+    }
+    // A shell's redraw on each of those keeps one prompt, in no scrollback.
+    c.write(b"\r\x1b[K\r$ ");
+    c.select_mode(0, 0, 0, 0, 4).unwrap();
+    assert_eq!(c.selection_text().unwrap().matches('$').count(), 1);
 }
 #[test]
 fn configured_history_retains_several_pages_and_zero_disables_it() {

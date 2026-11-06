@@ -158,6 +158,8 @@ pub struct Font {
     data: Vec<u8>,
     key: CacheKey,
     shape: ShaperData,
+    /// Whether it carries colour glyphs, as an emoji font does.
+    colored: bool,
 }
 impl Font {
     fn new(data: Vec<u8>) -> Result<Self, String> {
@@ -166,13 +168,17 @@ impl Font {
         if shape.shaper(&font).build().units_per_em() <= 0 {
             return Err("font has an invalid units-per-em value".into());
         }
-        if FontRef::from_index(&data, 0).is_none() {
+        let Some(raster) = FontRef::from_index(&data, 0) else {
             return Err("invalid rasterization font".into());
-        }
+        };
+        let colored = [b"COLR", b"CBDT", b"sbix", b"SVG "]
+            .iter()
+            .any(|&tag| raster.table(swash::tag_from_bytes(tag)).is_some());
         Ok(Self {
             data,
             key: CacheKey::new(),
             shape,
+            colored,
         })
     }
     fn raster(&self) -> FontRef<'_> {
@@ -356,6 +362,18 @@ impl Atlas {
     /// The face for `text` in `style`, and the synthetic bold and italic it
     /// still needs; None when no font maps all of it.
     fn choose(&self, text: &str, style: usize) -> Option<(Pick, bool, bool)> {
+        // U+FE0F asks for the emoji presentation, which a text font's glyph
+        // for the same character is not: ❤️ is Twemoji's even when the regular
+        // font has a ❤. Without a colour font it falls through to that glyph.
+        if text.contains('\u{fe0f}') {
+            if let Some(index) = self
+                .fonts
+                .iter()
+                .position(|font| font.colored && covers(font, text))
+            {
+                return Some((Pick::Fallback(index), style & 1 != 0, style & 2 != 0));
+            }
+        }
         for &(index, bold, italic) in FACE_ORDER[style] {
             if self.faces[index]
                 .as_ref()
