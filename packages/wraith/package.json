@@ -46,6 +46,11 @@
       "require": "./dist/vite.js",
       "default": "./dist/vite.js"
     },
+    "./share": {
+      "types": "./share/index.d.ts",
+      "import": "./share/index.mjs",
+      "default": "./share/index.mjs"
+    },
     "./xterm": {
       "types": "./dist/xterm.d.ts",
       "import": "./dist/xterm.js",
@@ -76,6 +81,7 @@
   },
   "files": [
     "bin",
+    "share",
     "dist",
     "wasm",
     "licenses",

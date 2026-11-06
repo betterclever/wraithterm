@@ -500,6 +500,75 @@ contexts, so a plain `http://` LAN address cannot render Wraith. `--host`
 prints the same warning as before: anyone with the owner or collaborator link
 can type into your shell.
 
+### Share a terminal from your own app
+
+`serve --share` is built on two library functions you can use directly:
+`createShare` from `wraithterm/share` on the server, and `Wraith.join()` (or
+`joinShare()`) in the browser. The server side has no dependencies: it plugs
+into any `node:http` or `node:https` server's `upgrade` event and takes
+anything shaped like a [node-pty](https://github.com/microsoft/node-pty)
+process.
+
+```js
+// server.mjs
+import { createServer } from 'node:http';
+import pty from 'node-pty';
+import { createShare } from 'wraithterm/share';
+
+const shell = pty.spawn(process.env.SHELL ?? 'bash', [], { cols: 100, rows: 30, encoding: null });
+const share = createShare({ pty: shell, roles: ['collaborator', 'viewer'] });
+
+const server = createServer(/* serve your app's page */);
+server.on('upgrade', (req, socket) => {
+  if (new URL(req.url, 'http://local').pathname === '/share') share.handleUpgrade(req, socket);
+  else socket.destroy();
+});
+server.listen(3000, '127.0.0.1');
+
+for (const [role, token] of Object.entries(share.tokens))
+  console.log(`${role}: http://127.0.0.1:3000/?token=${token}`);
+shell.onExit(() => share.close());
+```
+
+```js
+// In the page, served from the same origin
+import { Wraith } from 'wraithterm';
+
+const session = await Wraith.join(document.querySelector('#terminal'), `/share${location.search}`);
+session.role; // 'owner', 'collaborator' or 'viewer': the server decides
+session.onPresence(({ owners, collaborators, viewers, lagging }) => {
+  /* show who is here */
+});
+```
+
+The roles, late-joiner replay and per-client backpressure are the same as
+`serve --share` above. On the page, the owner's terminal fits its element and
+sets the size. Everyone else draws the owner's grid scaled down to fit their
+element and centred (`scale: 'none'` keeps it full size). Viewers send
+nothing, and the server drops their input anyway. `Wraith.join()` takes the
+usual mount options apart from `cols`, `rows` and `fit`.
+
+- **Your own auth.** Instead of link tokens, decide the role yourself:
+  `share.handleUpgrade(req, socket, { role: 'viewer' })`. Routing is yours too;
+  `handleUpgrade` only answers the requests you pass it.
+- **Origins.** Browsers may connect only from the server's own origin, compared
+  with the `Host` header. A page on another domain, or a proxy that rewrites
+  `Host`, needs `allowedOrigins: ['https://app.example.com']`. Requests without
+  an `Origin` header (not from a browser) are allowed; the token still applies.
+- **Output-only sources.** Only `onData` is required. Without `write`, nobody
+  can type; without `resize`, everyone follows the source's size, which you
+  set with `share.resize(cols, rows)`. Use this to stream an agent's or a
+  build's output to many watchers.
+- **Recording.** `record: 'session.cast'` (or a writable stream) writes
+  asciicast v2, as `serve --record` does.
+- **Lifetime.** When the source exits, everyone is disconnected and
+  `share.onExit` fires. `share.close()` stops sharing and finishes the
+  recording; the source keeps running until you end it.
+
+Joining needs WebGPU, so other devices must load the page over HTTPS (or
+from `localhost`). Put the server behind an HTTPS proxy or tunnel, and add
+the public origin to `allowedOrigins` if the proxy rewrites `Host`.
+
 ## GPU effects
 
 Shader effects run on the GPU as post-process passes over the terminal image.
@@ -843,6 +912,7 @@ and pointer selection is then offset.
 | `benchmark({ workload, frames, warmup })`                   | Exclusive, warmed render benchmark; restores the main screen and cursor visibility.                                  |
 | `record({ input?, title? })`                                | Timestamped recorder of parsed output and resizes; `stop()` returns a `Recording`.                                   |
 | `Wraith.player(element, source, options)`                   | Mount a scrubbable player for a recording or `.cast` file; see [Record, replay and scrub](#record-replay-and-scrub). |
+| `Wraith.join(element, url, options)`                        | Join a shared session; see [Share a terminal from your own app](#share-a-terminal-from-your-own-app).                |
 | `commands()`                                                | OSC 133 command blocks, oldest first; `block.output()` reads text lazily.                                            |
 | `onCommand(listener)`                                       | Fires when a command finishes (OSC 133;D, or the next prompt).                                                       |
 | `jumpToPrompt(-1 \| 1)`                                     | Scroll the previous/next prompt to the viewport top; resolves false when there is none.                              |

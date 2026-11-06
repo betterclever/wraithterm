@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PassThrough } from 'node:stream';
-import { AsciicastWriter, ModeTracker, ReplayBuffer } from '../packages/wraith/bin/share.mjs';
+import { AsciicastWriter, ModeTracker, ReplayBuffer } from '../packages/wraith/share/replay.mjs';
 
 const bytes = (text) => Buffer.from(text, 'utf8');
 const replayText = (replay) =>
